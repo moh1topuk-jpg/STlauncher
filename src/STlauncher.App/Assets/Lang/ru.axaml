@@ -247,6 +247,7 @@
 
     <!-- Backups -->
     <x:String x:Key="Backup_Created">Бэкап создан: {0} ({1} КБ)</x:String>
+    <x:String x:Key="Backup_InProgress">Создаю бэкап…</x:String>
     <x:String x:Key="Backup_Failed">Не удалось сделать бэкап: {0}</x:String>
     <x:String x:Key="Backup_FailedFolder">Не удалось открыть папку бэкапов: {0}</x:String>
 

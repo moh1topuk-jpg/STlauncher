@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -697,7 +697,7 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             IsBusy = true;
-            Status = Localize("Status_LoadingVersions", "Loading version list…");
+            Status = Localize("Status_LoadingVersions", "Loading version list�");
 
             var manifest = await _versions.GetManifestAsync();
             _allVersions = manifest.Versions;
@@ -748,7 +748,7 @@ public partial class MainWindowViewModel : ViewModelBase
             IsBusy = true;
             Progress = 0;
             AppendConsole($"--- Launching {SelectedVersion.Id} as {Username} ---");
-            MaybeBackup(BackupTrigger.BeforeLaunch);
+            await MaybeBackupAsync(BackupTrigger.BeforeLaunch);
 
             var account = OfflineAuth.Login(Username);
             PersistSettings();
@@ -757,7 +757,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
             if (SelectedLoader != LoaderKind.Vanilla)
             {
-                Status = Localize("Status_InstallingLoader", "Installing {0}…", SelectedLoader);
+                Status = Localize("Status_InstallingLoader", "Installing {0}�", SelectedLoader);
                 AppendConsole($"--- Installing {SelectedLoader} for {versionId} ---");
 
                 var gameJava = (await _versions.ResolveAsync(versionId)).JavaVersion?.MajorVersion ?? 8;
@@ -773,7 +773,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 AppendConsole($"--- Loader ready: {versionId} ---");
             }
 
-            Status = Localize("Status_CheckingBuildMods", "Checking build mods…");
+            Status = Localize("Status_CheckingBuildMods", "Checking build mods�");
             await EnsureBuildItemsInstalledAsync();
 
             var settings = new LaunchSettings
@@ -800,10 +800,10 @@ public partial class MainWindowViewModel : ViewModelBase
                     : Localize("Status_Files", "Files {0}/{1}", p.Completed, p.Total);
             });
 
-            Status = Localize("Status_Preparing", "Preparing…");
+            Status = Localize("Status_Preparing", "Preparing�");
             var command = await _launch.PrepareAsync(versionId, account, settings, progress);
 
-            Status = Localize("Status_StartingGame", "Starting Minecraft…");
+            Status = Localize("Status_StartingGame", "Starting Minecraft�");
             IsGameRunning = true;
 
             if (SelectedInstance is not null)
@@ -903,7 +903,7 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             IsCatalogBusy = true;
-            CatalogStatus = Localize("Catalog_Loading", "Loading catalog…");
+            CatalogStatus = Localize("Catalog_Loading", "Loading catalog�");
 
             var result = await _catalog.LoadAsync();
 
@@ -949,7 +949,7 @@ public partial class MainWindowViewModel : ViewModelBase
             // The technical reason is noise for players who still got a working catalog.
             if (result.Error is not null && result.Origin is not CatalogOrigin.Remote && ShowDeveloperConsole)
             {
-                CatalogStatus += $" — {result.Error}";
+                CatalogStatus += $" � {result.Error}";
             }
         }
         catch (Exception ex)
@@ -973,8 +973,8 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             IsCatalogBusy = true;
-            MaybeBackup(BackupTrigger.BeforeModChange);
-            Status = Localize("Status_InstallingFile", "Installing {0}…", item.Name);
+            await MaybeBackupAsync(BackupTrigger.BeforeModChange);
+            Status = Localize("Status_InstallingFile", "Installing {0}�", item.Name);
             AppendConsole($"--- Installing '{item.Name}' ({item.Type}) into '{SelectedInstance?.Name}' ---");
 
             var result = await _catalogInstaller.InstallAsync(
@@ -1038,8 +1038,8 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             IsModsBusy = true;
-            MaybeBackup(BackupTrigger.BeforeModChange);
-            Status = Localize("Status_ImportingModpack", "Reading the modpack…");
+            await MaybeBackupAsync(BackupTrigger.BeforeModChange);
+            Status = Localize("Status_ImportingModpack", "Reading the modpack�");
 
             var progress = new Progress<DownloadProgress>(p =>
             {
@@ -1129,7 +1129,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
             if (announce)
             {
-                UpdateStatus = Localize("Update_Checking", "Checking for updates…");
+                UpdateStatus = Localize("Update_Checking", "Checking for updates�");
             }
 
             var status = await _updates.CheckAsync();
@@ -1215,15 +1215,15 @@ public partial class MainWindowViewModel : ViewModelBase
                     UpdateStatus = text;
                 }
 
-                Report(Localize("Update_Downloading", "Downloading {0}…", version));
+                Report(Localize("Update_Downloading", "Downloading {0}�", version));
 
                 var progress = new Progress<int>(percent => Report(
-                    Localize("Update_DownloadingPercent", "Downloading {0}… {1}%", version, percent)));
+                    Localize("Update_DownloadingPercent", "Downloading {0}� {1}%", version, percent)));
 
                 await _updates.DownloadAsync(progress);
             }
 
-            UpdateBannerText = Localize("Update_Restarting", "Restarting to finish the update…");
+            UpdateBannerText = Localize("Update_Restarting", "Restarting to finish the update�");
             UpdateStatus = UpdateBannerText;
 
             // Hands control to Velopack, which replaces this process. Nothing below runs
@@ -1285,8 +1285,8 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
-    [RelayCommand]
-    private void UninstallMod(InstalledMod? mod)
+[RelayCommand]
+    private async Task UninstallModAsync(InstalledMod? mod)
     {
         if (mod is null)
         {
@@ -1295,7 +1295,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         try
         {
-            MaybeBackup(BackupTrigger.BeforeModChange);
+            await MaybeBackupAsync(BackupTrigger.BeforeModChange);
             _mods.Uninstall(mod.Path);
 
             if (SelectedInstance is not null)

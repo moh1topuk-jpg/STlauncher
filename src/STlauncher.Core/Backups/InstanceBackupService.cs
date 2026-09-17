@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace STlauncher.Core.Backups;
 
@@ -27,7 +29,24 @@ public sealed class InstanceBackupService
 
     public const string FilePrefix = "backup-";
 
-    public BackupInfo Create(string instanceDirectory, string backupsDirectory, string instanceId)
+    /// <summary>
+    /// Compresses the instance on a background thread. Zipping a world takes long enough
+    /// that doing it inline froze the window for the whole duration.
+    /// </summary>
+    public Task<BackupInfo> CreateAsync(
+        string instanceDirectory,
+        string backupsDirectory,
+        string instanceId,
+        CancellationToken cancellationToken = default)
+        => Task.Run(
+            () => Create(instanceDirectory, backupsDirectory, instanceId, cancellationToken),
+            cancellationToken);
+
+    public BackupInfo Create(
+        string instanceDirectory,
+        string backupsDirectory,
+        string instanceId,
+        CancellationToken cancellationToken = default)
     {
         if (!Directory.Exists(instanceDirectory))
         {
@@ -47,26 +66,59 @@ public sealed class InstanceBackupService
             path = Path.Combine(backupsDirectory, fileName);
         }
 
-        using (var archive = ZipFile.Open(path, ZipArchiveMode.Create))
-        {
-            foreach (var entry in IncludedEntries)
-            {
-                var source = Path.Combine(instanceDirectory, entry);
+        // Build the archive beside the target and move it into place only once it is
+        // complete. Writing straight to the .zip left a truncated file that List() then
+        // reported as a valid backup whenever a single entry failed (a world file held
+        // open by a running game, for instance).
+        var tempPath = path + ".tmp";
 
-                if (File.Exists(source))
+        try
+        {
+            using (var archive = ZipFile.Open(tempPath, ZipArchiveMode.Create))
+            {
+                foreach (var entry in IncludedEntries)
                 {
-                    archive.CreateEntryFromFile(source, entry, CompressionLevel.Optimal);
-                }
-                else if (Directory.Exists(source))
-                {
-                    AddDirectory(archive, source, entry);
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    var source = Path.Combine(instanceDirectory, entry);
+
+                    if (File.Exists(source))
+                    {
+                        archive.CreateEntryFromFile(source, entry, CompressionLevel.Optimal);
+                    }
+                    else if (Directory.Exists(source))
+                    {
+                        AddDirectory(archive, source, entry, cancellationToken);
+                    }
                 }
             }
+
+            File.Move(tempPath, path);
+        }
+        catch
+        {
+            TryDelete(tempPath);
+            throw;
         }
 
         var info = new FileInfo(path);
 
         return new BackupInfo(path, fileName, DateTimeOffset.Now, info.Length);
+    }
+
+    private static void TryDelete(string path)
+    {
+        try
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+        catch (Exception)
+        {
+            // Best effort - the original exception is the one that matters.
+        }
     }
 
     public IReadOnlyList<BackupInfo> List(string backupsDirectory, string? instanceId = null)
@@ -140,10 +192,16 @@ public sealed class InstanceBackupService
         }
     }
 
-    private static void AddDirectory(ZipArchive archive, string sourceDirectory, string entryPrefix)
+    private static void AddDirectory(
+        ZipArchive archive,
+        string sourceDirectory,
+        string entryPrefix,
+        CancellationToken cancellationToken)
     {
         foreach (var file in Directory.EnumerateFiles(sourceDirectory, "*", SearchOption.AllDirectories))
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             var relative = Path.GetRelativePath(sourceDirectory, file).Replace('\\', '/');
             archive.CreateEntryFromFile(file, $"{entryPrefix}/{relative}", CompressionLevel.Optimal);
         }

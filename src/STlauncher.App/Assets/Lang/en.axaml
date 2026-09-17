@@ -247,6 +247,8 @@
 
     <!-- Backups -->
     <x:String x:Key="Backup_Created">Backup created: {0} ({1} KB)</x:String>
+    <x:String x:Key="Backup_InProgress">Creating a backup…</x:String>
+    <x:String x:Key="Backup_InProgress">Creating a backup…</x:String>
     <x:String x:Key="Backup_Failed">Backup failed: {0}</x:String>
     <x:String x:Key="Backup_FailedFolder">Failed to open the backups folder: {0}</x:String>
 

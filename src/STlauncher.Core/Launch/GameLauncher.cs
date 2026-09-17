@@ -24,6 +24,7 @@ public sealed class GameLauncher
     };
 
     private readonly object _logLock = new();
+    private DateTime _lastLogFlushUtc = DateTime.UtcNow;
 
     public event Action<string>? OutputReceived;
 
@@ -43,52 +44,68 @@ public sealed class GameLauncher
         CancellationToken cancellationToken = default)
     {
         Directory.CreateDirectory(workingDirectory);
-        PrepareLogFile(logDirectory);
 
-        var startSignal = new StartSignal(() => GameStarted?.Invoke());
+        // The log writer is per run, not a field: this class is a DI singleton, so a shared
+        // writer would make two concurrent runs interleave into a single file.
+        var logWriter = OpenLogFile(logDirectory);
 
-        var startInfo = new ProcessStartInfo
+        try
         {
-            FileName = command.FileName,
-            WorkingDirectory = workingDirectory,
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            CreateNoWindow = true
-        };
+            var startSignal = new StartSignal(() => GameStarted?.Invoke());
 
-        foreach (var argument in command.Arguments)
-        {
-            startInfo.ArgumentList.Add(argument);
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = command.FileName,
+                WorkingDirectory = workingDirectory,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+
+            foreach (var argument in command.Arguments)
+            {
+                startInfo.ArgumentList.Add(argument);
+            }
+
+            using var process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
+
+            process.OutputDataReceived += (_, e) => OnLine(e.Data, logWriter, startSignal, isError: false);
+            process.ErrorDataReceived += (_, e) => OnLine(e.Data, logWriter, startSignal, isError: true);
+
+            process.Start();
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+
+            // Fallback: if no known marker appears but the process is still alive, consider
+            // the game started so the launcher is not stuck waiting.
+            _ = FallbackStartAsync(process, startSignal, startTimeout ?? TimeSpan.FromSeconds(90), cancellationToken);
+
+            // The game must outlive the launcher, so the process is intentionally not
+            // killed when the launcher shuts down or the token is cancelled.
+            await process.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false);
+
+            // Let the redirected-output handlers drain before closing the log.
+            await FlushLogAsync(logWriter).ConfigureAwait(false);
+            return process.ExitCode;
         }
-
-        using var process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
-
-        process.OutputDataReceived += (_, e) => OnLine(e.Data, startSignal, isError: false);
-        process.ErrorDataReceived += (_, e) => OnLine(e.Data, startSignal, isError: true);
-
-        process.Start();
-        process.BeginOutputReadLine();
-        process.BeginErrorReadLine();
-
-        // Fallback: if no known marker appears but the process is still alive, consider
-        // the game started so the launcher is not stuck waiting.
-        _ = FallbackStartAsync(process, startSignal, startTimeout ?? TimeSpan.FromSeconds(90), cancellationToken);
-
-        // The game must outlive the launcher, so the process is intentionally not
-        // killed when the launcher shuts down or the token is cancelled.
-        await process.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false);
-        return process.ExitCode;
+        finally
+        {
+            if (logWriter is not null)
+            {
+                await logWriter.DisposeAsync().ConfigureAwait(false);
+            }
+        }
     }
 
-    private void OnLine(string? line, StartSignal startSignal, bool isError)
+    private void OnLine(string? line, StreamWriter? logWriter, StartSignal startSignal, bool isError)
     {
         if (line is null)
         {
             return;
         }
 
-        WriteLog(line);
+        WriteLog(logWriter, line);
 
         if (isError)
         {
@@ -125,28 +142,46 @@ public sealed class GameLauncher
         }
     }
 
-    private void PrepareLogFile(string? logDirectory)
+    /// <summary>
+    /// Opens the run's log file once. Writing each line with File.AppendAllText meant an
+    /// open/write/close per line - thousands of syscalls during startup, serialized on the
+    /// same lock the output pumps use.
+    /// </summary>
+    private StreamWriter? OpenLogFile(string? logDirectory)
     {
         if (string.IsNullOrWhiteSpace(logDirectory))
         {
             LogFilePath = null;
-            return;
+            return null;
         }
 
         try
         {
             Directory.CreateDirectory(logDirectory);
-            LogFilePath = Path.Combine(logDirectory, $"game-{DateTime.Now:yyyyMMdd-HHmmss}.log");
+
+            // A short unique suffix keeps two concurrent runs off the same file even when
+            // they start within the same second.
+            var name = $"game-{DateTime.Now:yyyyMMdd-HHmmss}-{Guid.NewGuid():N}"[..34] + ".log";
+            var path = Path.Combine(logDirectory, name);
+
+            LogFilePath = path;
+
+            return new StreamWriter(
+                new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read, 4096, useAsync: false))
+            {
+                AutoFlush = false
+            };
         }
         catch (Exception)
         {
             LogFilePath = null;
+            return null;
         }
     }
 
-    private void WriteLog(string line)
+    private void WriteLog(StreamWriter? logWriter, string line)
     {
-        if (LogFilePath is null)
+        if (logWriter is null)
         {
             return;
         }
@@ -155,12 +190,37 @@ public sealed class GameLauncher
         {
             lock (_logLock)
             {
-                File.AppendAllText(LogFilePath, line + Environment.NewLine);
+                logWriter.WriteLine(line);
+
+                // Flushed about once a second rather than per line: the buffer absorbs the
+                // startup burst while still keeping the file current.
+                if (DateTime.UtcNow - _lastLogFlushUtc > TimeSpan.FromSeconds(1))
+                {
+                    logWriter.Flush();
+                    _lastLogFlushUtc = DateTime.UtcNow;
+                }
             }
         }
         catch (Exception)
         {
             // Logging must never break the game process.
+        }
+    }
+
+    private async Task FlushLogAsync(StreamWriter? logWriter)
+    {
+        if (logWriter is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await logWriter.FlushAsync().ConfigureAwait(false);
+        }
+        catch (Exception)
+        {
+            // Same reasoning as above.
         }
     }
 

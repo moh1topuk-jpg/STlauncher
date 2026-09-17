@@ -344,7 +344,7 @@ public partial class MainWindowViewModel
                 return;
             }
 
-            MaybeBackup(BackupTrigger.BeforeModChange);
+            await MaybeBackupAsync(BackupTrigger.BeforeModChange);
             Status = Localize("Status_InstallingFile", "Installing {0}…", file.FileName);
 
             await _mods.InstallAsync(InstanceDirectory, file.FileName, file.Url, file.Sha1, file.Size);

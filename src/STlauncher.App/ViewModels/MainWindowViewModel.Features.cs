@@ -1,4 +1,4 @@
-ï»¿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -260,7 +260,7 @@ public partial class MainWindowViewModel
             {
                 var display = string.IsNullOrWhiteSpace(installation.Vendor)
                     ? $"Java {installation.MajorVersion}"
-                    : $"Java {installation.MajorVersion} â€” {installation.Vendor}";
+                    : $"Java {installation.MajorVersion} — {installation.Vendor}";
 
                 JavaChoices.Add(new JavaChoice(display, installation.ExecutablePath));
             }
@@ -340,7 +340,7 @@ public partial class MainWindowViewModel
             return;
         }
 
-        MaybeBackup(BackupTrigger.BeforeModChange);
+        await MaybeBackupAsync(BackupTrigger.BeforeModChange);
 
         var enabledIds = SelectedInstance.EnabledCatalogItems;
 
@@ -542,8 +542,8 @@ public partial class MainWindowViewModel
 
     private string _backupDirectoryOverride = string.Empty;
 
-    [RelayCommand]
-    private void CreateBackupNow()
+[RelayCommand]
+    private async Task CreateBackupNowAsync()
     {
         try
         {
@@ -552,7 +552,10 @@ public partial class MainWindowViewModel
                 return;
             }
 
-            var backup = _backups.Create(InstanceDirectory, BackupsDirectory, SelectedInstance.Id);
+            BackupStatus = Localize("Backup_InProgress", "Creating a backup…");
+            AppendConsole($"[backup] creating a backup of {SelectedInstance.Name}");
+
+            var backup = await _backups.CreateAsync(InstanceDirectory, BackupsDirectory, SelectedInstance.Id);
             PruneBackups();
             RefreshBackups();
 
@@ -605,7 +608,7 @@ public partial class MainWindowViewModel
     /// timer: the "once a day" rule is evaluated when the launcher actually launches
     /// the game or touches mods.
     /// </summary>
-    public bool MaybeBackup(BackupTrigger trigger)
+public async Task<bool> MaybeBackupAsync(BackupTrigger trigger)
     {
         if (!BackupsEnabled || SelectedInstance is null)
         {
@@ -624,7 +627,7 @@ public partial class MainWindowViewModel
             return false;
         }
 
-        CreateBackupNow();
+        await CreateBackupNowAsync();
         return true;
     }
 
