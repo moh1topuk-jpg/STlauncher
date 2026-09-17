@@ -10,8 +10,10 @@ using CommunityToolkit.Mvvm.Input;
 using STlauncher.App.Services;
 using STlauncher.Core.Backups;
 using STlauncher.Core.Content;
+using STlauncher.Core.Instances;
 using STlauncher.Core.Java;
 using STlauncher.Core.Launch;
+using STlauncher.Core.Mods;
 
 namespace STlauncher.App.ViewModels;
 
@@ -355,9 +357,73 @@ public partial class MainWindowViewModel
                 SelectedLoader);
 
             AppendConsole($"[build] {item.Name}: {result.Message}");
+
+            if (result.Success && result.Path is not null)
+            {
+                // A newer version has a new file name, so the previous jar has to go -
+                // otherwise an updated build would keep both copies.
+                var fileName = System.IO.Path.GetFileName(result.Path);
+
+                ReplaceInstalledFile(item.Id, fileName);
+                RecordInstalledMod(new InstalledModRecord
+                {
+                    FileName = fileName,
+                    Source = ModSource.Catalog,
+                    Id = item.Id,
+                    Name = item.Name,
+                    IconUrl = item.IconUrl,
+                    Required = item.Required
+                });
+            }
         }
 
         RefreshMods();
+    }
+
+    /// <summary>
+    /// Removes the file previously installed for a project when it was replaced by a
+    /// different one, which is what makes a recommended build self-updating.
+    /// </summary>
+    private void ReplaceInstalledFile(string? projectId, string newFileName)
+    {
+        if (SelectedInstance is null || string.IsNullOrWhiteSpace(projectId))
+        {
+            return;
+        }
+
+        var stale = SelectedInstance.InstalledMods
+            .Where(m => string.Equals(m.Id, projectId, StringComparison.OrdinalIgnoreCase))
+            .Where(m => !string.Equals(m.FileName, newFileName, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        if (stale.Count == 0)
+        {
+            return;
+        }
+
+        var directory = ModManager.ModsDirectory(InstanceDirectory);
+
+        foreach (var record in stale)
+        {
+            try
+            {
+                var path = System.IO.Path.Combine(directory, record.FileName);
+
+                if (System.IO.File.Exists(path))
+                {
+                    System.IO.File.Delete(path);
+                    AppendConsole($"[build] removed outdated {record.FileName}");
+                }
+
+                SelectedInstance.InstalledMods.Remove(record);
+            }
+            catch (Exception ex)
+            {
+                AppendConsole($"[build] could not remove {record.FileName}: {ex.Message}");
+            }
+        }
+
+        _instances.Save(SelectedInstance);
     }
 
     // ===================== Backups =====================

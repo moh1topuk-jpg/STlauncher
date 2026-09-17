@@ -71,6 +71,9 @@
     <x:String x:Key="Server_OpenSite">Открыть showtime.su</x:String>
     <x:String x:Key="Server_PortHint">Порт по умолчанию — 25565, указывать его не обязательно.</x:String>
     <x:String x:Key="Server_More">Здесь позже появятся мониторинг и ссылки на сообщества.</x:String>
+    <x:String x:Key="Server_Refresh">Обновить</x:String>
+    <x:String x:Key="Server_Players">Игроков: {0} / {1}</x:String>
+    <x:String x:Key="Server_Offline">Сервер не ответил</x:String>
     <x:String x:Key="Builds_NotConfigured">Сначала выберите версию игры и загрузчик в настройках сборки — от них зависит, какие моды доступны.</x:String>
     <x:String x:Key="Builds_GoSettings">Перейти в настройки сборки</x:String>
     <x:String x:Key="Mods_ModrinthResults">Результаты поиска</x:String>

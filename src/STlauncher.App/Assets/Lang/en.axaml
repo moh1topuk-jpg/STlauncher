@@ -71,6 +71,9 @@
     <x:String x:Key="Server_OpenSite">Open showtime.su</x:String>
     <x:String x:Key="Server_PortHint">The default port is 25565; you do not have to specify it.</x:String>
     <x:String x:Key="Server_More">Monitoring and community links will appear here later.</x:String>
+    <x:String x:Key="Server_Refresh">Refresh</x:String>
+    <x:String x:Key="Server_Players">Players: {0} / {1}</x:String>
+    <x:String x:Key="Server_Offline">The server did not respond</x:String>
     <x:String x:Key="Builds_NotConfigured">Pick a game version and a loader in the build settings first - they decide which mods are available.</x:String>
     <x:String x:Key="Builds_GoSettings">Open build settings</x:String>
     <x:String x:Key="Mods_ModrinthResults">Search results</x:String>

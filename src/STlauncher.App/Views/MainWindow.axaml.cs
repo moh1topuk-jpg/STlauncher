@@ -1,6 +1,9 @@
+using System;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 
 namespace STlauncher.App.Views;
 
@@ -9,6 +12,24 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        ApplyBrandIcon();
+    }
+
+    /// <summary>
+    /// Uses Assets/server-logo.png as the window icon when it is present; the built-in
+    /// icon stays otherwise, so the artwork is optional.
+    /// </summary>
+    private void ApplyBrandIcon()
+    {
+        try
+        {
+            var uri = new Uri("avares://STlauncher.App/Assets/server-logo.png");
+            using var stream = AssetLoader.Open(uri);
+            Icon = new WindowIcon(new Bitmap(stream));
+        }
+        catch (Exception)
+        {
+        }
     }
 
     private void OnTitleBarPressed(object? sender, PointerPressedEventArgs e)

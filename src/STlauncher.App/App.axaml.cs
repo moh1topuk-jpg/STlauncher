@@ -5,6 +5,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data.Core.Plugins;
 using System.Linq;
 using Avalonia.Markup.Xaml;
+using Avalonia.Media.Imaging;
 using Microsoft.Extensions.DependencyInjection;
 using STlauncher.App.Services;
 using STlauncher.App.ViewModels;
@@ -37,6 +38,17 @@ public partial class App : Application
             var viewModel = _services.GetRequiredService<MainWindowViewModel>();
 
             var window = new MainWindow { DataContext = viewModel };
+
+            // The window icon follows the server artwork: the launcher PNG when present,
+            // otherwise the icon the server reports.
+            viewModel.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(MainWindowViewModel.ServerIcon) &&
+                    viewModel.ServerIcon is { } icon)
+                {
+                    window.Icon = new WindowIcon(icon);
+                }
+            };
 
             // The game process is independent of the launcher, so hiding or closing the
             // window never terminates Minecraft.

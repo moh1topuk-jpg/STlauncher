@@ -21,6 +21,7 @@ using STlauncher.Core.Loaders;
 using STlauncher.Core.Metadata;
 using STlauncher.Core.Mods;
 using STlauncher.Core.Modpacks;
+using STlauncher.Core.Server;
 using STlauncher.Core.Versions;
 
 namespace STlauncher.App.ViewModels;
@@ -190,6 +191,70 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private Bitmap? _serverLogo;
 
+    /// <summary>Icon reported by the server itself; falls back to the launcher artwork.</summary>
+    [ObservableProperty]
+    private Bitmap? _serverIcon;
+
+    [ObservableProperty]
+    private string _serverMotd = string.Empty;
+
+    [ObservableProperty]
+    private string _serverPlayers = string.Empty;
+
+    [ObservableProperty]
+    private bool _isServerStatusBusy;
+
+    [RelayCommand]
+    private async Task RefreshServerStatusAsync()
+    {
+        if (IsServerStatusBusy)
+        {
+            return;
+        }
+
+        try
+        {
+            IsServerStatusBusy = true;
+
+            var status = await ServerPinger.PingAsync(ServerAddress);
+
+            if (status is null)
+            {
+                ServerMotd = Localize("Server_Offline", "Server did not respond");
+                ServerPlayers = string.Empty;
+                ServerIcon = ServerLogo;
+                return;
+            }
+
+            ServerMotd = status.Motd;
+            ServerPlayers = Localize("Server_Players", "{0} / {1} online", status.Online, status.Max);
+            ServerIcon = status.Favicon is { Length: > 0 }
+                ? CreateBitmap(status.Favicon) ?? ServerLogo
+                : ServerLogo;
+        }
+        catch (Exception ex)
+        {
+            AppendConsole($"[server] {ex.Message}");
+        }
+        finally
+        {
+            IsServerStatusBusy = false;
+        }
+    }
+
+    private static Bitmap? CreateBitmap(byte[] bytes)
+    {
+        try
+        {
+            using var stream = new System.IO.MemoryStream(bytes);
+            return new Bitmap(stream);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
     /// <summary>
     /// Loads Assets/server-logo.png when it exists. A missing file simply leaves the
     /// placeholder in place, so the build never depends on an artwork asset.
@@ -293,6 +358,7 @@ public partial class MainWindowViewModel : ViewModelBase
         LoadAfterLaunchOptions();
         LoadServerLogo();
         RefreshBackups();
+        _ = RefreshServerStatusAsync();
 
         Status = Localize("Status_Ready", "Ready");
         CatalogStatus = Localize("Catalog_NotLoaded", "Catalog not loaded yet");

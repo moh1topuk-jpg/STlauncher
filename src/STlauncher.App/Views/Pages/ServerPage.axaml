@@ -12,16 +12,24 @@
             <!-- The server is part of the launcher, not a user setting -->
             <Border Classes="card">
                 <StackPanel Spacing="14">
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
                         <Border Width="64" Height="64" CornerRadius="10" Background="#2A2028"
                                 ClipToBounds="True">
-                            <Image Source="{Binding ServerLogo}" Stretch="UniformToFill"
+                            <Image Source="{Binding ServerIcon}" Stretch="UniformToFill"
                                    Width="64" Height="64"/>
                         </Border>
-                        <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+
+                        <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
                             <TextBlock Text="{Binding ServerName}" FontSize="17" FontWeight="SemiBold"/>
                             <TextBlock Text="{Binding ServerAddress}" Classes="faint"/>
+                            <TextBlock Text="{Binding ServerMotd}" TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding ServerPlayers}" Classes="gold"/>
                         </StackPanel>
+
+                        <Button Grid.Column="2" Classes="ghost small" VerticalAlignment="Top"
+                                Content="{DynamicResource Server_Refresh}"
+                                Command="{Binding RefreshServerStatusCommand}"
+                                IsEnabled="{Binding !IsServerStatusBusy}"/>
                     </Grid>
 
                     <Button Classes="primary" Content="{DynamicResource Server_Join}"

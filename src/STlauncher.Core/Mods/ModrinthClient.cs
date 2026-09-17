@@ -65,7 +65,8 @@ public sealed record ModVersion(
     string VersionNumber,
     IReadOnlyList<string> GameVersions,
     IReadOnlyList<string> Loaders,
-    IReadOnlyList<ModFile> Files)
+    IReadOnlyList<ModFile> Files,
+    string VersionType = "release")
 {
     public ModFile? PrimaryFile => Files.FirstOrDefault(f => f.Primary) ?? Files.FirstOrDefault();
 }
@@ -217,8 +218,30 @@ public sealed class ModrinthClient
                     f.Hashes?.Sha512,
                     f.Size,
                     f.Primary))
-                .ToList()))
+                .ToList(),
+                v.VersionType ?? "release"))
             .ToList();
+    }
+
+    /// <summary>
+    /// Picks the version a build should install. Releases win over betas and alphas, and
+    /// within the same kind the API order (newest first) is preserved.
+    /// </summary>
+    public static ModVersion? SelectPreferred(IEnumerable<ModVersion> versions)
+    {
+        var list = versions.ToList();
+
+        return list.Count == 0
+            ? null
+            : list.OrderBy(Rank).First();
+
+        static int Rank(ModVersion version) => version.VersionType.ToLowerInvariant() switch
+        {
+            "release" => 0,
+            "beta" => 1,
+            "alpha" => 2,
+            _ => 1
+        };
     }
 
     public static string BuildFacets(string? gameVersion, LoaderKind loader, string? category = null)
@@ -310,6 +333,9 @@ public sealed class ModrinthClient
 
         [JsonPropertyName("files")]
         public List<FileDto>? Files { get; set; }
+
+        [JsonPropertyName("version_type")]
+        public string? VersionType { get; set; }
     }
 
     private sealed class FileDto

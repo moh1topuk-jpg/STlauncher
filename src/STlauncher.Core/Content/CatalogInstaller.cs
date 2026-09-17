@@ -94,8 +94,12 @@ public sealed class CatalogInstaller
         }
         else
         {
-            versions = await _modrinth.GetVersionsAsync(project!, gameVersion, loader, cancellationToken)
+            var available = await _modrinth.GetVersionsAsync(project!, gameVersion, loader, cancellationToken)
                 .ConfigureAwait(false);
+
+            // Prefer a stable release even when a newer beta exists.
+            var preferred = ModrinthClient.SelectPreferred(available);
+            versions = preferred is null ? Array.Empty<ModVersion>() : new[] { preferred };
         }
 
         var file = versions.FirstOrDefault()?.PrimaryFile;

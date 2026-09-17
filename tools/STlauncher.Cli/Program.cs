@@ -16,6 +16,7 @@ using STlauncher.Core.Loaders;
 using STlauncher.Core.Metadata;
 using STlauncher.Core.Mods;
 using STlauncher.Core.Modpacks;
+using STlauncher.Core.Server;
 using STlauncher.Core.Versions;
 
 namespace STlauncher.Cli;
@@ -64,6 +65,8 @@ internal static class Program
                 "catalog" => await ShowCatalogAsync(http, paths, args),
                 "catalog-install" => await InstallCatalogItemAsync(http, paths, downloader, args),
                 "mods-search" => await SearchModsAsync(http, args),
+                "build-plan" => await ShowBuildPlanAsync(http, args),
+                "server-status" => await ShowServerStatusAsync(args),
                 _ => Unknown(args[0])
             };
         }
@@ -310,6 +313,122 @@ internal static class Program
         return 0;
     }
 
+    /// <summary>
+    /// Resolves every mod of a recommended build, without downloading anything. This is the
+    /// check to run after the mod list changes.
+    /// </summary>
+    /// <summary>Pings a Minecraft server and prints what the launcher would show.</summary>
+    private static async Task<int> ShowServerStatusAsync(string[] args)
+    {
+        var address = Option(args, "--server") ?? "mc.showtime.su";
+        var host = address;
+        var port = ServerPinger.DefaultPort;
+
+        var separator = address.LastIndexOf(':');
+
+        if (separator > 0 && int.TryParse(address[(separator + 1)..], out var parsedPort))
+        {
+            host = address[..separator];
+            port = parsedPort;
+        }
+
+        Console.WriteLine($"pinging {host}:{port} ...");
+
+        var status = await ServerPinger.PingAsync(host, port);
+
+        if (status is null)
+        {
+            Console.WriteLine("no response");
+            return 1;
+        }
+
+        Console.WriteLine($"motd    : {status.Motd}");
+        Console.WriteLine($"players : {status.Online} / {status.Max}");
+        Console.WriteLine($"version : {status.VersionName} (protocol {status.ProtocolVersion})");
+        Console.WriteLine($"favicon : {(status.Favicon is { Length: > 0 } f ? $"{f.Length} bytes" : "none")}");
+
+        return 0;
+    }
+
+    private static async Task<int> ShowBuildPlanAsync(HttpClient http, string[] args)
+    {
+        var service = new ContentCatalogService(http, LauncherPaths.Default()) { CatalogUrl = Option(args, "--catalog") };
+        var loaded = await service.LoadAsync();
+
+        if (loaded.Catalog is null)
+        {
+            Console.Error.WriteLine(loaded.Error ?? "No catalog configured. Pass --catalog <url|path>.");
+            return 1;
+        }
+
+        var catalog = loaded.Catalog;
+        var buildId = Option(args, "--build");
+        var build = buildId is null
+            ? catalog.Builds.FirstOrDefault()
+            : catalog.Builds.FirstOrDefault(b => string.Equals(b.Id, buildId, StringComparison.OrdinalIgnoreCase));
+
+        if (build is null)
+        {
+            Console.Error.WriteLine("Build not found.");
+            return 1;
+        }
+
+        Console.WriteLine($"build    : {build.Name} ({build.Id})");
+        Console.WriteLine($"minecraft: {build.GameVersion}   loader: {build.Loader} {build.LoaderVersion}");
+        Console.WriteLine($"mods     : {build.Items.Count}");
+        Console.WriteLine();
+
+        var client = new ModrinthClient(http);
+        var failed = 0;
+
+        foreach (var id in build.Items)
+        {
+            var item = catalog.FindItem(id);
+
+            if (item is null)
+            {
+                Console.WriteLine($"  {id,-26} MISSING in catalog sections");
+                failed++;
+                continue;
+            }
+
+            var project = item.Source.Project;
+
+            if (string.IsNullOrWhiteSpace(project))
+            {
+                Console.WriteLine($"  {id,-26} no modrinth project");
+                failed++;
+                continue;
+            }
+
+            try
+            {
+                var versions = await client.GetVersionsAsync(project, build.GameVersion, build.Loader);
+                var preferred = ModrinthClient.SelectPreferred(versions);
+                var file = preferred?.PrimaryFile;
+
+                if (file is null)
+                {
+                    Console.WriteLine($"  {id,-26} NOT FOUND for {build.GameVersion} + {build.Loader}");
+                    failed++;
+                    continue;
+                }
+
+                Console.WriteLine($"  {id,-26} [{preferred!.VersionType,-7}] {file.FileName}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"  {id,-26} ERROR {ex.Message}");
+                failed++;
+            }
+        }
+
+        Console.WriteLine();
+        Console.WriteLine(failed == 0 ? "All mods resolve." : $"{failed} mod(s) failed.");
+
+        return failed == 0 ? 0 : 1;
+    }
+
     private static async Task<int> SearchModsAsync(HttpClient http, string[] args)
     {
         var query = args.Length > 1 ? args[1] : string.Empty;
@@ -500,6 +619,8 @@ internal static class Program
               modpack <file.mrpack> [instanceId]    install a Modrinth modpack
               catalog [--catalog <url|path>]       show the content catalog
               catalog-install <itemId> [options]   install one catalog item
+              build-plan [--build id]              resolve every mod of a recommended build
+              server-status [--server host[:port]]  ping a Minecraft server
 
             options:
               --loader <fabric|quilt|forge|neoforge>
