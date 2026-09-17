@@ -55,6 +55,8 @@ public sealed class ServerHistoryStore
 
     public void Add(int online, DateTimeOffset? at = null)
     {
+        List<ServerSample> snapshot;
+
         lock (_gate)
         {
             var time = at ?? DateTimeOffset.Now;
@@ -68,8 +70,12 @@ public sealed class ServerHistoryStore
             _samples.Add(new ServerSample { Time = time, Online = online });
             _samples.RemoveAll(s => time - s.Time > Retention);
 
-            Save();
+            // Snapshot under the lock, then write outside it: the file write is disk I/O
+            // and has no business blocking every other reader.
+            snapshot = new List<ServerSample>(_samples);
         }
+
+        Save(snapshot);
     }
 
     /// <summary>Hourly averages and peaks for the requested window, oldest first.</summary>
@@ -163,7 +169,7 @@ public sealed class ServerHistoryStore
         }
     }
 
-    private void Save()
+    private void Save(IReadOnlyList<ServerSample> samples)
     {
         try
         {
@@ -174,7 +180,7 @@ public sealed class ServerHistoryStore
                 Directory.CreateDirectory(directory);
             }
 
-            File.WriteAllText(_path, JsonSerializer.Serialize(_samples, JsonOptions));
+            AtomicFile.WriteAllText(_path, JsonSerializer.Serialize(samples, JsonOptions));
         }
         catch (Exception)
         {

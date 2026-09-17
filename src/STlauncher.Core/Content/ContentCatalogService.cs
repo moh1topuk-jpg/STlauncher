@@ -73,7 +73,7 @@ public sealed class ContentCatalogService
                 var catalog = Parse(json);
 
                 Directory.CreateDirectory(_paths.Meta);
-                await File.WriteAllTextAsync(CachePath, json, cancellationToken).ConfigureAwait(false);
+                AtomicFile.WriteAllText(CachePath, json);
 
                 _logger?.LogInformation("Loaded catalog '{Name}' with {Count} items.", catalog.Name, catalog.ItemCount);
                 return new CatalogLoadResult(catalog, CatalogOrigin.Remote, null);

@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -19,12 +20,18 @@ public sealed partial class JavaManager
 {
     private readonly LauncherPaths _paths;
     private readonly DownloadClient _downloader;
+    private readonly HttpClient _http;
     private readonly ILogger<JavaManager>? _logger;
 
-    public JavaManager(LauncherPaths paths, DownloadClient downloader, ILogger<JavaManager>? logger = null)
+    public JavaManager(
+        LauncherPaths paths,
+        DownloadClient downloader,
+        HttpClient http,
+        ILogger<JavaManager>? logger = null)
     {
         _paths = paths ?? throw new ArgumentNullException(nameof(paths));
         _downloader = downloader ?? throw new ArgumentNullException(nameof(downloader));
+        _http = http ?? throw new ArgumentNullException(nameof(http));
         _logger = logger;
     }
 
@@ -115,8 +122,25 @@ public sealed partial class JavaManager
             };
 
             process.Start();
-            var output = process.StandardError.ReadToEnd() + process.StandardOutput.ReadToEnd();
-            process.WaitForExit(10000);
+
+            // Both streams must be drained concurrently. Reading one to the end first can
+            // deadlock: the child fills the other pipe and blocks while we wait for a read
+            // that will never finish.
+            var stdout = process.StandardOutput.ReadToEndAsync();
+            var stderr = process.StandardError.ReadToEndAsync();
+
+            if (!process.WaitForExit(10000))
+            {
+                // The wrapper is disposable but the child is not: without this a hung
+                // java.exe stays alive for the rest of the session.
+                TryKill(process);
+                return null;
+            }
+
+            // Lets the async readers observe EOF before we read their results.
+            process.WaitForExit();
+
+            var output = stderr.GetAwaiter().GetResult() + stdout.GetAwaiter().GetResult();
 
             var match = VersionRegex().Match(output);
             return match.Success ? int.Parse(match.Groups[1].Value) : null;
@@ -124,6 +148,18 @@ public sealed partial class JavaManager
         catch (Exception)
         {
             return null;
+        }
+    }
+
+    private static void TryKill(Process process)
+    {
+        try
+        {
+            process.Kill(entireProcessTree: true);
+        }
+        catch (Exception)
+        {
+            // Already gone, or we lack the rights - nothing useful to do either way.
         }
     }
 
@@ -135,8 +171,9 @@ public sealed partial class JavaManager
             $"https://api.adoptium.net/v3/assets/latest/{majorVersion}/hotspot" +
             $"?architecture={architecture}&image_type=jre&os={os}&vendor=eclipse";
 
-        using var http = new System.Net.Http.HttpClient();
-        var json = await http.GetStringAsync(url, cancellationToken).ConfigureAwait(false);
+        // Shared, DI-provided client: creating one per call exhausts sockets and drops the
+        // configured User-Agent and timeout.
+        var json = await _http.GetStringAsync(url, cancellationToken).ConfigureAwait(false);
         var assets = JsonSerializer.Deserialize<List<AdoptiumAsset>>(json) ?? new List<AdoptiumAsset>();
 
         var package = assets
@@ -155,6 +192,17 @@ public sealed partial class JavaManager
 
         ExtractArchive(archive, directory);
 
+        try
+        {
+            // The zip is a large one-off; leaving it inside the runtime directory keeps
+            // hundreds of megabytes around for no reason.
+            File.Delete(archive);
+        }
+        catch (IOException)
+        {
+            // Harmless if it is still locked.
+        }
+
         var executable = FindJavaExecutable(directory)
                          ?? throw new InvalidOperationException("Java executable was not found after extraction.");
 
@@ -165,6 +213,11 @@ public sealed partial class JavaManager
     private static void ExtractArchive(string archivePath, string destination)
     {
         Directory.CreateDirectory(destination);
+
+        var root = Path.GetFullPath(destination);
+        var rootWithSeparator = root.EndsWith(Path.DirectorySeparatorChar)
+            ? root
+            : root + Path.DirectorySeparatorChar;
 
         using var archive = ZipFile.OpenRead(archivePath);
         var prefix = DetectTopLevelDirectory(archive);
@@ -181,7 +234,10 @@ public sealed partial class JavaManager
             }
 
             var target = Path.GetFullPath(Path.Combine(destination, relative));
-            if (!target.StartsWith(Path.GetFullPath(destination), StringComparison.OrdinalIgnoreCase))
+
+            // The separator matters: without it "...\java-8" also matches "...\java-8-evil",
+            // so a crafted archive entry could land outside the runtime directory.
+            if (!target.StartsWith(rootWithSeparator, StringComparison.OrdinalIgnoreCase))
             {
                 throw new IOException($"Blocked archive entry outside of destination: {entry.FullName}");
             }

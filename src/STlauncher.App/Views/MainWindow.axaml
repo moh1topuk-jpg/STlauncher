@@ -16,7 +16,7 @@
         Icon="/Assets/app.ico"
         Title="STlauncher">
 
-    <Grid RowDefinitions="40,*,30">
+    <Grid RowDefinitions="40,Auto,*,30">
 
         <!-- ============ Title bar ============ -->
         <Border Grid.Row="0" Background="#0F0C11" BorderBrush="{DynamicResource DividerBrush}"
@@ -39,8 +39,33 @@
             </Grid>
         </Border>
 
+        <!-- ============ Update notification ============ -->
+        <!-- Appears only when a release was actually found. One button does the whole
+             job: download if needed, then apply and relaunch. -->
+        <Border Grid.Row="1" IsVisible="{Binding IsUpdateBannerVisible}"
+                Background="#1C1420" BorderBrush="{DynamicResource AccentBrush}"
+                BorderThickness="0,0,0,1" Padding="14,10">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                <Border Grid.Column="0" Width="3" Height="18" CornerRadius="2"
+                        Background="{DynamicResource AccentBrush}" VerticalAlignment="Center"/>
+
+                <TextBlock Grid.Column="1" Margin="10,0" VerticalAlignment="Center"
+                           Text="{Binding UpdateBannerText}" TextWrapping="Wrap"/>
+
+                <Button Grid.Column="2" Classes="primary" Margin="0,0,8,0"
+                        Content="{Binding UpdateBannerAction}"
+                        Command="{Binding InstallUpdateCommand}"
+                        IsEnabled="{Binding !IsUpdateBusy}"/>
+
+                <Button Grid.Column="3" Classes="ghost" Content="&#x2715;"
+                        Command="{Binding DismissUpdateBannerCommand}"
+                        IsEnabled="{Binding !IsUpdateBusy}"
+                        ToolTip.Tip="{DynamicResource Update_Dismiss}"/>
+            </Grid>
+        </Border>
+
         <!-- ============ Body ============ -->
-        <Grid Grid.Row="1" ColumnDefinitions="228,*">
+        <Grid Grid.Row="2" ColumnDefinitions="228,*">
 
             <!-- Sidebar -->
             <Border Grid.Column="0" Background="{DynamicResource SidebarBrush}"
@@ -125,7 +150,7 @@
         </Grid>
 
         <!-- ============ Status bar ============ -->
-        <Border Grid.Row="2" Background="#0F0C11" BorderBrush="{DynamicResource DividerBrush}"
+        <Border Grid.Row="3" Background="#0F0C11" BorderBrush="{DynamicResource DividerBrush}"
                 BorderThickness="0,1,0,0" Padding="14,0">
             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                 <Border Width="6" Height="6" CornerRadius="3" VerticalAlignment="Center"

@@ -79,6 +79,7 @@
     <x:String x:Key="Server_Average">Average online: {0:F0}</x:String>
     <x:String x:Key="Server_Peak">Peak: {0}</x:String>
     <x:String x:Key="Server_NoData">No data yet - samples appear as the launcher runs.</x:String>
+    <x:String x:Key="Server_BarTooltip">{0} - {1} (peak {2})</x:String>
     <x:String x:Key="Server_Community">Community</x:String>
     <x:String x:Key="Server_Open">Open</x:String>
     <x:String x:Key="Error_OpenLink">Failed to open the link: {0}</x:String>
@@ -228,6 +229,12 @@
     <x:String x:Key="Error_CatalogInstall">Catalog install failed: {0}</x:String>
     <x:String x:Key="Error_Modpack">Modpack import failed: {0}</x:String>
     <x:String x:Key="Error_Launch">Launch failed: {0}</x:String>
+    <x:String x:Key="Error_SaveSettings">Could not save settings: {0}</x:String>
+    <x:String x:Key="Error_Startup">Startup failed: {0}</x:String>
+    <x:String x:Key="Error_Ui">Something went wrong: {0}</x:String>
+    <x:String x:Key="Modpack_PickTitle">Select a modpack</x:String>
+    <x:String x:Key="Modpack_PickType">Modrinth modpack</x:String>
+    <x:String x:Key="Instance_Unreadable">A build could not be read and was left untouched: {0}</x:String>
 
     <!-- Catalog -->
     <x:String x:Key="Catalog_NotLoaded">Catalog not loaded yet</x:String>
@@ -252,6 +259,14 @@
     <x:String x:Key="Update_UpToDate">You are up to date ({0})</x:String>
     <x:String x:Key="Update_NothingToApply">Nothing to apply</x:String>
     <x:String x:Key="Update_Failed">Update check failed: {0}</x:String>
+    <x:String x:Key="Update_Idle">Current version: {0}</x:String>
+    <x:String x:Key="Update_AvailableBanner">Version {0} is available</x:String>
+    <x:String x:Key="Update_ReadyBanner">Update {0} is ready to install</x:String>
+    <x:String x:Key="Update_InstallNow">Update now</x:String>
+    <x:String x:Key="Update_InstallAndRestart">Install and restart</x:String>
+    <x:String x:Key="Update_Restarting">Restarting to finish the update…</x:String>
+    <x:String x:Key="Update_FailedBanner">Update failed - try again later</x:String>
+    <x:String x:Key="Update_Dismiss">Hide until the next launch</x:String>
 
     <!-- Modrinth categories -->
     <x:String x:Key="Category_adventure">Adventure</x:String>

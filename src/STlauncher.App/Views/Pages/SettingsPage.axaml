@@ -197,7 +197,7 @@
                         <Button Classes="primary" Content="{DynamicResource Settings_CheckUpdates}"
                                 Command="{Binding CheckForUpdatesCommand}" IsEnabled="{Binding !IsUpdateBusy}"/>
                         <Button Classes="ghost" Content="{DynamicResource Settings_RestartUpdate}"
-                                Command="{Binding RestartToUpdateCommand}"
+                                Command="{Binding InstallUpdateCommand}"
                                 IsEnabled="{Binding CanRestartToUpdate}"/>
                     </StackPanel>
                 </StackPanel>

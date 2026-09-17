@@ -88,7 +88,9 @@ public sealed class DownloadClient
             Directory.CreateDirectory(directory);
         }
 
-        var tempPath = item.DestinationPath + ".part";
+        // Unique per attempt: two items in the same batch can share a destination, and a
+        // fixed ".part" name makes them fight over the same file.
+        var tempPath = $"{item.DestinationPath}.{Guid.NewGuid():N}.part";
         var attempt = 0;
 
         while (true)

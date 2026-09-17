@@ -639,7 +639,7 @@ public partial class MainWindowViewModel
     /// Looks up a localized string. The fallback keeps the UI readable if a key is
     /// missing, and the UI resource tests fail the build in that case anyway.
     /// </summary>
-    private static string Localize(string key, string fallback, params object?[] args)
+    public static string Localize(string key, string fallback, params object?[] args)
     {
         var text = Application.Current?.Resources.TryGetResource(key, null, out var value) == true &&
                    value is string found

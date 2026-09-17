@@ -235,8 +235,12 @@ public sealed partial class LoaderService
             return null;
         }
 
-        var minor = int.Parse(parts[1]);
-        var patch = int.Parse(parts[2]);
+        // Real manifest ids include pre-releases such as "1.20.2-rc1", where the patch part
+        // is not a number. int.Parse here threw a FormatException on those.
+        if (!int.TryParse(parts[1], out var minor) || !int.TryParse(parts[2], out var patch))
+        {
+            return null;
+        }
 
         if (minor == 20 && patch <= 1)
         {

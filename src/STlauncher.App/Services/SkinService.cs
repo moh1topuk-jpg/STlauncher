@@ -31,15 +31,17 @@ public sealed class SkinService
             return cached;
         }
 
-        var bitmap = await FetchAsync(username, cancellationToken).ConfigureAwait(false)
-                     ?? await FetchAsync(DefaultSkin, cancellationToken).ConfigureAwait(false);
+        var bitmap = await FetchAsync(username, cancellationToken).ConfigureAwait(false);
 
         if (bitmap is not null)
         {
             _cache[username] = bitmap;
+            return bitmap;
         }
 
-        return bitmap;
+        // The placeholder is deliberately not cached under the real name: a single network
+        // blip used to pin "Steve" to that player until the launcher restarted.
+        return await FetchAsync(DefaultSkin, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<Bitmap?> FetchAsync(string username, CancellationToken cancellationToken)
@@ -58,6 +60,11 @@ public sealed class SkinService
             var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
             using var stream = new System.IO.MemoryStream(bytes);
             return new Bitmap(stream);
+        }
+        catch (OperationCanceledException)
+        {
+            // A superseded avatar request is normal when the name is being retyped.
+            throw;
         }
         catch (Exception)
         {

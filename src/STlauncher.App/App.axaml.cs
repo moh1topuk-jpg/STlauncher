@@ -55,12 +55,29 @@ public partial class App : Application
             viewModel.RequestHideLauncher += () => window.WindowState = WindowState.Minimized;
             viewModel.RequestCloseLauncher += () => window.Close();
 
-            window.Opened += async (_, _) => await viewModel.InitializeAsync();
+            window.Opened += (_, _) => SafeInitialize(viewModel);
 
             desktop.MainWindow = window;
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    /// <summary>
+    /// Initialization touches settings, the catalog and the network. It used to run from an
+    /// async void handler with no guard, so any failure became an unhandled exception with
+    /// no diagnostic at all.
+    /// </summary>
+    private static async void SafeInitialize(MainWindowViewModel viewModel)
+    {
+        try
+        {
+            await viewModel.InitializeAsync();
+        }
+        catch (Exception ex)
+        {
+            viewModel.ReportStartupFailure(ex);
+        }
     }
 
     private void DisableAvaloniaDataAnnotationValidation()

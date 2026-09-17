@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -46,7 +46,7 @@ internal static class Program
         var metadata = new MetadataClient(http, paths);
         var versions = new VersionService(metadata, paths);
         var assets = new AssetService(metadata, paths, downloader);
-        var java = new JavaManager(paths, downloader);
+        var java = new JavaManager(paths, downloader, http);
         var gameLauncher = new GameLauncher();
         var launch = new LaunchService(versions, assets, java, downloader, gameLauncher, paths);
         var loaders = new LoaderService(http, paths, downloader, java);
@@ -186,7 +186,7 @@ internal static class Program
             using var http = new HttpClient();
             http.DefaultRequestHeaders.UserAgent.ParseAdd("STlauncher.Cli/0.1.0");
             var downloader = new DownloadClient(http);
-            var java = new JavaManager(paths, downloader);
+            var java = new JavaManager(paths, downloader, http);
             var metadata = new MetadataClient(http, paths);
             var versions = new VersionService(metadata, paths);
             var loaders = new LoaderService(http, paths, downloader, java);

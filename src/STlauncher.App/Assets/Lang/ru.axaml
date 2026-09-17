@@ -79,6 +79,7 @@
     <x:String x:Key="Server_Average">Средний онлайн: {0:F0}</x:String>
     <x:String x:Key="Server_Peak">Пик: {0}</x:String>
     <x:String x:Key="Server_NoData">Данных пока нет — они появятся по мере запусков лаунчера.</x:String>
+    <x:String x:Key="Server_BarTooltip">{0} — {1} (пик {2})</x:String>
     <x:String x:Key="Server_Community">Сообщество</x:String>
     <x:String x:Key="Server_Open">Открыть</x:String>
     <x:String x:Key="Error_OpenLink">Не удалось открыть ссылку: {0}</x:String>
@@ -228,6 +229,12 @@
     <x:String x:Key="Error_CatalogInstall">Не удалось установить из каталога: {0}</x:String>
     <x:String x:Key="Error_Modpack">Не удалось импортировать модпак: {0}</x:String>
     <x:String x:Key="Error_Launch">Не удалось запустить игру: {0}</x:String>
+    <x:String x:Key="Error_SaveSettings">Не удалось сохранить настройки: {0}</x:String>
+    <x:String x:Key="Error_Startup">Ошибка при запуске: {0}</x:String>
+    <x:String x:Key="Error_Ui">Что-то пошло не так: {0}</x:String>
+    <x:String x:Key="Modpack_PickTitle">Выберите модпак</x:String>
+    <x:String x:Key="Modpack_PickType">Модпак Modrinth</x:String>
+    <x:String x:Key="Instance_Unreadable">Не удалось прочитать сборку, она оставлена без изменений: {0}</x:String>
 
     <!-- Catalog -->
     <x:String x:Key="Catalog_NotLoaded">Каталог ещё не загружен</x:String>
@@ -252,6 +259,14 @@
     <x:String x:Key="Update_UpToDate">Обновлений нет (версия {0})</x:String>
     <x:String x:Key="Update_NothingToApply">Нечего применять</x:String>
     <x:String x:Key="Update_Failed">Не удалось проверить обновления: {0}</x:String>
+    <x:String x:Key="Update_Idle">Текущая версия: {0}</x:String>
+    <x:String x:Key="Update_AvailableBanner">Доступна версия {0}</x:String>
+    <x:String x:Key="Update_ReadyBanner">Обновление {0} готово к установке</x:String>
+    <x:String x:Key="Update_InstallNow">Обновить</x:String>
+    <x:String x:Key="Update_InstallAndRestart">Установить и перезапустить</x:String>
+    <x:String x:Key="Update_Restarting">Перезапуск для завершения обновления…</x:String>
+    <x:String x:Key="Update_FailedBanner">Не удалось обновиться — попробуйте позже</x:String>
+    <x:String x:Key="Update_Dismiss">Скрыть до следующего запуска</x:String>
 
     <!-- Modrinth categories -->
     <x:String x:Key="Category_adventure">Приключения</x:String>

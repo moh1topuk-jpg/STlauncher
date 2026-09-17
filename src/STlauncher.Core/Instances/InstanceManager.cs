@@ -31,8 +31,25 @@ public sealed class InstanceManager
 
     public bool Exists(string instanceId) => File.Exists(DefinitionPath(instanceId));
 
+    /// <summary>
+    /// True when an instance folder is present on disk, even if its definition could not be
+    /// read. Used to avoid creating a brand-new profile over a build that is merely damaged.
+    /// </summary>
+    public bool HasAnyInstanceDirectory()
+        => Directory.Exists(_paths.Instances) && Directory.EnumerateDirectories(_paths.Instances).Any();
+
+    private readonly List<string> _unreadable = new();
+
+    /// <summary>
+    /// Definitions that failed to parse during the most recent <see cref="List"/> call.
+    /// They are preserved on disk rather than dropped, so the caller can tell the user.
+    /// </summary>
+    public IReadOnlyList<string> UnreadableDefinitions => _unreadable;
+
     public IReadOnlyList<Instance> List()
     {
+        _unreadable.Clear();
+
         if (!Directory.Exists(_paths.Instances))
         {
             return Array.Empty<Instance>();
@@ -58,10 +75,16 @@ public sealed class InstanceManager
                 {
                     result.Add(instance);
                 }
+                else
+                {
+                    _unreadable.Add(directory);
+                }
             }
             catch (Exception)
             {
-                // A broken instance definition must not take down the whole list.
+                // A broken definition must not take down the whole list, but it must also
+                // not vanish without a trace: keep it recoverable and report it.
+                _unreadable.Add(directory);
             }
         }
 
@@ -112,7 +135,10 @@ public sealed class InstanceManager
         Directory.CreateDirectory(directory);
 
         var path = Path.Combine(directory, DefinitionFileName);
-        File.WriteAllText(path, JsonSerializer.Serialize(instance, JsonOptions));
+
+        // Atomic: the definition is written on every settings change, so a torn write is
+        // not a theoretical risk - it would show up as a build that disappeared.
+        AtomicFile.WriteAllText(path, JsonSerializer.Serialize(instance, JsonOptions));
     }
 
     public void Delete(string instanceId)

@@ -18,23 +18,52 @@ public sealed class SettingsService
 
     public AppSettings Load()
     {
+        if (!File.Exists(_path))
+        {
+            return new AppSettings();
+        }
+
         try
         {
-            if (File.Exists(_path))
+            var json = File.ReadAllText(_path);
+            var settings = JsonSerializer.Deserialize<AppSettings>(json, Options);
+
+            if (settings is not null)
             {
-                var json = File.ReadAllText(_path);
-                var settings = JsonSerializer.Deserialize<AppSettings>(json, Options);
-                if (settings is not null)
-                {
-                    return settings;
-                }
+                return settings;
             }
+
+            // Valid JSON that produced nothing usable - same treatment as a syntax error.
+            PreserveCorruptFile();
         }
-        catch (Exception)
+        catch (JsonException)
         {
+            // A single bad character used to wipe nicknames, the Java path and the language
+            // silently, and the next save overwrote the file. Keep the damaged copy first.
+            PreserveCorruptFile();
+        }
+        catch (IOException)
+        {
+            // Locked by another instance - use defaults for this session but leave the
+            // file alone; it is probably fine and will be readable next time.
+            return new AppSettings();
         }
 
         return new AppSettings();
+    }
+
+    /// <summary>Moves a damaged settings file aside so it can be recovered by hand.</summary>
+    private void PreserveCorruptFile()
+    {
+        try
+        {
+            var backup = $"{_path}.corrupt-{DateTime.Now:yyyyMMdd-HHmmss}";
+            File.Move(_path, backup, overwrite: false);
+        }
+        catch (Exception)
+        {
+            // Best effort: never let the recovery attempt itself break startup.
+        }
     }
 
     public void Save(AppSettings settings)
@@ -45,6 +74,6 @@ public sealed class SettingsService
             Directory.CreateDirectory(directory);
         }
 
-        File.WriteAllText(_path, JsonSerializer.Serialize(settings, Options));
+        AtomicFile.WriteAllText(_path, JsonSerializer.Serialize(settings, Options));
     }
 }

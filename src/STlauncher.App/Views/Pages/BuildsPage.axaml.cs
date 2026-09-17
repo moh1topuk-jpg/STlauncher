@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
@@ -41,26 +42,39 @@ public partial class BuildsPage : UserControl
             return;
         }
 
-        var storage = TopLevel.GetTopLevel(this)?.StorageProvider;
-        if (storage is null)
+        // The picker and the import are both fallible; an async void handler with no
+        // try/catch turns any of that into an unhandled exception.
+        try
         {
-            return;
-        }
-
-        var files = await storage.OpenFilePickerAsync(new FilePickerOpenOptions
-        {
-            Title = "Select a modpack",
-            AllowMultiple = false,
-            FileTypeFilter = new[]
+            var storage = TopLevel.GetTopLevel(this)?.StorageProvider;
+            if (storage is null)
             {
-                new FilePickerFileType("Modrinth modpack") { Patterns = new[] { "*.mrpack" } }
+                return;
             }
-        });
 
-        var path = files.FirstOrDefault()?.TryGetLocalPath();
-        if (!string.IsNullOrEmpty(path))
+            var files = await storage.OpenFilePickerAsync(new FilePickerOpenOptions
+            {
+                Title = MainWindowViewModel.Localize("Modpack_PickTitle", "Select a modpack"),
+                AllowMultiple = false,
+                FileTypeFilter = new[]
+                {
+                    new FilePickerFileType(
+                        MainWindowViewModel.Localize("Modpack_PickType", "Modrinth modpack"))
+                    {
+                        Patterns = new[] { "*.mrpack" }
+                    }
+                }
+            });
+
+            var path = files.FirstOrDefault()?.TryGetLocalPath();
+            if (!string.IsNullOrEmpty(path))
+            {
+                await viewModel.ImportModpackAsync(path);
+            }
+        }
+        catch (Exception ex)
         {
-            await viewModel.ImportModpackAsync(path);
+            viewModel.ReportUiFailure(ex);
         }
     }
 }

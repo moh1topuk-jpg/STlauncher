@@ -38,32 +38,33 @@ public static class ServerPinger
 
         var limit = timeout ?? TimeSpan.FromSeconds(5);
 
+        // ReadTimeout/WriteTimeout have no effect on asynchronous socket operations, so the
+        // old code only ever guarded the connect: a server that completed the handshake and
+        // then went silent hung the caller forever. One linked token covers every step.
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        linked.CancelAfter(limit);
+        var token = linked.Token;
+
         try
         {
             using var client = new TcpClient();
 
-            var connect = client.ConnectAsync(host, port);
-            var finished = await Task.WhenAny(connect, Task.Delay(limit, cancellationToken)).ConfigureAwait(false);
+            await client.ConnectAsync(host, port, token).ConfigureAwait(false);
 
-            if (finished != connect || !client.Connected)
+            if (!client.Connected)
             {
                 return null;
             }
 
-            await connect.ConfigureAwait(false);
-
             using var stream = client.GetStream();
-            stream.ReadTimeout = (int)limit.TotalMilliseconds;
-            stream.WriteTimeout = (int)limit.TotalMilliseconds;
 
-            await WriteHandshakeAsync(stream, host, port, cancellationToken).ConfigureAwait(false);
+            await WriteHandshakeAsync(stream, host, port, token).ConfigureAwait(false);
 
             // Status request: a single packet with no payload.
-            stream.WriteByte(0x01);
-            stream.WriteByte(0x00);
-            await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+            await stream.WriteAsync(new byte[] { 0x01, 0x00 }, token).ConfigureAwait(false);
+            await stream.FlushAsync(token).ConfigureAwait(false);
 
-            var json = await ReadStatusJsonAsync(stream, cancellationToken).ConfigureAwait(false);
+            var json = await ReadStatusJsonAsync(stream, token).ConfigureAwait(false);
 
             return json is null ? null : Parse(json);
         }

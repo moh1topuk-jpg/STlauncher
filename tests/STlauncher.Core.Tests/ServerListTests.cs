@@ -108,4 +108,98 @@ public class ServerListTests
         var server = Assert.Single(ServerList.Load(path));
         Assert.Equal("New Name", server.Name);
     }
+
+    [Fact]
+    public void EnsureServer_ReadsGzipCompressedFile()
+    {
+        // Minecraft's own NbtIo accepts a gzipped servers.dat, so we have to as well -
+        // otherwise we read an empty list and overwrite the player's servers.
+        var path = TempFile();
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+
+        var root = new NbtCompound();
+        var list = new NbtList(NbtTagType.Compound);
+        var entry = new NbtCompound();
+        entry.Set("name", new NbtString("Existing"));
+        entry.Set("ip", new NbtString("other.example.com"));
+        entry.Set("acceptTextures", new NbtByte(1));
+        list.Items.Add(entry);
+        root.Set("servers", list);
+
+        using (var file = File.Create(path))
+        using (var gzip = new System.IO.Compression.GZipStream(
+                   file, System.IO.Compression.CompressionMode.Compress))
+        {
+            NbtWriter.Write(gzip, root);
+        }
+
+        ServerList.EnsureServer(path, "My Server", "play.example.com");
+        var servers = ServerList.Load(path);
+
+        Assert.Equal(2, servers.Count);
+        Assert.Contains(new ServerEntry("Existing", "other.example.com"), servers);
+        Assert.Contains(new ServerEntry("My Server", "play.example.com"), servers);
+    }
+
+    [Fact]
+    public void EnsureServer_DoesNotTouchAnUnreadableFile()
+    {
+        var path = TempFile();
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+
+        // Not valid NBT in any encoding.
+        var original = new byte[] { 0x00, 0x01, 0x02, 0x03, 0x04 };
+        File.WriteAllBytes(path, original);
+
+        var changed = ServerList.EnsureServer(path, "My Server", "play.example.com");
+
+        Assert.False(changed);
+        Assert.Equal(original, File.ReadAllBytes(path));
+    }
+
+    [Fact]
+    public void EnsureServer_KeepsFieldsItDoesNotModel()
+    {
+        var path = TempFile();
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+
+        var root = new NbtCompound();
+        var list = new NbtList(NbtTagType.Compound);
+        var entry = new NbtCompound();
+        entry.Set("name", new NbtString("Existing"));
+        entry.Set("ip", new NbtString("play.example.com"));
+        entry.Set("acceptTextures", new NbtByte(0));
+        entry.Set("icon", new NbtString("data:image/png;base64,AAAA"));
+        entry.Set("futureField", new NbtString("keep me"));
+        list.Items.Add(entry);
+        root.Set("servers", list);
+
+        using (var stream = File.Create(path))
+        {
+            NbtWriter.Write(stream, root);
+        }
+
+        // Renaming forces a rewrite; the untouched fields must survive it.
+        Assert.True(ServerList.EnsureServer(path, "Renamed", "play.example.com"));
+
+        var reread = ServerList.Load(path);
+        var server = Assert.Single(reread);
+        Assert.Equal("Renamed", server.Name);
+        Assert.Equal("data:image/png;base64,AAAA", server.Icon);
+
+        ServerList.TryReadRoot(path, out var written);
+        var writtenEntry = (NbtCompound)((NbtList)written!.Get("servers")!).Items[0];
+        Assert.Equal("keep me", writtenEntry.GetString("futureField"));
+    }
+
+    [Fact]
+    public void EnsureServer_TreatsAnEmptyFileAsNoServers()
+    {
+        var path = TempFile();
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllBytes(path, Array.Empty<byte>());
+
+        Assert.True(ServerList.EnsureServer(path, "My Server", "play.example.com"));
+        Assert.Single(ServerList.Load(path));
+    }
 }

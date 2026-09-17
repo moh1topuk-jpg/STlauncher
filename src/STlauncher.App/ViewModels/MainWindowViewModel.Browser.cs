@@ -278,9 +278,11 @@ public partial class MainWindowViewModel
     /// <summary>Re-runs the browser after the build or the filters change, with a short delay.</summary>
     private void ScheduleBrowserReload()
     {
-        _browserDebounce?.Cancel();
+        var previousCts = _browserDebounce;
         var cts = new CancellationTokenSource();
         _browserDebounce = cts;
+        previousCts?.Cancel();
+        previousCts?.Dispose();
 
         _ = Task.Run(async () =>
         {
@@ -289,6 +291,19 @@ public partial class MainWindowViewModel
                 await Task.Delay(350, cts.Token);
 
                 // A newer request may have arrived while this one waited.
+                if (cts.IsCancellationRequested)
+                {
+                    return;
+                }
+
+                // LoadBrowserPageAsync bails out while another search is running. Dropping
+                // the reload there left the grid showing results for the previous version,
+                // so wait for the in-flight one to finish and then refresh.
+                for (var waited = 0; waited < 2000 && IsBrowserBusy; waited += 100)
+                {
+                    await Task.Delay(100, cts.Token);
+                }
+
                 if (cts.IsCancellationRequested)
                 {
                     return;

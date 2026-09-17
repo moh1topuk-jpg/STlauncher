@@ -43,8 +43,21 @@ public static class LauncherHost
 
         services.AddSingleton(_ =>
         {
-            var client = new HttpClient { Timeout = TimeSpan.FromMinutes(30) };
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("STlauncher/0.1.0");
+            var handler = new System.Net.Http.SocketsHttpHandler
+            {
+                // Pick up DNS changes during a long-running session instead of pinning the
+                // first resolved address for the process lifetime.
+                PooledConnectionLifetime = TimeSpan.FromMinutes(5)
+            };
+
+            // Long enough for a large asset download, short enough that a stalled API
+            // request cannot hang the UI for half an hour.
+            var client = new HttpClient(handler) { Timeout = TimeSpan.FromMinutes(5) };
+
+            // Modrinth's API expects a descriptive agent identifying the app and a contact.
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(
+                "STlauncher/0.2 (+https://github.com/moh1topuk-jpg/STlauncher)");
+
             return client;
         });
 

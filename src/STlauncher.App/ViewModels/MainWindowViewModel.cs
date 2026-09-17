@@ -53,6 +53,8 @@ public partial class MainWindowViewModel : ViewModelBase
     private bool _applyingInstance;
     private string _globalJavaPath = string.Empty;
     private CancellationTokenSource? _avatarCts;
+    private CancellationTokenSource? _loaderVersionsCts;
+
 
     public MainWindowViewModel(
         VersionService versions,
@@ -138,6 +140,21 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private bool _canRestartToUpdate;
 
+    /// <summary>Drives the notification banner: an update was found and the user has not dismissed it.</summary>
+    [ObservableProperty]
+    private bool _isUpdateBannerVisible;
+
+    [ObservableProperty]
+    private string _updateBannerText = string.Empty;
+
+    [ObservableProperty]
+    private string _updateBannerAction = string.Empty;
+
+    /// <summary>Version offered by the banner, kept so the install button knows what it is applying.</summary>
+    [ObservableProperty]
+    private string _availableUpdateVersion = string.Empty;
+
+
     [ObservableProperty]
     private string _username = "Player";
 
@@ -220,6 +237,13 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private ServerHistoryStore _serverHistory = null!;
     private DispatcherTimer? _serverTimer;
+    private DispatcherTimer? _updateTimer;
+    private DispatcherTimer? _consoleTimer;
+
+    /// <summary>Game output arrives on background threads; the UI drains it in batches.</summary>
+    private readonly System.Collections.Concurrent.ConcurrentQueue<string> _pendingConsoleLines = new();
+
+    private const int MaxConsoleLines = 2000;
 
     /// <summary>Highest bar in the window; used to scale the chart.</summary>
     private const double ChartHeight = 80;
@@ -282,7 +306,14 @@ public partial class MainWindowViewModel : ViewModelBase
 
             ServerHistoryBars.Add(new ServerHistoryBarView(
                 hasData ? Math.Max(4, fraction * ChartHeight) : 3,
-                hasData ? $"{bar.Label} — {bar.Average:F0} (пик {bar.Peak})" : string.Empty,
+                hasData
+                    ? Localize(
+                        "Server_BarTooltip",
+                        "{0} - {1} (peak {2})",
+                        bar.Label,
+                        bar.Average.ToString("F0", System.Globalization.CultureInfo.CurrentCulture),
+                        bar.Peak)
+                    : string.Empty,
                 !hasData));
         }
 
@@ -435,10 +466,15 @@ public partial class MainWindowViewModel : ViewModelBase
 
         Status = Localize("Status_Ready", "Ready");
         CatalogStatus = Localize("Catalog_NotLoaded", "Catalog not loaded yet");
-        UpdateStatus = Localize("Update_OnlyInstalled", "Updates are only available in the installed build");
+        UpdateStatus = _updates.IsSupported
+            ? Localize("Update_Idle", "Current version: {0}", _updates.CurrentVersion)
+            : Localize("Update_OnlyInstalled", "Updates are only available in the installed build");
+
 
         _gameLauncher.OutputReceived += line => AppendConsole(line);
         _gameLauncher.ErrorReceived += line => AppendConsole(line);
+        StartConsoleFlusher();
+
 
         _allInstances.Clear();
         _allInstances.AddRange(_instances.List());
@@ -449,7 +485,19 @@ public partial class MainWindowViewModel : ViewModelBase
 
         if (_allInstances.Count == 0)
         {
-            _allInstances.Add(CreateDefaultInstance(settings));
+            if (_instances.HasAnyInstanceDirectory())
+            {
+                // A build folder is right there but its definition could not be read.
+                // Creating a new profile would bury it - and its worlds and mods - forever.
+                Status = Localize(
+                    "Instance_Unreadable",
+                    "A build could not be read and was left untouched: {0}",
+                    string.Join(", ", _instances.UnreadableDefinitions.Select(System.IO.Path.GetFileName)));
+            }
+            else
+            {
+                _allInstances.Add(CreateDefaultInstance(settings));
+            }
         }
 
         ApplyBuildFilter();
@@ -470,7 +518,34 @@ public partial class MainWindowViewModel : ViewModelBase
         RefreshMods();
         await LoadCategoriesAsync();
         ScheduleBrowserReload();
+
+        StartUpdateWatcher();
     }
+
+    /// <summary>
+    /// Looks for a new release shortly after startup and then every six hours, so a
+    /// launcher left open for days still notices a release.
+    /// </summary>
+    private void StartUpdateWatcher()
+    {
+        if (!_updates.IsSupported)
+        {
+            return;
+        }
+
+        // Deliberately delayed: startup already saturates the network with catalog,
+        // version manifest and mod icon requests, and the banner is not urgent.
+        _updateTimer?.Stop();
+        _updateTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(8) };
+        _updateTimer.Tick += (_, _) =>
+        {
+            // After the first tick settle into the long interval.
+            _updateTimer!.Interval = TimeSpan.FromHours(6);
+            _ = CheckForUpdatesQuietlyAsync();
+        };
+        _updateTimer.Start();
+    }
+
 
     /// <summary>
     /// Upgrades installations that still hold the previous default catalog URL, while
@@ -762,7 +837,16 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void ClearConsole() => Console.Clear();
+    private void ClearConsole()
+    {
+        Console.Clear();
+
+        // Drop anything still queued, otherwise a cleared console refills a moment later.
+        while (_pendingConsoleLines.TryDequeue(out _))
+        {
+        }
+    }
+
 
     [RelayCommand]
     private void OpenWebsite() => OpenUrl(ServerDefaults.Website);
@@ -1020,42 +1104,85 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
+    /// <summary>
+    /// The manual check from Settings. Reports every outcome, including "you are up to date".
+    /// </summary>
     [RelayCommand]
-    private async Task CheckForUpdatesAsync()
+    private Task CheckForUpdatesAsync() => RunUpdateCheckAsync(announce: true);
+
+    /// <summary>
+    /// The automatic check. Stays quiet unless an update is actually waiting, so a missing
+    /// network connection or a portable build never produces a pointless popup.
+    /// </summary>
+    private Task CheckForUpdatesQuietlyAsync() => RunUpdateCheckAsync(announce: false);
+
+    private async Task RunUpdateCheckAsync(bool announce)
     {
+        if (IsUpdateBusy)
+        {
+            return;
+        }
+
         try
         {
             IsUpdateBusy = true;
-            UpdateStatus = Localize("Update_Checking", "Checking for updates…");
+
+            if (announce)
+            {
+                UpdateStatus = Localize("Update_Checking", "Checking for updates…");
+            }
 
             var status = await _updates.CheckAsync();
 
-            if (!status.IsInstalled)
+            if (!status.IsSupported)
             {
-                UpdateStatus = Localize("Update_OnlyInstalled", "Updates are only available in the installed build");
-                CanRestartToUpdate = false;
+                if (announce)
+                {
+                    UpdateStatus = Localize(
+                        "Update_OnlyInstalled",
+                        "Updates are only available in the installed build");
+                }
+
                 return;
             }
 
             if (!status.IsUpdateAvailable)
             {
-                UpdateStatus = Localize("Update_UpToDate", "You are up to date ({0})", status.CurrentVersion);
+                IsUpdateBannerVisible = false;
                 CanRestartToUpdate = false;
+
+                if (announce)
+                {
+                    UpdateStatus = Localize("Update_UpToDate", "You are up to date ({0})", status.CurrentVersion);
+                }
+
                 return;
             }
 
-            UpdateStatus = Localize("Update_Downloading", "Downloading {0}…", status.AvailableVersion);
-            var progress = new Progress<int>(p =>
-                UpdateStatus = Localize("Update_DownloadingPercent", "Downloading {0}… {1}%", status.AvailableVersion, p));
+            AvailableUpdateVersion = status.AvailableVersion ?? string.Empty;
 
-            await _updates.DownloadAsync(progress);
-            UpdateStatus = Localize("Update_Ready", "Update {0} is ready", status.AvailableVersion);
-            CanRestartToUpdate = true;
+            // Velopack may already have the package on disk from an earlier session, in
+            // which case the button only has to restart.
+            var ready = _updates.IsReadyToApply;
+
+            UpdateBannerText = ready
+                ? Localize("Update_ReadyBanner", "Update {0} is ready to install", AvailableUpdateVersion)
+                : Localize("Update_AvailableBanner", "Version {0} is available", AvailableUpdateVersion);
+
+            UpdateBannerAction = ready
+                ? Localize("Update_InstallAndRestart", "Install and restart")
+                : Localize("Update_InstallNow", "Update now");
+
+            UpdateStatus = UpdateBannerText;
+            CanRestartToUpdate = ready;
+            IsUpdateBannerVisible = true;
         }
         catch (Exception ex)
         {
-            UpdateStatus = Localize("Update_Failed", "Update check failed: {0}", ex.Message);
-            CanRestartToUpdate = false;
+            if (announce)
+            {
+                UpdateStatus = Localize("Update_Failed", "Update check failed: {0}", ex.Message);
+            }
         }
         finally
         {
@@ -1063,14 +1190,66 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
+    /// <summary>
+    /// The one button the user presses: downloads the package if it is not on disk yet,
+    /// then applies it and relaunches. Progress goes straight into the banner text.
+    /// </summary>
     [RelayCommand]
-    private void RestartToUpdate()
+    private async Task InstallUpdateAsync()
     {
-        if (!_updates.ApplyAndRestart())
+        if (IsUpdateBusy)
         {
-            UpdateStatus = Localize("Update_NothingToApply", "Nothing to apply");
+            return;
+        }
+
+        try
+        {
+            IsUpdateBusy = true;
+            var version = AvailableUpdateVersion;
+
+            if (!_updates.IsReadyToApply)
+            {
+                void Report(string text)
+                {
+                    UpdateBannerText = text;
+                    UpdateStatus = text;
+                }
+
+                Report(Localize("Update_Downloading", "Downloading {0}…", version));
+
+                var progress = new Progress<int>(percent => Report(
+                    Localize("Update_DownloadingPercent", "Downloading {0}… {1}%", version, percent)));
+
+                await _updates.DownloadAsync(progress);
+            }
+
+            UpdateBannerText = Localize("Update_Restarting", "Restarting to finish the update…");
+            UpdateStatus = UpdateBannerText;
+
+            // Hands control to Velopack, which replaces this process. Nothing below runs
+            // unless there turned out to be nothing to apply.
+            if (!_updates.ApplyAndRestart())
+            {
+                UpdateStatus = Localize("Update_NothingToApply", "Nothing to apply");
+                UpdateBannerText = UpdateStatus;
+            }
+        }
+        catch (Exception ex)
+        {
+            UpdateStatus = Localize("Update_Failed", "Update check failed: {0}", ex.Message);
+            UpdateBannerText = Localize("Update_FailedBanner", "Update failed - try again later");
+            CanRestartToUpdate = _updates.IsReadyToApply;
+        }
+        finally
+        {
+            IsUpdateBusy = false;
         }
     }
+
+    /// <summary>Hides the banner for this session. Settings still offers the update.</summary>
+    [RelayCommand]
+    private void DismissUpdateBanner() => IsUpdateBannerVisible = false;
+
 
     [RelayCommand]
     private void ToggleMod(InstalledMod? mod)
@@ -1271,9 +1450,14 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private async Task UpdateAvatarAsync()
     {
-        _avatarCts?.Cancel();
+        var previous = _avatarCts;
         var cts = new CancellationTokenSource();
         _avatarCts = cts;
+
+        // This runs on every keystroke in the nickname box; leaving the old sources
+        // undisposed leaks a timer registration each time.
+        previous?.Cancel();
+        previous?.Dispose();
 
         try
         {
@@ -1292,6 +1476,18 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private async Task LoadLoaderVersionsAsync()
     {
+        // Changing the version and the loader in quick succession starts two of these.
+        // Without superseding, both clear and both append, producing a merged list.
+        var previousCts = _loaderVersionsCts;
+        var cts = new CancellationTokenSource();
+        _loaderVersionsCts = cts;
+        previousCts?.Cancel();
+        previousCts?.Dispose();
+
+        // Captured before the list is cleared - reading it afterwards always gave null,
+        // so the pinned loader build was silently replaced on every refresh.
+        var previous = SelectedLoaderVersion;
+
         LoaderVersions.Clear();
         SelectedLoaderVersion = null;
 
@@ -1300,14 +1496,20 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
         }
 
+        var loader = SelectedLoader;
+        var versionId = SelectedVersion.Id;
+
         try
         {
             IsLoaderBusy = true;
-            var previous = SelectedLoaderVersion;
-            var versions = await _loaders.GetLoaderVersionsAsync(SelectedLoader, SelectedVersion.Id);
-            var list = versions.ToList();
+            var versions = await _loaders.GetLoaderVersionsAsync(loader, versionId);
 
-            foreach (var version in list)
+            if (cts.IsCancellationRequested)
+            {
+                return;
+            }
+
+            foreach (var version in versions.ToList())
             {
                 LoaderVersions.Add(version);
             }
@@ -1317,13 +1519,21 @@ public partial class MainWindowViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Status = Localize("Error_LoaderVersions", "Failed to load {0} versions: {1}", SelectedLoader, ex.Message);
+            if (!cts.IsCancellationRequested)
+            {
+                Status = Localize("Error_LoaderVersions", "Failed to load {0} versions: {1}", loader, ex.Message);
+            }
         }
         finally
         {
-            IsLoaderBusy = false;
+            // Only the current run owns the busy flag.
+            if (_loaderVersionsCts == cts)
+            {
+                IsLoaderBusy = false;
+            }
         }
     }
+
 
     private void ApplyVersionFilter()
     {
@@ -1350,6 +1560,24 @@ public partial class MainWindowViewModel : ViewModelBase
         "old_alpha" => ShowAlpha,
         _ => false
     };
+
+    /// <summary>
+    /// Reports a failure raised while the window was starting up. The app stays open so the
+    /// message is readable instead of disappearing with the process.
+    /// </summary>
+    public void ReportStartupFailure(Exception ex)
+    {
+        Status = Localize("Error_Startup", "Startup failed: {0}", ex.Message);
+        AppendConsole($"[startup] {ex}");
+        FlushConsole();
+    }
+
+    /// <summary>Reports a failure from a view event handler that has no other channel.</summary>
+    public void ReportUiFailure(Exception ex)
+    {
+        Status = Localize("Error_Ui", "Something went wrong: {0}", ex.Message);
+        AppendConsole($"[ui] {ex}");
+    }
 
     private void PersistSettings()
     {
@@ -1387,21 +1615,57 @@ public partial class MainWindowViewModel : ViewModelBase
             ServerAddress = string.IsNullOrWhiteSpace(ServerAddress) ? null : ServerAddress
         };
 
-        _settings.Save(settings);
+        try
+        {
+            _settings.Save(settings);
+        }
+        catch (Exception ex)
+        {
+            // Settings are persisted from a dozen property handlers and from startup.
+            // Letting an IOException escape an async void handler used to take the whole
+            // app down with no diagnostic.
+            Status = Localize("Error_SaveSettings", "Could not save settings: {0}", ex.Message);
+        }
     }
 
-    private void AppendConsole(string line)
+    /// <summary>
+    /// Queues a console line. The actual list update is batched on a timer: Minecraft
+    /// emits thousands of lines during startup, and posting one dispatcher work item per
+    /// line makes the window unresponsive exactly when the user is watching it.
+    /// </summary>
+    private void AppendConsole(string line) => _pendingConsoleLines.Enqueue(line);
+
+    private void StartConsoleFlusher()
     {
-        Dispatcher.UIThread.Post(() =>
+        _consoleTimer?.Stop();
+
+        _consoleTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(150) };
+        _consoleTimer.Tick += (_, _) => FlushConsole();
+        _consoleTimer.Start();
+    }
+
+    private void FlushConsole()
+    {
+        var appended = false;
+
+        while (_pendingConsoleLines.TryDequeue(out var line))
         {
             Console.Add(line);
-            while (Console.Count > 2000)
-            {
-                Console.RemoveAt(0);
-            }
-        });
+            appended = true;
+        }
+
+        if (!appended)
+        {
+            return;
+        }
+
+        while (Console.Count > MaxConsoleLines)
+        {
+            Console.RemoveAt(0);
+        }
     }
 }
+
 
 
 

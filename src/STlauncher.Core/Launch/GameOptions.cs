@@ -34,7 +34,7 @@ public static class GameOptions
 
             if (changed)
             {
-                File.WriteAllLines(path, lines);
+                AtomicFile.WriteAllLines(path, lines);
             }
         }
         catch (Exception)
