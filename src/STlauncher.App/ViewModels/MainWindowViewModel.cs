@@ -39,6 +39,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly ModManager _mods;
     private readonly ModpackInstaller _modpacks;
     private readonly ContentCatalogService _catalog;
+    private readonly STlauncher.Core.Server.ServerStatsClient _stats;
     private readonly CatalogInstaller _catalogInstaller;
     private readonly UpdateService _updates;
     private readonly InstanceManager _instances;
@@ -55,6 +56,9 @@ public partial class MainWindowViewModel : ViewModelBase
     private CancellationTokenSource? _avatarCts;
     private CancellationTokenSource? _loaderVersionsCts;
 
+    /// <summary>Catalog builds the player deleted, so the sync stops recreating them.</summary>
+    private readonly HashSet<string> _dismissedBuildIds = new(StringComparer.OrdinalIgnoreCase);
+
 
     public MainWindowViewModel(
         VersionService versions,
@@ -68,6 +72,7 @@ public partial class MainWindowViewModel : ViewModelBase
         ModManager mods,
         ModpackInstaller modpacks,
         ContentCatalogService catalog,
+        STlauncher.Core.Server.ServerStatsClient stats,
         CatalogInstaller catalogInstaller,
         UpdateService updates,
         InstanceManager instances,
@@ -88,6 +93,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _mods = mods;
         _modpacks = modpacks;
         _catalog = catalog;
+        _stats = stats;
         _catalogInstaller = catalogInstaller;
         _updates = updates;
         _instances = instances;
@@ -103,10 +109,6 @@ public partial class MainWindowViewModel : ViewModelBase
     public ObservableCollection<VersionSummary> Versions { get; } = new();
 
     public ObservableCollection<LoaderVersion> LoaderVersions { get; } = new();
-
-    public ObservableCollection<string> Console { get; } = new();
-
-    public ObservableCollection<InstalledMod> InstalledMods { get; } = new();
 
     public IReadOnlyList<LoaderKind> LoaderKinds { get; } = Enum.GetValues<LoaderKind>();
 
@@ -125,35 +127,6 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private Bitmap? _avatar;
 
-    [ObservableProperty]
-    private string _modSearchQuery = string.Empty;
-
-    [ObservableProperty]
-    private bool _isModsBusy;
-
-    [ObservableProperty]
-    private string _updateStatus = string.Empty;
-
-    [ObservableProperty]
-    private bool _isUpdateBusy;
-
-    [ObservableProperty]
-    private bool _canRestartToUpdate;
-
-    /// <summary>Drives the notification banner: an update was found and the user has not dismissed it.</summary>
-    [ObservableProperty]
-    private bool _isUpdateBannerVisible;
-
-    [ObservableProperty]
-    private string _updateBannerText = string.Empty;
-
-    [ObservableProperty]
-    private string _updateBannerAction = string.Empty;
-
-    /// <summary>Version offered by the banner, kept so the install button knows what it is applying.</summary>
-    [ObservableProperty]
-    private string _availableUpdateVersion = string.Empty;
-
 
     [ObservableProperty]
     private string _username = "Player";
@@ -166,22 +139,6 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _showSnapshots;
-
-    [ObservableProperty]
-    private string _serverName = "My Server";
-
-    [ObservableProperty]
-    private string _serverAddress = string.Empty;
-
-
-    [ObservableProperty]
-    private string _catalogUrl = string.Empty;
-
-    [ObservableProperty]
-    private string _catalogStatus = string.Empty;
-
-    [ObservableProperty]
-    private bool _isCatalogBusy;
 
     [ObservableProperty]
     private ShellSection _section = ShellSection.Game;
@@ -201,176 +158,8 @@ public partial class MainWindowViewModel : ViewModelBase
     /// <summary>The launch progress block is shown while preparing or running.</summary>
     public bool ShowLaunchProgress => IsBusy || IsGameRunning;
 
-    /// <summary>Reminder that the server button connects straight to the server.</summary>
-    public string ServerJoinHint
-        => Localize("Game_ServerJoinHint", "Play on server connects you to {0}", ServerAddress);
-
-    [ObservableProperty]
-    private Bitmap? _serverLogo;
-
-    /// <summary>Icon reported by the server itself; falls back to the launcher artwork.</summary>
-    [ObservableProperty]
-    private Bitmap? _serverIcon;
-
-    [ObservableProperty]
-    private string _serverMotd = string.Empty;
-
-    [ObservableProperty]
-    private string _serverPlayers = string.Empty;
-
-    [ObservableProperty]
-    private bool _isServerStatusBusy;
-
-    public ObservableCollection<ServerHistoryBarView> ServerHistoryBars { get; } = new();
-
-    [ObservableProperty]
-    private bool _hasServerHistory;
-
-    [ObservableProperty]
-    private string _serverAverage = string.Empty;
-
-    [ObservableProperty]
-    private string _serverPeak = string.Empty;
-
-    [ObservableProperty]
-    private string _serverMonitoringNote = string.Empty;
-
-    private ServerHistoryStore _serverHistory = null!;
-    private DispatcherTimer? _serverTimer;
     private DispatcherTimer? _updateTimer;
-    private DispatcherTimer? _consoleTimer;
 
-    /// <summary>Game output arrives on background threads; the UI drains it in batches.</summary>
-    private readonly System.Collections.Concurrent.ConcurrentQueue<string> _pendingConsoleLines = new();
-
-    private const int MaxConsoleLines = 2000;
-
-    /// <summary>Highest bar in the window; used to scale the chart.</summary>
-    private const double ChartHeight = 80;
-
-    [RelayCommand]
-    private async Task RefreshServerStatusAsync()
-    {
-        if (IsServerStatusBusy)
-        {
-            return;
-        }
-
-        try
-        {
-            IsServerStatusBusy = true;
-
-            var status = await ServerPinger.PingAsync(ServerAddress);
-
-            if (status is null)
-            {
-                ServerMotd = Localize("Server_Offline", "Server did not respond");
-                ServerPlayers = string.Empty;
-                ServerIcon = ServerLogo;
-                RefreshServerHistory();
-                return;
-            }
-
-            ServerMotd = status.Motd;
-            ServerPlayers = Localize("Server_Players", "{0} / {1} online", status.Online, status.Max);
-            ServerIcon = status.Favicon is { Length: > 0 }
-                ? CreateBitmap(status.Favicon) ?? ServerLogo
-                : ServerLogo;
-
-            _serverHistory.Add(status.Online);
-            RefreshServerHistory();
-        }
-        catch (Exception ex)
-        {
-            AppendConsole($"[server] {ex.Message}");
-        }
-        finally
-        {
-            IsServerStatusBusy = false;
-        }
-    }
-
-    private void RefreshServerHistory()
-    {
-        var window = TimeSpan.FromDays(3);
-        var bars = _serverHistory.GetHourlyBars(window);
-        var peak = bars.Count == 0 ? 0 : bars.Max(b => b.Peak);
-        var hasSamples = bars.Any(b => b.Peak > 0);
-
-        ServerHistoryBars.Clear();
-
-        foreach (var bar in bars)
-        {
-            var hasData = bar.Peak > 0;
-            var fraction = peak == 0 ? 0 : bar.Average / peak;
-
-            ServerHistoryBars.Add(new ServerHistoryBarView(
-                hasData ? Math.Max(4, fraction * ChartHeight) : 3,
-                hasData
-                    ? Localize(
-                        "Server_BarTooltip",
-                        "{0} - {1} (peak {2})",
-                        bar.Label,
-                        bar.Average.ToString("F0", System.Globalization.CultureInfo.CurrentCulture),
-                        bar.Peak)
-                    : string.Empty,
-                !hasData));
-        }
-
-        HasServerHistory = hasSamples;
-
-        var (average, top) = _serverHistory.GetSummary(window);
-        ServerAverage = HasServerHistory
-            ? Localize("Server_Average", "Average: {0:F0}", average)
-            : string.Empty;
-        ServerPeak = HasServerHistory
-            ? Localize("Server_Peak", "Peak: {0}", top)
-            : string.Empty;
-        ServerMonitoringNote = HasServerHistory
-            ? string.Empty
-            : Localize("Server_NoData", "No data yet - samples appear as the launcher runs.");
-    }
-
-    private void StartServerTimer()
-    {
-        _serverTimer?.Stop();
-
-        // One sample every ten minutes while the launcher is open.
-        _serverTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(10) };
-        _serverTimer.Tick += (_, _) => _ = RefreshServerStatusAsync();
-        _serverTimer.Start();
-    }
-
-    private static Bitmap? CreateBitmap(byte[] bytes)
-    {
-        try
-        {
-            using var stream = new System.IO.MemoryStream(bytes);
-            return new Bitmap(stream);
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-    }
-
-    /// <summary>
-    /// Loads Assets/server-logo.png when it exists. A missing file simply leaves the
-    /// placeholder in place, so the build never depends on an artwork asset.
-    /// </summary>
-    private void LoadServerLogo()
-    {
-        try
-        {
-            var uri = new Uri("avares://STlauncher.App/Assets/server-logo.png");
-            using var stream = Avalonia.Platform.AssetLoader.Open(uri);
-            ServerLogo = new Bitmap(stream);
-        }
-        catch (Exception)
-        {
-            ServerLogo = null;
-        }
-    }
 
     partial void OnIsBusyChanged(bool value) => OnPropertyChanged(nameof(ShowLaunchProgress));
 
@@ -417,14 +206,17 @@ public partial class MainWindowViewModel : ViewModelBase
         _initialized = true;
 
         var settings = _settings.Load();
-        Username = settings.Username;
 
-        // The launcher exists for one server: its address is fixed, not per build or user.
-        ServerName = ServerDefaults.Name;
-        ServerAddress = ServerDefaults.Address;
+        // A shared "Player" default means several people on the server end up with one
+        // skin and one offline UUID, so a fresh installation gets a name of its own.
+        Username = NicknameGenerator.IsPlaceholder(settings.Username)
+            ? NicknameGenerator.NextUnused(settings.Nicknames)
+            : settings.Username;
+
         ShowSnapshots = settings.ShowSnapshots;
         CatalogUrl = ResolveCatalogUrl(settings.CatalogUrl);
         _catalog.CatalogUrl = CatalogUrl;
+        ServerStatsUrl = settings.ServerStatsUrl ?? string.Empty;
         Language = LocalizationService.Normalize(settings.Language);
         ShowDeveloperConsole = settings.ShowDeveloperConsole;
 
@@ -444,6 +236,15 @@ public partial class MainWindowViewModel : ViewModelBase
         BackupsMaxTotalMb = settings.BackupsMaxTotalMb;
         _backupDirectoryOverride = settings.BackupsDirectory ?? string.Empty;
 
+        _dismissedBuildIds.Clear();
+        foreach (var dismissed in settings.DismissedBuildIds)
+        {
+            if (!string.IsNullOrWhiteSpace(dismissed))
+            {
+                _dismissedBuildIds.Add(dismissed);
+            }
+        }
+
         Nicknames.Clear();
         foreach (var nickname in settings.Nicknames)
         {
@@ -455,14 +256,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         LoadJavaChoices();
         LoadAfterLaunchOptions();
-        LoadServerLogo();
         RefreshBackups();
-
-        _serverHistory = new ServerHistoryStore(
-            System.IO.Path.Combine(_paths.Root, "server-history.json"));
-
-        _ = RefreshServerStatusAsync();
-        StartServerTimer();
 
         Status = Localize("Status_Ready", "Ready");
         CatalogStatus = Localize("Catalog_NotLoaded", "Catalog not loaded yet");
@@ -483,28 +277,29 @@ public partial class MainWindowViewModel : ViewModelBase
         // installation should start from the recommended build, not from an empty profile.
         await LoadCatalogAsync();
 
-        if (_allInstances.Count == 0)
+        if (_allInstances.Count == 0 && _instances.HasAnyInstanceDirectory())
         {
-            if (_instances.HasAnyInstanceDirectory())
-            {
-                // A build folder is right there but its definition could not be read.
-                // Creating a new profile would bury it - and its worlds and mods - forever.
-                Status = Localize(
-                    "Instance_Unreadable",
-                    "A build could not be read and was left untouched: {0}",
-                    string.Join(", ", _instances.UnreadableDefinitions.Select(System.IO.Path.GetFileName)));
-            }
-            else
-            {
-                _allInstances.Add(CreateDefaultInstance(settings));
-            }
+            // A build folder is right there but its definition could not be read.
+            // Creating a new profile would bury it - and its worlds and mods - forever.
+            Status = Localize(
+                "Instance_Unreadable",
+                "A build could not be read and was left untouched: {0}",
+                string.Join(", ", _instances.UnreadableDefinitions.Select(System.IO.Path.GetFileName)));
         }
+
+        // Creates the recommended build on a fresh installation and re-applies whatever
+        // changed in the catalog to the build that came from it. Runs on every start, so
+        // the launcher is in step with the repository before the player touches anything.
+        var recommended = SyncRecommendedBuild(Snapshot(settings));
 
         ApplyBuildFilter();
 
         await LoadVersionsAsync();
 
         SelectedInstance = Instances.FirstOrDefault(i => i.Id == settings.SelectedInstanceId)
+                           ?? Instances.FirstOrDefault(i =>
+                               recommended is not null &&
+                               string.Equals(i.Id, recommended.Id, StringComparison.OrdinalIgnoreCase))
                            ?? Instances.FirstOrDefault();
 
         await LoadLoaderVersionsAsync();
@@ -515,37 +310,32 @@ public partial class MainWindowViewModel : ViewModelBase
                                     ?? SelectedLoaderVersion;
         }
 
+        StartServerMonitoring();
+
         RefreshMods();
         await LoadCategoriesAsync();
         ScheduleBrowserReload();
 
         StartUpdateWatcher();
+
+        // A nickname generated a moment ago only becomes this installation's identity
+        // once it is on disk; without this it would be regenerated on the next start.
+        PersistSettings();
+
+        // Deliberately not awaited: the window is already usable, and the missing mods
+        // download in the background while the player reads the page.
+        _ = StartBuildSyncAsync(recommended);
     }
 
-    /// <summary>
-    /// Looks for a new release shortly after startup and then every six hours, so a
-    /// launcher left open for days still notices a release.
-    /// </summary>
-    private void StartUpdateWatcher()
-    {
-        if (!_updates.IsSupported)
-        {
-            return;
-        }
-
-        // Deliberately delayed: startup already saturates the network with catalog,
-        // version manifest and mod icon requests, and the banner is not urgent.
-        _updateTimer?.Stop();
-        _updateTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(8) };
-        _updateTimer.Tick += (_, _) =>
-        {
-            // After the first tick settle into the long interval.
-            _updateTimer!.Interval = TimeSpan.FromHours(6);
-            _ = CheckForUpdatesQuietlyAsync();
-        };
-        _updateTimer.Start();
-    }
-
+    /// <summary>The settings the build sync needs, captured before anything edits them.</summary>
+    private AppSettingsSnapshot Snapshot(AppSettings settings)
+        => new(
+            settings.MaxMemoryMb,
+            settings.MinMemoryMb,
+            settings.Loader,
+            settings.LoaderVersion,
+            settings.SelectedVersionId,
+            _dismissedBuildIds.ToList());
 
     /// <summary>
     /// Upgrades installations that still hold the previous default catalog URL, while
@@ -561,96 +351,6 @@ public partial class MainWindowViewModel : ViewModelBase
 
         return stored;
     }
-
-    /// <summary>
-    /// First run. When the catalog offers a recommended build the profile is created from
-    /// it, so a new device starts with the right version, loader and mods instead of an
-    /// empty instance the player would have to configure by hand.
-    /// </summary>
-    private Instance CreateDefaultInstance(AppSettings settings)
-    {
-        var build = RecommendedBuild;
-
-        if (build is null)
-        {
-            var legacy = _instances.Create("Default");
-            legacy.MaxMemoryMb = settings.MaxMemoryMb;
-            legacy.MinMemoryMb = settings.MinMemoryMb;
-            legacy.Loader = settings.Loader;
-            legacy.LoaderVersion = settings.LoaderVersion;
-            legacy.VersionId = settings.SelectedVersionId;
-            _instances.Save(legacy);
-
-            return legacy;
-        }
-
-        var instance = CreateInstanceFromBuild(build, uniqueName: false);
-
-        AppendConsole($"[setup] created '{instance.Name}' from the recommended build");
-        return instance;
-    }
-
-    /// <summary>
-    /// Turns a catalog build into a real instance: version, loader, memory, server and the
-    /// list of catalog items it consists of.
-    /// </summary>
-    private Instance CreateInstanceFromBuild(CatalogBuild build, bool uniqueName)
-    {
-        var name = uniqueName ? UniqueInstanceName(build.Name) : build.Name;
-
-        var instance = _instances.Create(name);
-        instance.VersionId = build.GameVersion;
-        instance.Loader = build.Loader;
-        instance.LoaderVersion = build.LoaderVersion;
-        instance.EnabledCatalogItems = build.Items.ToList();
-
-        if (build.MemoryMb is > 0)
-        {
-            instance.MaxMemoryMb = build.MemoryMb.Value;
-        }
-
-        if (!string.IsNullOrWhiteSpace(build.ServerName))
-        {
-            instance.ServerName = build.ServerName!;
-        }
-
-        if (!string.IsNullOrWhiteSpace(build.ServerAddress))
-        {
-            instance.ServerAddress = build.ServerAddress!;
-        }
-
-        _instances.Save(instance);
-        return instance;
-    }
-
-    /// <summary>
-    /// Keeps build names distinct: adding the same recommended build twice should not
-    /// produce two entries that read identically in the list.
-    /// </summary>
-    private string UniqueInstanceName(string baseName)
-    {
-        var taken = new HashSet<string>(
-            _allInstances.Select(i => i.Name),
-            StringComparer.OrdinalIgnoreCase);
-
-        if (!taken.Contains(baseName))
-        {
-            return baseName;
-        }
-
-        for (var suffix = 2; suffix < 1000; suffix++)
-        {
-            var candidate = $"{baseName} ({suffix})";
-
-            if (!taken.Contains(candidate))
-            {
-                return candidate;
-            }
-        }
-
-        return baseName;
-    }
-
 
     [RelayCommand]
     private void CreateInstance()
@@ -683,10 +383,23 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             var name = SelectedInstance.Name;
+
+            // Remember that this catalog build was removed on purpose, otherwise the
+            // startup sync would put it straight back on the next launch.
+            if (!string.IsNullOrWhiteSpace(SelectedInstance.CatalogBuildId))
+            {
+                _dismissedBuildIds.Add(SelectedInstance.CatalogBuildId!);
+            }
+
             _instances.Delete(SelectedInstance.Id);
             _allInstances.RemoveAll(i => i.Id == SelectedInstance.Id);
             ApplyBuildFilter();
             SelectedInstance = Instances.FirstOrDefault();
+
+            // Deleting the last build leaves nothing to select, and the selection handler
+            // is what normally saves settings - including the dismissal recorded above.
+            PersistSettings();
+
             Status = Localize("Status_BuildDeleted", "Build \"{0}\" deleted", name);
         }
         catch (Exception ex)
@@ -706,6 +419,8 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             var sourceName = SelectedInstance.Name;
+            // The copy is deliberately not linked to the catalog build: it is the
+            // player's own from here on, and the sync must leave it alone.
             var copy = _instances.Duplicate(SelectedInstance.Id);
 
             _allInstances.Add(copy);
@@ -748,7 +463,7 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             IsBusy = true;
-            Status = Localize("Status_LoadingVersions", "Loading version list�");
+            Status = Localize("Status_LoadingVersions", "Loading version list…");
 
             var manifest = await _versions.GetManifestAsync();
             _allVersions = manifest.Versions;
@@ -808,7 +523,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
             if (SelectedLoader != LoaderKind.Vanilla)
             {
-                Status = Localize("Status_InstallingLoader", "Installing {0}�", SelectedLoader);
+                Status = Localize("Status_InstallingLoader", "Installing {0}…", SelectedLoader);
                 AppendConsole($"--- Installing {SelectedLoader} for {versionId} ---");
 
                 var gameJava = (await _versions.ResolveAsync(versionId)).JavaVersion?.MajorVersion ?? 8;
@@ -824,8 +539,16 @@ public partial class MainWindowViewModel : ViewModelBase
                 AppendConsole($"--- Loader ready: {versionId} ---");
             }
 
-            Status = Localize("Status_CheckingBuildMods", "Checking build mods�");
-            await EnsureBuildItemsInstalledAsync();
+            // A startup sync may still be downloading into the same mods folder.
+            await WaitForBuildSyncAsync();
+
+            Status = Localize("Status_CheckingBuildMods", "Checking build mods…");
+
+            if (SelectedInstance is not null)
+            {
+                await EnsureBuildItemsInstalledAsync(SelectedInstance);
+                RefreshMods();
+            }
 
             var settings = new LaunchSettings
             {
@@ -851,10 +574,10 @@ public partial class MainWindowViewModel : ViewModelBase
                     : Localize("Status_Files", "Files {0}/{1}", p.Completed, p.Total);
             });
 
-            Status = Localize("Status_Preparing", "Preparing�");
+            Status = Localize("Status_Preparing", "Preparing…");
             var command = await _launch.PrepareAsync(versionId, account, settings, progress);
 
-            Status = Localize("Status_StartingGame", "Starting Minecraft�");
+            Status = Localize("Status_StartingGame", "Starting Minecraft…");
             IsGameRunning = true;
 
             if (SelectedInstance is not null)
@@ -886,18 +609,6 @@ public partial class MainWindowViewModel : ViewModelBase
             }
         }
     }
-
-    [RelayCommand]
-    private void ClearConsole()
-    {
-        Console.Clear();
-
-        // Drop anything still queued, otherwise a cleared console refills a moment later.
-        while (_pendingConsoleLines.TryDequeue(out _))
-        {
-        }
-    }
-
 
     [RelayCommand]
     private void OpenWebsite() => OpenUrl(ServerDefaults.Website);
@@ -943,427 +654,6 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
-    [RelayCommand]
-    private async Task LoadCatalogAsync()
-    {
-        if (IsCatalogBusy)
-        {
-            return;
-        }
-
-        try
-        {
-            IsCatalogBusy = true;
-            CatalogStatus = Localize("Catalog_Loading", "Loading catalog�");
-
-            var result = await _catalog.LoadAsync();
-
-            CatalogBuilds.Clear();
-
-            if (result.Catalog is not null)
-            {
-                _loadedCatalog = result.Catalog;
-
-                foreach (var build in result.Catalog.Builds)
-                {
-                    CatalogBuilds.Add(build);
-                }
-            }
-            else
-            {
-                _loadedCatalog = null;
-            }
-
-            var summary = Localize(
-                "Catalog_Summary",
-                "{0}: {1} build(s)",
-                result.Catalog?.Name ?? "Catalog",
-                CatalogBuilds.Count);
-
-            if (result.Catalog is null)
-            {
-                CatalogStatus = string.IsNullOrWhiteSpace(CatalogUrl)
-                    ? Localize("Catalog_NotFound", "No catalog found", _catalog.DropInPath)
-                    : Localize("Catalog_Failed", "Failed to load the catalog: {0}", result.Error);
-                return;
-            }
-
-            CatalogStatus = result.Origin switch
-            {
-                CatalogOrigin.Remote => summary,
-                CatalogOrigin.LocalFile => Localize("Catalog_SummaryLocal", "{0} (local file)", summary),
-                CatalogOrigin.Cache => Localize("Catalog_SummaryCache", "{0} (cached: source unavailable)", summary),
-                CatalogOrigin.DropIn => Localize("Catalog_SummaryLocal", "{0} (local file)", summary),
-                _ => summary
-            };
-
-            // The technical reason is noise for players who still got a working catalog.
-            if (result.Error is not null && result.Origin is not CatalogOrigin.Remote && ShowDeveloperConsole)
-            {
-                CatalogStatus += $" � {result.Error}";
-            }
-        }
-        catch (Exception ex)
-        {
-            CatalogStatus = Localize("Catalog_Failed", "Failed to load the catalog: {0}", ex.Message);
-        }
-        finally
-        {
-            IsCatalogBusy = false;
-        }
-    }
-
-    [RelayCommand]
-    private async Task InstallCatalogItemAsync(CatalogItem? item)
-    {
-        if (item is null || IsCatalogBusy)
-        {
-            return;
-        }
-
-        try
-        {
-            IsCatalogBusy = true;
-            await MaybeBackupAsync(BackupTrigger.BeforeModChange);
-            Status = Localize("Status_InstallingFile", "Installing {0}�", item.Name);
-            AppendConsole($"--- Installing '{item.Name}' ({item.Type}) into '{SelectedInstance?.Name}' ---");
-
-            var result = await _catalogInstaller.InstallAsync(
-                item,
-                InstanceDirectory,
-                SelectedVersion?.Id,
-                SelectedLoader);
-
-            Status = result.Message;
-            AppendConsole(result.Message);
-
-            if (result.Success)
-            {
-                RecordInstalledMod(new InstalledModRecord
-                {
-                    FileName = System.IO.Path.GetFileName(result.Path ?? string.Empty),
-                    Source = ModSource.Catalog,
-                    Id = item.Id,
-                    Name = item.Name,
-                    IconUrl = item.IconUrl,
-                    Required = item.Required
-                });
-
-                RefreshMods();
-            }
-        }
-        catch (Exception ex)
-        {
-            Status = Localize("Error_CatalogInstall", "Catalog install failed: {0}", ex.Message);
-            AppendConsole(ex.ToString());
-        }
-        finally
-        {
-            IsCatalogBusy = false;
-        }
-    }
-
-    [RelayCommand]
-    private void RefreshMods()
-    {
-        try
-        {
-            ReconcileInstalledMods();
-
-            InstalledMods.Clear();
-            foreach (var mod in _mods.ListMods(InstanceDirectory))
-            {
-                InstalledMods.Add(mod);
-            }
-
-            RefreshBrowserInstallState();
-        }
-        catch (Exception ex)
-        {
-            Status = Localize("Error_ReadMods", "Failed to read mods: {0}", ex.Message);
-        }
-    }
-
-    public async Task ImportModpackAsync(string mrpackPath)
-    {
-        try
-        {
-            IsModsBusy = true;
-            await MaybeBackupAsync(BackupTrigger.BeforeModChange);
-            Status = Localize("Status_ImportingModpack", "Reading the modpack�");
-
-            var progress = new Progress<DownloadProgress>(p =>
-            {
-                Progress = p.Fraction * 100;
-                Status = Localize("Status_ModpackFiles", "Modpack files {0}/{1}", p.Completed, p.Total);
-            });
-
-            var result = await _modpacks.InstallAsync(mrpackPath, InstanceDirectory, progress);
-            AppendConsole(
-                $"--- Modpack '{result.Plan.Name}' installed: " +
-                $"{result.InstalledFiles} files, {result.FailedFiles} failed, {result.SkippedFiles} skipped ---");
-
-            if (result.Plan.GameVersion is not null)
-            {
-                var version = _allVersions.FirstOrDefault(v => v.Id == result.Plan.GameVersion);
-                if (version is not null)
-                {
-                    if (!ShowSnapshots && version.Type != "release")
-                    {
-                        ShowSnapshots = true;
-                    }
-
-                    SelectedVersion = version;
-                }
-            }
-
-            if (result.Plan.Loader != LoaderKind.Vanilla)
-            {
-                SelectedLoader = result.Plan.Loader;
-            }
-
-            RefreshMods();
-            Status = Localize("Status_ModpackInstalled", "Modpack \"{0}\" installed", result.Plan.Name);
-
-            // Only label files that have no provenance yet; re-labelling would wipe the
-            // Modrinth and catalog sources recorded earlier.
-            foreach (var mod in InstalledMods)
-            {
-                var known = SelectedInstance?.InstalledMods.Any(m =>
-                    string.Equals(m.FileName, mod.FileName, StringComparison.OrdinalIgnoreCase)) == true;
-
-                if (!known)
-                {
-                    RecordInstalledMod(new InstalledModRecord
-                    {
-                        FileName = mod.FileName,
-                        Source = ModSource.Modpack,
-                        Name = mod.DisplayName
-                    });
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Status = Localize("Error_Modpack", "Modpack import failed: {0}", ex.Message);
-            AppendConsole(ex.ToString());
-        }
-        finally
-        {
-            IsModsBusy = false;
-            Progress = 0;
-        }
-    }
-
-    /// <summary>
-    /// The manual check from Settings. Reports every outcome, including "you are up to date".
-    /// </summary>
-    [RelayCommand]
-    private Task CheckForUpdatesAsync() => RunUpdateCheckAsync(announce: true);
-
-    /// <summary>
-    /// The automatic check. Stays quiet unless an update is actually waiting, so a missing
-    /// network connection or a portable build never produces a pointless popup.
-    /// </summary>
-    private Task CheckForUpdatesQuietlyAsync() => RunUpdateCheckAsync(announce: false);
-
-    private async Task RunUpdateCheckAsync(bool announce)
-    {
-        if (IsUpdateBusy)
-        {
-            return;
-        }
-
-        try
-        {
-            IsUpdateBusy = true;
-
-            if (announce)
-            {
-                UpdateStatus = Localize("Update_Checking", "Checking for updates�");
-            }
-
-            var status = await _updates.CheckAsync();
-
-            if (!status.IsSupported)
-            {
-                if (announce)
-                {
-                    UpdateStatus = Localize(
-                        "Update_OnlyInstalled",
-                        "Updates are only available in the installed build");
-                }
-
-                return;
-            }
-
-            if (!status.IsUpdateAvailable)
-            {
-                IsUpdateBannerVisible = false;
-                CanRestartToUpdate = false;
-
-                if (announce)
-                {
-                    UpdateStatus = Localize("Update_UpToDate", "You are up to date ({0})", status.CurrentVersion);
-                }
-
-                return;
-            }
-
-            AvailableUpdateVersion = status.AvailableVersion ?? string.Empty;
-
-            // Velopack may already have the package on disk from an earlier session, in
-            // which case the button only has to restart.
-            var ready = _updates.IsReadyToApply;
-
-            UpdateBannerText = ready
-                ? Localize("Update_ReadyBanner", "Update {0} is ready to install", AvailableUpdateVersion)
-                : Localize("Update_AvailableBanner", "Version {0} is available", AvailableUpdateVersion);
-
-            UpdateBannerAction = ready
-                ? Localize("Update_InstallAndRestart", "Install and restart")
-                : Localize("Update_InstallNow", "Update now");
-
-            UpdateStatus = UpdateBannerText;
-            CanRestartToUpdate = ready;
-            IsUpdateBannerVisible = true;
-        }
-        catch (Exception ex)
-        {
-            if (announce)
-            {
-                UpdateStatus = Localize("Update_Failed", "Update check failed: {0}", ex.Message);
-            }
-        }
-        finally
-        {
-            IsUpdateBusy = false;
-        }
-    }
-
-    /// <summary>
-    /// The one button the user presses: downloads the package if it is not on disk yet,
-    /// then applies it and relaunches. Progress goes straight into the banner text.
-    /// </summary>
-    [RelayCommand]
-    private async Task InstallUpdateAsync()
-    {
-        if (IsUpdateBusy)
-        {
-            return;
-        }
-
-        try
-        {
-            IsUpdateBusy = true;
-            var version = AvailableUpdateVersion;
-
-            if (!_updates.IsReadyToApply)
-            {
-                void Report(string text)
-                {
-                    UpdateBannerText = text;
-                    UpdateStatus = text;
-                }
-
-                Report(Localize("Update_Downloading", "Downloading {0}�", version));
-
-                var progress = new Progress<int>(percent => Report(
-                    Localize("Update_DownloadingPercent", "Downloading {0}� {1}%", version, percent)));
-
-                await _updates.DownloadAsync(progress);
-            }
-
-            UpdateBannerText = Localize("Update_Restarting", "Restarting to finish the update�");
-            UpdateStatus = UpdateBannerText;
-
-            // Hands control to Velopack, which replaces this process. Nothing below runs
-            // unless there turned out to be nothing to apply.
-            if (!_updates.ApplyAndRestart())
-            {
-                UpdateStatus = Localize("Update_NothingToApply", "Nothing to apply");
-                UpdateBannerText = UpdateStatus;
-            }
-        }
-        catch (Exception ex)
-        {
-            UpdateStatus = Localize("Update_Failed", "Update check failed: {0}", ex.Message);
-            UpdateBannerText = Localize("Update_FailedBanner", "Update failed - try again later");
-            CanRestartToUpdate = _updates.IsReadyToApply;
-        }
-        finally
-        {
-            IsUpdateBusy = false;
-        }
-    }
-
-    /// <summary>Hides the banner for this session. Settings still offers the update.</summary>
-    [RelayCommand]
-    private void DismissUpdateBanner() => IsUpdateBannerVisible = false;
-
-
-    [RelayCommand]
-    private void ToggleMod(InstalledMod? mod)
-    {
-        if (mod is null)
-        {
-            return;
-        }
-
-        try
-        {
-            var wasEnabled = mod.Enabled;
-            _mods.SetEnabled(mod.Path, !mod.Enabled);
-
-            // The file is renamed on disk, so the record has to follow it.
-            var record = SelectedInstance?.InstalledMods.FirstOrDefault(m =>
-                string.Equals(m.FileName, mod.FileName, StringComparison.OrdinalIgnoreCase));
-
-            if (record is not null && SelectedInstance is not null)
-            {
-                record.FileName = wasEnabled
-                    ? mod.FileName + ".disabled"
-                    : mod.FileName[..^".disabled".Length];
-
-                _instances.Save(SelectedInstance);
-            }
-
-            RefreshMods();
-        }
-        catch (Exception ex)
-        {
-            Status = Localize("Error_ToggleMod", "Failed to toggle the mod: {0}", ex.Message);
-        }
-    }
-
-[RelayCommand]
-    private async Task UninstallModAsync(InstalledMod? mod)
-    {
-        if (mod is null)
-        {
-            return;
-        }
-
-        try
-        {
-            await MaybeBackupAsync(BackupTrigger.BeforeModChange);
-            _mods.Uninstall(mod.Path);
-
-            if (SelectedInstance is not null)
-            {
-                SelectedInstance.InstalledMods.RemoveAll(m =>
-                    string.Equals(m.FileName, mod.FileName, StringComparison.OrdinalIgnoreCase));
-                _instances.Save(SelectedInstance);
-            }
-
-            RefreshMods();
-        }
-        catch (Exception ex)
-        {
-            Status = Localize("Error_RemoveMod", "Failed to remove the mod: {0}", ex.Message);
-        }
-    }
-
     partial void OnShowSnapshotsChanged(bool value) => ApplyVersionFilter();
 
     partial void OnSelectedLoaderChanged(LoaderKind value)
@@ -1396,14 +686,6 @@ public partial class MainWindowViewModel : ViewModelBase
 
     partial void OnMinMemoryMbChanged(decimal value) => SyncInstance();
 
-    partial void OnServerNameChanged(string value) => SyncInstance();
-
-    partial void OnServerAddressChanged(string value)
-    {
-        SyncInstance();
-        OnPropertyChanged(nameof(ServerJoinHint));
-    }
-
     partial void OnSelectedInstanceChanged(Instance? value)
     {
         if (value is null)
@@ -1431,6 +713,8 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         OnPropertyChanged(nameof(BuildModCount));
+
+        ApplyServerFromInstance();
 
         _ = LoadLoaderVersionsAsync();
         RefreshMods();
@@ -1479,6 +763,13 @@ public partial class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsServerSection));
         OnPropertyChanged(nameof(IsConsoleSection));
         OnPropertyChanged(nameof(IsSettingsSection));
+
+        // Opening the page should show the current online count, not whatever the last
+        // five-minute tick left behind.
+        if (value == ShellSection.Server)
+        {
+            _ = RefreshServerStatusAsync();
+        }
     }
 
     partial void OnLanguageChanged(string value)
@@ -1637,11 +928,13 @@ public partial class MainWindowViewModel : ViewModelBase
             Username = Username,
             ShowSnapshots = ShowSnapshots,
             CatalogUrl = string.IsNullOrWhiteSpace(CatalogUrl) ? null : CatalogUrl,
+            ServerStatsUrl = string.IsNullOrWhiteSpace(ServerStatsUrl) ? null : ServerStatsUrl,
             Language = Language,
             ShowDeveloperConsole = ShowDeveloperConsole,
             SelectedInstanceId = SelectedInstance?.Id,
 
             Nicknames = Nicknames.ToList(),
+            DismissedBuildIds = _dismissedBuildIds.ToList(),
             ShowOldReleases = ShowOldReleases,
             ShowBeta = ShowBeta,
             ShowAlpha = ShowAlpha,
@@ -1678,46 +971,4 @@ public partial class MainWindowViewModel : ViewModelBase
             Status = Localize("Error_SaveSettings", "Could not save settings: {0}", ex.Message);
         }
     }
-
-    /// <summary>
-    /// Queues a console line. The actual list update is batched on a timer: Minecraft
-    /// emits thousands of lines during startup, and posting one dispatcher work item per
-    /// line makes the window unresponsive exactly when the user is watching it.
-    /// </summary>
-    private void AppendConsole(string line) => _pendingConsoleLines.Enqueue(line);
-
-    private void StartConsoleFlusher()
-    {
-        _consoleTimer?.Stop();
-
-        _consoleTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(150) };
-        _consoleTimer.Tick += (_, _) => FlushConsole();
-        _consoleTimer.Start();
-    }
-
-    private void FlushConsole()
-    {
-        var appended = false;
-
-        while (_pendingConsoleLines.TryDequeue(out var line))
-        {
-            Console.Add(line);
-            appended = true;
-        }
-
-        if (!appended)
-        {
-            return;
-        }
-
-        while (Console.Count > MaxConsoleLines)
-        {
-            Console.RemoveAt(0);
-        }
-    }
 }
-
-
-
-
-

@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:STlauncher.App.ViewModels"
              x:Class="STlauncher.App.Views.Pages.ServerPage"
@@ -23,7 +23,10 @@
                             <TextBlock Text="{Binding ServerName}" FontSize="17" FontWeight="SemiBold"/>
                             <TextBlock Text="{Binding ServerAddress}" Classes="faint"/>
                             <TextBlock Text="{Binding ServerMotd}" TextWrapping="Wrap"/>
-                            <TextBlock Text="{Binding ServerPlayers}" Classes="gold"/>
+                            <TextBlock Text="{Binding ServerPlayers}" Classes="gold"
+                                       IsVisible="{Binding IsServerOnline}"/>
+                            <TextBlock Text="{Binding ServerVersion}" Classes="faint"
+                                       IsVisible="{Binding IsServerOnline}"/>
                         </StackPanel>
 
                         <Button Grid.Column="2" Classes="ghost small" VerticalAlignment="Top"
@@ -48,42 +51,95 @@
             <!-- Monitoring -->
             <Border Classes="card">
                 <StackPanel Spacing="12">
-                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="14">
+
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
                         <TextBlock Text="{DynamicResource Server_Monitoring}" Classes="label"
                                    VerticalAlignment="Center"/>
-                        <TextBlock Grid.Column="1" Text="{Binding ServerAverage}" Classes="gold"
-                                   VerticalAlignment="Center"/>
-                        <TextBlock Grid.Column="2" Text="{Binding ServerPeak}" Classes="faint"
+
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2">
+                            <Button Classes="segment small" Classes.active="{Binding IsDayRange}"
+                                    Content="{DynamicResource Server_RangeDay}"
+                                    Command="{Binding SelectMonitoringRangeCommand}" CommandParameter="Day"/>
+                            <Button Classes="segment small" Classes.active="{Binding IsWeekRange}"
+                                    Content="{DynamicResource Server_RangeWeek}"
+                                    Command="{Binding SelectMonitoringRangeCommand}" CommandParameter="Week"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="14">
+                        <TextBlock Text="{Binding ServerAverage}" Classes="gold" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="{Binding ServerPeak}" Classes="faint"
                                    VerticalAlignment="Center"/>
                     </Grid>
 
-                    <Border Height="80" Classes="panel" Padding="8" IsVisible="{Binding HasServerHistory}">
-                        <ItemsControl ItemsSource="{Binding ServerHistoryBars}" VerticalAlignment="Bottom">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <StackPanel Orientation="Horizontal" Spacing="1"/>
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="vm:ServerHistoryBarView">
-                                    <Panel>
-                                        <Border Width="4" CornerRadius="2" VerticalAlignment="Bottom"
-                                                Background="{DynamicResource SurfaceAltBrush}"
-                                                Height="{Binding Height}" IsVisible="{Binding IsEmpty}"/>
-                                        <Border Width="4" CornerRadius="2" VerticalAlignment="Bottom"
-                                                Background="{DynamicResource AccentBrush}"
-                                                Height="{Binding Height}" IsVisible="{Binding !IsEmpty}"
-                                                ToolTip.Tip="{Binding Tooltip}"/>
-                                    </Panel>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                    <!-- Figures from the monitoring site. They are worth their own row
+                         because they are there from the very first launch, before the
+                         chart has anything in it. -->
+                    <Border Classes="panel" Padding="12" IsVisible="{Binding HasServerSummary}">
+                        <WrapPanel>
+                            <TextBlock Text="{Binding ServerAverageWeek}" Classes="gold" Margin="0,0,16,0"
+                                       IsVisible="{Binding ServerAverageWeek, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                            <TextBlock Text="{Binding ServerRecord}" Margin="0,0,16,0"
+                                       IsVisible="{Binding ServerRecord, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                            <TextBlock Text="{Binding ServerUptime}" Classes="faint" Margin="0,0,16,0"
+                                       IsVisible="{Binding ServerUptime, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                            <TextBlock Text="{Binding ServerRank}" Classes="faint"
+                                       IsVisible="{Binding ServerRank, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                        </WrapPanel>
                     </Border>
+
+                    <!-- Chart. Bars fill the width through a UniformGrid, so the picture
+                         stays readable whether it holds 24 or 28 columns. -->
+                    <Border Classes="panel" Padding="10" IsVisible="{Binding HasServerHistory}">
+                        <Grid RowDefinitions="Auto,96,Auto" RowSpacing="6">
+                            <TextBlock Grid.Row="0" Text="{Binding ChartTopLabel}" Classes="faint"
+                                       HorizontalAlignment="Left"/>
+
+                            <ItemsControl Grid.Row="1" ItemsSource="{Binding ServerChartBars}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <UniformGrid Rows="1"/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:ServerChartBar">
+                                        <Grid Margin="1,0">
+                                            <!-- A slice the launcher was not running for:
+                                                 a baseline tick, not a zero-height bar. -->
+                                            <Border VerticalAlignment="Bottom" Height="2" CornerRadius="1"
+                                                    Background="{DynamicResource DividerBrush}"
+                                                    IsVisible="{Binding !HasData}"/>
+
+                                            <Border VerticalAlignment="Bottom" CornerRadius="2,2,0,0"
+                                                    Height="{Binding Height}"
+                                                    Background="{DynamicResource AccentBrush}"
+                                                    IsVisible="{Binding HasData}"
+                                                    ToolTip.Tip="{Binding Tooltip}"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto">
+                                <TextBlock Text="{Binding ChartStartLabel}" Classes="faint"/>
+                                <TextBlock Grid.Column="2" Text="{Binding ChartEndLabel}" Classes="faint"/>
+                            </Grid>
+                        </Grid>
+                    </Border>
+
+                    <Border Classes="panel" Padding="14" IsVisible="{Binding !HasServerHistory}">
+                        <TextBlock Text="{DynamicResource Server_ChartEmpty}" Classes="faint"
+                                   TextWrapping="Wrap" HorizontalAlignment="Center"/>
+                    </Border>
+
+                    <TextBlock Text="{Binding ServerMonitoringNote}" Classes="gold" TextWrapping="Wrap"
+                               IsVisible="{Binding ServerMonitoringNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+                    <TextBlock Text="{Binding ServerStatsSource}" Classes="faint" TextWrapping="Wrap"
+                               IsVisible="{Binding ServerStatsSource, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
                     <TextBlock Text="{DynamicResource Server_MonitoringHint}" Classes="faint"
                                TextWrapping="Wrap"/>
-                    <TextBlock Text="{Binding ServerMonitoringNote}" Classes="gold"
-                               IsVisible="{Binding !HasServerHistory}" TextWrapping="Wrap"/>
                 </StackPanel>
             </Border>
 

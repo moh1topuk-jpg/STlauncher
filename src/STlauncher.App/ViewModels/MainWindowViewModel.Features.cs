@@ -185,6 +185,17 @@ public partial class MainWindowViewModel
         PersistSettings();
     }
 
+    /// <summary>
+    /// Offers another generated name. The generated default is a suggestion, not a
+    /// verdict - and rerolling is quicker than inventing one on the spot.
+    /// </summary>
+    [RelayCommand]
+    private void RerollNickname()
+    {
+        Username = Core.Auth.NicknameGenerator.NextUnused(Nicknames.Append(Username));
+        PersistSettings();
+    }
+
     [RelayCommand]
     private void RemoveNickname(string? nickname)
     {
@@ -260,7 +271,7 @@ public partial class MainWindowViewModel
             {
                 var display = string.IsNullOrWhiteSpace(installation.Vendor)
                     ? $"Java {installation.MajorVersion}"
-                    : $"Java {installation.MajorVersion} � {installation.Vendor}";
+                    : $"Java {installation.MajorVersion} · {installation.Vendor}";
 
                 JavaChoices.Add(new JavaChoice(display, installation.ExecutablePath));
             }
@@ -273,380 +284,6 @@ public partial class MainWindowViewModel
         SelectedJavaChoice = JavaChoices.FirstOrDefault(c =>
                                 string.Equals(c.Path, _globalJavaPath, StringComparison.OrdinalIgnoreCase))
                             ?? JavaChoices[0];
-    }
-
-    // ===================== Recommended builds =====================
-
-public ObservableCollection<CatalogBuild> CatalogBuilds { get; } = new();
-
-    [ObservableProperty]
-    private CatalogBuild? _selectedBuild;
-
-    /// <summary>True while the recommended build is being fetched and installed.</summary>
-    [ObservableProperty]
-    private bool _isBuildImportBusy;
-
-    /// <summary>
-    /// The build the catalog marks as recommended, falling back to the first entry so an
-    /// older catalog without the flag keeps working.
-    /// </summary>
-    public CatalogBuild? RecommendedBuild =>
-        CatalogBuilds.FirstOrDefault(b => b.Recommended) ?? CatalogBuilds.FirstOrDefault();
-
-    partial void OnSelectedBuildChanged(CatalogBuild? value) => ApplyBuild(value);
-
-
-    private void ApplyBuild(CatalogBuild? build)
-    {
-        if (build is null || SelectedInstance is null)
-        {
-            return;
-        }
-
-        _applyingInstance = true;
-        try
-        {
-            if (build.GameVersion is not null)
-            {
-                SelectedVersion = _allVersions.FirstOrDefault(v => v.Id == build.GameVersion) ?? SelectedVersion;
-            }
-
-            SelectedLoader = build.Loader;
-
-            if (build.LoaderVersion is not null)
-            {
-                SelectedLoaderVersion = LoaderVersions.FirstOrDefault(v => v.Version == build.LoaderVersion)
-                                        ?? SelectedLoaderVersion;
-            }
-
-            if (build.MemoryMb is > 0)
-            {
-                MaxMemoryMb = build.MemoryMb.Value;
-            }
-
-            SelectedInstance.EnabledCatalogItems = build.Items.ToList();
-        }
-        finally
-        {
-            _applyingInstance = false;
-        }
-
-        SyncInstance();
-        OnPropertyChanged(nameof(BuildModCount));
-        Status = Localize("Status_BuildApplied", "Build \"{0}\" applied: {1} item(s)", build.Name, build.Items.Count);
-    }
-
-    [RelayCommand]
-    private void ApplySelectedBuild() => ApplyBuild(SelectedBuild);
-
-    /// <summary>
-    /// Fetches the recommended build from the catalog and adds it to the build list as a
-    /// new build, downloading its mods so it is ready to play.
-    /// </summary>
-    [RelayCommand]
-    private async Task AddRecommendedBuildAsync()
-    {
-        if (IsBuildImportBusy)
-        {
-            return;
-        }
-
-        try
-        {
-            IsBuildImportBusy = true;
-            Status = Localize("Builds_ImportFetching", "Fetching the recommended build…");
-
-            // Read the catalog again rather than trusting the loaded copy: the build lives
-            // in the repository, so a change there should be picked up without a restart.
-            var result = await _catalog.LoadAsync();
-
-            if (result.Catalog is null)
-            {
-                Status = Localize(
-                    "Builds_ImportNoCatalog",
-                    "Could not load the catalog: {0}",
-                    result.Error ?? "?");
-                return;
-            }
-
-            _loadedCatalog = result.Catalog;
-
-            CatalogBuilds.Clear();
-            foreach (var catalogBuild in result.Catalog.Builds)
-            {
-                CatalogBuilds.Add(catalogBuild);
-            }
-
-            var build = RecommendedBuild;
-
-            if (build is null)
-            {
-                Status = Localize("Builds_ImportNone", "The catalog does not offer a build");
-                return;
-            }
-
-            var instance = CreateInstanceFromBuild(build, uniqueName: true);
-
-            _allInstances.Add(instance);
-            ApplyBuildFilter();
-            SelectedInstance = instance;
-
-            var versionMissing = await ApplyBuildToEditorAsync(build);
-
-            if (versionMissing)
-            {
-                // The build is in the list and usable, it just needs a version picked by hand.
-                Status = Localize(
-                    "Builds_ImportVersionMissing",
-                    "Build \"{0}\" added, but version {1} is not available - choose one in Settings.",
-                    instance.Name,
-                    build.GameVersion);
-                return;
-            }
-
-            Status = Localize("Builds_ImportInstalling", "Installing build mods…");
-            await EnsureBuildItemsInstalledAsync();
-
-            RefreshBackups();
-
-            Status = Localize(
-                "Builds_ImportDone",
-                "Build \"{0}\" added ({1} item(s))",
-                instance.Name,
-                build.Items.Count);
-
-            AppendConsole($"[builds] added '{instance.Name}' from the catalog");
-        }
-        catch (Exception ex)
-        {
-            Status = Localize("Error_ImportBuild", "Failed to add the build: {0}", ex.Message);
-        }
-        finally
-        {
-            IsBuildImportBusy = false;
-        }
-    }
-
-    /// <summary>
-    /// Points the editor at what the build describes. Returns true when the build's game
-    /// version could not be resolved, which the caller reports instead of failing.
-    /// </summary>
-    private async Task<bool> ApplyBuildToEditorAsync(CatalogBuild build)
-    {
-        var versionMissing = false;
-
-        _applyingInstance = true;
-        try
-        {
-            if (build.GameVersion is not null)
-            {
-                var version = _allVersions.FirstOrDefault(v => v.Id == build.GameVersion);
-
-                if (version is null)
-                {
-                    versionMissing = true;
-                }
-                else
-                {
-                    SelectedVersion = version;
-                }
-            }
-
-            SelectedLoader = build.Loader;
-
-            if (build.MemoryMb is > 0)
-            {
-                MaxMemoryMb = build.MemoryMb.Value;
-            }
-        }
-        finally
-        {
-            _applyingInstance = false;
-        }
-
-        await LoadLoaderVersionsAsync();
-
-        if (build.LoaderVersion is { Length: > 0 } pinned)
-        {
-            SelectedLoaderVersion = LoaderVersions.FirstOrDefault(v => v.Version == pinned)
-                                    ?? SelectedLoaderVersion;
-        }
-
-        SyncInstance();
-        OnPropertyChanged(nameof(BuildModCount));
-        return versionMissing;
-    }
-
-    /// <summary>
-    /// Makes the instance match the recommended build. The build file in the repository is
-    /// the source of truth: adding a mod there installs it for everyone, removing one
-    /// uninstalls it. Mods are not bumped to newer Modrinth releases by themselves - to
-    /// update one, pin its version in the catalog.
-    /// </summary>
-    private async Task EnsureBuildItemsInstalledAsync()
-    {
-        if (SelectedInstance is null)
-        {
-            return;
-        }
-
-        await MaybeBackupAsync(BackupTrigger.BeforeModChange);
-
-        var enabledIds = SelectedInstance.EnabledCatalogItems;
-
-        // Catalog mods that are no longer part of the build are removed.
-        var removed = SelectedInstance.InstalledMods
-            .Where(m => m.Source == ModSource.Catalog &&
-                        m.Id is not null &&
-                        !enabledIds.Contains(m.Id, StringComparer.OrdinalIgnoreCase))
-            .ToList();
-
-        foreach (var record in removed)
-        {
-            DeleteInstalledFile(record);
-        }
-
-        var pending = new List<CatalogItem>();
-
-        foreach (var id in enabledIds)
-        {
-            var item = _loadedCatalog?.FindItem(id);
-
-            if (item is null)
-            {
-                continue;
-            }
-
-            var record = FindCatalogRecord(id);
-            var installed = record is not null &&
-                            System.IO.File.Exists(System.IO.Path.Combine(
-                                ModManager.ModsDirectory(InstanceDirectory),
-                                record.FileName));
-
-            // Already present and not pinned: leave the file as it is.
-            if (installed && string.IsNullOrWhiteSpace(item.Source.Version))
-            {
-                continue;
-            }
-
-            pending.Add(item);
-        }
-
-        if (pending.Count == 0)
-        {
-            RefreshMods();
-            return;
-        }
-
-        AppendConsole($"--- Build: {pending.Count} mod(s) to install ---");
-
-        foreach (var item in pending)
-        {
-            var result = await _catalogInstaller.InstallAsync(
-                item,
-                InstanceDirectory,
-                SelectedVersion?.Id,
-                SelectedLoader);
-
-            AppendConsole($"[build] {item.Name}: {result.Message}");
-
-            if (!result.Success || result.Path is null)
-            {
-                continue;
-            }
-
-            var fileName = System.IO.Path.GetFileName(result.Path);
-
-            ReplaceInstalledFile(item.Id, fileName);
-            RecordInstalledMod(new InstalledModRecord
-            {
-                FileName = fileName,
-                Source = ModSource.Catalog,
-                Id = item.Id,
-                Name = item.Name,
-                IconUrl = item.IconUrl,
-                Required = item.Required
-            });
-        }
-
-        RefreshMods();
-    }
-
-    private InstalledModRecord? FindCatalogRecord(string id)
-        => SelectedInstance?.InstalledMods.FirstOrDefault(m =>
-            m.Source == ModSource.Catalog &&
-            string.Equals(m.Id, id, StringComparison.OrdinalIgnoreCase));
-
-    /// <summary>Deletes a recorded file and forgets it.</summary>
-    private void DeleteInstalledFile(InstalledModRecord record)
-    {
-        if (SelectedInstance is null)
-        {
-            return;
-        }
-
-        try
-        {
-            var path = System.IO.Path.Combine(ModManager.ModsDirectory(InstanceDirectory), record.FileName);
-
-            if (System.IO.File.Exists(path))
-            {
-                System.IO.File.Delete(path);
-                AppendConsole($"[build] removed {record.FileName}");
-            }
-        }
-        catch (Exception ex)
-        {
-            AppendConsole($"[build] could not remove {record.FileName}: {ex.Message}");
-        }
-
-        SelectedInstance.InstalledMods.Remove(record);
-        _instances.Save(SelectedInstance);
-    }
-
-    /// <summary>
-    /// Removes the file previously installed for a project when a different one replaced it.
-    /// </summary>
-    private void ReplaceInstalledFile(string? projectId, string newFileName)
-    {
-        if (SelectedInstance is null || string.IsNullOrWhiteSpace(projectId))
-        {
-            return;
-        }
-
-        var stale = SelectedInstance.InstalledMods
-            .Where(m => string.Equals(m.Id, projectId, StringComparison.OrdinalIgnoreCase))
-            .Where(m => !string.Equals(m.FileName, newFileName, StringComparison.OrdinalIgnoreCase))
-            .ToList();
-
-        if (stale.Count == 0)
-        {
-            return;
-        }
-
-        var directory = ModManager.ModsDirectory(InstanceDirectory);
-
-        foreach (var record in stale)
-        {
-            try
-            {
-                var path = System.IO.Path.Combine(directory, record.FileName);
-
-                if (System.IO.File.Exists(path))
-                {
-                    System.IO.File.Delete(path);
-                    AppendConsole($"[build] removed outdated {record.FileName}");
-                }
-
-                SelectedInstance.InstalledMods.Remove(record);
-            }
-            catch (Exception ex)
-            {
-                AppendConsole($"[build] could not remove {record.FileName}: {ex.Message}");
-            }
-        }
-
-        _instances.Save(SelectedInstance);
     }
 
     // ===================== Backups =====================
@@ -692,7 +329,7 @@ public ObservableCollection<CatalogBuild> CatalogBuilds { get; } = new();
 
     private string _backupDirectoryOverride = string.Empty;
 
-[RelayCommand]
+    [RelayCommand]
     private async Task CreateBackupNowAsync()
     {
         try
@@ -702,7 +339,7 @@ public ObservableCollection<CatalogBuild> CatalogBuilds { get; } = new();
                 return;
             }
 
-            BackupStatus = Localize("Backup_InProgress", "Creating a backup�");
+            BackupStatus = Localize("Backup_InProgress", "Creating a backup…");
             AppendConsole($"[backup] creating a backup of {SelectedInstance.Name}");
 
             var backup = await _backups.CreateAsync(InstanceDirectory, BackupsDirectory, SelectedInstance.Id);
@@ -758,7 +395,7 @@ public ObservableCollection<CatalogBuild> CatalogBuilds { get; } = new();
     /// timer: the "once a day" rule is evaluated when the launcher actually launches
     /// the game or touches mods.
     /// </summary>
-public async Task<bool> MaybeBackupAsync(BackupTrigger trigger)
+    public async Task<bool> MaybeBackupAsync(BackupTrigger trigger)
     {
         if (!BackupsEnabled || SelectedInstance is null)
         {
@@ -801,23 +438,6 @@ public async Task<bool> MaybeBackupAsync(BackupTrigger trigger)
 
         return args.Length == 0 ? text : string.Format(text, args);
     }
-}
-
-/// <summary>One bar of the online chart: pixel height, tooltip and whether it has data.</summary>
-public sealed class ServerHistoryBarView
-{
-    public ServerHistoryBarView(double height, string tooltip, bool isEmpty)
-    {
-        Height = height;
-        Tooltip = tooltip;
-        IsEmpty = isEmpty;
-    }
-
-    public double Height { get; }
-
-    public string Tooltip { get; }
-
-    public bool IsEmpty { get; }
 }
 
 public sealed record JavaChoice(string Display, string? Path);

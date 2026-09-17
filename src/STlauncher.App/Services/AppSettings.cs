@@ -21,6 +21,12 @@ public sealed class AppSettings
 
     public string? SelectedInstanceId { get; set; }
 
+    /// <summary>
+    /// Catalog builds the player deleted. The startup sync skips these, so removing the
+    /// recommended build stays removed instead of coming back on the next launch.
+    /// </summary>
+    public List<string> DismissedBuildIds { get; set; } = new();
+
     public LoaderKind Loader { get; set; } = LoaderKind.Vanilla;
 
     public string? LoaderVersion { get; set; }
@@ -82,4 +88,10 @@ public sealed class AppSettings
     /// builds and mods can be updated without releasing a new launcher.
     /// </summary>
     public string? CatalogUrl { get; set; } = DefaultCatalogUrl;
+
+    /// <summary>
+    /// Server statistics collector. Normally published through the catalog; this is the
+    /// manual override in the developer section.
+    /// </summary>
+    public string? ServerStatsUrl { get; set; }
 }

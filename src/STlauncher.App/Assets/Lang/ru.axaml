@@ -43,8 +43,8 @@
     <x:String x:Key="Builds_WizardLoader">Загрузчик</x:String>
     <x:String x:Key="Builds_WizardHint">Версия и загрузчик определяют, какие моды будут доступны в каталоге.</x:String>
     <x:String x:Key="Builds_WizardCreate">Создать</x:String>
-    <x:String x:Key="Builds_UseRecommended">Добавить рекомендуемую сборку</x:String>
-    <x:String x:Key="Builds_UseRecommendedHint">Скачает рекомендуемую сборку с GitHub и добавит её отдельной сборкой в список.</x:String>
+    <x:String x:Key="Builds_UseRecommended">Обновить рекомендуемую сборку</x:String>
+    <x:String x:Key="Builds_UseRecommendedHint">Сверит рекомендуемую сборку с каталогом на GitHub: создаст её, если она удалена, и обновит версию, загрузчик и список модов.</x:String>
     <x:String x:Key="Builds_ImportFetching">Загружаю рекомендуемую сборку…</x:String>
     <x:String x:Key="Builds_ImportNoCatalog">Не удалось загрузить каталог: {0}</x:String>
     <x:String x:Key="Builds_ImportNone">В каталоге нет ни одной сборки</x:String>
@@ -81,11 +81,11 @@
     <x:String x:Key="Server_Refresh">Обновить</x:String>
     <x:String x:Key="Server_Players">Игроков: {0} / {1}</x:String>
     <x:String x:Key="Server_Offline">Сервер не ответил</x:String>
-    <x:String x:Key="Server_Monitoring">Мониторинг за 3 дня</x:String>
-    <x:String x:Key="Server_MonitoringHint">Данные собирает сам лаунчер: образец онлайна при каждом запуске и обновлении статуса.</x:String>
+    <x:String x:Key="Server_Monitoring">Онлайн сервера</x:String>
+    <x:String x:Key="Server_MonitoringHint">Данные собирает сам лаунчер: замер онлайна раз в пять минут, пока окно открыто.</x:String>
     <x:String x:Key="Server_Average">Средний онлайн: {0:F0}</x:String>
     <x:String x:Key="Server_Peak">Пик: {0}</x:String>
-    <x:String x:Key="Server_NoData">Данных пока нет — они появятся по мере запусков лаунчера.</x:String>
+    <x:String x:Key="Server_NoData">Данных пока нет — график заполнится, пока лаунчер открыт.</x:String>
     <x:String x:Key="Server_BarTooltip">{0} — {1} (пик {2})</x:String>
     <x:String x:Key="Server_Community">Сообщество</x:String>
     <x:String x:Key="Server_Open">Открыть</x:String>
@@ -310,5 +310,31 @@
     <x:String x:Key="Common_Maximize">Развернуть</x:String>
     <x:String x:Key="Common_Cancel">Отмена</x:String>
     <x:String x:Key="Common_Ok">ОК</x:String>
+
+    <x:String x:Key="Server_RangeDay">24 часа</x:String>
+    <x:String x:Key="Server_RangeWeek">7 дней</x:String>
+    <x:String x:Key="Server_Now">сейчас</x:String>
+    <x:String x:Key="Server_Collecting">Собираем данные: замеров — {0}.</x:String>
+    <x:String x:Key="Server_ChartEmpty">График появится после первого замера онлайна.</x:String>
+    <x:String x:Key="Builds_SyncDone">Сборка обновлена: скачано файлов — {0}</x:String>
+    <x:String x:Key="Builds_SyncReady">Сборка актуальна — можно играть</x:String>
+    <x:String x:Key="Builds_SyncFailed">Не удалось обновить сборку: {0}</x:String>
+    <x:String x:Key="Builds_SyncWaiting">Завершаю обновление сборки…</x:String>
+    <x:String x:Key="Builds_SyncItem">Сборка: {0} ({1}/{2})</x:String>
+    <x:String x:Key="Builds_SyncBusy">Обновляю сборку по каталогу…</x:String>
+    <x:String x:Key="Builds_ImportUpdated">Сборка «{0}» актуальна ({1} элем.)</x:String>
+    <x:String x:Key="Game_NicknameReroll">Другой ник</x:String>
+    <x:String x:Key="Game_NicknameOwn">Ваш ник</x:String>
+    <x:String x:Key="Game_NicknameRule">3–16 символов: латиница, цифры и «_»</x:String>
+
+    <x:String x:Key="Server_AverageWeek">Средний онлайн за неделю: {0:F0}</x:String>
+    <x:String x:Key="Server_Record">Рекорд: {0}</x:String>
+    <x:String x:Key="Server_RecordAt">Рекорд: {0} ({1})</x:String>
+    <x:String x:Key="Server_Uptime">Аптайм: {0:F0}%</x:String>
+    <x:String x:Key="Server_Rank">Место в рейтинге: #{0}</x:String>
+    <x:String x:Key="Server_SourceLocal">Сборщик статистики недоступен — показаны собственные замеры лаунчера.</x:String>
+    <x:String x:Key="Server_SourceCache">Сохранённая копия: сборщик статистики сейчас недоступен.</x:String>
+    <x:String x:Key="Settings_StatsUrl">Адрес сборщика статистики</x:String>
+    <x:String x:Key="Settings_StatsUrlHint">Обычно берётся из каталога. Поле нужно, чтобы проверить свой сборщик до публикации.</x:String>
 
 </ResourceDictionary>

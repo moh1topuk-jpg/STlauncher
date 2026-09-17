@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:STlauncher.App.ViewModels"
              xmlns:inst="using:STlauncher.Core.Instances"
@@ -75,6 +75,12 @@
                         <TextBlock Classes="faint" TextWrapping="Wrap"
                                    Text="{Binding ServerJoinHint}"/>
 
+                        <!-- The startup sync downloads in the background; a launch waits
+                             for it, so this is information rather than a blocker. -->
+                        <TextBlock Classes="gold" TextWrapping="Wrap"
+                                   IsVisible="{Binding IsBuildSyncBusy}"
+                                   Text="{DynamicResource Builds_SyncBusy}"/>
+
                         <!-- Launch progress -->
                         <Border Classes="panel" Padding="14" IsVisible="{Binding ShowLaunchProgress}">
                             <StackPanel Spacing="10">
@@ -111,7 +117,20 @@
                             </StackPanel>
                         </StackPanel>
 
-                        <TextBox Text="{Binding Username}" Watermark="Player"/>
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                            <TextBox Text="{Binding Username}"
+                                     Watermark="{DynamicResource Game_NicknameOwn}"/>
+
+                            <!-- One click for a different name, so the default is never
+                                 something the player is stuck with. -->
+                            <Button Grid.Column="1" Classes="ghost small"
+                                    Content="&#x21BB;"
+                                    Command="{Binding RerollNicknameCommand}"
+                                    ToolTip.Tip="{DynamicResource Game_NicknameReroll}"/>
+                        </Grid>
+
+                        <TextBlock Text="{DynamicResource Game_NicknameRule}" Classes="faint"
+                                   TextWrapping="Wrap"/>
 
                         <Border Classes="hairline"/>
 

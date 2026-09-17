@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:STlauncher.App.ViewModels"
              x:Class="STlauncher.App.Views.Pages.SettingsPage"
@@ -184,6 +184,14 @@
                     <TextBox Text="{Binding CatalogUrl}"
                              Watermark="https://example.com/catalog.json  or  C:\path\catalog.json"/>
                     <TextBlock Text="{DynamicResource Settings_CatalogHint}" Classes="faint"
+                               TextWrapping="Wrap"/>
+
+                    <Border Classes="hairline"/>
+
+                    <TextBlock Text="{DynamicResource Settings_StatsUrl}" Classes="faint"/>
+                    <TextBox Text="{Binding ServerStatsUrl}"
+                             Watermark="https://name.workers.dev/"/>
+                    <TextBlock Text="{DynamicResource Settings_StatsUrlHint}" Classes="faint"
                                TextWrapping="Wrap"/>
                 </StackPanel>
             </Border>

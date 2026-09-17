@@ -381,16 +381,23 @@ public partial class MainWindowViewModel
     /// </summary>
     public void RecordInstalledMod(InstalledModRecord record)
     {
-        if (SelectedInstance is null)
+        if (SelectedInstance is not null)
         {
-            return;
+            RecordInstalledMod(SelectedInstance, record);
         }
+    }
 
-        SelectedInstance.InstalledMods.RemoveAll(m =>
+    /// <summary>
+    /// The same, for an explicit build. The startup sync runs against the recommended
+    /// build even when the player has a different one open.
+    /// </summary>
+    public void RecordInstalledMod(Instance instance, InstalledModRecord record)
+    {
+        instance.InstalledMods.RemoveAll(m =>
             string.Equals(m.FileName, record.FileName, StringComparison.OrdinalIgnoreCase));
 
-        SelectedInstance.InstalledMods.Add(record);
-        _instances.Save(SelectedInstance);
+        instance.InstalledMods.Add(record);
+        _instances.Save(instance);
     }
 
     public bool IsProjectInstalled(string slug)

@@ -43,8 +43,8 @@
     <x:String x:Key="Builds_WizardLoader">Loader</x:String>
     <x:String x:Key="Builds_WizardHint">The version and loader decide which mods the catalog offers.</x:String>
     <x:String x:Key="Builds_WizardCreate">Create</x:String>
-    <x:String x:Key="Builds_UseRecommended">Add the recommended build</x:String>
-    <x:String x:Key="Builds_UseRecommendedHint">Downloads the recommended build from GitHub and adds it to the list as its own build.</x:String>
+    <x:String x:Key="Builds_UseRecommended">Update the recommended build</x:String>
+    <x:String x:Key="Builds_UseRecommendedHint">Checks the recommended build against the catalog on GitHub: recreates it if it was deleted and updates the version, loader and mod list.</x:String>
     <x:String x:Key="Builds_ImportFetching">Fetching the recommended build…</x:String>
     <x:String x:Key="Builds_ImportNoCatalog">Could not load the catalog: {0}</x:String>
     <x:String x:Key="Builds_ImportNone">The catalog does not offer a build</x:String>
@@ -81,11 +81,11 @@
     <x:String x:Key="Server_Refresh">Refresh</x:String>
     <x:String x:Key="Server_Players">Players: {0} / {1}</x:String>
     <x:String x:Key="Server_Offline">The server did not respond</x:String>
-    <x:String x:Key="Server_Monitoring">3-day monitoring</x:String>
-    <x:String x:Key="Server_MonitoringHint">Collected by the launcher itself: one sample per launch and status refresh.</x:String>
+    <x:String x:Key="Server_Monitoring">Server online</x:String>
+    <x:String x:Key="Server_MonitoringHint">Collected by the launcher itself: one reading every five minutes while the window is open.</x:String>
     <x:String x:Key="Server_Average">Average online: {0:F0}</x:String>
     <x:String x:Key="Server_Peak">Peak: {0}</x:String>
-    <x:String x:Key="Server_NoData">No data yet - samples appear as the launcher runs.</x:String>
+    <x:String x:Key="Server_NoData">No data yet - the chart fills in while the launcher is open.</x:String>
     <x:String x:Key="Server_BarTooltip">{0} - {1} (peak {2})</x:String>
     <x:String x:Key="Server_Community">Community</x:String>
     <x:String x:Key="Server_Open">Open</x:String>
@@ -311,5 +311,31 @@
     <x:String x:Key="Common_Maximize">Maximize</x:String>
     <x:String x:Key="Common_Cancel">Cancel</x:String>
     <x:String x:Key="Common_Ok">OK</x:String>
+
+    <x:String x:Key="Server_RangeDay">24 hours</x:String>
+    <x:String x:Key="Server_RangeWeek">7 days</x:String>
+    <x:String x:Key="Server_Now">now</x:String>
+    <x:String x:Key="Server_Collecting">Collecting data: {0} reading(s) so far.</x:String>
+    <x:String x:Key="Server_ChartEmpty">The chart appears after the first reading.</x:String>
+    <x:String x:Key="Builds_SyncDone">Build updated: {0} file(s) downloaded</x:String>
+    <x:String x:Key="Builds_SyncReady">Build is up to date - ready to play</x:String>
+    <x:String x:Key="Builds_SyncFailed">Could not update the build: {0}</x:String>
+    <x:String x:Key="Builds_SyncWaiting">Finishing the build update…</x:String>
+    <x:String x:Key="Builds_SyncItem">Build: {0} ({1}/{2})</x:String>
+    <x:String x:Key="Builds_SyncBusy">Updating the build from the catalog…</x:String>
+    <x:String x:Key="Builds_ImportUpdated">Build "{0}" is up to date ({1} item(s))</x:String>
+    <x:String x:Key="Game_NicknameReroll">Another name</x:String>
+    <x:String x:Key="Game_NicknameOwn">Your nickname</x:String>
+    <x:String x:Key="Game_NicknameRule">3-16 characters: letters, digits and "_"</x:String>
+
+    <x:String x:Key="Server_AverageWeek">Average for the week: {0:F0}</x:String>
+    <x:String x:Key="Server_Record">Record: {0}</x:String>
+    <x:String x:Key="Server_RecordAt">Record: {0} ({1})</x:String>
+    <x:String x:Key="Server_Uptime">Uptime: {0:F0}%</x:String>
+    <x:String x:Key="Server_Rank">Rank: #{0}</x:String>
+    <x:String x:Key="Server_SourceLocal">Collector unavailable - showing this launcher's own samples.</x:String>
+    <x:String x:Key="Server_SourceCache">Saved copy: the collector is unreachable right now.</x:String>
+    <x:String x:Key="Settings_StatsUrl">Server stats collector URL</x:String>
+    <x:String x:Key="Settings_StatsUrlHint">Normally supplied by the catalog. This field is for testing a collector before publishing it.</x:String>
 
 </ResourceDictionary>

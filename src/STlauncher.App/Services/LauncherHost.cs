@@ -72,6 +72,7 @@ public static class LauncherHost
         services.AddSingleton<ModManager>();
         services.AddSingleton<ModpackInstaller>();
         services.AddSingleton<ContentCatalogService>();
+        services.AddSingleton<STlauncher.Core.Server.ServerStatsClient>();
         services.AddSingleton<CatalogInstaller>();
         services.AddSingleton<LaunchService>();
         services.AddSingleton<SkinService>();

@@ -44,6 +44,13 @@ public sealed class ContentCatalog
     [JsonPropertyName("sections")]
     public List<CatalogSection> Sections { get; set; } = new();
 
+    /// <summary>
+    /// Where the launcher reads published server statistics from (see docs/MONITORING.md).
+    /// Living in the catalog means the collector can be moved or replaced without a release.
+    /// </summary>
+    [JsonPropertyName("serverStatsUrl")]
+    public string? ServerStatsUrl { get; set; }
+
     /// <summary>Recommended ready-made builds the launcher can apply in one click.</summary>
     [JsonPropertyName("builds")]
     public List<CatalogBuild> Builds { get; set; } = new();

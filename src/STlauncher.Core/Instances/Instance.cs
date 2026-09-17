@@ -36,6 +36,15 @@ public sealed class Instance
     [JsonPropertyName("javaPath")]
     public string? JavaPath { get; set; }
 
+    /// <summary>
+    /// Id of the catalog build this instance was created from. The launcher keeps such an
+    /// instance in step with the catalog on every start; a build without this link is the
+    /// player's own and is never touched.
+    /// </summary>
+    [JsonPropertyName("catalogBuildId")]
+    public string? CatalogBuildId { get; set; }
+
+    /// <summary>Server pinned by the catalog build. Null means the launcher default.</summary>
     [JsonPropertyName("serverName")]
     public string? ServerName { get; set; }
 

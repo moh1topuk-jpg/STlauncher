@@ -14,13 +14,31 @@ public sealed class ServerSample
 
     [JsonPropertyName("online")]
     public int Online { get; set; }
+
+    /// <summary>
+    /// Server this sample belongs to. Null in files written before the address was
+    /// recorded; those samples all came from the single server the launcher shipped with,
+    /// so they are matched against any address rather than thrown away.
+    /// </summary>
+    [JsonPropertyName("address")]
+    public string? Address { get; set; }
 }
 
-/// <summary>One bar of the monitoring chart: an hour with its average and peak.</summary>
-public sealed record ServerHistoryBar(DateTimeOffset Start, double Average, int Peak)
-{
-    public string Label => Start.ToLocalTime().ToString("dd.MM HH:mm");
-}
+/// <summary>
+/// One column of the monitoring chart.
+/// </summary>
+/// <param name="HasData">
+/// False when the launcher was not running during this slice. Such a slice is a gap, not
+/// an hour with nobody online - drawing it as zero is what made the old chart read as an
+/// empty strip on every fresh installation.
+/// </param>
+public sealed record ServerHistoryBucket(
+    DateTimeOffset Start,
+    DateTimeOffset End,
+    bool HasData,
+    double Average,
+    int Peak,
+    int SampleCount);
 
 /// <summary>
 /// Local online history. Samples are collected whenever the launcher pings the server,
@@ -28,7 +46,10 @@ public sealed record ServerHistoryBar(DateTimeOffset Start, double Average, int 
 /// </summary>
 public sealed class ServerHistoryStore
 {
-    private static readonly TimeSpan Retention = TimeSpan.FromDays(14);
+    public static readonly TimeSpan Retention = TimeSpan.FromDays(14);
+
+    /// <summary>Two samples closer together than this add nothing to an hourly chart.</summary>
+    public static readonly TimeSpan MinimumInterval = TimeSpan.FromMinutes(1);
 
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
@@ -53,7 +74,8 @@ public sealed class ServerHistoryStore
         }
     }
 
-    public void Add(int online, DateTimeOffset? at = null)
+    /// <summary>Records a reading. Returns false when it was too close to the previous one.</summary>
+    public bool Add(string address, int online, DateTimeOffset? at = null)
     {
         List<ServerSample> snapshot;
 
@@ -61,14 +83,22 @@ public sealed class ServerHistoryStore
         {
             var time = at ?? DateTimeOffset.Now;
 
-            // One sample per minute is plenty for an hourly chart.
-            if (_samples.Count > 0 && time - _samples[^1].Time < TimeSpan.FromMinutes(1))
+            var last = _samples.LastOrDefault(s => Matches(s, address));
+
+            if (last is not null && time - last.Time < MinimumInterval)
             {
-                return;
+                return false;
             }
 
-            _samples.Add(new ServerSample { Time = time, Online = online });
+            _samples.Add(new ServerSample
+            {
+                Time = time,
+                Online = online,
+                Address = Normalize(address)
+            });
+
             _samples.RemoveAll(s => time - s.Time > Retention);
+            _samples.Sort((a, b) => a.Time.CompareTo(b.Time));
 
             // Snapshot under the lock, then write outside it: the file write is disk I/O
             // and has no business blocking every other reader.
@@ -76,75 +106,109 @@ public sealed class ServerHistoryStore
         }
 
         Save(snapshot);
+        return true;
     }
 
-    /// <summary>Hourly averages and peaks for the requested window, oldest first.</summary>
-    public IReadOnlyList<ServerHistoryBar> GetHourlyBars(TimeSpan window, DateTimeOffset? now = null)
+    /// <summary>
+    /// Splits the window into equal slices, oldest first. Slices the launcher was not
+    /// running for come back with <see cref="ServerHistoryBucket.HasData"/> false so the
+    /// caller can leave a gap instead of drawing a zero.
+    /// </summary>
+    public IReadOnlyList<ServerHistoryBucket> GetBuckets(
+        string address,
+        TimeSpan window,
+        int bucketCount,
+        DateTimeOffset? now = null)
     {
-        var end = (now ?? DateTimeOffset.Now).ToLocalTime();
-        var from = end - window;
+        if (bucketCount <= 0 || window <= TimeSpan.Zero)
+        {
+            return Array.Empty<ServerHistoryBucket>();
+        }
+
+        var end = now ?? DateTimeOffset.Now;
+        var start = end - window;
+        var slice = TimeSpan.FromTicks(window.Ticks / bucketCount);
 
         lock (_gate)
         {
+            // One ordered pass instead of a LINQ filter per bucket: a week at five-minute
+            // resolution is 2016 buckets, and the quadratic version was visibly slow.
             var relevant = _samples
-                .Where(s => s.Time.ToLocalTime() >= from)
+                .Where(s => Matches(s, address) && s.Time >= start && s.Time <= end)
+                .OrderBy(s => s.Time)
                 .ToList();
 
-            if (relevant.Count == 0)
+            var buckets = new List<ServerHistoryBucket>(bucketCount);
+            var index = 0;
+
+            for (var i = 0; i < bucketCount; i++)
             {
-                return Array.Empty<ServerHistoryBar>();
+                var isLast = i == bucketCount - 1;
+                var bucketStart = start + TimeSpan.FromTicks(slice.Ticks * i);
+                var bucketEnd = isLast ? end : bucketStart + slice;
+
+                // The newest reading sits exactly on "now" often enough to matter: the
+                // last bucket therefore includes its own upper bound.
+                var limit = isLast ? bucketEnd.AddTicks(1) : bucketEnd;
+
+                var count = 0;
+                long total = 0;
+                var peak = 0;
+
+                while (index < relevant.Count && relevant[index].Time < limit)
+                {
+                    var online = relevant[index].Online;
+                    total += online;
+                    peak = Math.Max(peak, online);
+                    count++;
+                    index++;
+                }
+
+                buckets.Add(count == 0
+                    ? new ServerHistoryBucket(bucketStart, bucketEnd, false, 0, 0, 0)
+                    : new ServerHistoryBucket(bucketStart, bucketEnd, true, (double)total / count, peak, count));
             }
 
-            var start = new DateTimeOffset(
-                from.Year, from.Month, from.Day, from.Hour, 0, 0, from.Offset);
-
-            var lastBucket = new DateTimeOffset(
-                end.Year, end.Month, end.Day, end.Hour, 0, 0, end.Offset);
-
-            // Both ends are included: rounding "from" down means a fixed hour count would
-            // stop short of "now" and drop the newest sample, which is the one a fresh
-            // installation has.
-            var hours = (int)Math.Ceiling((lastBucket - start).TotalHours) + 1;
-
-            var bars = new List<ServerHistoryBar>();
-
-            for (var i = 0; i < hours; i++)
-            {
-                var bucketStart = start.AddHours(i);
-                var bucketEnd = bucketStart.AddHours(1);
-
-                var inBucket = relevant
-                    .Where(s => s.Time.ToLocalTime() >= bucketStart && s.Time.ToLocalTime() < bucketEnd)
-                    .ToList();
-
-                // Empty hours are kept as zero bars: the chart is a timeline, so skipping
-                // them would move the data to the wrong place on the axis.
-                bars.Add(inBucket.Count == 0
-                    ? new ServerHistoryBar(bucketStart, 0, 0)
-                    : new ServerHistoryBar(
-                        bucketStart,
-                        inBucket.Average(s => s.Online),
-                        inBucket.Max(s => s.Online)));
-            }
-
-            return bars;
+            return buckets;
         }
     }
 
-    public (double Average, int Peak) GetSummary(TimeSpan window, DateTimeOffset? now = null)
+    public (double Average, int Peak, int SampleCount) GetSummary(
+        string address,
+        TimeSpan window,
+        DateTimeOffset? now = null)
     {
         var end = now ?? DateTimeOffset.Now;
         var from = end - window;
 
         lock (_gate)
         {
-            var relevant = _samples.Where(s => s.Time >= from).ToList();
+            var relevant = _samples
+                .Where(s => Matches(s, address) && s.Time >= from && s.Time <= end)
+                .ToList();
 
             return relevant.Count == 0
-                ? (0, 0)
-                : (relevant.Average(s => s.Online), relevant.Max(s => s.Online));
+                ? (0, 0, 0)
+                : (relevant.Average(s => s.Online), relevant.Max(s => s.Online), relevant.Count);
         }
     }
+
+    /// <summary>Oldest reading still kept for this server, or null when there is none.</summary>
+    public DateTimeOffset? FirstSampleAt(string address)
+    {
+        lock (_gate)
+        {
+            var first = _samples.FirstOrDefault(s => Matches(s, address));
+            return first?.Time;
+        }
+    }
+
+    private static string? Normalize(string? address)
+        => string.IsNullOrWhiteSpace(address) ? null : address.Trim().ToLowerInvariant();
+
+    private static bool Matches(ServerSample sample, string address)
+        => sample.Address is null ||
+           string.Equals(sample.Address, Normalize(address), StringComparison.OrdinalIgnoreCase);
 
     private void Load()
     {
@@ -158,10 +222,14 @@ public sealed class ServerHistoryStore
             var json = File.ReadAllText(_path);
             var loaded = JsonSerializer.Deserialize<List<ServerSample>>(json, JsonOptions);
 
-            if (loaded is not null)
+            if (loaded is null)
             {
-                _samples.AddRange(loaded);
+                return;
             }
+
+            // Sorted on the way in: everything downstream assumes chronological order, and
+            // a hand-edited or clock-shifted file must not be able to break the chart.
+            _samples.AddRange(loaded.OrderBy(s => s.Time));
         }
         catch (Exception)
         {
