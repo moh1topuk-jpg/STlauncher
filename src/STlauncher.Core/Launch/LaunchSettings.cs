@@ -16,6 +16,15 @@ public sealed class LaunchSettings
 
     public IReadOnlyList<string> ExtraJvmArgs { get; init; } = new List<string>();
 
+    /// <summary>Extra arguments appended after the standard Minecraft arguments.</summary>
+    public IReadOnlyList<string> ExtraGameArgs { get; init; } = new List<string>();
+
+    /// <summary>Explicit Java executable. Empty means "detect or download automatically".</summary>
+    public string? JavaPath { get; init; }
+
+    /// <summary>Re-download the client jar, natives and the vanilla version JSON.</summary>
+    public bool ForceUpdate { get; init; }
+
     public string? ServerAddress { get; init; }
 
     public string? ServerListName { get; init; }

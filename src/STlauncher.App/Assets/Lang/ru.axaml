@@ -1,4 +1,4 @@
-<ResourceDictionary xmlns="https://github.com/avaloniaui"
+﻿<ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!-- Shell -->
@@ -21,7 +21,10 @@
     <x:String x:Key="Game_Loader">Загрузчик</x:String>
     <x:String x:Key="Game_LoaderVersion">Версия загрузчика</x:String>
     <x:String x:Key="Game_Nickname">Ник</x:String>
-    <x:String x:Key="Game_SaveNickname">Запомнить ник</x:String>
+    <x:String x:Key="Game_Nicknames">Пресеты ников</x:String>
+    <x:String x:Key="Game_NicknameHint">Новый ник</x:String>
+    <x:String x:Key="Game_SaveNickname">Запомнить</x:String>
+    <x:String x:Key="Game_RemoveNickname">Убрать</x:String>
     <x:String x:Key="Game_Play">Играть</x:String>
     <x:String x:Key="Game_PlayOnServer">Играть на сервере</x:String>
     <x:String x:Key="Game_Ready">Готово</x:String>
@@ -47,7 +50,12 @@
     <x:String x:Key="Mods_Empty">Модов пока нет</x:String>
 
     <!-- Content page -->
+    <x:String x:Key="Content_Builds">Рекомендуемые сборки</x:String>
+    <x:String x:Key="Content_BuildsHint">Выберите готовую сборку сервера</x:String>
     <x:String x:Key="Content_Reload">Обновить</x:String>
+    <x:String x:Key="Content_FilterHint">Поиск по названию и описанию…</x:String>
+    <x:String x:Key="Content_OnlyRequired">Только обязательные</x:String>
+    <x:String x:Key="Content_Required">обязательный</x:String>
     <x:String x:Key="Content_Install">Установить</x:String>
     <x:String x:Key="Content_Loading">Загрузка каталога…</x:String>
 
@@ -64,8 +72,8 @@
 
     <x:String x:Key="Settings_GameDirectory">Папка игры</x:String>
     <x:String x:Key="Settings_OpenFolder">Открыть папку</x:String>
-    <x:String x:Key="Settings_Resolution">Разрешение</x:String>
-    <x:String x:Key="Settings_Memory">Память, МБ</x:String>
+    <x:String x:Key="Settings_Resolution">Разрешение (0 — по умолчанию)</x:String>
+    <x:String x:Key="Settings_Memory">Память, МБ (мин – макс)</x:String>
     <x:String x:Key="Settings_Max">Максимум</x:String>
     <x:String x:Key="Settings_Min">Минимум</x:String>
     <x:String x:Key="Settings_ExtraArgs">Дополнительные аргументы Minecraft</x:String>
@@ -74,13 +82,13 @@
     <x:String x:Key="Settings_JavaAuto">Автоматически</x:String>
     <x:String x:Key="Settings_Language">Язык интерфейса</x:String>
     <x:String x:Key="Settings_Versions">Показывать версии</x:String>
-    <x:String x:Key="Settings_VersionsRelease">Релизы</x:String>
+    <x:String x:Key="Settings_VersionsRelease">Старые релизы (до 1.5.2)</x:String>
     <x:String x:Key="Settings_VersionsSnapshot">Снапшоты</x:String>
     <x:String x:Key="Settings_VersionsOld">Старые релизы (до 1.5.2)</x:String>
     <x:String x:Key="Settings_VersionsBeta">Бета</x:String>
     <x:String x:Key="Settings_VersionsAlpha">Альфа</x:String>
     <x:String x:Key="Settings_DevConsole">Консоль разработчика</x:String>
-    <x:String x:Key="Settings_DevConsoleHint">Показывает вкладку с техническим логом. По умолчанию выключена.</x:String>
+    <x:String x:Key="Settings_DevConsoleHint">Показывает раздел с техническим логом. По умолчанию выключена.</x:String>
     <x:String x:Key="Settings_AfterLaunch">После запуска Minecraft</x:String>
     <x:String x:Key="AfterLaunch_Keep">Оставить открытым</x:String>
     <x:String x:Key="AfterLaunch_Hide">Свернуть</x:String>
@@ -89,6 +97,8 @@
     <x:String x:Key="Settings_BackupsEnabled">Включить бэкапы</x:String>
     <x:String x:Key="Settings_BackupsInterval">Частота, мин</x:String>
     <x:String x:Key="Settings_BackupsMax">Максимум бэкапов</x:String>
+    <x:String x:Key="Settings_BackupsSize">Лимит размера, МБ</x:String>
+    <x:String x:Key="Settings_BackupNow">Сделать бэкап</x:String>
     <x:String x:Key="Settings_BackupsFolder">Папка бэкапов</x:String>
     <x:String x:Key="Settings_CurseForge">Ключ CurseForge</x:String>
     <x:String x:Key="Settings_CurseForgeHint">Нужен для импорта сборок с CurseForge. Хранится локально, в репозиторий не попадает.</x:String>

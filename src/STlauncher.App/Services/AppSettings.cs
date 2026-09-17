@@ -1,14 +1,20 @@
+using System.Collections.Generic;
+using STlauncher.Core.Loaders;
+
 namespace STlauncher.App.Services;
 
 public sealed class AppSettings
 {
     public string Username { get; set; } = "Player";
 
+    /// <summary>Saved nicknames for quick switching.</summary>
+    public List<string> Nicknames { get; set; } = new();
+
     public string? SelectedVersionId { get; set; }
 
     public string? SelectedInstanceId { get; set; }
 
-    public STlauncher.Core.Loaders.LoaderKind Loader { get; set; } = Core.Loaders.LoaderKind.Vanilla;
+    public LoaderKind Loader { get; set; } = LoaderKind.Vanilla;
 
     public string? LoaderVersion { get; set; }
 
@@ -21,6 +27,31 @@ public sealed class AppSettings
     public int? Height { get; set; }
 
     public bool ShowSnapshots { get; set; }
+
+    /// <summary>Shows release versions older than 1.5.2.</summary>
+    public bool ShowOldReleases { get; set; }
+
+    public bool ShowBeta { get; set; }
+
+    public bool ShowAlpha { get; set; }
+
+    /// <summary>Explicit Java executable for every build. Empty means automatic.</summary>
+    public string? JavaPath { get; set; }
+
+    /// <summary>Re-download client files on the next launch, then resets itself.</summary>
+    public bool ForceUpdate { get; set; }
+
+    public AfterLaunchAction AfterLaunch { get; set; } = AfterLaunchAction.Close;
+
+    public bool BackupsEnabled { get; set; }
+
+    public int BackupsIntervalMinutes { get; set; } = 30;
+
+    public int BackupsMaxCount { get; set; } = 10;
+
+    public int BackupsMaxTotalMb { get; set; } = 2048;
+
+    public string? BackupsDirectory { get; set; }
 
     public string ServerName { get; set; } = "Showtime";
 

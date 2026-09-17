@@ -45,6 +45,14 @@ public static class LaunchCommandBuilder
             }
         }
 
+        foreach (var extra in options.ExtraGameArgs)
+        {
+            if (!string.IsNullOrWhiteSpace(extra))
+            {
+                arguments.Add(Substitute(extra, values));
+            }
+        }
+
         return new LaunchCommand(options.JavaPath, arguments);
     }
 

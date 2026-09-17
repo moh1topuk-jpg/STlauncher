@@ -1,4 +1,4 @@
-<ResourceDictionary xmlns="https://github.com/avaloniaui"
+﻿<ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!-- Shell -->
@@ -21,7 +21,10 @@
     <x:String x:Key="Game_Loader">Loader</x:String>
     <x:String x:Key="Game_LoaderVersion">Loader version</x:String>
     <x:String x:Key="Game_Nickname">Nickname</x:String>
-    <x:String x:Key="Game_SaveNickname">Remember nickname</x:String>
+    <x:String x:Key="Game_Nicknames">Nickname presets</x:String>
+    <x:String x:Key="Game_NicknameHint">New nickname</x:String>
+    <x:String x:Key="Game_SaveNickname">Remember</x:String>
+    <x:String x:Key="Game_RemoveNickname">Remove</x:String>
     <x:String x:Key="Game_Play">Play</x:String>
     <x:String x:Key="Game_PlayOnServer">Play on server</x:String>
     <x:String x:Key="Game_Ready">Ready</x:String>
@@ -47,7 +50,12 @@
     <x:String x:Key="Mods_Empty">No mods yet</x:String>
 
     <!-- Content page -->
+    <x:String x:Key="Content_Builds">Recommended builds</x:String>
+    <x:String x:Key="Content_BuildsHint">Pick a ready-made server build</x:String>
     <x:String x:Key="Content_Reload">Reload</x:String>
+    <x:String x:Key="Content_FilterHint">Filter by name and description…</x:String>
+    <x:String x:Key="Content_OnlyRequired">Required only</x:String>
+    <x:String x:Key="Content_Required">required</x:String>
     <x:String x:Key="Content_Install">Install</x:String>
     <x:String x:Key="Content_Loading">Loading catalog…</x:String>
 
@@ -64,8 +72,8 @@
 
     <x:String x:Key="Settings_GameDirectory">Game directory</x:String>
     <x:String x:Key="Settings_OpenFolder">Open folder</x:String>
-    <x:String x:Key="Settings_Resolution">Resolution</x:String>
-    <x:String x:Key="Settings_Memory">Memory, MB</x:String>
+    <x:String x:Key="Settings_Resolution">Resolution (0 = default)</x:String>
+    <x:String x:Key="Settings_Memory">Memory, MB (min – max)</x:String>
     <x:String x:Key="Settings_Max">Maximum</x:String>
     <x:String x:Key="Settings_Min">Minimum</x:String>
     <x:String x:Key="Settings_ExtraArgs">Extra Minecraft arguments</x:String>
@@ -74,13 +82,13 @@
     <x:String x:Key="Settings_JavaAuto">Automatic</x:String>
     <x:String x:Key="Settings_Language">Interface language</x:String>
     <x:String x:Key="Settings_Versions">Show versions</x:String>
-    <x:String x:Key="Settings_VersionsRelease">Releases</x:String>
+    <x:String x:Key="Settings_VersionsRelease">Old releases (before 1.5.2)</x:String>
     <x:String x:Key="Settings_VersionsSnapshot">Snapshots</x:String>
     <x:String x:Key="Settings_VersionsOld">Old releases (before 1.5.2)</x:String>
     <x:String x:Key="Settings_VersionsBeta">Beta</x:String>
     <x:String x:Key="Settings_VersionsAlpha">Alpha</x:String>
     <x:String x:Key="Settings_DevConsole">Developer console</x:String>
-    <x:String x:Key="Settings_DevConsoleHint">Shows a tab with the technical log. Disabled by default.</x:String>
+    <x:String x:Key="Settings_DevConsoleHint">Shows the technical log section. Disabled by default.</x:String>
     <x:String x:Key="Settings_AfterLaunch">After Minecraft starts</x:String>
     <x:String x:Key="AfterLaunch_Keep">Keep the launcher open</x:String>
     <x:String x:Key="AfterLaunch_Hide">Minimize</x:String>
@@ -89,6 +97,8 @@
     <x:String x:Key="Settings_BackupsEnabled">Enable backups</x:String>
     <x:String x:Key="Settings_BackupsInterval">Interval, min</x:String>
     <x:String x:Key="Settings_BackupsMax">Maximum backups</x:String>
+    <x:String x:Key="Settings_BackupsSize">Size limit, MB</x:String>
+    <x:String x:Key="Settings_BackupNow">Back up now</x:String>
     <x:String x:Key="Settings_BackupsFolder">Backups folder</x:String>
     <x:String x:Key="Settings_CurseForge">CurseForge key</x:String>
     <x:String x:Key="Settings_CurseForgeHint">Required to import CurseForge packs. Stored locally, never committed.</x:String>

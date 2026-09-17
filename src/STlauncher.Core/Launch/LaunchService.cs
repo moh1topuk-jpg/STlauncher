@@ -53,8 +53,19 @@ public sealed class LaunchService
         _paths.EnsureCreated();
 
         var context = RuleContext.Current(BuildFeatures(settings));
+
+        if (settings.ForceUpdate)
+        {
+            await ForceCleanAsync(versionId, cancellationToken).ConfigureAwait(false);
+        }
+
         var resolved = await _versions.ResolveAsync(versionId, cancellationToken).ConfigureAwait(false);
         var libraries = LibraryResolver.Resolve(resolved, _paths, context);
+
+        if (settings.ForceUpdate)
+        {
+            ForceCleanResolved(resolved);
+        }
 
         var items = new List<DownloadItem>(libraries.Downloads);
 
@@ -95,9 +106,9 @@ public sealed class LaunchService
             assetsDirectory = _assets.VirtualDirectory(resolved.Assets!);
         }
 
-        var javaPath = await _java
-            .EnsureJavaAsync(resolved.JavaVersion?.MajorVersion ?? 8, cancellationToken)
-            .ConfigureAwait(false);
+        var javaPath = string.IsNullOrWhiteSpace(settings.JavaPath)
+            ? await _java.EnsureJavaAsync(resolved.JavaVersion?.MajorVersion ?? 8, cancellationToken).ConfigureAwait(false)
+            : settings.JavaPath!;
 
         Directory.CreateDirectory(settings.GameDirectory);
 
@@ -131,6 +142,7 @@ public sealed class LaunchService
             Width = settings.Width,
             Height = settings.Height,
             ExtraJvmArgs = settings.ExtraJvmArgs,
+            ExtraGameArgs = settings.ExtraGameArgs,
             Features = BuildFeatures(settings),
             ServerAddress = settings.ServerAddress
         };
@@ -138,11 +150,71 @@ public sealed class LaunchService
         return LaunchCommandBuilder.Build(options, context);
     }
 
+    /// <summary>
+    /// Removes the vanilla version JSON and client jar so they are fetched again.
+    /// Loader profiles are left alone: the launcher re-installs them on every launch.
+    /// </summary>
+    private async Task ForceCleanAsync(string versionId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var summary = await _versions.FindAsync(versionId, cancellationToken).ConfigureAwait(false);
+
+            if (summary is null)
+            {
+                return;
+            }
+
+            TryDeleteFile(_paths.VersionJsonPath(versionId));
+            TryDeleteFile(_paths.VersionJarPath(versionId));
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning(ex, "Force update could not clean version {Version}.", versionId);
+        }
+    }
+
+    private void ForceCleanResolved(ResolvedVersion resolved)
+    {
+        var clientVersion = string.IsNullOrEmpty(resolved.ClientVersionId) ? resolved.Id : resolved.ClientVersionId;
+
+        TryDeleteFile(_paths.VersionJarPath(clientVersion));
+        TryDeleteDirectory(Path.Combine(_paths.Versions, resolved.Id, "natives"));
+    }
+
+    private static void TryDeleteFile(string path)
+    {
+        try
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+        catch (Exception)
+        {
+        }
+    }
+
+    private static void TryDeleteDirectory(string path)
+    {
+        try
+        {
+            if (Directory.Exists(path))
+            {
+                Directory.Delete(path, recursive: true);
+            }
+        }
+        catch (Exception)
+        {
+        }
+    }
+
     public Task<int> LaunchAsync(
         LaunchCommand command,
         string workingDirectory,
         CancellationToken cancellationToken = default)
-        => _launcher.RunAsync(command, workingDirectory, cancellationToken);
+        => _launcher.RunAsync(command, workingDirectory, _paths.Logs, cancellationToken: cancellationToken);
 
     private static IReadOnlyDictionary<string, bool> BuildFeatures(LaunchSettings settings)
     {

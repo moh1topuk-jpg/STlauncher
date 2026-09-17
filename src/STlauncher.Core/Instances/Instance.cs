@@ -42,6 +42,14 @@ public sealed class Instance
     [JsonPropertyName("serverAddress")]
     public string? ServerAddress { get; set; }
 
+    /// <summary>Extra arguments appended after the standard Minecraft arguments.</summary>
+    [JsonPropertyName("extraGameArgs")]
+    public string? ExtraGameArgs { get; set; }
+
+    /// <summary>Catalog item ids that this build installs before every launch.</summary>
+    [JsonPropertyName("enabledCatalogItems")]
+    public List<string> EnabledCatalogItems { get; set; } = new();
+
     [JsonPropertyName("createdAt")]
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }

@@ -36,6 +36,8 @@ public sealed class LaunchOptions
 
     public IReadOnlyList<string> ExtraJvmArgs { get; init; } = new List<string>();
 
+    public IReadOnlyList<string> ExtraGameArgs { get; init; } = new List<string>();
+
     public IReadOnlyDictionary<string, bool> Features { get; init; } = new Dictionary<string, bool>();
 
     public string? ServerAddress { get; init; }

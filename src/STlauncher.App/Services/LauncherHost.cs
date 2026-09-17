@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using STlauncher.App.ViewModels;
 using STlauncher.Core;
 using STlauncher.Core.Assets;
+using STlauncher.Core.Backups;
 using STlauncher.Core.Content;
 using STlauncher.Core.Http;
 using STlauncher.Core.Instances;
@@ -66,6 +67,7 @@ public static class LauncherHost
         services.AddSingleton<SkinService>();
         services.AddSingleton<LocalizationService>();
         services.AddSingleton<InstanceManager>();
+        services.AddSingleton<InstanceBackupService>();
         services.AddSingleton<UpdateService>();
 
         services.AddTransient<MainWindowViewModel>();

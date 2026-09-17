@@ -110,5 +110,30 @@
         }
       ]
     }
+  ],
+
+  "builds": [
+    {
+      "id": "showtime-main",
+      "name": "Сборка Showtime",
+      "description": "Готовый профиль для сервера: версия, загрузчик и набор обязательных модов ставятся одним выбором.",
+      "gameVersion": "1.20.1",
+      "loader": "fabric",
+      "memoryMb": 4096,
+      "serverName": "Showtime",
+      "serverAddress": "mc.showtime.su",
+      "items": ["sodium", "lithium", "server-mod"]
+    },
+    {
+      "id": "showtime-light",
+      "name": "Showtime Lite",
+      "description": "Только обязательное, без лишнего — для слабых машин.",
+      "gameVersion": "1.20.1",
+      "loader": "fabric",
+      "memoryMb": 2048,
+      "serverName": "Showtime",
+      "serverAddress": "mc.showtime.su",
+      "items": ["sodium"]
+    }
   ]
 }

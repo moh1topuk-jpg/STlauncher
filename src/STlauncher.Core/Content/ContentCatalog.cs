@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using STlauncher.Core.Loaders;
 
 namespace STlauncher.Core.Content;
 
@@ -46,6 +47,10 @@ public sealed class ContentCatalog
     [JsonPropertyName("sections")]
     public List<CatalogSection> Sections { get; set; } = new();
 
+    /// <summary>Recommended ready-made builds the launcher can apply in one click.</summary>
+    [JsonPropertyName("builds")]
+    public List<CatalogBuild> Builds { get; set; } = new();
+
     public int ItemCount
     {
         get
@@ -59,6 +64,56 @@ public sealed class ContentCatalog
             return total;
         }
     }
+
+    public CatalogItem? FindItem(string id)
+    {
+        foreach (var section in Sections)
+        {
+            foreach (var item in section.Items)
+            {
+                if (string.Equals(item.Id, id, StringComparison.OrdinalIgnoreCase))
+                {
+                    return item;
+                }
+            }
+        }
+
+        return null;
+    }
+}
+
+public sealed class CatalogBuild
+{
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = string.Empty;
+
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = string.Empty;
+
+    [JsonPropertyName("description")]
+    public string? Description { get; set; }
+
+    [JsonPropertyName("gameVersion")]
+    public string? GameVersion { get; set; }
+
+    [JsonPropertyName("loader")]
+    public LoaderKind Loader { get; set; } = LoaderKind.Vanilla;
+
+    [JsonPropertyName("loaderVersion")]
+    public string? LoaderVersion { get; set; }
+
+    [JsonPropertyName("memoryMb")]
+    public int? MemoryMb { get; set; }
+
+    [JsonPropertyName("serverName")]
+    public string? ServerName { get; set; }
+
+    [JsonPropertyName("serverAddress")]
+    public string? ServerAddress { get; set; }
+
+    /// <summary>Catalog item ids this build consists of.</summary>
+    [JsonPropertyName("items")]
+    public List<string> Items { get; set; } = new();
 }
 
 public sealed class CatalogSection

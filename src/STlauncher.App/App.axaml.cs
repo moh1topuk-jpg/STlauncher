@@ -37,6 +37,12 @@ public partial class App : Application
             var viewModel = _services.GetRequiredService<MainWindowViewModel>();
 
             var window = new MainWindow { DataContext = viewModel };
+
+            // The game process is independent of the launcher, so hiding or closing the
+            // window never terminates Minecraft.
+            viewModel.RequestHideLauncher += () => window.WindowState = WindowState.Minimized;
+            viewModel.RequestCloseLauncher += () => window.Close();
+
             window.Opened += async (_, _) => await viewModel.InitializeAsync();
 
             desktop.MainWindow = window;

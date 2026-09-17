@@ -11,9 +11,11 @@ using CommunityToolkit.Mvvm.Input;
 using STlauncher.App.Services;
 using STlauncher.Core;
 using STlauncher.Core.Auth;
+using STlauncher.Core.Backups;
 using STlauncher.Core.Content;
 using STlauncher.Core.Http;
 using STlauncher.Core.Instances;
+using STlauncher.Core.Java;
 using STlauncher.Core.Launch;
 using STlauncher.Core.Loaders;
 using STlauncher.Core.Metadata;
@@ -39,12 +41,15 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly UpdateService _updates;
     private readonly InstanceManager _instances;
     private readonly LocalizationService _localization;
+    private readonly JavaManager _java;
+    private readonly InstanceBackupService _backups;
     private readonly LauncherPaths _paths;
     private readonly GameLauncher _gameLauncher;
 
     private List<VersionSummary> _allVersions = new();
     private bool _initialized;
     private bool _applyingInstance;
+    private string _globalJavaPath = string.Empty;
     private CancellationTokenSource? _avatarCts;
 
     public MainWindowViewModel(
@@ -62,6 +67,8 @@ public partial class MainWindowViewModel : ViewModelBase
         UpdateService updates,
         InstanceManager instances,
         LocalizationService localization,
+        JavaManager java,
+        InstanceBackupService backups,
         LauncherPaths paths,
         GameLauncher gameLauncher)
     {
@@ -79,6 +86,8 @@ public partial class MainWindowViewModel : ViewModelBase
         _updates = updates;
         _instances = instances;
         _localization = localization;
+        _java = java;
+        _backups = backups;
         _paths = paths;
         _gameLauncher = gameLauncher;
     }
@@ -94,8 +103,6 @@ public partial class MainWindowViewModel : ViewModelBase
     public ObservableCollection<ModSearchResult> ModSearchResults { get; } = new();
 
     public ObservableCollection<InstalledMod> InstalledMods { get; } = new();
-
-    public ObservableCollection<CatalogSection> CatalogSections { get; } = new();
 
     public IReadOnlyList<LoaderKind> LoaderKinds { get; } = Enum.GetValues<LoaderKind>();
 
@@ -222,6 +229,33 @@ public partial class MainWindowViewModel : ViewModelBase
         Language = LocalizationService.Normalize(settings.Language);
         ShowDeveloperConsole = settings.ShowDeveloperConsole;
 
+        ShowOldReleases = settings.ShowOldReleases;
+        ShowBeta = settings.ShowBeta;
+        ShowAlpha = settings.ShowAlpha;
+
+        AfterLaunch = settings.AfterLaunch;
+        ForceUpdate = settings.ForceUpdate;
+        _globalJavaPath = settings.JavaPath ?? string.Empty;
+
+        BackupsEnabled = settings.BackupsEnabled;
+        BackupsIntervalMinutes = settings.BackupsIntervalMinutes;
+        BackupsMaxCount = settings.BackupsMaxCount;
+        BackupsMaxTotalMb = settings.BackupsMaxTotalMb;
+        _backupDirectoryOverride = settings.BackupsDirectory ?? string.Empty;
+
+        Nicknames.Clear();
+        foreach (var nickname in settings.Nicknames)
+        {
+            if (!string.IsNullOrWhiteSpace(nickname))
+            {
+                Nicknames.Add(nickname);
+            }
+        }
+
+        LoadJavaChoices();
+        LoadAfterLaunchOptions();
+        RefreshBackups();
+
         _gameLauncher.OutputReceived += line => AppendConsole(line);
         _gameLauncher.ErrorReceived += line => AppendConsole(line);
 
@@ -251,6 +285,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         RefreshMods();
         await LoadCatalogAsync();
+        RestartBackupTimer();
     }
 
     private Instance CreateMigratedInstance(AppSettings settings)
@@ -390,11 +425,19 @@ public partial class MainWindowViewModel : ViewModelBase
                 AppendConsole($"--- Loader ready: {versionId} ---");
             }
 
+            Status = "Checking build mods...";
+            await EnsureBuildItemsInstalledAsync();
+
             var settings = new LaunchSettings
             {
                 GameDirectory = InstanceDirectory,
                 MaxMemoryMb = (int)MaxMemoryMb,
                 MinMemoryMb = (int)MinMemoryMb,
+                Width = SelectedInstance?.Width,
+                Height = SelectedInstance?.Height,
+                ExtraGameArgs = SplitArguments(SelectedInstance?.ExtraGameArgs),
+                JavaPath = SelectedJavaChoice?.Path,
+                ForceUpdate = ForceUpdate,
                 ServerAddress = joinServer && !string.IsNullOrWhiteSpace(ServerAddress) ? ServerAddress : null,
                 ServerListName = ServerName,
                 ServerListAddress = string.IsNullOrWhiteSpace(ServerAddress) ? null : ServerAddress
@@ -413,7 +456,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
             Status = "Starting Minecraft...";
             IsGameRunning = true;
-            var exitCode = await _launch.LaunchAsync(command, settings.GameDirectory);
+
+            var exitCode = await LaunchAndReactAsync(command, settings);
+
             Status = $"Game exited with code {exitCode}.";
             AppendConsole($"--- Game exited with code {exitCode} ---");
         }
@@ -427,6 +472,11 @@ public partial class MainWindowViewModel : ViewModelBase
             IsBusy = false;
             IsGameRunning = false;
             Progress = 0;
+
+            if (ForceUpdate)
+            {
+                ForceUpdate = false;
+            }
         }
     }
 
@@ -544,18 +594,30 @@ public partial class MainWindowViewModel : ViewModelBase
             CatalogStatus = "Loading catalog...";
 
             var result = await _catalog.LoadAsync();
-            CatalogSections.Clear();
+
+            _catalogSections.Clear();
+            CatalogBuilds.Clear();
 
             if (result.Catalog is not null)
             {
-                foreach (var section in result.Catalog.Sections)
+                _loadedCatalog = result.Catalog;
+                _catalogSections.AddRange(result.Catalog.Sections);
+
+                foreach (var build in result.Catalog.Builds)
                 {
-                    CatalogSections.Add(section);
+                    CatalogBuilds.Add(build);
                 }
             }
+            else
+            {
+                _loadedCatalog = null;
+            }
+
+            RebuildCatalogViews();
 
             var summary = $"{result.Catalog?.Name ?? "Catalog"}: " +
-                          $"{CatalogSections.Count} section(s), {result.Catalog?.ItemCount ?? 0} item(s).";
+                          $"{CatalogViews.Count} section(s), {result.Catalog?.ItemCount ?? 0} item(s), " +
+                          $"{CatalogBuilds.Count} build(s).";
 
             if (result.Catalog is null)
             {
@@ -828,6 +890,9 @@ public partial class MainWindowViewModel : ViewModelBase
             SelectedVersion = value.VersionId is null
                 ? null
                 : _allVersions.FirstOrDefault(v => v.Id == value.VersionId);
+            ExtraGameArgs = value.ExtraGameArgs ?? string.Empty;
+            Width = value.Width ?? 0;
+            Height = value.Height ?? 0;
         }
         finally
         {
@@ -836,6 +901,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         _ = LoadLoaderVersionsAsync();
         RefreshMods();
+        RebuildCatalogViews();
         PersistSettings();
     }
 
@@ -854,6 +920,9 @@ public partial class MainWindowViewModel : ViewModelBase
         SelectedInstance.MinMemoryMb = (int)MinMemoryMb;
         SelectedInstance.ServerName = ServerName;
         SelectedInstance.ServerAddress = string.IsNullOrWhiteSpace(ServerAddress) ? null : ServerAddress;
+        SelectedInstance.ExtraGameArgs = string.IsNullOrWhiteSpace(ExtraGameArgs) ? null : ExtraGameArgs;
+        SelectedInstance.Width = Width > 0 ? (int)Width : null;
+        SelectedInstance.Height = Height > 0 ? (int)Height : null;
 
         try
         {
@@ -885,6 +954,7 @@ public partial class MainWindowViewModel : ViewModelBase
     partial void OnLanguageChanged(string value)
     {
         _localization.Apply(value);
+        LoadAfterLaunchOptions();
         PersistSettings();
     }
 
@@ -957,9 +1027,7 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         var selectedId = SelectedVersion?.Id;
 
-        var filtered = ShowSnapshots
-            ? _allVersions
-            : _allVersions.Where(v => v.Type == "release").ToList();
+        var filtered = _allVersions.Where(IsVersionVisible).ToList();
 
         Versions.Clear();
         foreach (var version in filtered)
@@ -972,6 +1040,15 @@ public partial class MainWindowViewModel : ViewModelBase
             : Versions.FirstOrDefault();
     }
 
+    private bool IsVersionVisible(VersionSummary version) => version.Type switch
+    {
+        "release" => !IsOldRelease(version.Id) || ShowOldReleases,
+        "snapshot" => ShowSnapshots,
+        "old_beta" => ShowBeta,
+        "old_alpha" => ShowAlpha,
+        _ => false
+    };
+
     private void PersistSettings()
     {
         var settings = new AppSettings
@@ -983,6 +1060,19 @@ public partial class MainWindowViewModel : ViewModelBase
             Language = Language,
             ShowDeveloperConsole = ShowDeveloperConsole,
             SelectedInstanceId = SelectedInstance?.Id,
+
+            Nicknames = Nicknames.ToList(),
+            ShowOldReleases = ShowOldReleases,
+            ShowBeta = ShowBeta,
+            ShowAlpha = ShowAlpha,
+            JavaPath = SelectedJavaChoice?.Path,
+            AfterLaunch = AfterLaunch,
+            ForceUpdate = ForceUpdate,
+            BackupsEnabled = BackupsEnabled,
+            BackupsIntervalMinutes = (int)BackupsIntervalMinutes,
+            BackupsMaxCount = (int)BackupsMaxCount,
+            BackupsMaxTotalMb = (int)BackupsMaxTotalMb,
+            BackupsDirectory = string.IsNullOrWhiteSpace(_backupDirectoryOverride) ? null : _backupDirectoryOverride,
 
             // Legacy global fields, kept so older settings files can be migrated into an instance.
             SelectedVersionId = SelectedVersion?.Id,
