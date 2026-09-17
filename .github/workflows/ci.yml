@@ -72,8 +72,11 @@ jobs:
           [IO.File]::WriteAllBytes("$PWD/signing.pfx", [Convert]::FromBase64String($env:CERT_BASE64))
           Write-Host "Certificate written to signing.pfx"
 
+      # Pinned: an unattended CLI upgrade changed flag names before and silently broke
+      # publishing, which is exactly the kind of failure nobody notices until a release
+      # never appears.
       - name: Install Velopack CLI
-        run: dotnet tool install -g vpk
+        run: dotnet tool install -g vpk --version 1.2.0
 
       - name: Pack
         shell: pwsh
@@ -95,12 +98,16 @@ jobs:
         shell: pwsh
         run: Remove-Item -LiteralPath signing.pfx -Force -ErrorAction SilentlyContinue
 
+      # --repoUrl takes a full URL (there is no -r shorthand any more), and --publish
+      # takes an explicit value. The old "-r owner/repo ... --publish" form failed here.
       - name: Upload release
         shell: pwsh
         run: >
-          vpk upload github -o releases -r ${{ github.repository }}
-          -t ${{ secrets.GITHUB_TOKEN }}
-          --publish --releaseName "STlauncher ${{ github.ref_name }}"
+          vpk upload github -o releases
+          --repoUrl https://github.com/${{ github.repository }}
+          --token ${{ secrets.GITHUB_TOKEN }}
+          --publish true
+          --releaseName "STlauncher ${{ github.ref_name }}"
           --tag ${{ github.ref_name }}
 
       - name: Generate SHA-256 checksums
