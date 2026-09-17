@@ -278,6 +278,11 @@ public partial class MainWindowViewModel
                     ? mod.FileName + ".disabled"
                     : mod.FileName[..^".disabled".Length];
 
+                // Remembered rather than inferred from the file name: the catalog sync
+                // has to know this was the player's decision, otherwise it reinstalls the
+                // mod on the next start and deletes the disabled copy as outdated.
+                record.DisabledByUser = wasEnabled;
+
                 _instances.Save(SelectedInstance);
             }
 

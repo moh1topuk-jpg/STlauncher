@@ -11,9 +11,27 @@ using STlauncher.Core.Mods;
 
 namespace STlauncher.Core.Content;
 
-public sealed record CatalogInstallResult(bool Success, string? Path, string Message)
+/// <param name="Downloaded">
+/// False when the file was already on disk and passed its hash check. The launcher used
+/// to report every verified file as downloaded, which made a no-op sync look like it had
+/// just pulled the whole build again.
+/// </param>
+/// <param name="Version">What this file satisfies, so the next sync can compare.</param>
+public sealed record CatalogInstallResult(
+    bool Success,
+    string? Path,
+    string Message,
+    bool Downloaded = false,
+    string? Version = null)
 {
-    public static CatalogInstallResult Ok(string path) => new(true, path, $"Installed {System.IO.Path.GetFileName(path)}");
+    public static CatalogInstallResult Ok(string path, bool downloaded, string? version) =>
+        new(true,
+            path,
+            downloaded
+                ? $"Installed {System.IO.Path.GetFileName(path)}"
+                : $"Already present: {System.IO.Path.GetFileName(path)}",
+            downloaded,
+            version);
 
     public static CatalogInstallResult Fail(string message) => new(false, null, message);
 }
@@ -116,7 +134,13 @@ public sealed class CatalogInstaller
                 ".");
         }
 
-        return await DownloadAsync(item, instanceDirectory, file.Url, file.FileName, file.Sha1, file.Sha512, file.Size, cancellationToken)
+        // The pin is stored verbatim rather than the resolved number: a pin may be a
+        // version id, and the next sync compares against exactly this string.
+        var satisfies = string.IsNullOrWhiteSpace(item.Source.Version)
+            ? version?.VersionNumber
+            : item.Source.Version;
+
+        return await DownloadAsync(item, instanceDirectory, file.Url, file.FileName, file.Sha1, file.Sha512, file.Size, satisfies, cancellationToken)
             .ConfigureAwait(false);
     }
 
@@ -142,7 +166,7 @@ public sealed class CatalogInstaller
             return CatalogInstallResult.Fail("Could not determine a file name; set 'fileName' in the catalog.");
         }
 
-        return await DownloadAsync(item, instanceDirectory, url!, fileName!, item.Source.Sha1, item.Source.Sha512, 0, cancellationToken)
+        return await DownloadAsync(item, instanceDirectory, url!, fileName!, item.Source.Sha1, item.Source.Sha512, 0, item.Source.Version, cancellationToken)
             .ConfigureAwait(false);
     }
 
@@ -154,6 +178,7 @@ public sealed class CatalogInstaller
         string? sha1,
         string? sha512,
         long size,
+        string? satisfiesVersion,
         CancellationToken cancellationToken)
     {
         var relative = CatalogPlacement.ResolveRelativePath(item, fileName);
@@ -165,11 +190,12 @@ public sealed class CatalogInstaller
         }
 
         var destination = Path.Combine(instanceDirectory, relative.Replace('/', Path.DirectorySeparatorChar));
-        await _downloader
+
+        var downloaded = await _downloader
             .EnsureFileAsync(new DownloadItem(url, destination, sha1, size, Sha512: sha512), cancellationToken)
             .ConfigureAwait(false);
 
-        return CatalogInstallResult.Ok(destination);
+        return CatalogInstallResult.Ok(destination, downloaded, satisfiesVersion);
     }
 
     public static string? FileNameFromUrl(string url)

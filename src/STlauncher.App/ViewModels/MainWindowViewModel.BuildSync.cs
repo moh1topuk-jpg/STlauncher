@@ -139,11 +139,11 @@ public partial class MainWindowViewModel
         {
             IsBuildSyncBusy = true;
 
-            var installed = await EnsureBuildItemsInstalledAsync(instance);
+            var downloaded = await EnsureBuildItemsInstalledAsync(instance);
 
-            if (installed > 0)
+            if (downloaded > 0)
             {
-                Status = Localize("Builds_SyncDone", "Build updated: {0} file(s) downloaded", installed);
+                Status = Localize("Builds_SyncDone", "Build updated: {0} file(s) downloaded", downloaded);
             }
             else if (string.Equals(instance.Id, SelectedInstance?.Id, StringComparison.OrdinalIgnoreCase))
             {
@@ -434,28 +434,26 @@ public partial class MainWindowViewModel
                 m.Source == ModSource.Catalog &&
                 string.Equals(m.Id, id, StringComparison.OrdinalIgnoreCase));
 
-            var installed = record is not null &&
-                            System.IO.File.Exists(System.IO.Path.Combine(
-                                ModManager.ModsDirectory(directory),
-                                record.FileName));
+            var fileExists = record is not null &&
+                             System.IO.File.Exists(System.IO.Path.Combine(
+                                 ModManager.ModsDirectory(directory),
+                                 record.FileName));
 
-            // Already present and not pinned: leave the file as it is.
-            if (installed && string.IsNullOrWhiteSpace(item.Source.Version))
+            if (CatalogSyncDecision.Decide(item, record, fileExists).NeedsInstall())
             {
-                continue;
+                pending.Add(item);
             }
-
-            pending.Add(item);
         }
 
         if (pending.Count == 0)
         {
+            AppendConsole($"[build] {enabledIds.Count} item(s) checked, nothing to do");
             return 0;
         }
 
         AppendConsole($"--- Build: {pending.Count} mod(s) to install ---");
 
-        var installedCount = 0;
+        var downloadedCount = 0;
         var index = 0;
 
         foreach (var item in pending)
@@ -482,13 +480,19 @@ public partial class MainWindowViewModel
                 Id = item.Id,
                 Name = item.Name,
                 IconUrl = item.IconUrl,
-                Required = item.Required
+                Required = item.Required,
+                Version = result.Version
             });
 
-            installedCount++;
+            // Only files that actually came down the wire are counted: a verified file
+            // reported as "downloaded" is how a no-op sync looked like a full reinstall.
+            if (result.Downloaded)
+            {
+                downloadedCount++;
+            }
         }
 
-        return installedCount;
+        return downloadedCount;
     }
 
     /// <summary>Deletes a recorded file and forgets it.</summary>

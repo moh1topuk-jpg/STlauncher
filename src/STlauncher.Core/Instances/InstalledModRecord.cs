@@ -38,4 +38,19 @@ public sealed class InstalledModRecord
 
     [JsonPropertyName("required")]
     public bool Required { get; set; }
+
+    /// <summary>
+    /// Version this file satisfies - the pin from the catalog, or the version resolved
+    /// when it was installed. Without it the launcher cannot tell "already has the pinned
+    /// build" from "has some build", and re-resolved every pinned mod on every start.
+    /// </summary>
+    [JsonPropertyName("version")]
+    public string? Version { get; set; }
+
+    /// <summary>
+    /// The player switched this mod off. The catalog sync then leaves it alone: a build
+    /// that reinstalls what you just disabled is a build you cannot configure.
+    /// </summary>
+    [JsonPropertyName("disabledByUser")]
+    public bool DisabledByUser { get; set; }
 }
