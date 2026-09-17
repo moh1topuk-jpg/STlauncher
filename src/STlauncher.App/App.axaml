@@ -3,13 +3,22 @@
              x:Class="STlauncher.App.App"
              xmlns:local="using:STlauncher.App"
              RequestedThemeVariant="Dark">
-             <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
 
     <Application.DataTemplates>
         <local:ViewLocator/>
     </Application.DataTemplates>
-  
+
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://STlauncher.App/Styles/Colors.axaml"/>
+                <ResourceInclude Source="avares://STlauncher.App/Styles/Fluent.axaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+
     <Application.Styles>
         <FluentTheme />
+        <StyleInclude Source="avares://STlauncher.App/Styles/Controls.axaml"/>
     </Application.Styles>
 </Application>

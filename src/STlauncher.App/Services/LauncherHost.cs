@@ -64,6 +64,7 @@ public static class LauncherHost
         services.AddSingleton<CatalogInstaller>();
         services.AddSingleton<LaunchService>();
         services.AddSingleton<SkinService>();
+        services.AddSingleton<LocalizationService>();
         services.AddSingleton<InstanceManager>();
         services.AddSingleton<UpdateService>();
 

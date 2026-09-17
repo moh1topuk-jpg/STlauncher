@@ -1,0 +1,138 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:STlauncher.App.ViewModels"
+             xmlns:inst="using:STlauncher.Core.Instances"
+             xmlns:m="using:STlauncher.Core.Metadata"
+             xmlns:loaders="using:STlauncher.Core.Loaders"
+             x:Class="STlauncher.App.Views.Pages.GamePage"
+             x:DataType="vm:MainWindowViewModel">
+
+    <ScrollViewer>
+        <Grid Margin="22" ColumnDefinitions="*,300" ColumnSpacing="16" VerticalAlignment="Top">
+
+            <StackPanel Grid.Column="0" Spacing="14">
+
+                <!-- Build (instance) -->
+                <Border Classes="card">
+                    <StackPanel Spacing="14">
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="{DynamicResource Game_Instance}" Classes="label"/>
+                                <ComboBox ItemsSource="{Binding Instances}"
+                                          SelectedItem="{Binding SelectedInstance}"
+                                          HorizontalAlignment="Stretch">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate x:DataType="inst:Instance">
+                                            <TextBlock Text="{Binding Name}"/>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </StackPanel>
+                            <Button Grid.Column="1" Classes="ghost small"
+                                    Content="{DynamicResource Game_NewInstance}"
+                                    Command="{Binding CreateInstanceCommand}"
+                                    VerticalAlignment="Bottom"/>
+                            <Button Grid.Column="2" Classes="danger small"
+                                    Content="{DynamicResource Game_DeleteInstance}"
+                                    Command="{Binding DeleteInstanceCommand}"
+                                    VerticalAlignment="Bottom"/>
+                        </Grid>
+                        <TextBox Text="{Binding NewInstanceName}"
+                                 Watermark="{DynamicResource Game_InstanceNameHint}"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Version + loader -->
+                <Border Classes="card">
+                    <StackPanel Spacing="14">
+                        <TextBlock Text="{DynamicResource Game_Profile}" Classes="label"/>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="{DynamicResource Game_Version}" Classes="faint"/>
+                                <ComboBox ItemsSource="{Binding Versions}"
+                                          SelectedItem="{Binding SelectedVersion}"
+                                          HorizontalAlignment="Stretch">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate x:DataType="m:VersionSummary">
+                                            <TextBlock Text="{Binding Id}"/>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Spacing="6">
+                                <TextBlock Text="{DynamicResource Game_Loader}" Classes="faint"/>
+                                <ComboBox ItemsSource="{Binding LoaderKinds}"
+                                          SelectedItem="{Binding SelectedLoader}"
+                                          HorizontalAlignment="Stretch"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="{DynamicResource Game_LoaderVersion}" Classes="faint"/>
+                            <ComboBox ItemsSource="{Binding LoaderVersions}"
+                                      SelectedItem="{Binding SelectedLoaderVersion}"
+                                      IsEnabled="{Binding !IsLoaderBusy}"
+                                      HorizontalAlignment="Stretch">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="loaders:LoaderVersion">
+                                        <TextBlock Text="{Binding Version}"/>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Actions -->
+                <Border Classes="card">
+                    <StackPanel Spacing="12">
+                        <Button Classes="primary" Content="{DynamicResource Game_Play}"
+                                Command="{Binding PlayCommand}" IsEnabled="{Binding !IsBusy}"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                Height="50" FontSize="17"/>
+                        <Button Classes="ghost" Content="{DynamicResource Game_PlayOnServer}"
+                                Command="{Binding PlayOnServerCommand}" IsEnabled="{Binding !IsBusy}"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- Side column -->
+            <StackPanel Grid.Column="1" Spacing="14">
+
+                <Border Classes="card">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="{DynamicResource Game_Nickname}" Classes="label"/>
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Border Width="56" Height="56" CornerRadius="8" Background="#2A2028"
+                                    ClipToBounds="True">
+                                <Image Source="{Binding Avatar}" Stretch="Uniform" Width="56" Height="56"/>
+                            </Border>
+                            <StackPanel VerticalAlignment="Center" Spacing="2">
+                                <TextBlock Text="{Binding Username}" FontWeight="SemiBold" FontSize="15"
+                                           TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="{DynamicResource Game_OfflineMode}" Classes="faint"/>
+                            </StackPanel>
+                        </StackPanel>
+                        <TextBox Text="{Binding Username}" Watermark="Player"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="card">
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="{DynamicResource Server_Title}" Classes="label"/>
+                        <TextBlock Text="{Binding ServerName}" FontWeight="SemiBold"
+                                   TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Text="{Binding ServerAddress}" Classes="faint"
+                                   TextTrimming="CharacterEllipsis"/>
+                        <Border Classes="hairline"/>
+                        <TextBlock Text="{DynamicResource Server_Hint}" Classes="faint" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,108 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Shell -->
+    <x:String x:Key="App_Title">STlauncher</x:String>
+    <x:String x:Key="Nav_Game">Play</x:String>
+    <x:String x:Key="Nav_Builds">Builds</x:String>
+    <x:String x:Key="Nav_Mods">Mods</x:String>
+    <x:String x:Key="Nav_Content">Catalog</x:String>
+    <x:String x:Key="Nav_Server">Server</x:String>
+    <x:String x:Key="Nav_Console">Console</x:String>
+    <x:String x:Key="Nav_Settings">Settings</x:String>
+
+    <!-- Game page -->
+    <x:String x:Key="Game_Profile">Profile</x:String>
+    <x:String x:Key="Game_Instance">Build</x:String>
+    <x:String x:Key="Game_NewInstance">New</x:String>
+    <x:String x:Key="Game_DeleteInstance">Delete</x:String>
+    <x:String x:Key="Game_InstanceNameHint">Name for a new build</x:String>
+    <x:String x:Key="Game_Version">Version</x:String>
+    <x:String x:Key="Game_Loader">Loader</x:String>
+    <x:String x:Key="Game_LoaderVersion">Loader version</x:String>
+    <x:String x:Key="Game_Nickname">Nickname</x:String>
+    <x:String x:Key="Game_SaveNickname">Remember nickname</x:String>
+    <x:String x:Key="Game_Play">Play</x:String>
+    <x:String x:Key="Game_PlayOnServer">Play on server</x:String>
+    <x:String x:Key="Game_Ready">Ready</x:String>
+    <x:String x:Key="Game_OfflineMode">Offline mode</x:String>
+
+    <!-- Server page -->
+    <x:String x:Key="Server_Title">Server</x:String>
+    <x:String x:Key="Server_Name">Name</x:String>
+    <x:String x:Key="Server_Address">Address</x:String>
+    <x:String x:Key="Server_Join">Play on server</x:String>
+    <x:String x:Key="Server_Hint">The server is added to the in-game server list automatically for every build. Joining happens only via "Play on server".</x:String>
+
+    <!-- Mods page -->
+    <x:String x:Key="Mods_SearchHint">Search Modrinth…</x:String>
+    <x:String x:Key="Mods_Search">Search</x:String>
+    <x:String x:Key="Mods_Refresh">Refresh</x:String>
+    <x:String x:Key="Mods_Import">Import .mrpack / .zip</x:String>
+    <x:String x:Key="Mods_Modrinth">Modrinth</x:String>
+    <x:String x:Key="Mods_Installed">Installed</x:String>
+    <x:String x:Key="Mods_InstallSelected">Install selected</x:String>
+    <x:String x:Key="Mods_Toggle">On/Off</x:String>
+    <x:String x:Key="Mods_Delete">Delete</x:String>
+    <x:String x:Key="Mods_Empty">No mods yet</x:String>
+
+    <!-- Content page -->
+    <x:String x:Key="Content_Reload">Reload</x:String>
+    <x:String x:Key="Content_Install">Install</x:String>
+    <x:String x:Key="Content_Loading">Loading catalog…</x:String>
+
+    <!-- Console -->
+    <x:String x:Key="Console_Clear">Clear</x:String>
+    <x:String x:Key="Console_Empty">Empty</x:String>
+    <x:String x:Key="Console_OpenLog">Open log file</x:String>
+
+    <!-- Settings -->
+    <x:String x:Key="Settings_TabGame">Game</x:String>
+    <x:String x:Key="Settings_TabJava">Java</x:String>
+    <x:String x:Key="Settings_TabInterface">Interface</x:String>
+    <x:String x:Key="Settings_TabAdvanced">Advanced</x:String>
+
+    <x:String x:Key="Settings_GameDirectory">Game directory</x:String>
+    <x:String x:Key="Settings_OpenFolder">Open folder</x:String>
+    <x:String x:Key="Settings_Resolution">Resolution</x:String>
+    <x:String x:Key="Settings_Memory">Memory, MB</x:String>
+    <x:String x:Key="Settings_Max">Maximum</x:String>
+    <x:String x:Key="Settings_Min">Minimum</x:String>
+    <x:String x:Key="Settings_ExtraArgs">Extra Minecraft arguments</x:String>
+    <x:String x:Key="Settings_ExtraArgsHint">Passed to the game after the standard arguments. Leave empty if unsure.</x:String>
+    <x:String x:Key="Settings_ForceUpdate">Force update the game on the next launch</x:String>
+    <x:String x:Key="Settings_JavaAuto">Automatic</x:String>
+    <x:String x:Key="Settings_Language">Interface language</x:String>
+    <x:String x:Key="Settings_Versions">Show versions</x:String>
+    <x:String x:Key="Settings_VersionsRelease">Releases</x:String>
+    <x:String x:Key="Settings_VersionsSnapshot">Snapshots</x:String>
+    <x:String x:Key="Settings_VersionsOld">Old releases (before 1.5.2)</x:String>
+    <x:String x:Key="Settings_VersionsBeta">Beta</x:String>
+    <x:String x:Key="Settings_VersionsAlpha">Alpha</x:String>
+    <x:String x:Key="Settings_DevConsole">Developer console</x:String>
+    <x:String x:Key="Settings_DevConsoleHint">Shows a tab with the technical log. Disabled by default.</x:String>
+    <x:String x:Key="Settings_AfterLaunch">After Minecraft starts</x:String>
+    <x:String x:Key="AfterLaunch_Keep">Keep the launcher open</x:String>
+    <x:String x:Key="AfterLaunch_Hide">Minimize</x:String>
+    <x:String x:Key="AfterLaunch_Close">Close the launcher</x:String>
+    <x:String x:Key="Settings_Backups">Automatic backups</x:String>
+    <x:String x:Key="Settings_BackupsEnabled">Enable backups</x:String>
+    <x:String x:Key="Settings_BackupsInterval">Interval, min</x:String>
+    <x:String x:Key="Settings_BackupsMax">Maximum backups</x:String>
+    <x:String x:Key="Settings_BackupsFolder">Backups folder</x:String>
+    <x:String x:Key="Settings_CurseForge">CurseForge key</x:String>
+    <x:String x:Key="Settings_CurseForgeHint">Required to import CurseForge packs. Stored locally, never committed.</x:String>
+    <x:String x:Key="Settings_Catalog">Content catalog</x:String>
+    <x:String x:Key="Settings_CatalogHint">URL, local path or file:/// URI. Empty means catalog.json next to settings.json.</x:String>
+    <x:String x:Key="Settings_Updates">Updates</x:String>
+    <x:String x:Key="Settings_CheckUpdates">Check for updates</x:String>
+    <x:String x:Key="Settings_RestartUpdate">Restart</x:String>
+
+    <!-- Common -->
+    <x:String x:Key="Common_Close">Close</x:String>
+    <x:String x:Key="Common_Minimize">Minimize</x:String>
+    <x:String x:Key="Common_Maximize">Maximize</x:String>
+    <x:String x:Key="Common_Cancel">Cancel</x:String>
+    <x:String x:Key="Common_Ok">OK</x:String>
+
+</ResourceDictionary>

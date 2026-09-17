@@ -1,0 +1,34 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:STlauncher.App.ViewModels"
+             x:Class="STlauncher.App.Views.Pages.ServerPage"
+             x:DataType="vm:MainWindowViewModel">
+
+    <ScrollViewer>
+        <StackPanel Margin="22" Spacing="14" MaxWidth="620" HorizontalAlignment="Left">
+
+            <TextBlock Text="{DynamicResource Nav_Server}" Classes="label"/>
+
+            <Border Classes="card">
+                <StackPanel Spacing="14">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="{DynamicResource Server_Name}" Classes="faint"/>
+                        <TextBox Text="{Binding ServerName}"/>
+                    </StackPanel>
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="{DynamicResource Server_Address}" Classes="faint"/>
+                        <TextBox Text="{Binding ServerAddress}" Watermark="play.example.com"/>
+                    </StackPanel>
+
+                    <Button Classes="primary" Content="{DynamicResource Server_Join}"
+                            Command="{Binding PlayOnServerCommand}" IsEnabled="{Binding !IsBusy}"
+                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                            Height="44"/>
+
+                    <Border Classes="hairline"/>
+                    <TextBlock Text="{DynamicResource Server_Hint}" Classes="faint" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

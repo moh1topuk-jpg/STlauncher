@@ -28,6 +28,12 @@ public partial class App : Application
             DisableAvaloniaDataAnnotationValidation();
 
             _services = LauncherHost.Build();
+
+            // The language must be applied before the window is created so that the
+            // first layout already renders translated strings.
+            var settings = _services.GetRequiredService<SettingsService>().Load();
+            _services.GetRequiredService<LocalizationService>().Apply(settings.Language);
+
             var viewModel = _services.GetRequiredService<MainWindowViewModel>();
 
             var window = new MainWindow { DataContext = viewModel };

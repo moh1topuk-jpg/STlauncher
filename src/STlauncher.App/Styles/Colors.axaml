@@ -1,0 +1,70 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Surfaces: deep, warm-tinted darks -->
+    <Color x:Key="AppBgColor">#0C0A0D</Color>
+    <Color x:Key="SurfaceColor">#141014</Color>
+    <Color x:Key="SurfaceAltColor">#1A1519</Color>
+    <Color x:Key="ElevatedColor">#221A20</Color>
+    <Color x:Key="HoverColor">#2A2028</Color>
+
+    <!-- Lines -->
+    <Color x:Key="DividerColor">#2E252C</Color>
+    <Color x:Key="BorderColor">#382C34</Color>
+
+    <!-- Text -->
+    <Color x:Key="TextPrimaryColor">#EFE9EC</Color>
+    <Color x:Key="TextSecondaryColor">#A99BA3</Color>
+    <Color x:Key="TextMutedColor">#7A6E75</Color>
+    <Color x:Key="TextOnAccentColor">#FFF6F8</Color>
+
+    <!-- Accents -->
+    <Color x:Key="AccentColor">#A3243F</Color>
+    <Color x:Key="AccentHoverColor">#C02E4C</Color>
+    <Color x:Key="AccentPressedColor">#7E1B31</Color>
+    <Color x:Key="GoldColor">#C9A227</Color>
+    <Color x:Key="GoldMutedColor">#8A6F1B</Color>
+
+    <!-- Status -->
+    <Color x:Key="SuccessColor">#4C9A6A</Color>
+    <Color x:Key="WarningColor">#C98A27</Color>
+    <Color x:Key="DangerColor">#C0392B</Color>
+
+    <!-- Brushes -->
+    <SolidColorBrush x:Key="AppBgBrush" Color="{StaticResource AppBgColor}"/>
+    <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}"/>
+    <SolidColorBrush x:Key="SurfaceAltBrush" Color="{StaticResource SurfaceAltColor}"/>
+    <SolidColorBrush x:Key="ElevatedBrush" Color="{StaticResource ElevatedColor}"/>
+    <SolidColorBrush x:Key="HoverBrush" Color="{StaticResource HoverColor}"/>
+
+    <SolidColorBrush x:Key="DividerBrush" Color="{StaticResource DividerColor}"/>
+    <SolidColorBrush x:Key="BorderBrushSubtle" Color="{StaticResource BorderColor}"/>
+
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimaryColor}"/>
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondaryColor}"/>
+    <SolidColorBrush x:Key="TextMutedBrush" Color="{StaticResource TextMutedColor}"/>
+    <SolidColorBrush x:Key="TextOnAccentBrush" Color="{StaticResource TextOnAccentColor}"/>
+
+    <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}"/>
+    <SolidColorBrush x:Key="AccentHoverBrush" Color="{StaticResource AccentHoverColor}"/>
+    <SolidColorBrush x:Key="AccentPressedBrush" Color="{StaticResource AccentPressedColor}"/>
+    <SolidColorBrush x:Key="GoldBrush" Color="{StaticResource GoldColor}"/>
+    <SolidColorBrush x:Key="GoldMutedBrush" Color="{StaticResource GoldMutedColor}"/>
+
+    <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}"/>
+    <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}"/>
+    <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource DangerColor}"/>
+
+    <!-- A restrained "theatre" hint: thin warm hairline, used sparingly -->
+    <LinearGradientBrush x:Key="AccentHairlineBrush" StartPoint="0%,50%" EndPoint="100%,50%">
+        <GradientStop Offset="0" Color="#00A3243F"/>
+        <GradientStop Offset="0.5" Color="#C9A3243F"/>
+        <GradientStop Offset="1" Color="#00A3243F"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="SidebarBrush" StartPoint="0%,0%" EndPoint="0%,100%">
+        <GradientStop Offset="0" Color="#141014"/>
+        <GradientStop Offset="1" Color="#0F0C11"/>
+    </LinearGradientBrush>
+
+</ResourceDictionary>

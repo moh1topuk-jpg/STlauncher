@@ -1,0 +1,108 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Shell -->
+    <x:String x:Key="App_Title">STlauncher</x:String>
+    <x:String x:Key="Nav_Game">Игра</x:String>
+    <x:String x:Key="Nav_Builds">Сборки</x:String>
+    <x:String x:Key="Nav_Mods">Моды</x:String>
+    <x:String x:Key="Nav_Content">Каталог</x:String>
+    <x:String x:Key="Nav_Server">Сервер</x:String>
+    <x:String x:Key="Nav_Console">Консоль</x:String>
+    <x:String x:Key="Nav_Settings">Настройки</x:String>
+
+    <!-- Game page -->
+    <x:String x:Key="Game_Profile">Профиль</x:String>
+    <x:String x:Key="Game_Instance">Сборка</x:String>
+    <x:String x:Key="Game_NewInstance">Новая</x:String>
+    <x:String x:Key="Game_DeleteInstance">Удалить</x:String>
+    <x:String x:Key="Game_InstanceNameHint">Название новой сборки</x:String>
+    <x:String x:Key="Game_Version">Версия</x:String>
+    <x:String x:Key="Game_Loader">Загрузчик</x:String>
+    <x:String x:Key="Game_LoaderVersion">Версия загрузчика</x:String>
+    <x:String x:Key="Game_Nickname">Ник</x:String>
+    <x:String x:Key="Game_SaveNickname">Запомнить ник</x:String>
+    <x:String x:Key="Game_Play">Играть</x:String>
+    <x:String x:Key="Game_PlayOnServer">Играть на сервере</x:String>
+    <x:String x:Key="Game_Ready">Готово</x:String>
+    <x:String x:Key="Game_OfflineMode">Офлайн-режим</x:String>
+
+    <!-- Server page -->
+    <x:String x:Key="Server_Title">Сервер</x:String>
+    <x:String x:Key="Server_Name">Название</x:String>
+    <x:String x:Key="Server_Address">Адрес</x:String>
+    <x:String x:Key="Server_Join">Играть на сервере</x:String>
+    <x:String x:Key="Server_Hint">Сервер добавляется в игровой список серверов автоматически для каждой сборки. Автовход происходит только по кнопке «Играть на сервере».</x:String>
+
+    <!-- Mods page -->
+    <x:String x:Key="Mods_SearchHint">Поиск на Modrinth…</x:String>
+    <x:String x:Key="Mods_Search">Найти</x:String>
+    <x:String x:Key="Mods_Refresh">Обновить</x:String>
+    <x:String x:Key="Mods_Import">Импорт .mrpack / .zip</x:String>
+    <x:String x:Key="Mods_Modrinth">Modrinth</x:String>
+    <x:String x:Key="Mods_Installed">Установленные</x:String>
+    <x:String x:Key="Mods_InstallSelected">Установить выбранный</x:String>
+    <x:String x:Key="Mods_Toggle">Вкл/Выкл</x:String>
+    <x:String x:Key="Mods_Delete">Удалить</x:String>
+    <x:String x:Key="Mods_Empty">Модов пока нет</x:String>
+
+    <!-- Content page -->
+    <x:String x:Key="Content_Reload">Обновить</x:String>
+    <x:String x:Key="Content_Install">Установить</x:String>
+    <x:String x:Key="Content_Loading">Загрузка каталога…</x:String>
+
+    <!-- Console -->
+    <x:String x:Key="Console_Clear">Очистить</x:String>
+    <x:String x:Key="Console_Empty">Пусто</x:String>
+    <x:String x:Key="Console_OpenLog">Открыть лог-файл</x:String>
+
+    <!-- Settings -->
+    <x:String x:Key="Settings_TabGame">Игра</x:String>
+    <x:String x:Key="Settings_TabJava">Java</x:String>
+    <x:String x:Key="Settings_TabInterface">Интерфейс</x:String>
+    <x:String x:Key="Settings_TabAdvanced">Дополнительно</x:String>
+
+    <x:String x:Key="Settings_GameDirectory">Папка игры</x:String>
+    <x:String x:Key="Settings_OpenFolder">Открыть папку</x:String>
+    <x:String x:Key="Settings_Resolution">Разрешение</x:String>
+    <x:String x:Key="Settings_Memory">Память, МБ</x:String>
+    <x:String x:Key="Settings_Max">Максимум</x:String>
+    <x:String x:Key="Settings_Min">Минимум</x:String>
+    <x:String x:Key="Settings_ExtraArgs">Дополнительные аргументы Minecraft</x:String>
+    <x:String x:Key="Settings_ExtraArgsHint">Передаются в игру после стандартных аргументов. Оставьте пустым, если не уверены.</x:String>
+    <x:String x:Key="Settings_ForceUpdate">Принудительно обновить игру при следующем запуске</x:String>
+    <x:String x:Key="Settings_JavaAuto">Автоматически</x:String>
+    <x:String x:Key="Settings_Language">Язык интерфейса</x:String>
+    <x:String x:Key="Settings_Versions">Показывать версии</x:String>
+    <x:String x:Key="Settings_VersionsRelease">Релизы</x:String>
+    <x:String x:Key="Settings_VersionsSnapshot">Снапшоты</x:String>
+    <x:String x:Key="Settings_VersionsOld">Старые релизы (до 1.5.2)</x:String>
+    <x:String x:Key="Settings_VersionsBeta">Бета</x:String>
+    <x:String x:Key="Settings_VersionsAlpha">Альфа</x:String>
+    <x:String x:Key="Settings_DevConsole">Консоль разработчика</x:String>
+    <x:String x:Key="Settings_DevConsoleHint">Показывает вкладку с техническим логом. По умолчанию выключена.</x:String>
+    <x:String x:Key="Settings_AfterLaunch">После запуска Minecraft</x:String>
+    <x:String x:Key="AfterLaunch_Keep">Оставить открытым</x:String>
+    <x:String x:Key="AfterLaunch_Hide">Свернуть</x:String>
+    <x:String x:Key="AfterLaunch_Close">Закрыть лаунчер</x:String>
+    <x:String x:Key="Settings_Backups">Автоматические бэкапы</x:String>
+    <x:String x:Key="Settings_BackupsEnabled">Включить бэкапы</x:String>
+    <x:String x:Key="Settings_BackupsInterval">Частота, мин</x:String>
+    <x:String x:Key="Settings_BackupsMax">Максимум бэкапов</x:String>
+    <x:String x:Key="Settings_BackupsFolder">Папка бэкапов</x:String>
+    <x:String x:Key="Settings_CurseForge">Ключ CurseForge</x:String>
+    <x:String x:Key="Settings_CurseForgeHint">Нужен для импорта сборок с CurseForge. Хранится локально, в репозиторий не попадает.</x:String>
+    <x:String x:Key="Settings_Catalog">Каталог контента</x:String>
+    <x:String x:Key="Settings_CatalogHint">URL, локальный путь или file:/// URI. Пусто — будет использован catalog.json рядом с settings.json.</x:String>
+    <x:String x:Key="Settings_Updates">Обновления</x:String>
+    <x:String x:Key="Settings_CheckUpdates">Проверить обновления</x:String>
+    <x:String x:Key="Settings_RestartUpdate">Перезапустить</x:String>
+
+    <!-- Common -->
+    <x:String x:Key="Common_Close">Закрыть</x:String>
+    <x:String x:Key="Common_Minimize">Свернуть</x:String>
+    <x:String x:Key="Common_Maximize">Развернуть</x:String>
+    <x:String x:Key="Common_Cancel">Отмена</x:String>
+    <x:String x:Key="Common_Ok">ОК</x:String>
+
+</ResourceDictionary>

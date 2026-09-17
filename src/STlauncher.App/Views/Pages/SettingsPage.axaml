@@ -1,0 +1,78 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:STlauncher.App.ViewModels"
+             x:Class="STlauncher.App.Views.Pages.SettingsPage"
+             x:DataType="vm:MainWindowViewModel">
+
+    <ScrollViewer>
+        <StackPanel Margin="22" Spacing="14" MaxWidth="720" HorizontalAlignment="Left">
+
+            <TextBlock Text="{DynamicResource Nav_Settings}" Classes="label"/>
+
+            <!-- Game directory -->
+            <Border Classes="card">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="{DynamicResource Settings_GameDirectory}" Classes="label"/>
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <TextBox Text="{Binding InstanceDirectory, Mode=OneWay}" IsReadOnly="True"/>
+                        <Button Grid.Column="1" Classes="ghost"
+                                Content="{DynamicResource Settings_OpenFolder}"
+                                Command="{Binding OpenGameFolderCommand}"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Interface -->
+            <Border Classes="card">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="{DynamicResource Settings_TabInterface}" Classes="label"/>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="{DynamicResource Settings_Language}" Classes="faint"/>
+                        <ComboBox ItemsSource="{Binding Languages}" SelectedItem="{Binding Language}"
+                                  HorizontalAlignment="Stretch"/>
+                    </StackPanel>
+
+                    <CheckBox Content="{DynamicResource Settings_DevConsole}" IsChecked="{Binding ShowDeveloperConsole}"/>
+                    <TextBlock Text="{DynamicResource Settings_DevConsoleHint}" Classes="faint"
+                               TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Integrations -->
+            <Border Classes="card">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="{DynamicResource Settings_CurseForge}" Classes="label"/>
+                    <TextBox Text="{Binding CurseForgeApiKey}" PasswordChar="&#x2022;"
+                             Watermark="required for CurseForge modpacks"/>
+                    <TextBlock Text="{DynamicResource Settings_CurseForgeHint}" Classes="faint"
+                               TextWrapping="Wrap"/>
+
+                    <Border Classes="hairline"/>
+
+                    <TextBlock Text="{DynamicResource Settings_Catalog}" Classes="label"/>
+                    <TextBox Text="{Binding CatalogUrl}"
+                             Watermark="https://example.com/catalog.json  or  C:\path\catalog.json"/>
+                    <TextBlock Text="{DynamicResource Settings_CatalogHint}" Classes="faint"
+                               TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Updates -->
+            <Border Classes="card">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="{DynamicResource Settings_Updates}" Classes="label"/>
+                    <TextBlock Text="{Binding UpdateStatus}" Classes="faint" TextWrapping="Wrap"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Classes="ghost" Content="{DynamicResource Settings_CheckUpdates}"
+                                Command="{Binding CheckForUpdatesCommand}" IsEnabled="{Binding !IsUpdateBusy}"/>
+                        <Button Classes="ghost" Content="{DynamicResource Settings_RestartUpdate}"
+                                Command="{Binding RestartToUpdateCommand}"
+                                IsEnabled="{Binding CanRestartToUpdate}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

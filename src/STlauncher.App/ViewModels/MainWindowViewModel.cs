@@ -38,6 +38,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly CatalogInstaller _catalogInstaller;
     private readonly UpdateService _updates;
     private readonly InstanceManager _instances;
+    private readonly LocalizationService _localization;
     private readonly LauncherPaths _paths;
     private readonly GameLauncher _gameLauncher;
 
@@ -60,6 +61,7 @@ public partial class MainWindowViewModel : ViewModelBase
         CatalogInstaller catalogInstaller,
         UpdateService updates,
         InstanceManager instances,
+        LocalizationService localization,
         LauncherPaths paths,
         GameLauncher gameLauncher)
     {
@@ -76,6 +78,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _catalogInstaller = catalogInstaller;
         _updates = updates;
         _instances = instances;
+        _localization = localization;
         _paths = paths;
         _gameLauncher = gameLauncher;
     }
@@ -160,6 +163,24 @@ public partial class MainWindowViewModel : ViewModelBase
     private bool _isCatalogBusy;
 
     [ObservableProperty]
+    private ShellSection _section = ShellSection.Game;
+
+    [ObservableProperty]
+    private string _language = LocalizationService.DefaultLanguage;
+
+    [ObservableProperty]
+    private bool _showDeveloperConsole;
+
+    public bool IsGameSection => Section == ShellSection.Game;
+    public bool IsModsSection => Section == ShellSection.Mods;
+    public bool IsContentSection => Section == ShellSection.Content;
+    public bool IsServerSection => Section == ShellSection.Server;
+    public bool IsConsoleSection => Section == ShellSection.Console;
+    public bool IsSettingsSection => Section == ShellSection.Settings;
+
+    public IReadOnlyList<string> Languages => _localization.AvailableLanguages;
+
+    [ObservableProperty]
     private string _status = "Ready";
 
     [ObservableProperty]
@@ -198,6 +219,8 @@ public partial class MainWindowViewModel : ViewModelBase
         _curseForge.ApiKey = settings.CurseForgeApiKey;
         CatalogUrl = settings.CatalogUrl ?? string.Empty;
         _catalog.CatalogUrl = settings.CatalogUrl;
+        Language = LocalizationService.Normalize(settings.Language);
+        ShowDeveloperConsole = settings.ShowDeveloperConsole;
 
         _gameLauncher.OutputReceived += line => AppendConsole(line);
         _gameLauncher.ErrorReceived += line => AppendConsole(line);
@@ -409,6 +432,24 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [RelayCommand]
     private void ClearConsole() => Console.Clear();
+
+    [RelayCommand]
+    private void OpenGameFolder()
+    {
+        try
+        {
+            System.IO.Directory.CreateDirectory(InstanceDirectory);
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = InstanceDirectory,
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            Status = "Failed to open the game folder: " + ex.Message;
+        }
+    }
 
     [RelayCommand]
     private async Task SearchModsAsync()
@@ -831,6 +872,31 @@ public partial class MainWindowViewModel : ViewModelBase
 
     partial void OnCatalogUrlChanged(string value) => _catalog.CatalogUrl = value;
 
+    partial void OnSectionChanged(ShellSection value)
+    {
+        OnPropertyChanged(nameof(IsGameSection));
+        OnPropertyChanged(nameof(IsModsSection));
+        OnPropertyChanged(nameof(IsContentSection));
+        OnPropertyChanged(nameof(IsServerSection));
+        OnPropertyChanged(nameof(IsConsoleSection));
+        OnPropertyChanged(nameof(IsSettingsSection));
+    }
+
+    partial void OnLanguageChanged(string value)
+    {
+        _localization.Apply(value);
+        PersistSettings();
+    }
+
+    [RelayCommand]
+    private void SelectSection(string? section)
+    {
+        if (Enum.TryParse<ShellSection>(section, ignoreCase: true, out var parsed))
+        {
+            Section = parsed;
+        }
+    }
+
     private async Task UpdateAvatarAsync()
     {
         _avatarCts?.Cancel();
@@ -914,6 +980,8 @@ public partial class MainWindowViewModel : ViewModelBase
             ShowSnapshots = ShowSnapshots,
             CurseForgeApiKey = string.IsNullOrWhiteSpace(CurseForgeApiKey) ? null : CurseForgeApiKey,
             CatalogUrl = string.IsNullOrWhiteSpace(CatalogUrl) ? null : CatalogUrl,
+            Language = Language,
+            ShowDeveloperConsole = ShowDeveloperConsole,
             SelectedInstanceId = SelectedInstance?.Id,
 
             // Legacy global fields, kept so older settings files can be migrated into an instance.

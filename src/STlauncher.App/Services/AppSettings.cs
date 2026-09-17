@@ -28,6 +28,12 @@ public sealed class AppSettings
 
     public string? CurseForgeApiKey { get; set; }
 
+    /// <summary>Interface language code: "ru" or "en".</summary>
+    public string Language { get; set; } = "ru";
+
+    /// <summary>Shows the technical log section. Off by default.</summary>
+    public bool ShowDeveloperConsole { get; set; }
+
     /// <summary>Remote content catalog address. Empty disables the Content tab.</summary>
     public string? CatalogUrl { get; set; } = "https://mc.showtime.su/launcher/catalog.json";
 }
