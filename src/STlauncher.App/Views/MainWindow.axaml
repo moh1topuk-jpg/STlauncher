@@ -1,0 +1,225 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:STlauncher.App.ViewModels"
+        xmlns:m="using:STlauncher.Core.Metadata"
+        xmlns:loaders="using:STlauncher.Core.Loaders"
+        xmlns:mods="using:STlauncher.Core.Mods"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="960" d:DesignHeight="640"
+        x:Class="STlauncher.App.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Width="960" Height="640"
+        MinWidth="820" MinHeight="560"
+        Title="STlauncher">
+
+    <Grid RowDefinitions="Auto,*,200" ColumnDefinitions="290,*">
+
+        <Border Grid.Row="0" Grid.ColumnSpan="2" Background="#1B1B1F" Padding="16,10">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="STlauncher" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1" Text="{Binding Status}" VerticalAlignment="Center"
+                           Foreground="#9BA3AF" TextTrimming="CharacterEllipsis"/>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1" Grid.Column="0" RowDefinitions="Auto,*" Margin="12">
+            <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,8">
+                <TextBlock Text="Versions" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                <Button Grid.Column="1" Content="Reload" Command="{Binding LoadVersionsCommand}"
+                        IsEnabled="{Binding !IsBusy}"/>
+            </Grid>
+
+            <ListBox Grid.Row="1" ItemsSource="{Binding Versions}" SelectedItem="{Binding SelectedVersion}">
+                <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="m:VersionSummary">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="{Binding Id}" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Grid.Column="1" Text="{Binding Type}" Foreground="#9BA3AF" FontSize="11"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Grid>
+
+        <TabControl Grid.Row="1" Grid.Column="1" Margin="0,12,12,12">
+
+            <TabItem Header="Game">
+                <StackPanel Margin="16" Spacing="14" Width="420" HorizontalAlignment="Left">
+
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Border Width="64" Height="64" CornerRadius="8" Background="#2A2A31" ClipToBounds="True">
+                            <Image Source="{Binding Avatar}" Stretch="Uniform" Width="64" Height="64"/>
+                        </Border>
+                        <StackPanel VerticalAlignment="Center" Spacing="2">
+                            <TextBlock Text="{Binding Username}" FontSize="18" FontWeight="SemiBold"/>
+                            <TextBlock Text="Offline mode" Foreground="#9BA3AF" FontSize="12"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Nickname"/>
+                        <TextBox Text="{Binding Username}" Watermark="Player"/>
+                    </StackPanel>
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Loader"/>
+                            <ComboBox ItemsSource="{Binding LoaderKinds}" SelectedItem="{Binding SelectedLoader}"
+                                      HorizontalAlignment="Stretch"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="4">
+                            <TextBlock Text="Loader version"/>
+                            <ComboBox ItemsSource="{Binding LoaderVersions}"
+                                      SelectedItem="{Binding SelectedLoaderVersion}"
+                                      IsEnabled="{Binding !IsLoaderBusy}"
+                                      HorizontalAlignment="Stretch">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="loaders:LoaderVersion">
+                                        <TextBlock Text="{Binding Version}"/>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Max memory (MB)"/>
+                            <NumericUpDown Value="{Binding MaxMemoryMb}" Minimum="512" Maximum="32768"
+                                           Increment="512" FormatString="0"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="4">
+                            <TextBlock Text="Min memory (MB)"/>
+                            <NumericUpDown Value="{Binding MinMemoryMb}" Minimum="256" Maximum="8192"
+                                           Increment="256" FormatString="0"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <CheckBox Content="Show snapshots and old versions" IsChecked="{Binding ShowSnapshots}"/>
+
+                    <Button Content="PLAY" Command="{Binding PlayCommand}" IsEnabled="{Binding !IsBusy}"
+                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                            Height="52" FontSize="20" FontWeight="SemiBold"/>
+
+                    <ProgressBar Value="{Binding Progress}" Minimum="0" Maximum="100" Height="6"/>
+
+                </StackPanel>
+            </TabItem>
+
+            <TabItem Header="Server">
+                <StackPanel Margin="16" Spacing="14" Width="420" HorizontalAlignment="Left">
+                    <TextBlock Text="Server preset" FontWeight="SemiBold"/>
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Name"/>
+                        <TextBox Text="{Binding ServerName}"/>
+                    </StackPanel>
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Address"/>
+                        <TextBox Text="{Binding ServerAddress}" Watermark="play.example.com"/>
+                    </StackPanel>
+                    <Button Content="Play on server" Command="{Binding PlayOnServerCommand}" IsEnabled="{Binding !IsBusy}"
+                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="44"/>
+                    <TextBlock TextWrapping="Wrap" Foreground="#9BA3AF"
+                               Text="The server is added to the in-game server list automatically for every version."/>
+                </StackPanel>
+            </TabItem>
+
+            <TabItem Header="Mods">
+                <Grid Margin="16" RowDefinitions="Auto,*" Width="680" HorizontalAlignment="Left">
+                    <StackPanel Spacing="8">
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                            <TextBox Text="{Binding ModSearchQuery}" Watermark="Search Modrinth..."/>
+                            <Button Grid.Column="1" Content="Search" Command="{Binding SearchModsCommand}"
+                                    IsEnabled="{Binding !IsModsBusy}"/>
+                            <Button Grid.Column="2" Content="Refresh" Command="{Binding RefreshModsCommand}"/>
+                        </Grid>
+                        <Button Content="Import .mrpack" Click="OnImportModpackClick"
+                                HorizontalAlignment="Left" IsEnabled="{Binding !IsModsBusy}"/>
+                    </StackPanel>
+
+                    <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,12,0,0">
+                        <Grid RowDefinitions="Auto,*">
+                            <TextBlock Text="Modrinth" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <ListBox Grid.Row="1" ItemsSource="{Binding ModSearchResults}"
+                                     SelectedItem="{Binding SelectedMod}">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate x:DataType="mods:ModSearchResult">
+                                        <StackPanel Spacing="2" Margin="0,2">
+                                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding Description}" FontSize="11" Foreground="#9BA3AF"
+                                                       TextTrimming="CharacterEllipsis" MaxLines="2"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Grid>
+
+                        <Grid Grid.Row="0" Grid.Column="1" RowDefinitions="Auto,*">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Text="Installed" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                                <Button Grid.Column="1" Content="Install selected"
+                                        Command="{Binding InstallSelectedModCommand}"
+                                        IsEnabled="{Binding !IsModsBusy}" Margin="0,0,0,6"/>
+                            </Grid>
+                            <ListBox Grid.Row="1" ItemsSource="{Binding InstalledMods}">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate x:DataType="mods:InstalledMod">
+                                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                                            <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                            <Button Grid.Column="1" Content="On/Off" FontSize="11"
+                                                    Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ToggleModCommand}"
+                                                    CommandParameter="{Binding}"/>
+                                            <Button Grid.Column="2" Content="Del" FontSize="11"
+                                                    Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).UninstallModCommand}"
+                                                    CommandParameter="{Binding}"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Grid>
+                    </Grid>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Settings">
+                <StackPanel Margin="16" Spacing="10" Width="560" HorizontalAlignment="Left">
+                    <TextBlock Text="Game directory" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding InstanceDirectory}" TextWrapping="Wrap" Foreground="#9BA3AF"/>
+
+                    <TextBlock Text="CurseForge API key" FontWeight="SemiBold" Margin="0,16,0,0"/>
+                    <TextBox Text="{Binding CurseForgeApiKey}" PasswordChar="•"
+                             Watermark="required for CurseForge modpacks"/>
+                    <TextBlock TextWrapping="Wrap" Foreground="#9BA3AF" FontSize="11"
+                               Text="Stored locally in settings.json (%APPDATA%), never committed to the repository. Can also be supplied via the CURSEFORGE_API_KEY environment variable."/>
+
+                    <TextBlock Text="Updates" FontWeight="SemiBold" Margin="0,16,0,0"/>
+                    <TextBlock Text="{Binding UpdateStatus}" TextWrapping="Wrap" Foreground="#9BA3AF"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Check for updates" Command="{Binding CheckForUpdatesCommand}"
+                                IsEnabled="{Binding !IsUpdateBusy}"/>
+                        <Button Content="Restart to update" Command="{Binding RestartToUpdateCommand}"
+                                IsEnabled="{Binding CanRestartToUpdate}"/>
+                    </StackPanel>
+                </StackPanel>
+            </TabItem>
+
+        </TabControl>
+
+        <Border Grid.Row="2" Grid.ColumnSpan="2" Background="#0E0E11">
+            <Grid RowDefinitions="Auto,*">
+                <Grid ColumnDefinitions="*,Auto" Margin="16,8">
+                    <TextBlock Text="Console" FontWeight="SemiBold"/>
+                    <Button Grid.Column="1" Content="Clear" Command="{Binding ClearConsoleCommand}"/>
+                </Grid>
+                <ListBox Grid.Row="1" ItemsSource="{Binding Console}" Background="Transparent"
+                         FontFamily="Consolas,Menlo,monospace" FontSize="12"/>
+            </Grid>
+        </Border>
+
+    </Grid>
+</Window>

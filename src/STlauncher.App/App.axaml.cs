@@ -1,0 +1,52 @@
+using System;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Data.Core.Plugins;
+using System.Linq;
+using Avalonia.Markup.Xaml;
+using Microsoft.Extensions.DependencyInjection;
+using STlauncher.App.Services;
+using STlauncher.App.ViewModels;
+using STlauncher.App.Views;
+
+namespace STlauncher.App;
+
+public partial class App : Application
+{
+    private IServiceProvider? _services;
+
+    public override void Initialize()
+    {
+        AvaloniaXamlLoader.Load(this);
+    }
+
+    public override void OnFrameworkInitializationCompleted()
+    {
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            DisableAvaloniaDataAnnotationValidation();
+
+            _services = LauncherHost.Build();
+            var viewModel = _services.GetRequiredService<MainWindowViewModel>();
+
+            var window = new MainWindow { DataContext = viewModel };
+            window.Opened += async (_, _) => await viewModel.InitializeAsync();
+
+            desktop.MainWindow = window;
+        }
+
+        base.OnFrameworkInitializationCompleted();
+    }
+
+    private void DisableAvaloniaDataAnnotationValidation()
+    {
+        var dataValidationPluginsToRemove =
+            BindingPlugins.DataValidators.OfType<DataAnnotationsValidationPlugin>().ToArray();
+
+        foreach (var plugin in dataValidationPluginsToRemove)
+        {
+            BindingPlugins.DataValidators.Remove(plugin);
+        }
+    }
+}
