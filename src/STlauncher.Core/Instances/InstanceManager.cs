@@ -137,6 +137,35 @@ public sealed class InstanceManager
         Directory.Delete(target, recursive: true);
     }
 
+    /// <summary>
+    /// Creates a new build from an existing one. Only the definition is copied — files,
+    /// worlds and downloaded mods stay with the original, so builds do not silently
+    /// duplicate gigabytes of data.
+    /// </summary>
+    public Instance Duplicate(string sourceId, string? newName = null)
+    {
+        var source = Get(sourceId)
+                     ?? throw new InvalidOperationException($"Instance '{sourceId}' was not found.");
+
+        var copy = Create(string.IsNullOrWhiteSpace(newName) ? $"{source.Name} copy" : newName!);
+
+        copy.VersionId = source.VersionId;
+        copy.Loader = source.Loader;
+        copy.LoaderVersion = source.LoaderVersion;
+        copy.MaxMemoryMb = source.MaxMemoryMb;
+        copy.MinMemoryMb = source.MinMemoryMb;
+        copy.Width = source.Width;
+        copy.Height = source.Height;
+        copy.JavaPath = source.JavaPath;
+        copy.ServerName = source.ServerName;
+        copy.ServerAddress = source.ServerAddress;
+        copy.ExtraGameArgs = source.ExtraGameArgs;
+        copy.EnabledCatalogItems = source.EnabledCatalogItems.ToList();
+
+        Save(copy);
+        return copy;
+    }
+
     public static string Slugify(string name)
     {
         var builder = new StringBuilder(name.Length);

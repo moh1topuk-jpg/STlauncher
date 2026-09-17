@@ -57,6 +57,15 @@
                             </StackPanel>
                         </Button>
 
+                        <Button Classes="nav" Classes.active="{Binding IsBuildsSection}"
+                                Command="{Binding SelectSectionCommand}" CommandParameter="Builds">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <TextBlock Text="&#x25C8;" Width="14" VerticalAlignment="Center"
+                                           Foreground="{DynamicResource AccentBrush}"/>
+                                <TextBlock Text="{DynamicResource Nav_Builds}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
                         <Button Classes="nav" Classes.active="{Binding IsModsSection}"
                                 Command="{Binding SelectSectionCommand}" CommandParameter="Mods">
                             <StackPanel Orientation="Horizontal" Spacing="10">
@@ -126,6 +135,7 @@
             <!-- Content -->
             <Panel Grid.Column="1">
                 <pages:GamePage IsVisible="{Binding IsGameSection}"/>
+                <pages:BuildsPage IsVisible="{Binding IsBuildsSection}"/>
                 <pages:ModsPage IsVisible="{Binding IsModsSection}"/>
                 <pages:ContentPage IsVisible="{Binding IsContentSection}"/>
                 <pages:ServerPage IsVisible="{Binding IsServerSection}"/>

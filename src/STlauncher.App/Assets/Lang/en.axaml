@@ -30,6 +30,18 @@
     <x:String x:Key="Game_Ready">Ready</x:String>
     <x:String x:Key="Game_OfflineMode">Offline mode</x:String>
 
+    <!-- Builds page -->
+    <x:String x:Key="Builds_Title">Builds</x:String>
+    <x:String x:Key="Builds_Hint">A build is a game version, a loader and a set of mods. Each build keeps its own files.</x:String>
+    <x:String x:Key="Builds_Selected">Selected build</x:String>
+    <x:String x:Key="Builds_Rename">Rename</x:String>
+    <x:String x:Key="Builds_Duplicate">Duplicate</x:String>
+    <x:String x:Key="Builds_Contents">Contents</x:String>
+    <x:String x:Key="Builds_Mods">Mods in this build</x:String>
+    <x:String x:Key="Builds_ModsHint">Tick mods on the Catalog page — they install automatically before launch.</x:String>
+    <x:String x:Key="Builds_EditMods">Choose mods</x:String>
+    <x:String x:Key="Builds_Danger">Removal</x:String>
+
     <!-- Server page -->
     <x:String x:Key="Server_Title">Server</x:String>
     <x:String x:Key="Server_Name">Name</x:String>

@@ -30,6 +30,18 @@
     <x:String x:Key="Game_Ready">Готово</x:String>
     <x:String x:Key="Game_OfflineMode">Офлайн-режим</x:String>
 
+    <!-- Builds page -->
+    <x:String x:Key="Builds_Title">Сборки</x:String>
+    <x:String x:Key="Builds_Hint">Сборка — это версия, загрузчик и набор модов. Файлы у каждой сборки свои.</x:String>
+    <x:String x:Key="Builds_Selected">Выбранная сборка</x:String>
+    <x:String x:Key="Builds_Rename">Переименовать</x:String>
+    <x:String x:Key="Builds_Duplicate">Копия</x:String>
+    <x:String x:Key="Builds_Contents">Содержимое</x:String>
+    <x:String x:Key="Builds_Mods">Модов в сборке</x:String>
+    <x:String x:Key="Builds_ModsHint">Отмечайте моды на странице «Каталог» — они установятся автоматически перед запуском.</x:String>
+    <x:String x:Key="Builds_EditMods">Выбрать моды</x:String>
+    <x:String x:Key="Builds_Danger">Удаление</x:String>
+
     <!-- Server page -->
     <x:String x:Key="Server_Title">Сервер</x:String>
     <x:String x:Key="Server_Name">Название</x:String>

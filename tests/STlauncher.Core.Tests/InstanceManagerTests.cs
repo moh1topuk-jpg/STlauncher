@@ -137,4 +137,58 @@ public class InstanceManagerTests
 
         Assert.Equal(new[] { "First", "Second" }, names);
     }
+
+    [Fact]
+    public void Duplicate_CopiesTheDefinitionOnly()
+    {
+        var (manager, paths) = Create();
+
+        var source = manager.Create("Server");
+        source.VersionId = "1.20.1";
+        source.Loader = LoaderKind.Fabric;
+        source.LoaderVersion = "0.15.0";
+        source.MaxMemoryMb = 4096;
+        source.Width = 1920;
+        source.Height = 1080;
+        source.ServerAddress = "mc.showtime.su";
+        source.ExtraGameArgs = "--fullscreen";
+        source.EnabledCatalogItems = new List<string> { "sodium", "lithium" };
+        manager.Save(source);
+
+        var copy = manager.Duplicate("server", "Server 2");
+
+        Assert.Equal("server-2", copy.Id);
+        Assert.Equal("Server 2", copy.Name);
+        Assert.Equal("1.20.1", copy.VersionId);
+        Assert.Equal(LoaderKind.Fabric, copy.Loader);
+        Assert.Equal("0.15.0", copy.LoaderVersion);
+        Assert.Equal(4096, copy.MaxMemoryMb);
+        Assert.Equal(1920, copy.Width);
+        Assert.Equal("--fullscreen", copy.ExtraGameArgs);
+        Assert.Equal(new[] { "sodium", "lithium" }, copy.EnabledCatalogItems);
+
+        // The original is untouched and files are not copied.
+        Assert.Equal("server", manager.Get("server")!.Id);
+        Assert.True(Directory.Exists(Path.Combine(paths.Instances, "server-2")));
+    }
+
+    [Fact]
+    public void Duplicate_GeneratesANameWhenNoneIsGiven()
+    {
+        var (manager, _) = Create();
+        manager.Create("Lite");
+
+        var copy = manager.Duplicate("lite");
+
+        Assert.Equal("Lite copy", copy.Name);
+        Assert.Equal("lite-copy", copy.Id);
+    }
+
+    [Fact]
+    public void Duplicate_ThrowsForUnknownSource()
+    {
+        var (manager, _) = Create();
+
+        Assert.Throws<InvalidOperationException>(() => manager.Duplicate("missing"));
+    }
 }

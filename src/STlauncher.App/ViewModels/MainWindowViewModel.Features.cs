@@ -362,6 +362,7 @@ public partial class MainWindowViewModel
         }
 
         _instances.Save(SelectedInstance);
+        OnPropertyChanged(nameof(BuildModCount));
         Status = $"Build now has {items.Count} item(s); they install before launch.";
     }
 

@@ -174,6 +174,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private bool _showDeveloperConsole;
 
     public bool IsGameSection => Section == ShellSection.Game;
+    public bool IsBuildsSection => Section == ShellSection.Builds;
     public bool IsModsSection => Section == ShellSection.Mods;
     public bool IsContentSection => Section == ShellSection.Content;
     public bool IsServerSection => Section == ShellSection.Server;
@@ -199,6 +200,12 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _newInstanceName = string.Empty;
+
+    [ObservableProperty]
+    private string _instanceNameEdit = string.Empty;
+
+    /// <summary>Number of catalog mods the current build installs before launch.</summary>
+    public int BuildModCount => SelectedInstance?.EnabledCatalogItems.Count ?? 0;
 
     public string InstanceDirectory
         => SelectedInstance is null
@@ -335,6 +342,59 @@ public partial class MainWindowViewModel : ViewModelBase
         catch (Exception ex)
         {
             Status = "Failed to delete instance: " + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private void DuplicateInstance()
+    {
+        if (SelectedInstance is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var sourceName = SelectedInstance.Name;
+            var copy = _instances.Duplicate(SelectedInstance.Id);
+
+            Instances.Add(copy);
+            SelectedInstance = copy;
+            Status = $"Build '{copy.Name}' created from '{sourceName}'.";
+        }
+        catch (Exception ex)
+        {
+            Status = "Failed to duplicate the build: " + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private void RenameInstance()
+    {
+        if (SelectedInstance is null || string.IsNullOrWhiteSpace(InstanceNameEdit))
+        {
+            return;
+        }
+
+        try
+        {
+            SelectedInstance.Name = InstanceNameEdit.Trim();
+            _instances.Save(SelectedInstance);
+
+            // The collection holds the same object, so refresh the list item text.
+            var index = Instances.IndexOf(SelectedInstance);
+            if (index >= 0)
+            {
+                var current = SelectedInstance;
+                Instances[index] = current;
+                SelectedInstance = current;
+            }
+
+            Status = $"Build renamed to '{SelectedInstance.Name}'.";
+        }
+        catch (Exception ex)
+        {
+            Status = "Failed to rename the build: " + ex.Message;
         }
     }
 
@@ -892,11 +952,14 @@ public partial class MainWindowViewModel : ViewModelBase
             ExtraGameArgs = value.ExtraGameArgs ?? string.Empty;
             Width = value.Width ?? 0;
             Height = value.Height ?? 0;
+            InstanceNameEdit = value.Name;
         }
         finally
         {
             _applyingInstance = false;
         }
+
+        OnPropertyChanged(nameof(BuildModCount));
 
         _ = LoadLoaderVersionsAsync();
         RefreshMods();
@@ -941,6 +1004,7 @@ public partial class MainWindowViewModel : ViewModelBase
     partial void OnSectionChanged(ShellSection value)
     {
         OnPropertyChanged(nameof(IsGameSection));
+        OnPropertyChanged(nameof(IsBuildsSection));
         OnPropertyChanged(nameof(IsModsSection));
         OnPropertyChanged(nameof(IsContentSection));
         OnPropertyChanged(nameof(IsServerSection));
