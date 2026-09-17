@@ -15,9 +15,12 @@
                         <TextBlock Text="{DynamicResource Server_Name}" Classes="faint"/>
                         <TextBox Text="{Binding ServerName}"/>
                     </StackPanel>
+
                     <StackPanel Spacing="6">
                         <TextBlock Text="{DynamicResource Server_Address}" Classes="faint"/>
                         <TextBox Text="{Binding ServerAddress}" Watermark="play.example.com"/>
+                        <TextBlock Text="{DynamicResource Server_PortHint}" Classes="faint"
+                                   TextWrapping="Wrap"/>
                     </StackPanel>
 
                     <Button Classes="primary" Content="{DynamicResource Server_Join}"
@@ -26,10 +29,26 @@
                             Height="44"/>
 
                     <Border Classes="hairline"/>
-                    <TextBlock Text="{DynamicResource Server_Hint}" Classes="faint" TextWrapping="Wrap"/>
-                    <TextBlock Text="{DynamicResource Server_GlobalHint}" Classes="faint" TextWrapping="Wrap"/>
+                    <TextBlock Text="{DynamicResource Server_GlobalHint}" Classes="faint"
+                               TextWrapping="Wrap"/>
                 </StackPanel>
             </Border>
+
+            <!-- Website -->
+            <Border Classes="card">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="{DynamicResource Server_Site}" Classes="label"/>
+                    <TextBlock Text="showtime.su" FontWeight="SemiBold"/>
+                    <Button Classes="ghost" HorizontalAlignment="Left"
+                            Content="{DynamicResource Server_OpenSite}"
+                            Command="{Binding OpenWebsiteCommand}"/>
+                </StackPanel>
+            </Border>
+
+            <Border Classes="card">
+                <TextBlock Text="{DynamicResource Server_More}" Classes="faint" TextWrapping="Wrap"/>
+            </Border>
+
         </StackPanel>
     </ScrollViewer>
 </UserControl>

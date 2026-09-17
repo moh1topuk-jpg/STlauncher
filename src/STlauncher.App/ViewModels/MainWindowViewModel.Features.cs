@@ -21,7 +21,6 @@ namespace STlauncher.App.ViewModels;
 /// </summary>
 public partial class MainWindowViewModel
 {
-    private readonly List<CatalogSection> _catalogSections = new();
     private ContentCatalog? _loadedCatalog;
 
     // ===================== Window lifecycle =====================
@@ -274,24 +273,12 @@ public partial class MainWindowViewModel
                             ?? JavaChoices[0];
     }
 
-    // ===================== Builds (catalog items) =====================
+    // ===================== Recommended builds =====================
 
     public ObservableCollection<CatalogBuild> CatalogBuilds { get; } = new();
 
-    public ObservableCollection<CatalogSectionView> CatalogViews { get; } = new();
-
     [ObservableProperty]
     private CatalogBuild? _selectedBuild;
-
-    [ObservableProperty]
-    private string _catalogFilter = string.Empty;
-
-    [ObservableProperty]
-    private bool _catalogOnlyRequired;
-
-    partial void OnCatalogFilterChanged(string value) => RebuildCatalogViews();
-
-    partial void OnCatalogOnlyRequiredChanged(bool value) => RebuildCatalogViews();
 
     partial void OnSelectedBuildChanged(CatalogBuild? value) => ApplyBuild(value);
 
@@ -331,63 +318,12 @@ public partial class MainWindowViewModel
         }
 
         SyncInstance();
-        RebuildCatalogViews();
+        OnPropertyChanged(nameof(BuildModCount));
         Status = Localize("Status_BuildApplied", "Build \"{0}\" applied: {1} item(s)", build.Name, build.Items.Count);
     }
 
     [RelayCommand]
     private void ApplySelectedBuild() => ApplyBuild(SelectedBuild);
-
-    private void OnCatalogItemToggled(CatalogItemView view)
-    {
-        if (SelectedInstance is null || _applyingInstance)
-        {
-            return;
-        }
-
-        var id = view.Item.Id;
-        var items = SelectedInstance.EnabledCatalogItems;
-
-        items.RemoveAll(x => string.Equals(x, id, StringComparison.OrdinalIgnoreCase));
-
-        if (view.Enabled)
-        {
-            items.Add(id);
-        }
-
-        _instances.Save(SelectedInstance);
-        OnPropertyChanged(nameof(BuildModCount));
-        Status = Localize("Status_BuildModsCount", "{0} item(s) in this build - they install before launch", items.Count);
-    }
-
-    private void RebuildCatalogViews()
-    {
-        CatalogViews.Clear();
-
-        var filter = (CatalogFilter ?? string.Empty).Trim();
-        var enabledIds = SelectedInstance?.EnabledCatalogItems ?? new List<string>();
-
-        foreach (var section in _catalogSections)
-        {
-            var items = section.Items
-                .Where(i => !CatalogOnlyRequired || i.Required)
-                .Where(i => filter.Length == 0 ||
-                            i.Name.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
-                            (i.Description?.Contains(filter, StringComparison.OrdinalIgnoreCase) ?? false))
-                .Select(i => new CatalogItemView(
-                    i,
-                    enabledIds.Contains(i.Id, StringComparer.OrdinalIgnoreCase),
-                    OnCatalogItemToggled))
-                .ToList();
-
-            if (items.Count == 0)
-            {
-                continue;
-            }
-
-            CatalogViews.Add(new CatalogSectionView(section.Title, section.Description, items));
-        }
-    }
 
     private async Task EnsureBuildItemsInstalledAsync()
     {
@@ -584,39 +520,4 @@ public enum BackupTrigger
 {
     BeforeLaunch,
     BeforeModChange
-}
-
-public sealed class CatalogSectionView
-{
-    public CatalogSectionView(string title, string? description, List<CatalogItemView> items)
-    {
-        Title = title;
-        Description = description;
-        Items = items;
-    }
-
-    public string Title { get; }
-
-    public string? Description { get; }
-
-    public List<CatalogItemView> Items { get; }
-}
-
-public partial class CatalogItemView : ObservableObject
-{
-    private readonly Action<CatalogItemView>? _onToggled;
-
-    public CatalogItemView(CatalogItem item, bool enabled, Action<CatalogItemView>? onToggled = null)
-    {
-        Item = item;
-        _enabled = enabled;
-        _onToggled = onToggled;
-    }
-
-    public CatalogItem Item { get; }
-
-    [ObservableProperty]
-    private bool _enabled;
-
-    partial void OnEnabledChanged(bool value) => _onToggled?.Invoke(this);
 }

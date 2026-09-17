@@ -20,7 +20,6 @@ namespace STlauncher.App.ViewModels;
 public partial class MainWindowViewModel
 {
     private readonly List<Instance> _allInstances = new();
-    private readonly List<ModBrowserItem> _allBrowserItems = new();
 
     // ===================== Build list =====================
 
@@ -314,27 +313,5 @@ public partial class MainWindowViewModel
         }
 
         return string.Join('\n', result).Trim();
-    }
-
-    // ===================== Browser filter =====================
-
-    [ObservableProperty]
-    private bool _browserOnlyInstalled;
-
-    partial void OnBrowserOnlyInstalledChanged(bool value) => ApplyBrowserFilter();
-
-    private void ApplyBrowserFilter()
-    {
-        ModBrowserItems.Clear();
-
-        foreach (var item in _allBrowserItems)
-        {
-            if (BrowserOnlyInstalled && !item.Installed)
-            {
-                continue;
-            }
-
-            ModBrowserItems.Add(item);
-        }
     }
 }

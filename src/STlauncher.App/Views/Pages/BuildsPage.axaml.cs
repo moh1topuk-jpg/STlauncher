@@ -34,20 +34,6 @@ public partial class BuildsPage : UserControl
         viewModel.OpenProjectCommand.Execute(item);
     }
 
-    /// <summary>Loads the next page when the sentinel scrolls into view.</summary>
-    private void OnLoadMoreSentinel(object? sender, EffectiveViewportChangedEventArgs e)
-    {
-        if (e.EffectiveViewport.Height <= 0 ||
-            DataContext is not MainWindowViewModel viewModel ||
-            !viewModel.CanLoadMore ||
-            viewModel.IsBrowserBusy)
-        {
-            return;
-        }
-
-        viewModel.LoadMoreModsCommand.Execute(null);
-    }
-
     private async void OnImportModpackClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not MainWindowViewModel viewModel)

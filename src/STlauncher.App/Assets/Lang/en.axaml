@@ -60,7 +60,13 @@
     <x:String x:Key="Mods_InstalledBadge">Installed</x:String>
     <x:String x:Key="Mods_AllCategories">All categories</x:String>
     <x:String x:Key="Mods_LoadMore">Show more</x:String>
-    <x:String x:Key="Mods_ShownOfTotal">Shown {0} of {1}</x:String>
+    <x:String x:Key="Mods_PrevPage">Previous</x:String>
+    <x:String x:Key="Mods_NextPage">Next</x:String>
+    <x:String x:Key="Mods_ShownOfTotal">Shown {0}-{1} of {2}</x:String>
+    <x:String x:Key="Server_Site">Website</x:String>
+    <x:String x:Key="Server_OpenSite">Open showtime.su</x:String>
+    <x:String x:Key="Server_PortHint">The default port is 25565; you do not have to specify it.</x:String>
+    <x:String x:Key="Server_More">Monitoring and community links will appear here later.</x:String>
     <x:String x:Key="Builds_NotConfigured">Pick a game version and a loader in the build settings first - they decide which mods are available.</x:String>
     <x:String x:Key="Builds_GoSettings">Open build settings</x:String>
     <x:String x:Key="Mods_ModrinthResults">Search results</x:String>

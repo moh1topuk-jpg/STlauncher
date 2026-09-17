@@ -45,6 +45,9 @@ public partial class ModBrowserItem : ObservableObject
 
 public partial class MainWindowViewModel
 {
+    /// <summary>Mods per page. Paging keeps the list light and the logos few.</summary>
+    public const int BrowserPageSize = 20;
+
     // ===================== Build tabs =====================
 
     [ObservableProperty]
@@ -86,15 +89,39 @@ public partial class MainWindowViewModel
     private bool _isBrowserBusy;
 
     [ObservableProperty]
-    private bool _canLoadMore;
-
-    [ObservableProperty]
     private string _browserSummary = string.Empty;
 
-    private const int BrowserPageSize = 20;
+    [ObservableProperty]
+    private int _browserPage = 1;
 
-    private int _browserOffset;
-    private int _browserTotal;
+    [ObservableProperty]
+    private int _browserTotalPages = 1;
+
+    public bool CanGoToPreviousPage => BrowserPage > 1 && !IsBrowserBusy;
+    public bool CanGoToNextPage => BrowserPage < BrowserTotalPages && !IsBrowserBusy;
+
+    public string BrowserPageLabel => $"{BrowserPage} / {BrowserTotalPages}";
+
+    partial void OnBrowserPageChanged(int value)
+    {
+        OnPropertyChanged(nameof(CanGoToPreviousPage));
+        OnPropertyChanged(nameof(CanGoToNextPage));
+        OnPropertyChanged(nameof(BrowserPageLabel));
+    }
+
+    partial void OnBrowserTotalPagesChanged(int value)
+    {
+        OnPropertyChanged(nameof(CanGoToPreviousPage));
+        OnPropertyChanged(nameof(CanGoToNextPage));
+        OnPropertyChanged(nameof(BrowserPageLabel));
+    }
+
+    partial void OnIsBrowserBusyChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanGoToPreviousPage));
+        OnPropertyChanged(nameof(CanGoToNextPage));
+    }
+
     private CancellationTokenSource? _browserDebounce;
     private bool _categoriesLoaded;
 
@@ -158,22 +185,21 @@ public partial class MainWindowViewModel
     }
 
     [RelayCommand]
-    private async Task SearchModsAsync()
-    {
-        await LoadBrowserPageAsync(reset: true);
-    }
+    private Task SearchModsAsync() => LoadBrowserPageAsync(1);
 
     [RelayCommand]
-    private async Task LoadMoreModsAsync()
-    {
-        await LoadBrowserPageAsync(reset: false);
-    }
+    private Task NextBrowserPageAsync()
+        => BrowserPage < BrowserTotalPages ? LoadBrowserPageAsync(BrowserPage + 1) : Task.CompletedTask;
+
+    [RelayCommand]
+    private Task PreviousBrowserPageAsync()
+        => BrowserPage > 1 ? LoadBrowserPageAsync(BrowserPage - 1) : Task.CompletedTask;
 
     /// <summary>
     /// Loads one page of the Modrinth browser. An empty query browses the whole category,
     /// which is why the catalog has content without pressing the search button.
     /// </summary>
-    private async Task LoadBrowserPageAsync(bool reset)
+    private async Task LoadBrowserPageAsync(int page)
     {
         if (IsBrowserBusy)
         {
@@ -182,58 +208,54 @@ public partial class MainWindowViewModel
 
         if (!IsBuildConfigured)
         {
-            _allBrowserItems.Clear();
-            ApplyBrowserFilter();
+            ModBrowserItems.Clear();
             BrowserSummary = string.Empty;
-            CanLoadMore = false;
+            BrowserTotalPages = 1;
             return;
         }
 
         try
         {
             IsBrowserBusy = true;
-
-            if (reset)
-            {
-                _browserOffset = 0;
-                Status = Localize("Status_SearchingMods", "Searching Modrinth…");
-            }
+            Status = Localize("Status_SearchingMods", "Searching Modrinth…");
 
             var category = string.IsNullOrWhiteSpace(SelectedCategory?.Name) ? null : SelectedCategory!.Name;
+            var offset = Math.Max(0, page - 1) * BrowserPageSize;
 
-            var page = await _modrinth.SearchAsync(
+            var result = await _modrinth.SearchAsync(
                 ModSearchQuery,
                 SelectedVersion!.Id,
                 SelectedLoader,
                 category,
                 SelectedModSort?.Value ?? "relevance",
                 BrowserPageSize,
-                _browserOffset);
+                offset);
 
-            if (reset)
+            BrowserPage = page;
+            BrowserTotalPages = Math.Max(1, (int)Math.Ceiling(result.TotalHits / (double)BrowserPageSize));
+
+            ModBrowserItems.Clear();
+
+            foreach (var item in result.Items)
             {
-                _allBrowserItems.Clear();
+                ModBrowserItems.Add(new ModBrowserItem(item, IsProjectInstalled(item.Slug)));
             }
 
-            var added = new List<ModBrowserItem>();
+            var from = result.Items.Count == 0 ? 0 : offset + 1;
+            var to = offset + result.Items.Count;
 
-            foreach (var result in page.Items)
-            {
-                var item = new ModBrowserItem(result, IsProjectInstalled(result.Slug));
-                _allBrowserItems.Add(item);
-                added.Add(item);
-            }
+            BrowserSummary = Localize(
+                "Mods_ShownOfTotal",
+                "Shown {0}-{1} of {2}",
+                from,
+                to,
+                result.TotalHits);
 
-            ApplyBrowserFilter();
-
-            _browserOffset += page.Items.Count;
-            _browserTotal = page.TotalHits;
-            CanLoadMore = page.Items.Count > 0 && _browserOffset < _browserTotal;
-
-            BrowserSummary = Localize("Mods_ShownOfTotal", "Shown {0} of {1}", _allBrowserItems.Count, _browserTotal);
             Status = BrowserSummary;
 
-            _ = LoadIconsAsync(added);
+            // Only the current page's logos are fetched; this is what kept the old
+            // infinite-scroll list from bogging down.
+            _ = LoadIconsAsync(ModBrowserItems.ToList());
         }
         catch (Exception ex)
         {
@@ -267,7 +289,7 @@ public partial class MainWindowViewModel
                     return;
                 }
 
-                await Dispatcher.UIThread.InvokeAsync(async () => await LoadBrowserPageAsync(reset: true));
+                await Dispatcher.UIThread.InvokeAsync(async () => await LoadBrowserPageAsync(1));
             }
             catch (OperationCanceledException)
             {
@@ -357,12 +379,10 @@ public partial class MainWindowViewModel
     /// <summary>Re-evaluates the "installed" badge after the build or its files change.</summary>
     private void RefreshBrowserInstallState()
     {
-        foreach (var item in _allBrowserItems)
+        foreach (var item in ModBrowserItems)
         {
             item.Installed = IsProjectInstalled(item.Result.Slug);
         }
-
-        ApplyBrowserFilter();
     }
 
     /// <summary>Drops records whose file is no longer on disk.</summary>

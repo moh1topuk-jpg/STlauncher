@@ -565,6 +565,23 @@ public partial class MainWindowViewModel : ViewModelBase
     private void ClearConsole() => Console.Clear();
 
     [RelayCommand]
+    private void OpenWebsite()
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "https://showtime.su",
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            Status = Localize("Error_OpenFolder", "Failed to open the folder: {0}", ex.Message);
+        }
+    }
+
+    [RelayCommand]
     private void OpenGameFolder()
     {
         try
@@ -597,13 +614,11 @@ public partial class MainWindowViewModel : ViewModelBase
 
             var result = await _catalog.LoadAsync();
 
-            _catalogSections.Clear();
             CatalogBuilds.Clear();
 
             if (result.Catalog is not null)
             {
                 _loadedCatalog = result.Catalog;
-                _catalogSections.AddRange(result.Catalog.Sections);
 
                 foreach (var build in result.Catalog.Builds)
                 {
@@ -615,14 +630,10 @@ public partial class MainWindowViewModel : ViewModelBase
                 _loadedCatalog = null;
             }
 
-            RebuildCatalogViews();
-
             var summary = Localize(
                 "Catalog_Summary",
-                "{0}: {1} section(s), {2} item(s), {3} build(s)",
+                "{0}: {1} build(s)",
                 result.Catalog?.Name ?? "Catalog",
-                CatalogViews.Count,
-                result.Catalog?.ItemCount ?? 0,
                 CatalogBuilds.Count);
 
             if (result.Catalog is null)
@@ -980,7 +991,6 @@ public partial class MainWindowViewModel : ViewModelBase
 
         _ = LoadLoaderVersionsAsync();
         RefreshMods();
-        RebuildCatalogViews();
         RefreshBrowserInstallState();
         OnPropertyChanged(nameof(IsBuildConfigured));
         ScheduleBrowserReload();

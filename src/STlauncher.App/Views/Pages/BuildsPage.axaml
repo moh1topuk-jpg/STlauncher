@@ -141,7 +141,7 @@
                                         IsEnabled="{Binding !IsBrowserBusy}"/>
                             </Grid>
 
-                            <Grid ColumnDefinitions="*,*,Auto" ColumnSpacing="8">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                                 <ComboBox ItemsSource="{Binding ModCategories}"
                                           SelectedItem="{Binding SelectedCategory}"
                                           HorizontalAlignment="Stretch">
@@ -161,67 +161,64 @@
                                         </DataTemplate>
                                     </ComboBox.ItemTemplate>
                                 </ComboBox>
-                                <CheckBox Grid.Column="2" VerticalAlignment="Center"
-                                          Content="{DynamicResource Builds_OnlyInstalled}"
-                                          IsChecked="{Binding BrowserOnlyInstalled}"/>
                             </Grid>
                         </StackPanel>
 
                         <Grid Grid.Row="1" RowDefinitions="*,Auto" RowSpacing="8">
                             <ScrollViewer Name="BrowserScroll">
-                                <StackPanel>
-                                    <ItemsControl ItemsSource="{Binding ModBrowserItems}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate x:DataType="vm:ModBrowserItem">
-                                                <Border Classes="panel" Padding="12" Margin="0,0,0,6"
-                                                        PointerPressed="OnModRowPressed">
-                                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                                                        <Border Width="42" Height="42" CornerRadius="6"
-                                                                Background="#2A2028" ClipToBounds="True">
-                                                            <Image Source="{Binding Icon}" Stretch="Uniform"
-                                                                   Width="42" Height="42"/>
-                                                        </Border>
+                                <ItemsControl ItemsSource="{Binding ModBrowserItems}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:ModBrowserItem">
+                                            <Border Classes="panel" Padding="12" Margin="0,0,0,6"
+                                                    PointerPressed="OnModRowPressed">
+                                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                                    <Border Width="42" Height="42" CornerRadius="6"
+                                                            Background="#2A2028" ClipToBounds="True">
+                                                        <Image Source="{Binding Icon}" Stretch="Uniform"
+                                                               Width="42" Height="42"/>
+                                                    </Border>
 
-                                                        <StackPanel Grid.Column="1" Spacing="2"
-                                                                    VerticalAlignment="Center">
-                                                            <TextBlock Text="{Binding Result.Title}"
-                                                                       FontWeight="SemiBold"
-                                                                       TextTrimming="CharacterEllipsis"/>
-                                                            <TextBlock Text="{Binding Result.Description}"
-                                                                       Classes="faint" MaxLines="2"
-                                                                       TextWrapping="Wrap"
-                                                                       TextTrimming="CharacterEllipsis"/>
-                                                        </StackPanel>
+                                                    <StackPanel Grid.Column="1" Spacing="2"
+                                                                VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Result.Title}"
+                                                                   FontWeight="SemiBold"
+                                                                   TextTrimming="CharacterEllipsis"/>
+                                                        <TextBlock Text="{Binding Result.Description}"
+                                                                   Classes="faint" MaxLines="2"
+                                                                   TextWrapping="Wrap"
+                                                                   TextTrimming="CharacterEllipsis"/>
+                                                    </StackPanel>
 
-                                                        <Panel Grid.Column="2" VerticalAlignment="Center">
-                                                            <Button Classes="ghost small"
-                                                                    Content="{DynamicResource Content_Install}"
-                                                                    IsVisible="{Binding !Installed}"
-                                                                    Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).InstallBrowserItemCommand}"
-                                                                    CommandParameter="{Binding}"/>
-                                                            <TextBlock Text="{DynamicResource Mods_InstalledBadge}"
-                                                                       Classes="gold" IsVisible="{Binding Installed}"
-                                                                       VerticalAlignment="Center"/>
-                                                        </Panel>
-                                                    </Grid>
-                                                </Border>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-
-                                    <Border Name="LoadMoreSentinel" Height="1"
-                                            EffectiveViewportChanged="OnLoadMoreSentinel"/>
-                                </StackPanel>
+                                                    <Panel Grid.Column="2" VerticalAlignment="Center">
+                                                        <Button Classes="ghost small"
+                                                                Content="{DynamicResource Content_Install}"
+                                                                IsVisible="{Binding !Installed}"
+                                                                Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).InstallBrowserItemCommand}"
+                                                                CommandParameter="{Binding}"/>
+                                                        <TextBlock Text="{DynamicResource Mods_InstalledBadge}"
+                                                                   Classes="gold" IsVisible="{Binding Installed}"
+                                                                   VerticalAlignment="Center"/>
+                                                    </Panel>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
                             </ScrollViewer>
 
-                            <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                            <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="10">
                                 <TextBlock Text="{Binding BrowserSummary}" Classes="faint"
                                            VerticalAlignment="Center"/>
-                                <Button Grid.Column="1" Classes="ghost"
-                                        Content="{DynamicResource Mods_LoadMore}"
-                                        Command="{Binding LoadMoreModsCommand}"
-                                        IsVisible="{Binding CanLoadMore}"
-                                        IsEnabled="{Binding !IsBrowserBusy}"/>
+                                <Button Grid.Column="1" Classes="ghost small"
+                                        Content="{DynamicResource Mods_PrevPage}"
+                                        Command="{Binding PreviousBrowserPageCommand}"
+                                        IsEnabled="{Binding CanGoToPreviousPage}"/>
+                                <TextBlock Grid.Column="2" Text="{Binding BrowserPageLabel}"
+                                           Classes="faint" VerticalAlignment="Center"/>
+                                <Button Grid.Column="3" Classes="ghost small"
+                                        Content="{DynamicResource Mods_NextPage}"
+                                        Command="{Binding NextBrowserPageCommand}"
+                                        IsEnabled="{Binding CanGoToNextPage}"/>
                             </Grid>
                         </Grid>
                     </Grid>
@@ -318,48 +315,6 @@
                                         <TextBox Text="{Binding ExtraGameArgs}"
                                                  Watermark="--fullscreen --width 1920"/>
                                     </StackPanel>
-                                </StackPanel>
-                            </Border>
-
-                            <Border Classes="card">
-                                <StackPanel Spacing="10">
-                                    <TextBlock Text="{DynamicResource Builds_ServerMods}" Classes="label"/>
-                                    <TextBlock Text="{DynamicResource Builds_ModsHint}" Classes="faint"
-                                               TextWrapping="Wrap"/>
-                                    <TextBlock Text="{Binding CatalogStatus}" Classes="faint"
-                                               TextWrapping="Wrap"/>
-
-                                    <ItemsControl ItemsSource="{Binding CatalogViews}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate x:DataType="vm:CatalogSectionView">
-                                                <StackPanel Spacing="6" Margin="0,4,0,10">
-                                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold"
-                                                               FontSize="13"/>
-                                                    <ItemsControl ItemsSource="{Binding Items}">
-                                                        <ItemsControl.ItemTemplate>
-                                                            <DataTemplate x:DataType="vm:CatalogItemView">
-                                                                <Border Classes="panel" Padding="10" Margin="0,2">
-                                                                    <Grid ColumnDefinitions="Auto,*"
-                                                                          ColumnSpacing="10">
-                                                                        <CheckBox IsChecked="{Binding Enabled}"
-                                                                                  VerticalAlignment="Center"/>
-                                                                        <StackPanel Grid.Column="1" Spacing="2"
-                                                                                    VerticalAlignment="Center">
-                                                                            <TextBlock Text="{Binding Item.Name}"
-                                                                                       FontWeight="SemiBold"/>
-                                                                            <TextBlock Text="{Binding Item.Description}"
-                                                                                       Classes="faint"
-                                                                                       TextWrapping="Wrap"/>
-                                                                        </StackPanel>
-                                                                    </Grid>
-                                                                </Border>
-                                                            </DataTemplate>
-                                                        </ItemsControl.ItemTemplate>
-                                                    </ItemsControl>
-                                                </StackPanel>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
                                 </StackPanel>
                             </Border>
 
