@@ -182,23 +182,7 @@ public static class ModpackReader
         return (loader, version);
     }
 
-    public static bool IsSafeRelativePath(string path)
-    {
-        if (string.IsNullOrWhiteSpace(path))
-        {
-            return false;
-        }
-
-        if (Path.IsPathRooted(path) || path.Contains(':'))
-        {
-            return false;
-        }
-
-        var normalized = path.Replace('\\', '/');
-        var segments = normalized.Split('/', StringSplitOptions.RemoveEmptyEntries);
-
-        return segments.Length > 0 && segments.All(s => s != ".." && s != ".");
-    }
+    public static bool IsSafeRelativePath(string path) => RelativePath.IsSafe(path);
 
     private static readonly string[] OverridePrefixes = { "overrides/", "client-overrides/" };
 

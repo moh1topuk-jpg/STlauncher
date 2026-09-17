@@ -27,4 +27,7 @@ public sealed class AppSettings
     public string? ServerAddress { get; set; } = "mc.showtime.su";
 
     public string? CurseForgeApiKey { get; set; }
+
+    /// <summary>Remote content catalog address. Empty disables the Content tab.</summary>
+    public string? CatalogUrl { get; set; } = "https://mc.showtime.su/launcher/catalog.json";
 }

@@ -11,6 +11,7 @@ using CommunityToolkit.Mvvm.Input;
 using STlauncher.App.Services;
 using STlauncher.Core;
 using STlauncher.Core.Auth;
+using STlauncher.Core.Content;
 using STlauncher.Core.Http;
 using STlauncher.Core.Instances;
 using STlauncher.Core.Launch;
@@ -33,6 +34,8 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly CurseForgeClient _curseForge;
     private readonly ModManager _mods;
     private readonly ModpackInstaller _modpacks;
+    private readonly ContentCatalogService _catalog;
+    private readonly CatalogInstaller _catalogInstaller;
     private readonly UpdateService _updates;
     private readonly InstanceManager _instances;
     private readonly LauncherPaths _paths;
@@ -53,6 +56,8 @@ public partial class MainWindowViewModel : ViewModelBase
         CurseForgeClient curseForge,
         ModManager mods,
         ModpackInstaller modpacks,
+        ContentCatalogService catalog,
+        CatalogInstaller catalogInstaller,
         UpdateService updates,
         InstanceManager instances,
         LauncherPaths paths,
@@ -67,6 +72,8 @@ public partial class MainWindowViewModel : ViewModelBase
         _curseForge = curseForge;
         _mods = mods;
         _modpacks = modpacks;
+        _catalog = catalog;
+        _catalogInstaller = catalogInstaller;
         _updates = updates;
         _instances = instances;
         _paths = paths;
@@ -84,6 +91,8 @@ public partial class MainWindowViewModel : ViewModelBase
     public ObservableCollection<ModSearchResult> ModSearchResults { get; } = new();
 
     public ObservableCollection<InstalledMod> InstalledMods { get; } = new();
+
+    public ObservableCollection<CatalogSection> CatalogSections { get; } = new();
 
     public IReadOnlyList<LoaderKind> LoaderKinds { get; } = Enum.GetValues<LoaderKind>();
 
@@ -142,6 +151,15 @@ public partial class MainWindowViewModel : ViewModelBase
     private string _curseForgeApiKey = string.Empty;
 
     [ObservableProperty]
+    private string _catalogUrl = string.Empty;
+
+    [ObservableProperty]
+    private string _catalogStatus = "Catalog not loaded yet.";
+
+    [ObservableProperty]
+    private bool _isCatalogBusy;
+
+    [ObservableProperty]
     private string _status = "Ready";
 
     [ObservableProperty]
@@ -178,6 +196,8 @@ public partial class MainWindowViewModel : ViewModelBase
         ShowSnapshots = settings.ShowSnapshots;
         CurseForgeApiKey = settings.CurseForgeApiKey ?? string.Empty;
         _curseForge.ApiKey = settings.CurseForgeApiKey;
+        CatalogUrl = settings.CatalogUrl ?? string.Empty;
+        _catalog.CatalogUrl = settings.CatalogUrl;
 
         _gameLauncher.OutputReceived += line => AppendConsole(line);
         _gameLauncher.ErrorReceived += line => AppendConsole(line);
@@ -207,6 +227,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         RefreshMods();
+        await LoadCatalogAsync();
     }
 
     private Instance CreateMigratedInstance(AppSettings settings)
@@ -469,6 +490,101 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private async Task LoadCatalogAsync()
+    {
+        if (IsCatalogBusy)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_catalog.CatalogUrl))
+        {
+            CatalogStatus = "No catalog URL configured. Set it in Settings.";
+            CatalogSections.Clear();
+            return;
+        }
+
+        try
+        {
+            IsCatalogBusy = true;
+            CatalogStatus = "Loading catalog...";
+
+            var result = await _catalog.LoadAsync();
+            CatalogSections.Clear();
+
+            if (result.Catalog is not null)
+            {
+                foreach (var section in result.Catalog.Sections)
+                {
+                    CatalogSections.Add(section);
+                }
+            }
+
+            if (result.FromRemote)
+            {
+                CatalogStatus = $"{result.Catalog?.Name ?? "Catalog"}: {CatalogSections.Count} section(s), {result.Catalog?.ItemCount ?? 0} item(s).";
+            }
+            else if (result.Error is not null)
+            {
+                CatalogStatus = CatalogSections.Count > 0
+                    ? $"Server unreachable, showing the cached catalog. ({result.Error})"
+                    : $"Failed to load the catalog: {result.Error}";
+            }
+            else
+            {
+                CatalogStatus = "Catalog is empty.";
+            }
+        }
+        catch (Exception ex)
+        {
+            CatalogStatus = "Failed to load the catalog: " + ex.Message;
+        }
+        finally
+        {
+            IsCatalogBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task InstallCatalogItemAsync(CatalogItem? item)
+    {
+        if (item is null || IsCatalogBusy)
+        {
+            return;
+        }
+
+        try
+        {
+            IsCatalogBusy = true;
+            Status = $"Installing {item.Name}...";
+            AppendConsole($"--- Installing '{item.Name}' ({item.Type}) into '{SelectedInstance?.Name}' ---");
+
+            var result = await _catalogInstaller.InstallAsync(
+                item,
+                InstanceDirectory,
+                SelectedVersion?.Id,
+                SelectedLoader);
+
+            Status = result.Message;
+            AppendConsole(result.Message);
+
+            if (result.Success)
+            {
+                RefreshMods();
+            }
+        }
+        catch (Exception ex)
+        {
+            Status = "Catalog install failed: " + ex.Message;
+            AppendConsole(ex.ToString());
+        }
+        finally
+        {
+            IsCatalogBusy = false;
+        }
+    }
+
+    [RelayCommand]
     private void RefreshMods()
     {
         try
@@ -709,6 +825,8 @@ public partial class MainWindowViewModel : ViewModelBase
     partial void OnCurseForgeApiKeyChanged(string value)
         => _curseForge.ApiKey = string.IsNullOrWhiteSpace(value) ? null : value;
 
+    partial void OnCatalogUrlChanged(string value) => _catalog.CatalogUrl = value;
+
     private async Task UpdateAvatarAsync()
     {
         _avatarCts?.Cancel();
@@ -791,6 +909,7 @@ public partial class MainWindowViewModel : ViewModelBase
             Username = Username,
             ShowSnapshots = ShowSnapshots,
             CurseForgeApiKey = string.IsNullOrWhiteSpace(CurseForgeApiKey) ? null : CurseForgeApiKey,
+            CatalogUrl = string.IsNullOrWhiteSpace(CatalogUrl) ? null : CatalogUrl,
             SelectedInstanceId = SelectedInstance?.Id,
 
             // Legacy global fields, kept so older settings files can be migrated into an instance.

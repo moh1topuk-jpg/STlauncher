@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "name": "Showtime Server",
+  "description": "Моды и ресурсы для игры на сервере mc.showtime.su",
+  "updatedAt": "2026-09-17T00:00:00Z",
+
+  "sections": [
+    {
+      "id": "required",
+      "title": "Обязательные моды",
+      "description": "Без них сервер не пустит в игру",
+      "items": [
+        {
+          "id": "sodium",
+          "type": "mod",
+          "name": "Sodium",
+          "description": "Значительно повышает FPS. Ставится автоматически под вашу версию и лоадер.",
+          "required": true,
+          "side": "client",
+          "tags": ["производительность"],
+          "source": {
+            "kind": "modrinth",
+            "project": "sodium"
+          }
+        },
+        {
+          "id": "lithium",
+          "type": "mod",
+          "name": "Lithium",
+          "description": "Оптимизация игровой логики без изменения поведения.",
+          "required": true,
+          "side": "client",
+          "source": {
+            "kind": "modrinth",
+            "project": "lithium"
+          }
+        },
+        {
+          "id": "server-mod",
+          "type": "mod",
+          "name": "Мод сервера",
+          "description": "Наш собственный мод. Обновляется вместе с сервером.",
+          "required": true,
+          "source": {
+            "kind": "direct",
+            "url": "https://mc.showtime.su/launcher/files/showtime-mod.jar",
+            "fileName": "showtime-mod.jar",
+            "sha1": "0000000000000000000000000000000000000000"
+          }
+        }
+      ]
+    },
+
+    {
+      "id": "optional",
+      "title": "По желанию",
+      "description": "Не обязательно, но с ними удобнее",
+      "items": [
+        {
+          "id": "iris",
+          "type": "mod",
+          "name": "Iris Shaders",
+          "description": "Поддержка шейдеров. Нужен Sodium.",
+          "source": {
+            "kind": "modrinth",
+            "project": "iris"
+          }
+        },
+        {
+          "id": "faithful",
+          "type": "resourcepack",
+          "name": "Faithful 32x",
+          "description": "Классические текстуры в удвоенном разрешении.",
+          "source": {
+            "kind": "direct",
+            "url": "https://mc.showtime.su/launcher/files/faithful.zip",
+            "fileName": "Faithful 32x.zip"
+          }
+        },
+        {
+          "id": "jei",
+          "type": "mod",
+          "name": "Just Enough Items",
+          "description": "Просмотр рецептов крафта.",
+          "source": {
+            "kind": "curseforge",
+            "project": "238222",
+            "fileId": "4593052"
+          }
+        }
+      ]
+    },
+
+    {
+      "id": "extended",
+      "title": "Расширение",
+      "description": "Пример того, как добавить новый тип контента без обновления лаунчера: поле targetPath задаёт путь вручную.",
+      "items": [
+        {
+          "id": "example-datapack",
+          "type": "other",
+          "name": "Датапак (пример)",
+          "description": "Тип other требует явного targetPath — так можно раскладывать что угодно.",
+          "targetPath": "saves/Showtime/datapacks/example.zip",
+          "source": {
+            "kind": "direct",
+            "url": "https://mc.showtime.su/launcher/files/example-datapack.zip",
+            "fileName": "example-datapack.zip"
+          }
+        }
+      ]
+    }
+  ]
+}

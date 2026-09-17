@@ -12,6 +12,7 @@
 - **Авто-загрузка Java** — поиск установленной JRE, при отсутствии — автоматическое скачивание Adoptium JRE нужной мажорной версии.
 - **Мод-лоадеры** — Fabric, Quilt (через profile JSON), Forge, NeoForge (через installer).
 - **Инстансы** — несколько независимых профилей: своя версия, лоадер, память, моды и свой `servers.dat` у каждого.
+- **Каталог контента** — список модов с описанием, который вы ведёте на своём сервере в JSON. Схема версионирована и рассчитана на расширение: сейчас моды, дальше ресурспаки, шейдеры и любые новые типы без обновления лаунчера.
 - **Моды** — поиск и установка с Modrinth, вкл/выкл и удаление в `mods/`.
 - **Модпаки** — импорт `.mrpack` (Modrinth) и `.zip` (CurseForge) с проверкой хэшей и распаковкой overrides.
 - **Свой сервер** — пресет в отдельной вкладке, авто-добавление сервера в `servers.dat` для любой версии, быстрый вход через `--quickPlayMultiplayer`.
@@ -55,7 +56,8 @@ src/
     Launch/               резолв библиотек, natives, сборка команды, запуск процесса
     Loaders/              Fabric, Quilt, Forge, NeoForge
     Mods/                 менеджер mods/ и Modrinth API
-    Modpacks/             импорт .mrpack (Modrinth)
+    Modpacks/             импорт .mrpack и CurseForge .zip
+    Content/              каталог контента с сервера (моды/ресурспаки/…)
     Instances/            инстансы (профили) и servers.dat (NBT)
     Nbt/                  минимальный NBT reader/writer
   STlauncher.App/         Avalonia UI (MVVM)
@@ -95,6 +97,58 @@ dotnet run --project tools/STlauncher.Cli -- modpack pack.mrpack
 Версия, лоадер и память хранятся в `instances/<id>/instance.json`, поэтому переключение
 инстанса полностью меняет окружение запуска. Старые настройки из `settings.json`
 автоматически переносятся в инстанс «Default» при первом запуске новой версии.
+
+## Каталог контента
+
+Раздел **Content** показывает список модов с описанием, который вы ведёте сами.
+Шаблон: [docs/catalog.example.json](docs/catalog.example.json).
+URL задаётся в **Settings** → *Content catalog URL*. Скачанная копия кэшируется в
+`%APPDATA%\STlauncher\meta\catalog.json`, поэтому раздел работает и когда сервер недоступен.
+
+Схема (`schemaVersion: 1`) состоит из секций и элементов:
+
+```json
+{
+  "schemaVersion": 1,
+  "sections": [
+    {
+      "id": "required",
+      "title": "Обязательные моды",
+      "description": "Без них сервер не пустит",
+      "items": [
+        {
+          "id": "sodium",
+          "type": "mod",
+          "name": "Sodium",
+          "description": "Повышает FPS",
+          "required": true,
+          "source": { "kind": "modrinth", "project": "sodium" }
+        }
+      ]
+    }
+  ]
+}
+```
+
+Источники (`source.kind`):
+
+| kind | Поля | Поведение |
+| --- | --- | --- |
+| `modrinth` | `project`, необязательный `version` | Без `version` подбирается версия под версию игры и лоадер инстанса |
+| `curseforge` | `project`, `fileId` | Требует API-ключ; файлы с запретом распространения пропускаются |
+| `direct` | `url`, `fileName`, `sha1`/`sha512` | Прямая ссылка с вашего сервера |
+
+Типы (`type`): `mod`, `resourcepack`, `shaderpack`, `config`, `other`.
+Каждый тип раскладывается в свою папку, а поле `targetPath` задаёт путь вручную —
+именно оно позволяет добавлять новые типы контента **без обновления лаунчера**.
+Неизвестный `type` не ломает каталог: элемент просто требует явного `targetPath`.
+
+Проверка из CLI:
+
+```powershell
+dotnet run --project tools/STlauncher.Cli -- catalog
+dotnet run --project tools/STlauncher.Cli -- catalog-install sodium --instance default --game 1.20.1 --loader fabric
+```
 
 ## Пресет сервера
 

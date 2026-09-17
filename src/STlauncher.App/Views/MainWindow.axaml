@@ -5,6 +5,7 @@
         xmlns:loaders="using:STlauncher.Core.Loaders"
         xmlns:mods="using:STlauncher.Core.Mods"
         xmlns:inst="using:STlauncher.Core.Instances"
+        xmlns:content="using:STlauncher.Core.Content"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="960" d:DesignHeight="640"
@@ -204,6 +205,51 @@
                 </Grid>
             </TabItem>
 
+            <TabItem Header="Content">
+                <Grid Margin="16" RowDefinitions="Auto,*" Width="680" HorizontalAlignment="Left">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <TextBlock Text="{Binding CatalogStatus}" TextWrapping="Wrap" Foreground="#9BA3AF"
+                                   VerticalAlignment="Center"/>
+                        <Button Grid.Column="1" Content="Reload" Command="{Binding LoadCatalogCommand}"
+                                IsEnabled="{Binding !IsCatalogBusy}"/>
+                    </Grid>
+
+                    <ScrollViewer Grid.Row="1" Margin="0,12,0,0">
+                        <ItemsControl ItemsSource="{Binding CatalogSections}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="content:CatalogSection">
+                                    <StackPanel Spacing="6" Margin="0,0,0,18">
+                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="15"/>
+                                        <TextBlock Text="{Binding Description}" Foreground="#9BA3AF"
+                                                   TextWrapping="Wrap" FontSize="12"/>
+                                        <ItemsControl ItemsSource="{Binding Items}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="content:CatalogItem">
+                                                    <Border Background="#1B1B1F" CornerRadius="6"
+                                                            Padding="10" Margin="0,2">
+                                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                            <StackPanel Spacing="2">
+                                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                                                                <TextBlock Text="{Binding Description}" Foreground="#9BA3AF"
+                                                                           FontSize="11" TextWrapping="Wrap"/>
+                                                            </StackPanel>
+                                                            <Button Grid.Column="1" Content="Install"
+                                                                    VerticalAlignment="Center"
+                                                                    Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).InstallCatalogItemCommand}"
+                                                                    CommandParameter="{Binding}"/>
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </TabItem>
+
             <TabItem Header="Settings">
                 <StackPanel Margin="16" Spacing="10" Width="560" HorizontalAlignment="Left">
                     <TextBlock Text="Game directory" FontWeight="SemiBold"/>
@@ -214,6 +260,11 @@
                              Watermark="required for CurseForge modpacks"/>
                     <TextBlock TextWrapping="Wrap" Foreground="#9BA3AF" FontSize="11"
                                Text="Stored locally in settings.json (%APPDATA%), never committed to the repository. Can also be supplied via the CURSEFORGE_API_KEY environment variable."/>
+
+                    <TextBlock Text="Content catalog URL" FontWeight="SemiBold" Margin="0,16,0,0"/>
+                    <TextBox Text="{Binding CatalogUrl}" Watermark="https://example.com/catalog.json"/>
+                    <TextBlock TextWrapping="Wrap" Foreground="#9BA3AF" FontSize="11"
+                               Text="JSON-каталог модов и другого контента. Скачанные копии кэшируются, поэтому раздел Content работает и при недоступном сервере."/>
 
                     <TextBlock Text="Updates" FontWeight="SemiBold" Margin="0,16,0,0"/>
                     <TextBlock Text="{Binding UpdateStatus}" TextWrapping="Wrap" Foreground="#9BA3AF"/>

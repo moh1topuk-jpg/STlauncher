@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using STlauncher.App.ViewModels;
 using STlauncher.Core;
 using STlauncher.Core.Assets;
+using STlauncher.Core.Content;
 using STlauncher.Core.Http;
 using STlauncher.Core.Instances;
 using STlauncher.Core.Java;
@@ -59,6 +60,8 @@ public static class LauncherHost
             startupSettings.CurseForgeApiKey));
         services.AddSingleton<ModManager>();
         services.AddSingleton<ModpackInstaller>();
+        services.AddSingleton<ContentCatalogService>();
+        services.AddSingleton<CatalogInstaller>();
         services.AddSingleton<LaunchService>();
         services.AddSingleton<SkinService>();
         services.AddSingleton<InstanceManager>();

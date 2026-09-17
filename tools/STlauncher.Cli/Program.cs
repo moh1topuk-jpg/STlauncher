@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using STlauncher.Core;
 using STlauncher.Core.Assets;
 using STlauncher.Core.Auth;
+using STlauncher.Core.Content;
 using STlauncher.Core.Http;
 using STlauncher.Core.Java;
 using STlauncher.Core.Launch;
@@ -61,6 +62,8 @@ internal static class Program
                 "run" => await PrepareAsync(launch, args, run: true),
                 "plan" => await PlanAsync(versions, assets, paths, args),
                 "modpack" => await InstallModpackAsync(modpacks, mods, args),
+                "catalog" => await ShowCatalogAsync(http, paths, args),
+                "catalog-install" => await InstallCatalogItemAsync(http, paths, downloader, args),
                 _ => Unknown(args[0])
             };
         }
@@ -307,6 +310,95 @@ internal static class Program
         return 0;
     }
 
+    private static async Task<int> ShowCatalogAsync(
+        HttpClient http,
+        LauncherPaths paths,
+        string[] args)
+    {
+        var service = new ContentCatalogService(http, paths) { CatalogUrl = Option(args, "--catalog") };
+        var result = await service.LoadAsync();
+
+        if (result.Catalog is null)
+        {
+            Console.Error.WriteLine(result.Error is null
+                ? "No catalog configured. Pass --catalog <url>."
+                : $"Failed to load the catalog: {result.Error}");
+            return 1;
+        }
+
+        var catalog = result.Catalog;
+        Console.WriteLine($"catalog : {catalog.Name} (schema {catalog.SchemaVersion}, {(result.FromRemote ? "remote" : "cache")})");
+        Console.WriteLine($"items   : {catalog.ItemCount}");
+        Console.WriteLine();
+
+        foreach (var section in catalog.Sections)
+        {
+            Console.WriteLine($"[{section.Title}] {section.Description}");
+
+            foreach (var item in section.Items)
+            {
+                var flag = item.Required ? "required" : "optional";
+                Console.WriteLine($"  {item.Id,-28} {item.Type,-13} {flag,-8} {item.Name}");
+                if (!string.IsNullOrWhiteSpace(item.Description))
+                {
+                    Console.WriteLine($"      {item.Description}");
+                }
+            }
+
+            Console.WriteLine();
+        }
+
+        return 0;
+    }
+
+    private static async Task<int> InstallCatalogItemAsync(
+        HttpClient http,
+        LauncherPaths paths,
+        DownloadClient downloader,
+        string[] args)
+    {
+        if (args.Length < 2)
+        {
+            Console.Error.WriteLine("usage: catalog-install <itemId> [--catalog <url>] [--instance id] [--game 1.20.1] [--loader fabric]");
+            return 2;
+        }
+
+        var itemId = args[1];
+        var instanceId = Option(args, "--instance") ?? "default";
+        var gameVersion = Option(args, "--game");
+        var loader = ParseLoader(Option(args, "--loader") ?? "vanilla");
+
+        var service = new ContentCatalogService(http, paths) { CatalogUrl = Option(args, "--catalog") };
+        var loaded = await service.LoadAsync();
+
+        if (loaded.Catalog is null)
+        {
+            Console.Error.WriteLine(loaded.Error ?? "No catalog configured. Pass --catalog <url>.");
+            return 1;
+        }
+
+        var item = loaded.Catalog.Sections
+            .SelectMany(s => s.Items)
+            .FirstOrDefault(i => string.Equals(i.Id, itemId, StringComparison.OrdinalIgnoreCase));
+
+        if (item is null)
+        {
+            Console.Error.WriteLine($"Item '{itemId}' was not found in the catalog.");
+            return 1;
+        }
+
+        var curseForge = new CurseForgeClient(http, Option(args, "--api-key"));
+        var installer = new CatalogInstaller(downloader, new ModrinthClient(http), curseForge);
+
+        var instanceDir = paths.InstanceDirectory(instanceId);
+        Console.WriteLine($"Installing '{item.Name}' into '{instanceId}' (game {gameVersion ?? "?"}, {loader})...");
+
+        var result = await installer.InstallAsync(item, instanceDir, gameVersion, loader);
+
+        Console.WriteLine(result.Success ? $"OK   : {result.Path}" : $"FAIL : {result.Message}");
+        return result.Success ? 0 : 1;
+    }
+
     private static async Task<int> InstallModpackAsync(ModpackInstaller installer, ModManager mods, string[] args)
     {
         if (args.Length < 2)
@@ -360,7 +452,9 @@ internal static class Program
               loaders <kind> <gameVersion>         list loader builds
               prepare <version> <nick> [options]    download and print the launch command
               run <version> <nick> [options]        download and launch the game
-              modpack <file.mrpack> [instanceId]   install a Modrinth modpack
+              modpack <file.mrpack> [instanceId]   install a Modrinth/CurseForge modpack
+              catalog [--catalog <url>]            show the content catalog
+              catalog-install <itemId> [options]   install one catalog item
 
             options:
               --loader <fabric|quilt|forge|neoforge>
