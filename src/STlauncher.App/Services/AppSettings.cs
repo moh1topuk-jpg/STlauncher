@@ -5,6 +5,13 @@ namespace STlauncher.App.Services;
 
 public sealed class AppSettings
 {
+    /// <summary>Catalog shipped with the launcher; editing it needs no new release.</summary>
+    public const string DefaultCatalogUrl =
+        "https://raw.githubusercontent.com/moh1topuk-jpg/STlauncher/main/catalog.json";
+
+    /// <summary>Previously shipped default. Treated as "not customised" and upgraded.</summary>
+    public const string LegacyCatalogUrl = "https://mc.showtime.su/launcher/catalog.json";
+
     public string Username { get; set; } = "Player";
 
     /// <summary>Saved nicknames for quick switching.</summary>
@@ -74,6 +81,5 @@ public sealed class AppSettings
     /// Content catalog address. Defaults to the catalog shipped in the repository, so
     /// builds and mods can be updated without releasing a new launcher.
     /// </summary>
-    public string? CatalogUrl { get; set; } =
-        "https://raw.githubusercontent.com/moh1topuk-jpg/STlauncher/main/catalog.json";
+    public string? CatalogUrl { get; set; } = DefaultCatalogUrl;
 }

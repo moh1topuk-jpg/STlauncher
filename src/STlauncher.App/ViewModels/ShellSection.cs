@@ -4,8 +4,6 @@ public enum ShellSection
 {
     Game,
     Builds,
-    Mods,
-    Content,
     Server,
     Console,
     Settings

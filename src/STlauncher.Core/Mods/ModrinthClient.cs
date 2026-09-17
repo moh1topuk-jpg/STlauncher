@@ -10,6 +10,8 @@ using STlauncher.Core.Loaders;
 
 namespace STlauncher.Core.Mods;
 
+public sealed record ModCategory(string Name, string Header);
+
 public sealed record ModSearchResult(
     string ProjectId,
     string Slug,
@@ -53,11 +55,17 @@ public sealed class ModrinthClient
         string query,
         string? gameVersion,
         LoaderKind loader,
+        string? category = null,
+        string sort = "relevance",
         int limit = 20,
+        int offset = 0,
         CancellationToken cancellationToken = default)
     {
+        var facets = Uri.EscapeDataString(BuildFacets(gameVersion, loader, category));
+        var index = string.IsNullOrWhiteSpace(sort) ? "relevance" : sort;
+
         var url = $"{BaseUrl}/search?query={Uri.EscapeDataString(query ?? string.Empty)}" +
-                  $"&limit={limit}&facets={Uri.EscapeDataString(BuildFacets(gameVersion, loader))}";
+                  $"&limit={limit}&offset={offset}&index={index}&facets={facets}";
 
         var json = await _http.GetStringAsync(url, cancellationToken).ConfigureAwait(false);
         var response = JsonSerializer.Deserialize<SearchResponse>(json, Json.Options);
@@ -73,6 +81,29 @@ public sealed class ModrinthClient
                        h.Author))
                    .ToList()
                ?? new List<ModSearchResult>();
+    }
+
+    /// <summary>Available categories for a project type, used by the browser filters.</summary>
+    public async Task<IReadOnlyList<ModCategory>> GetCategoriesAsync(
+        string projectType = "mod",
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var json = await _http.GetStringAsync($"{BaseUrl}/tag/category", cancellationToken).ConfigureAwait(false);
+            var all = JsonSerializer.Deserialize<List<CategoryDto>>(json, Json.Options) ?? new List<CategoryDto>();
+
+            return all
+                .Where(c => string.Equals(c.ProjectType, projectType, StringComparison.OrdinalIgnoreCase))
+                .Where(c => !string.IsNullOrWhiteSpace(c.Name))
+                .Select(c => new ModCategory(c.Name!, c.Header ?? c.Name!))
+                .OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+        catch (Exception)
+        {
+            return Array.Empty<ModCategory>();
+        }
     }
 
     public async Task<IReadOnlyList<ModVersion>> GetVersionsAsync(
@@ -118,7 +149,7 @@ public sealed class ModrinthClient
             .ToList();
     }
 
-    public static string BuildFacets(string? gameVersion, LoaderKind loader)
+    public static string BuildFacets(string? gameVersion, LoaderKind loader, string? category = null)
     {
         var facets = new List<string> { "[\"project_type:mod\"]" };
 
@@ -131,6 +162,11 @@ public sealed class ModrinthClient
         if (!string.IsNullOrEmpty(gameVersion))
         {
             facets.Add($"[\"versions:{gameVersion}\"]");
+        }
+
+        if (!string.IsNullOrWhiteSpace(category))
+        {
+            facets.Add($"[\"categories:{category}\"]");
         }
 
         return "[" + string.Join(",", facets) + "]";
@@ -226,5 +262,17 @@ public sealed class ModrinthClient
 
         [JsonPropertyName("sha512")]
         public string? Sha512 { get; set; }
+    }
+
+    private sealed class CategoryDto
+    {
+        [JsonPropertyName("name")]
+        public string? Name { get; set; }
+
+        [JsonPropertyName("header")]
+        public string? Header { get; set; }
+
+        [JsonPropertyName("project_type")]
+        public string? ProjectType { get; set; }
     }
 }

@@ -26,11 +26,6 @@
                 <StackPanel Orientation="Horizontal" Spacing="10" Margin="14,0" VerticalAlignment="Center">
                     <Border Width="3" Height="16" CornerRadius="2" Background="{DynamicResource AccentBrush}"/>
                     <TextBlock Text="STLAUNCHER" Classes="label" VerticalAlignment="Center"/>
-
-                    <Button Classes="chrome" Content="&#x2190;" Width="30" Height="26"
-                            IsVisible="{Binding CanGoBack}"
-                            Command="{Binding GoBackCommand}"
-                            ToolTip.Tip="{DynamicResource Common_Back}"/>
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
@@ -68,24 +63,6 @@
                                 <TextBlock Text="&#x25C8;" Width="14" VerticalAlignment="Center"
                                            Foreground="{DynamicResource AccentBrush}"/>
                                 <TextBlock Text="{DynamicResource Nav_Builds}" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
-
-                        <Button Classes="nav" Classes.active="{Binding IsModsSection}"
-                                Command="{Binding SelectSectionCommand}" CommandParameter="Mods">
-                            <StackPanel Orientation="Horizontal" Spacing="10">
-                                <TextBlock Text="&#x25A6;" Width="14" VerticalAlignment="Center"
-                                           Foreground="{DynamicResource AccentBrush}"/>
-                                <TextBlock Text="{DynamicResource Nav_Mods}" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
-
-                        <Button Classes="nav" Classes.active="{Binding IsContentSection}"
-                                Command="{Binding SelectSectionCommand}" CommandParameter="Content">
-                            <StackPanel Orientation="Horizontal" Spacing="10">
-                                <TextBlock Text="&#x2630;" Width="14" VerticalAlignment="Center"
-                                           Foreground="{DynamicResource AccentBrush}"/>
-                                <TextBlock Text="{DynamicResource Nav_Content}" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
 
@@ -141,8 +118,6 @@
             <Panel Grid.Column="1">
                 <pages:GamePage IsVisible="{Binding IsGameSection}"/>
                 <pages:BuildsPage IsVisible="{Binding IsBuildsSection}"/>
-                <pages:ModsPage IsVisible="{Binding IsModsSection}"/>
-                <pages:ContentPage IsVisible="{Binding IsContentSection}"/>
                 <pages:ServerPage IsVisible="{Binding IsServerSection}"/>
                 <pages:ConsolePage IsVisible="{Binding IsConsoleSection}"/>
                 <pages:SettingsPage IsVisible="{Binding IsSettingsSection}"/>

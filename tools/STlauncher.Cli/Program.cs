@@ -63,6 +63,7 @@ internal static class Program
                 "modpack" => await InstallModpackAsync(modpacks, mods, args),
                 "catalog" => await ShowCatalogAsync(http, paths, args),
                 "catalog-install" => await InstallCatalogItemAsync(http, paths, downloader, args),
+                "mods-search" => await SearchModsAsync(http, args),
                 _ => Unknown(args[0])
             };
         }
@@ -304,6 +305,39 @@ internal static class Program
             {
                 Console.WriteLine($"  -> {item.DestinationPath}");
             }
+        }
+
+        return 0;
+    }
+
+    private static async Task<int> SearchModsAsync(HttpClient http, string[] args)
+    {
+        var query = args.Length > 1 ? args[1] : string.Empty;
+        var gameVersion = Option(args, "--game");
+        var loader = ParseLoader(Option(args, "--loader") ?? "fabric");
+        var category = Option(args, "--category");
+
+        var client = new ModrinthClient(http);
+
+        if (args.Contains("--categories"))
+        {
+            var categories = await client.GetCategoriesAsync();
+            Console.WriteLine($"{categories.Count} categories:");
+            Console.WriteLine("  " + string.Join(", ", categories.Select(c => c.Name)));
+            return 0;
+        }
+
+        Console.WriteLine($"facets: {ModrinthClient.BuildFacets(gameVersion, loader, category)}");
+
+        var results = await client.SearchAsync(query, gameVersion, loader, category, Option(args, "--sort") ?? "relevance");
+
+        Console.WriteLine($"{results.Count} result(s):");
+
+        foreach (var result in results)
+        {
+            Console.WriteLine($"  {result.Slug,-24} {result.Title}");
+            Console.WriteLine($"      {result.Description}");
+            Console.WriteLine($"      downloads={result.Downloads} icon={(string.IsNullOrEmpty(result.IconUrl) ? "-" : "yes")}");
         }
 
         return 0;

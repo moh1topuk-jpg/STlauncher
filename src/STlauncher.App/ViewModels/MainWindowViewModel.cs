@@ -32,6 +32,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly LoaderService _loaders;
     private readonly SettingsService _settings;
     private readonly SkinService _skins;
+    private readonly RemoteImageService _images;
     private readonly ModrinthClient _modrinth;
     private readonly ModManager _mods;
     private readonly ModpackInstaller _modpacks;
@@ -57,6 +58,7 @@ public partial class MainWindowViewModel : ViewModelBase
         LoaderService loaders,
         SettingsService settings,
         SkinService skins,
+        RemoteImageService images,
         ModrinthClient modrinth,
         ModManager mods,
         ModpackInstaller modpacks,
@@ -75,6 +77,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _loaders = loaders;
         _settings = settings;
         _skins = skins;
+        _images = images;
         _modrinth = modrinth;
         _mods = mods;
         _modpacks = modpacks;
@@ -97,8 +100,6 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public ObservableCollection<string> Console { get; } = new();
 
-    public ObservableCollection<ModSearchResult> ModSearchResults { get; } = new();
-
     public ObservableCollection<InstalledMod> InstalledMods { get; } = new();
 
     public IReadOnlyList<LoaderKind> LoaderKinds { get; } = Enum.GetValues<LoaderKind>();
@@ -120,9 +121,6 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _modSearchQuery = string.Empty;
-
-    [ObservableProperty]
-    private ModSearchResult? _selectedMod;
 
     [ObservableProperty]
     private bool _isModsBusy;
@@ -168,11 +166,6 @@ public partial class MainWindowViewModel : ViewModelBase
     private ShellSection _section = ShellSection.Game;
 
     [ObservableProperty]
-    private bool _canGoBack;
-
-    private readonly List<ShellSection> _navigationHistory = new();
-
-    [ObservableProperty]
     private string _language = LocalizationService.DefaultLanguage;
 
     [ObservableProperty]
@@ -180,8 +173,6 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public bool IsGameSection => Section == ShellSection.Game;
     public bool IsBuildsSection => Section == ShellSection.Builds;
-    public bool IsModsSection => Section == ShellSection.Mods;
-    public bool IsContentSection => Section == ShellSection.Content;
     public bool IsServerSection => Section == ShellSection.Server;
     public bool IsConsoleSection => Section == ShellSection.Console;
     public bool IsSettingsSection => Section == ShellSection.Settings;
@@ -229,8 +220,8 @@ public partial class MainWindowViewModel : ViewModelBase
         var settings = _settings.Load();
         Username = settings.Username;
         ShowSnapshots = settings.ShowSnapshots;
-        CatalogUrl = settings.CatalogUrl ?? string.Empty;
-        _catalog.CatalogUrl = settings.CatalogUrl;
+        CatalogUrl = ResolveCatalogUrl(settings.CatalogUrl);
+        _catalog.CatalogUrl = CatalogUrl;
         Language = LocalizationService.Normalize(settings.Language);
         ShowDeveloperConsole = settings.ShowDeveloperConsole;
 
@@ -296,6 +287,22 @@ public partial class MainWindowViewModel : ViewModelBase
 
         RefreshMods();
         await LoadCatalogAsync();
+        await LoadCategoriesAsync();
+    }
+
+    /// <summary>
+    /// Upgrades installations that still hold the previous default catalog URL, while
+    /// leaving a deliberately customised address untouched.
+    /// </summary>
+    private static string ResolveCatalogUrl(string? stored)
+    {
+        if (string.IsNullOrWhiteSpace(stored) ||
+            string.Equals(stored, AppSettings.LegacyCatalogUrl, StringComparison.OrdinalIgnoreCase))
+        {
+            return AppSettings.DefaultCatalogUrl;
+        }
+
+        return stored;
     }
 
     private Instance CreateMigratedInstance(AppSettings settings)
@@ -566,86 +573,6 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private async Task SearchModsAsync()
-    {
-        if (SelectedVersion is null)
-        {
-            Status = Localize("Status_SelectVersion", "Select a version first");
-            return;
-        }
-
-        if (SelectedLoader == LoaderKind.Vanilla)
-        {
-            Status = Localize("Status_SelectLoader", "Select a mod loader first");
-            return;
-        }
-
-        try
-        {
-            IsModsBusy = true;
-            Status = Localize("Status_SearchingMods", "Searching Modrinth…");
-
-            var results = await _modrinth.SearchAsync(ModSearchQuery, SelectedVersion.Id, SelectedLoader);
-            ModSearchResults.Clear();
-
-            foreach (var result in results)
-            {
-                ModSearchResults.Add(result);
-            }
-
-            Status = Localize("Status_FoundMods", "Found {0} mods", ModSearchResults.Count);
-        }
-        catch (Exception ex)
-        {
-            Status = Localize("Error_SearchMods", "Mod search failed: {0}", ex.Message);
-        }
-        finally
-        {
-            IsModsBusy = false;
-        }
-    }
-
-    [RelayCommand]
-    private async Task InstallSelectedModAsync()
-    {
-        if (SelectedMod is null || SelectedVersion is null)
-        {
-            return;
-        }
-
-        try
-        {
-            IsModsBusy = true;
-            MaybeBackup(BackupTrigger.BeforeModChange);
-            Status = Localize("Status_ResolvingMod", "Resolving {0}…", SelectedMod.Title);
-
-            var versions = await _modrinth.GetVersionsAsync(SelectedMod.ProjectId, SelectedVersion.Id, SelectedLoader);
-            var file = versions.FirstOrDefault()?.PrimaryFile;
-
-            if (file is null || string.IsNullOrEmpty(file.Url))
-            {
-                Status = Localize("Status_NoCompatibleFile", "No compatible file for this version and loader");
-                return;
-            }
-
-            Status = Localize("Status_InstallingFile", "Installing {0}…", file.FileName);
-            await _mods.InstallAsync(InstanceDirectory, file.FileName, file.Url, file.Sha1, file.Size);
-            AppendConsole($"Installed mod: {file.FileName}");
-            RefreshMods();
-            Status = Localize("Status_InstalledFile", "Installed {0}", file.FileName);
-        }
-        catch (Exception ex)
-        {
-            Status = Localize("Error_InstallMod", "Mod install failed: {0}", ex.Message);
-            AppendConsole(ex.ToString());
-        }
-        finally
-        {
-            IsModsBusy = false;
-        }
-    }
-
-    [RelayCommand]
     private async Task LoadCatalogAsync()
     {
         if (IsCatalogBusy)
@@ -747,6 +674,16 @@ public partial class MainWindowViewModel : ViewModelBase
 
             if (result.Success)
             {
+                RecordInstalledMod(new InstalledModRecord
+                {
+                    FileName = System.IO.Path.GetFileName(result.Path ?? string.Empty),
+                    Source = ModSource.Catalog,
+                    Id = item.Id,
+                    Name = item.Name,
+                    IconUrl = item.IconUrl,
+                    Required = item.Required
+                });
+
                 RefreshMods();
             }
         }
@@ -766,11 +703,15 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         try
         {
+            ReconcileInstalledMods();
+
             InstalledMods.Clear();
             foreach (var mod in _mods.ListMods(InstanceDirectory))
             {
                 InstalledMods.Add(mod);
             }
+
+            RefreshBrowserInstallState();
         }
         catch (Exception ex)
         {
@@ -818,6 +759,24 @@ public partial class MainWindowViewModel : ViewModelBase
 
             RefreshMods();
             Status = Localize("Status_ModpackInstalled", "Modpack \"{0}\" installed", result.Plan.Name);
+
+            // Only label files that have no provenance yet; re-labelling would wipe the
+            // Modrinth and catalog sources recorded earlier.
+            foreach (var mod in InstalledMods)
+            {
+                var known = SelectedInstance?.InstalledMods.Any(m =>
+                    string.Equals(m.FileName, mod.FileName, StringComparison.OrdinalIgnoreCase)) == true;
+
+                if (!known)
+                {
+                    RecordInstalledMod(new InstalledModRecord
+                    {
+                        FileName = mod.FileName,
+                        Source = ModSource.Modpack,
+                        Name = mod.DisplayName
+                    });
+                }
+            }
         }
         catch (Exception ex)
         {
@@ -893,7 +852,22 @@ public partial class MainWindowViewModel : ViewModelBase
 
         try
         {
+            var wasEnabled = mod.Enabled;
             _mods.SetEnabled(mod.Path, !mod.Enabled);
+
+            // The file is renamed on disk, so the record has to follow it.
+            var record = SelectedInstance?.InstalledMods.FirstOrDefault(m =>
+                string.Equals(m.FileName, mod.FileName, StringComparison.OrdinalIgnoreCase));
+
+            if (record is not null && SelectedInstance is not null)
+            {
+                record.FileName = wasEnabled
+                    ? mod.FileName + ".disabled"
+                    : mod.FileName[..^".disabled".Length];
+
+                _instances.Save(SelectedInstance);
+            }
+
             RefreshMods();
         }
         catch (Exception ex)
@@ -914,6 +888,14 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             MaybeBackup(BackupTrigger.BeforeModChange);
             _mods.Uninstall(mod.Path);
+
+            if (SelectedInstance is not null)
+            {
+                SelectedInstance.InstalledMods.RemoveAll(m =>
+                    string.Equals(m.FileName, mod.FileName, StringComparison.OrdinalIgnoreCase));
+                _instances.Save(SelectedInstance);
+            }
+
             RefreshMods();
         }
         catch (Exception ex)
@@ -979,6 +961,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _ = LoadLoaderVersionsAsync();
         RefreshMods();
         RebuildCatalogViews();
+        RefreshBrowserInstallState();
         PersistSettings();
     }
 
@@ -1020,8 +1003,6 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(IsGameSection));
         OnPropertyChanged(nameof(IsBuildsSection));
-        OnPropertyChanged(nameof(IsModsSection));
-        OnPropertyChanged(nameof(IsContentSection));
         OnPropertyChanged(nameof(IsServerSection));
         OnPropertyChanged(nameof(IsConsoleSection));
         OnPropertyChanged(nameof(IsSettingsSection));
@@ -1039,44 +1020,8 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         if (Enum.TryParse<ShellSection>(section, ignoreCase: true, out var parsed))
         {
-            NavigateTo(parsed);
+            Section = parsed;
         }
-    }
-
-    [RelayCommand]
-    private void GoBack()
-    {
-        if (_navigationHistory.Count == 0)
-        {
-            return;
-        }
-
-        var target = _navigationHistory[^1];
-        _navigationHistory.RemoveAt(_navigationHistory.Count - 1);
-        NavigateTo(target, recordHistory: false);
-    }
-
-    /// <summary>Switches the visible section, remembering where the user came from.</summary>
-    private void NavigateTo(ShellSection section, bool recordHistory = true)
-    {
-        if (section == Section)
-        {
-            return;
-        }
-
-        if (recordHistory)
-        {
-            _navigationHistory.Add(Section);
-
-            // Keep the trail bounded; the back button is a convenience, not a browser.
-            while (_navigationHistory.Count > 20)
-            {
-                _navigationHistory.RemoveAt(0);
-            }
-        }
-
-        Section = section;
-        CanGoBack = _navigationHistory.Count > 0;
     }
 
     private async Task UpdateAvatarAsync()

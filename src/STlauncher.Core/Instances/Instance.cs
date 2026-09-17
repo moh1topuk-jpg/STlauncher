@@ -50,6 +50,13 @@ public sealed class Instance
     [JsonPropertyName("enabledCatalogItems")]
     public List<string> EnabledCatalogItems { get; set; } = new();
 
+    /// <summary>
+    /// What was installed into this build and where it came from. The file on disk stays
+    /// the source of truth; this list only adds names, descriptions and provenance.
+    /// </summary>
+    [JsonPropertyName("installedMods")]
+    public List<InstalledModRecord> InstalledMods { get; set; } = new();
+
     [JsonPropertyName("createdAt")]
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }

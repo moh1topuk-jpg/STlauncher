@@ -5,8 +5,6 @@
     <x:String x:Key="App_Title">STlauncher</x:String>
     <x:String x:Key="Nav_Game">Play</x:String>
     <x:String x:Key="Nav_Builds">Builds</x:String>
-    <x:String x:Key="Nav_Mods">Mods</x:String>
-    <x:String x:Key="Nav_Content">Catalog</x:String>
     <x:String x:Key="Nav_Server">Server</x:String>
     <x:String x:Key="Nav_Console">Console</x:String>
     <x:String x:Key="Nav_Settings">Settings</x:String>
@@ -33,6 +31,15 @@
     <!-- Builds page -->
     <x:String x:Key="Builds_Title">Builds</x:String>
     <x:String x:Key="Builds_Hint">A build is a game version, a loader and a set of mods. Each build keeps its own files.</x:String>
+    <x:String x:Key="Builds_TabGeneral">General</x:String>
+    <x:String x:Key="Builds_TabMods">Mods</x:String>
+    <x:String x:Key="Builds_TabCatalog">Mod catalog</x:String>
+    <x:String x:Key="Builds_TabSettings">Build settings</x:String>
+    <x:String x:Key="Builds_ModsShort">mods</x:String>
+    <x:String x:Key="Builds_ServerMods">Server mods</x:String>
+    <x:String x:Key="Mods_InstalledBadge">Installed</x:String>
+    <x:String x:Key="Mods_AllCategories">All categories</x:String>
+    <x:String x:Key="Mods_ModrinthResults">Search results</x:String>
     <x:String x:Key="Builds_Selected">Selected build</x:String>
     <x:String x:Key="Builds_Rename">Rename</x:String>
     <x:String x:Key="Builds_Duplicate">Duplicate</x:String>
@@ -202,7 +209,6 @@
 
     <!-- Common -->
     <x:String x:Key="Common_Close">Close</x:String>
-    <x:String x:Key="Common_Back">Back</x:String>
     <x:String x:Key="Common_Minimize">Minimize</x:String>
     <x:String x:Key="Common_Maximize">Maximize</x:String>
     <x:String x:Key="Common_Cancel">Cancel</x:String>
