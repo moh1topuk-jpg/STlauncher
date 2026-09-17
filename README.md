@@ -116,6 +116,17 @@ dotnet run --project tools/STlauncher.Cli -- modpack pack.mrpack
 Проверка доступна только в установленной сборке; при запуске из `dotnet run`
 кнопка сообщает, что обновления недоступны.
 
+Каждый релиз содержит:
+
+- `SHA256SUMS.txt` — контрольные суммы артефактов;
+- **attestation сборки** (GitHub) — криптографическое доказательство, что файл собран
+  этим workflow из этого репозитория:
+  `gh attestation verify <файл> -R moh1topuk-jpg/STlauncher`.
+
+Про подпись кода (Authenticode), почему бесплатного варианта, снимающего
+предупреждение SmartScreen, не существует и что реально можно сделать —
+см. [docs/SIGNING.md](docs/SIGNING.md).
+
 ## Roadmap
 
 - [x] Ядро: метаданные, rules, загрузчик, Java, офлайн-авторизация, запуск
@@ -126,7 +137,8 @@ dotnet run --project tools/STlauncher.Cli -- modpack pack.mrpack
 - [x] Импорт модпаков Modrinth (`.mrpack`)
 - [x] Импорт модпаков CurseForge (`.zip`) — нужен действующий API-ключ
 - [x] Авто-обновление через Velopack
-- [ ] Подпись кода (EV-сертификат)
+- [x] Провенанс сборок (GitHub attestation) и контрольные суммы SHA-256
+- [ ] Подпись кода Authenticode — требует платного сертификата, см. [docs/SIGNING.md](docs/SIGNING.md)
 
 ## Лицензия
 
