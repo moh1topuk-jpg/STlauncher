@@ -2,6 +2,7 @@
 using System.IO;
 using STlauncher.Core;
 using STlauncher.Core.Content;
+using STlauncher.Core.Loaders;
 using Xunit;
 
 namespace STlauncher.Core.Tests;
@@ -125,8 +126,74 @@ public class ContentCatalogTests
     }
 
     [Fact]
+    public void Parse_ReadsBuilds()
+    {
+        const string json = """
+        {
+          "schemaVersion": 1,
+          "name": "Server",
+          "sections": [],
+          "builds": [
+            {
+              "id": "test-1-21-11-fabric",
+              "name": "Test build - 1.21.11 + Fabric",
+              "description": "Checks builds end to end",
+              "gameVersion": "1.21.11",
+              "loader": "fabric",
+              "loaderVersion": "0.19.5",
+              "memoryMb": 4096,
+              "serverName": "Showtime",
+              "serverAddress": "mc.showtime.su",
+              "items": ["sodium"]
+            }
+          ]
+        }
+        """;
+
+        var catalog = ContentCatalogService.Parse(json);
+
+        var build = Assert.Single(catalog.Builds);
+        Assert.Equal("test-1-21-11-fabric", build.Id);
+        Assert.Equal("1.21.11", build.GameVersion);
+        Assert.Equal(LoaderKind.Fabric, build.Loader);
+        Assert.Equal("0.19.5", build.LoaderVersion);
+        Assert.Equal(4096, build.MemoryMb);
+        Assert.Equal("mc.showtime.su", build.ServerAddress);
+        Assert.Equal(new[] { "sodium" }, build.Items);
+    }
+
+    [Theory]
+    [InlineData("fabric", LoaderKind.Fabric)]
+    [InlineData("Fabric", LoaderKind.Fabric)]
+    [InlineData("neoforge", LoaderKind.NeoForge)]
+    [InlineData("quilt", LoaderKind.Quilt)]
+    [InlineData("forge", LoaderKind.Forge)]
+    [InlineData("vanilla", LoaderKind.Vanilla)]
+    [InlineData("something-new", LoaderKind.Vanilla)]
+    public void Parse_AcceptsLoaderSpellingVariants(string raw, LoaderKind expected)
+    {
+        var json = $$"""
+        { "schemaVersion": 1, "sections": [], "builds": [ { "id": "b", "name": "B", "loader": "{{raw}}" } ] }
+        """;
+
+        var build = ContentCatalogService.Parse(json).Builds[0];
+
+        Assert.Equal(expected, build.Loader);
+    }
+
+    [Fact]
+    public void FindItem_LocatesAnItemById()
+    {
+        var catalog = ContentCatalogService.Parse(CatalogJson);
+
+        Assert.NotNull(catalog.FindItem("sodium"));
+        Assert.Null(catalog.FindItem("missing"));
+    }
+
+    [Fact]
     public void Parse_RejectsMalformedJson()
     {
+
         Assert.ThrowsAny<Exception>(() => ContentCatalogService.Parse("{ nope"));
     }
 

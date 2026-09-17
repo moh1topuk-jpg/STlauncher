@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "name": "Showtime Server",
+  "description": "Моды и сборки для игры на сервере mc.showtime.su",
+  "updatedAt": "2026-09-17T00:00:00Z",
+
+  "sections": [
+    {
+      "id": "required",
+      "title": "Обязательные моды",
+      "description": "Без них сервер не пустит в игру",
+      "items": [
+        {
+          "id": "sodium",
+          "type": "mod",
+          "name": "Sodium",
+          "description": "Значительно повышает FPS. Версия подбирается автоматически под вашу версию игры и загрузчик.",
+          "required": true,
+          "side": "client",
+          "tags": ["производительность"],
+          "source": {
+            "kind": "modrinth",
+            "project": "sodium"
+          }
+        },
+        {
+          "id": "lithium",
+          "type": "mod",
+          "name": "Lithium",
+          "description": "Оптимизация игровой логики без изменения поведения игры.",
+          "required": true,
+          "side": "client",
+          "tags": ["производительность"],
+          "source": {
+            "kind": "modrinth",
+            "project": "lithium"
+          }
+        }
+      ]
+    },
+
+    {
+      "id": "optional",
+      "title": "По желанию",
+      "description": "Не обязательно, но с ними удобнее",
+      "items": [
+        {
+          "id": "iris",
+          "type": "mod",
+          "name": "Iris Shaders",
+          "description": "Поддержка шейдеров. Требует Sodium.",
+          "source": {
+            "kind": "modrinth",
+            "project": "iris"
+          }
+        },
+        {
+          "id": "modmenu",
+          "type": "mod",
+          "name": "Mod Menu",
+          "description": "Список установленных модов прямо в игре.",
+          "source": {
+            "kind": "modrinth",
+            "project": "modmenu"
+          }
+        }
+      ]
+    }
+  ],
+
+  "builds": [
+    {
+      "id": "test-1-21-11-fabric",
+      "name": "Тестовая сборка — 1.21.11 + Fabric",
+      "description": "Проверка работы сборок: версия 1.21.11, Fabric и мод Sodium.",
+      "gameVersion": "1.21.11",
+      "loader": "fabric",
+      "loaderVersion": "0.19.5",
+      "memoryMb": 4096,
+      "serverName": "Showtime",
+      "serverAddress": "mc.showtime.su",
+      "items": ["sodium"]
+    }
+  ]
+}

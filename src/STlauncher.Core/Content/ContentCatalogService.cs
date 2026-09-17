@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using STlauncher.Core.Loaders;
 
 namespace STlauncher.Core.Content;
 
@@ -200,6 +201,7 @@ public sealed class ContentCatalogService
 
         options.Converters.Add(new TolerantEnumConverter<CatalogItemType>(CatalogItemType.Other));
         options.Converters.Add(new TolerantEnumConverter<CatalogSourceKind>(CatalogSourceKind.Unknown));
+        options.Converters.Add(new TolerantEnumConverter<LoaderKind>(LoaderKind.Vanilla));
         return options;
     }
 }

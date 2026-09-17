@@ -142,7 +142,18 @@ Minecraft. Полный лог игры пишется в `%APPDATA%\STlauncher\
 ## Каталог контента
 
 Раздел **Content** показывает список модов с описанием, который вы ведёте сами.
-Шаблон: [docs/catalog.example.json](docs/catalog.example.json).
+Шаблон: [docs/catalog.example.json](docs/catalog.example.json), а рабочий каталог
+лежит в корне репозитория — [catalog.json](catalog.json).
+
+По умолчанию лаунчер берёт каталог из репозитория:
+
+```
+https://raw.githubusercontent.com/moh1topuk-jpg/STlauncher/main/catalog.json
+```
+
+Значит, чтобы добавить мод или рекомендуемую сборку, достаточно отредактировать
+`catalog.json` (хоть через веб-интерфейс GitHub) — **новая версия лаунчера не нужна**.
+Адрес меняется в Настройках в разделе «Для разработчиков».
 
 **Веб-сервер не обязателен.** Каталог можно задать тремя способами:
 

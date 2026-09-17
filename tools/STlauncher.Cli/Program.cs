@@ -347,6 +347,19 @@ internal static class Program
             Console.WriteLine();
         }
 
+        if (catalog.Builds.Count > 0)
+        {
+            Console.WriteLine("builds:");
+
+            foreach (var build in catalog.Builds)
+            {
+                Console.WriteLine($"  {build.Id,-28} {build.GameVersion,-10} {build.Loader,-8} {build.Name}");
+                Console.WriteLine($"      items: {string.Join(", ", build.Items)}");
+            }
+
+            Console.WriteLine();
+        }
+
         return 0;
     }
 

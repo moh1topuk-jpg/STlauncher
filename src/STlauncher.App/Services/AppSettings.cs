@@ -70,6 +70,10 @@ public sealed class AppSettings
     /// <summary>Shows the technical log section. Off by default.</summary>
     public bool ShowDeveloperConsole { get; set; }
 
-    /// <summary>Remote content catalog address. Empty disables the Content tab.</summary>
-    public string? CatalogUrl { get; set; } = "https://mc.showtime.su/launcher/catalog.json";
+    /// <summary>
+    /// Content catalog address. Defaults to the catalog shipped in the repository, so
+    /// builds and mods can be updated without releasing a new launcher.
+    /// </summary>
+    public string? CatalogUrl { get; set; } =
+        "https://raw.githubusercontent.com/moh1topuk-jpg/STlauncher/main/catalog.json";
 }
