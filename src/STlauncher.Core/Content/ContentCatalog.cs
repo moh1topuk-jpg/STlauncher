@@ -23,9 +23,6 @@ public enum CatalogSourceKind
     /// <summary>Resolved through the Modrinth API.</summary>
     Modrinth,
 
-    /// <summary>Resolved through the CurseForge API (requires an API key).</summary>
-    CurseForge,
-
     /// <summary>A direct download URL.</summary>
     Direct
 }
@@ -175,17 +172,13 @@ public sealed class CatalogSource
     [JsonPropertyName("kind")]
     public CatalogSourceKind Kind { get; set; } = CatalogSourceKind.Unknown;
 
-    /// <summary>Modrinth project slug/id, or a CurseForge project id.</summary>
+    /// <summary>Modrinth project slug or id.</summary>
     [JsonPropertyName("project")]
     public string? Project { get; set; }
 
     /// <summary>Modrinth version id or version number. Empty means "latest for the instance".</summary>
     [JsonPropertyName("version")]
     public string? Version { get; set; }
-
-    /// <summary>CurseForge file id.</summary>
-    [JsonPropertyName("fileId")]
-    public string? FileId { get; set; }
 
     [JsonPropertyName("url")]
     public string? Url { get; set; }

@@ -37,11 +37,12 @@ mod loaders, mods). The following protections are implemented:
 
 ## Secrets
 
-- The CurseForge API key is **never** committed to the repository. It is read from
-  `settings.json` (outside the repo), the `CURSEFORGE_API_KEY` environment variable,
-  or the CLI `--api-key` flag.
-- Never paste production API keys into issues, pull requests or chat. If a key is
-  exposed, revoke it in the CurseForge console and issue a new one.
+- The launcher requires **no third-party API keys**. Content is resolved from Modrinth
+  metadata and direct URLs, so players never have to configure credentials.
+- If a future integration needs a secret, it must be read from `settings.json`
+  (outside the repository) or an environment variable — never hardcoded and never
+  committed.
+- Never paste production secrets into issues, pull requests or chat.
 - `.gitignore` excludes build output; `settings.json` lives in `%APPDATA%` and is
   therefore outside the working tree by design.
 

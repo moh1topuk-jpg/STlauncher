@@ -33,7 +33,6 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly SettingsService _settings;
     private readonly SkinService _skins;
     private readonly ModrinthClient _modrinth;
-    private readonly CurseForgeClient _curseForge;
     private readonly ModManager _mods;
     private readonly ModpackInstaller _modpacks;
     private readonly ContentCatalogService _catalog;
@@ -59,7 +58,6 @@ public partial class MainWindowViewModel : ViewModelBase
         SettingsService settings,
         SkinService skins,
         ModrinthClient modrinth,
-        CurseForgeClient curseForge,
         ModManager mods,
         ModpackInstaller modpacks,
         ContentCatalogService catalog,
@@ -78,7 +76,6 @@ public partial class MainWindowViewModel : ViewModelBase
         _settings = settings;
         _skins = skins;
         _modrinth = modrinth;
-        _curseForge = curseForge;
         _mods = mods;
         _modpacks = modpacks;
         _catalog = catalog;
@@ -157,8 +154,6 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private string _serverAddress = string.Empty;
 
-    [ObservableProperty]
-    private string _curseForgeApiKey = string.Empty;
 
     [ObservableProperty]
     private string _catalogUrl = string.Empty;
@@ -222,8 +217,6 @@ public partial class MainWindowViewModel : ViewModelBase
         var settings = _settings.Load();
         Username = settings.Username;
         ShowSnapshots = settings.ShowSnapshots;
-        CurseForgeApiKey = settings.CurseForgeApiKey ?? string.Empty;
-        _curseForge.ApiKey = settings.CurseForgeApiKey;
         CatalogUrl = settings.CatalogUrl ?? string.Empty;
         _catalog.CatalogUrl = settings.CatalogUrl;
         Language = LocalizationService.Normalize(settings.Language);
@@ -728,7 +721,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
             var result = await _modpacks.InstallAsync(mrpackPath, InstanceDirectory, progress);
             AppendConsole(
-                $"--- Modpack '{result.Plan.Name}' ({result.Plan.Format}) installed: " +
+                $"--- Modpack '{result.Plan.Name}' installed: " +
                 $"{result.InstalledFiles} files, {result.FailedFiles} failed, {result.SkippedFiles} skipped ---");
 
             if (result.Plan.GameVersion is not null)
@@ -942,8 +935,6 @@ public partial class MainWindowViewModel : ViewModelBase
 
     partial void OnUsernameChanged(string value) => _ = UpdateAvatarAsync();
 
-    partial void OnCurseForgeApiKeyChanged(string value)
-        => _curseForge.ApiKey = string.IsNullOrWhiteSpace(value) ? null : value;
 
     partial void OnCatalogUrlChanged(string value) => _catalog.CatalogUrl = value;
 
@@ -1061,7 +1052,6 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             Username = Username,
             ShowSnapshots = ShowSnapshots,
-            CurseForgeApiKey = string.IsNullOrWhiteSpace(CurseForgeApiKey) ? null : CurseForgeApiKey,
             CatalogUrl = string.IsNullOrWhiteSpace(CatalogUrl) ? null : CatalogUrl,
             Language = Language,
             ShowDeveloperConsole = ShowDeveloperConsole,
@@ -1107,5 +1097,6 @@ public partial class MainWindowViewModel : ViewModelBase
         });
     }
 }
+
 
 

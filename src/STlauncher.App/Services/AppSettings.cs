@@ -64,8 +64,6 @@ public sealed class AppSettings
 
     public string? ServerAddress { get; set; } = "mc.showtime.su";
 
-    public string? CurseForgeApiKey { get; set; }
-
     /// <summary>Interface language code: "ru" or "en".</summary>
     public string Language { get; set; } = "ru";
 

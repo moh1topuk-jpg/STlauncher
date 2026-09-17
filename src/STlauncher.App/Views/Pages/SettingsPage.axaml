@@ -180,14 +180,6 @@
 
                     <Border Classes="hairline"/>
 
-                    <TextBlock Text="{DynamicResource Settings_CurseForge}" Classes="faint"/>
-                    <TextBox Text="{Binding CurseForgeApiKey}" PasswordChar="&#x2022;"
-                             Watermark="required for CurseForge modpacks"/>
-                    <TextBlock Text="{DynamicResource Settings_CurseForgeHint}" Classes="faint"
-                               TextWrapping="Wrap"/>
-
-                    <Border Classes="hairline"/>
-
                     <TextBlock Text="{DynamicResource Settings_Catalog}" Classes="faint"/>
                     <TextBox Text="{Binding CatalogUrl}"
                              Watermark="https://example.com/catalog.json  or  C:\path\catalog.json"/>

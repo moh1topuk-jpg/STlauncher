@@ -105,8 +105,6 @@
     <x:String x:Key="Settings_BackupsFolder">Backups folder</x:String>
     <x:String x:Key="Settings_Advanced">Developers</x:String>
     <x:String x:Key="Settings_AdvancedHint">Technical parameters. This section appears when the developer console is enabled.</x:String>
-    <x:String x:Key="Settings_CurseForge">CurseForge key</x:String>
-    <x:String x:Key="Settings_CurseForgeHint">Required to import CurseForge packs. Stored locally, never committed.</x:String>
     <x:String x:Key="Settings_Catalog">Content catalog</x:String>
     <x:String x:Key="Settings_CatalogHint">URL, local path or file:/// URI. Empty means catalog.json next to settings.json.</x:String>
     <x:String x:Key="Settings_Updates">Updates</x:String>

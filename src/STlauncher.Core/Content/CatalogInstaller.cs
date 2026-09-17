@@ -19,25 +19,22 @@ public sealed record CatalogInstallResult(bool Success, string? Path, string Mes
 }
 
 /// <summary>
-/// Resolves a catalog item through its source (Modrinth, CurseForge or a direct URL)
-/// and places the file in the selected instance.
+/// Resolves a catalog item through Modrinth or a direct URL and places the file in the
+/// selected instance. No API key is required for any installed content.
 /// </summary>
 public sealed class CatalogInstaller
 {
     private readonly DownloadClient _downloader;
     private readonly ModrinthClient _modrinth;
-    private readonly CurseForgeClient _curseForge;
     private readonly ILogger<CatalogInstaller>? _logger;
 
     public CatalogInstaller(
         DownloadClient downloader,
         ModrinthClient modrinth,
-        CurseForgeClient curseForge,
         ILogger<CatalogInstaller>? logger = null)
     {
         _downloader = downloader ?? throw new ArgumentNullException(nameof(downloader));
         _modrinth = modrinth ?? throw new ArgumentNullException(nameof(modrinth));
-        _curseForge = curseForge ?? throw new ArgumentNullException(nameof(curseForge));
         _logger = logger;
     }
 
@@ -58,7 +55,6 @@ public sealed class CatalogInstaller
             return item.Source.Kind switch
             {
                 CatalogSourceKind.Modrinth => await InstallFromModrinthAsync(item, instanceDirectory, gameVersion, loader, cancellationToken).ConfigureAwait(false),
-                CatalogSourceKind.CurseForge => await InstallFromCurseForgeAsync(item, instanceDirectory, cancellationToken).ConfigureAwait(false),
                 CatalogSourceKind.Direct => await InstallDirectAsync(item, instanceDirectory, cancellationToken).ConfigureAwait(false),
                 _ => CatalogInstallResult.Fail($"Unsupported source kind '{item.Source.Kind}'.")
             };
@@ -113,33 +109,6 @@ public sealed class CatalogInstaller
         }
 
         return await DownloadAsync(item, instanceDirectory, file.Url, file.FileName, file.Sha1, file.Sha512, file.Size, cancellationToken)
-            .ConfigureAwait(false);
-    }
-
-    private async Task<CatalogInstallResult> InstallFromCurseForgeAsync(
-        CatalogItem item,
-        string instanceDirectory,
-        CancellationToken cancellationToken)
-    {
-        if (!_curseForge.IsConfigured)
-        {
-            return CatalogInstallResult.Fail("A CurseForge API key is required for this item. Set it in Settings.");
-        }
-
-        if (!int.TryParse(item.Source.FileId, out var fileId) || fileId <= 0)
-        {
-            return CatalogInstallResult.Fail("CurseForge source has no valid fileId.");
-        }
-
-        var resolved = await _curseForge.GetFilesAsync(new[] { fileId }, cancellationToken).ConfigureAwait(false);
-
-        if (!resolved.TryGetValue(fileId, out var info) || string.IsNullOrEmpty(info.DownloadUrl))
-        {
-            return CatalogInstallResult.Fail(
-                $"CurseForge file {fileId} is unavailable (the author may have disabled third-party downloads).");
-        }
-
-        return await DownloadAsync(item, instanceDirectory, info.DownloadUrl!, info.FileName, info.Sha1, null, info.Length, cancellationToken)
             .ConfigureAwait(false);
     }
 

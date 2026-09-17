@@ -3,24 +3,14 @@ using STlauncher.Core.Loaders;
 
 namespace STlauncher.Core.Modpacks;
 
-public enum ModpackFormat
-{
-    Modrinth,
-    CurseForge
-}
-
 public sealed record ModpackFilePlan(
     string RelativePath,
-    string? Url,
+    string Url,
     string? Sha1,
     string? Sha512,
-    long Size,
-    int? ProjectId = null,
-    int? FileId = null,
-    bool Required = true);
+    long Size);
 
 public sealed record ModpackPlan(
-    ModpackFormat Format,
     string Name,
     string VersionId,
     string? GameVersion,

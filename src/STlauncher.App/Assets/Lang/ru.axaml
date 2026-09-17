@@ -105,8 +105,6 @@
     <x:String x:Key="Settings_BackupsFolder">Папка бэкапов</x:String>
     <x:String x:Key="Settings_Advanced">Для разработчиков</x:String>
     <x:String x:Key="Settings_AdvancedHint">Технические параметры. Раздел появляется, когда включена консоль разработчика.</x:String>
-    <x:String x:Key="Settings_CurseForge">Ключ CurseForge</x:String>
-    <x:String x:Key="Settings_CurseForgeHint">Нужен для импорта сборок с CurseForge. Хранится локально, в репозиторий не попадает.</x:String>
     <x:String x:Key="Settings_Catalog">Каталог контента</x:String>
     <x:String x:Key="Settings_CatalogHint">URL, локальный путь или file:/// URI. Пусто — будет использован catalog.json рядом с settings.json.</x:String>
     <x:String x:Key="Settings_Updates">Обновления</x:String>

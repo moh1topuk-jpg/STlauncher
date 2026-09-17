@@ -56,9 +56,6 @@ public static class LauncherHost
         services.AddSingleton<GameLauncher>();
         services.AddSingleton<LoaderService>();
         services.AddSingleton<ModrinthClient>();
-        services.AddSingleton(sp => new CurseForgeClient(
-            sp.GetRequiredService<HttpClient>(),
-            startupSettings.CurseForgeApiKey));
         services.AddSingleton<ModManager>();
         services.AddSingleton<ModpackInstaller>();
         services.AddSingleton<ContentCatalogService>();

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -128,8 +128,8 @@ public class ModpackReaderTests
     [InlineData("C:/windows/system32/x.dll", false)]
     [InlineData("/etc/passwd", false)]
     [InlineData("", false)]
-    public void IsSafeRelativePath_RejectsEscapes(string path, bool expected)
-        => Assert.Equal(expected, ModpackReader.IsSafeRelativePath(path));
+    public void IsSafe_RejectsEscapes(string path, bool expected)
+        => Assert.Equal(expected, RelativePath.IsSafe(path));
 
     [Theory]
     [InlineData("forge", LoaderKind.Forge)]

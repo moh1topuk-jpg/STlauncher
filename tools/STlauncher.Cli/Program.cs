@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -47,8 +47,7 @@ internal static class Program
         var launch = new LaunchService(versions, assets, java, downloader, gameLauncher, paths);
         var loaders = new LoaderService(http, paths, downloader, java);
         var mods = new ModManager(downloader);
-        var curseForge = new CurseForgeClient(http, Option(args, "--api-key"));
-        var modpacks = new ModpackInstaller(downloader, curseForge);
+        var modpacks = new ModpackInstaller(downloader);
 
         try
         {
@@ -387,8 +386,7 @@ internal static class Program
             return 1;
         }
 
-        var curseForge = new CurseForgeClient(http, Option(args, "--api-key"));
-        var installer = new CatalogInstaller(downloader, new ModrinthClient(http), curseForge);
+        var installer = new CatalogInstaller(downloader, new ModrinthClient(http));
 
         var instanceDir = paths.InstanceDirectory(instanceId);
         Console.WriteLine($"Installing '{item.Name}' into '{instanceId}' (game {gameVersion ?? "?"}, {loader})...");
@@ -414,7 +412,7 @@ internal static class Program
 
         var result = await installer.InstallAsync(args[1], gameDir, progress);
 
-        Console.WriteLine($"Modpack   : {result.Plan.Name} {result.Plan.VersionId} [{result.Plan.Format}]");
+        Console.WriteLine($"Modpack   : {result.Plan.Name} {result.Plan.VersionId}");
         Console.WriteLine($"Minecraft : {result.Plan.GameVersion}");
         Console.WriteLine($"Loader    : {result.Plan.Loader} {result.Plan.LoaderVersion}");
         Console.WriteLine($"Installed : {result.InstalledFiles} file(s), failed {result.FailedFiles}, skipped {result.SkippedFiles}");
@@ -452,7 +450,7 @@ internal static class Program
               loaders <kind> <gameVersion>         list loader builds
               prepare <version> <nick> [options]    download and print the launch command
               run <version> <nick> [options]        download and launch the game
-              modpack <file.mrpack> [instanceId]   install a Modrinth/CurseForge modpack
+              modpack <file.mrpack> [instanceId]    install a Modrinth modpack
               catalog [--catalog <url|path>]       show the content catalog
               catalog-install <itemId> [options]   install one catalog item
 
@@ -462,7 +460,7 @@ internal static class Program
               --server <host[:port]>
               --memory <mb>
               --instance <id>                      game directory (default: "default")
-              --api-key <curseforgeKey>            (or set CURSEFORGE_API_KEY)
             """);
     }
 }
+

@@ -78,14 +78,13 @@
           }
         },
         {
-          "id": "jei",
+          "id": "modmenu",
           "type": "mod",
-          "name": "Just Enough Items",
-          "description": "Просмотр рецептов крафта.",
+          "name": "Mod Menu",
+          "description": "Список установленных модов прямо в игре.",
           "source": {
-            "kind": "curseforge",
-            "project": "238222",
-            "fileId": "4593052"
+            "kind": "modrinth",
+            "project": "modmenu"
           }
         }
       ]

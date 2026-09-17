@@ -153,18 +153,6 @@
                     </StackPanel>
                 </Border>
 
-                <Border Classes="card">
-                    <StackPanel Spacing="10">
-                        <TextBlock Text="{DynamicResource Server_Title}" Classes="label"/>
-                        <TextBlock Text="{Binding ServerName}" FontWeight="SemiBold"
-                                   TextTrimming="CharacterEllipsis"/>
-                        <TextBlock Text="{Binding ServerAddress}" Classes="faint"
-                                   TextTrimming="CharacterEllipsis"/>
-                        <Border Classes="hairline"/>
-                        <TextBlock Text="{DynamicResource Server_Hint}" Classes="faint" TextWrapping="Wrap"/>
-                    </StackPanel>
-                </Border>
-
             </StackPanel>
         </Grid>
     </ScrollViewer>
