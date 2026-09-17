@@ -271,19 +271,22 @@ public partial class MainWindowViewModel : ViewModelBase
         var window = TimeSpan.FromDays(3);
         var bars = _serverHistory.GetHourlyBars(window);
         var peak = bars.Count == 0 ? 0 : bars.Max(b => b.Peak);
+        var hasSamples = bars.Any(b => b.Peak > 0);
 
         ServerHistoryBars.Clear();
 
         foreach (var bar in bars)
         {
+            var hasData = bar.Peak > 0;
             var fraction = peak == 0 ? 0 : bar.Average / peak;
 
             ServerHistoryBars.Add(new ServerHistoryBarView(
-                Math.Max(2, fraction * ChartHeight),
-                $"{bar.Label} — {bar.Average:F0} (пик {bar.Peak})"));
+                hasData ? Math.Max(4, fraction * ChartHeight) : 3,
+                hasData ? $"{bar.Label} — {bar.Average:F0} (пик {bar.Peak})" : string.Empty,
+                !hasData));
         }
 
-        HasServerHistory = ServerHistoryBars.Count > 0;
+        HasServerHistory = hasSamples;
 
         var (average, top) = _serverHistory.GetSummary(window);
         ServerAverage = HasServerHistory

@@ -61,15 +61,20 @@
                         <ItemsControl ItemsSource="{Binding ServerHistoryBars}" VerticalAlignment="Bottom">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                    <StackPanel Orientation="Horizontal" Spacing="2"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="1"/>
                                 </ItemsPanelTemplate>
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:ServerHistoryBarView">
-                                    <Border Width="5" CornerRadius="2" VerticalAlignment="Bottom"
-                                            Background="{DynamicResource AccentBrush}"
-                                            Height="{Binding Height}"
-                                            ToolTip.Tip="{Binding Tooltip}"/>
+                                    <Panel>
+                                        <Border Width="4" CornerRadius="2" VerticalAlignment="Bottom"
+                                                Background="{DynamicResource SurfaceAltBrush}"
+                                                Height="{Binding Height}" IsVisible="{Binding IsEmpty}"/>
+                                        <Border Width="4" CornerRadius="2" VerticalAlignment="Bottom"
+                                                Background="{DynamicResource AccentBrush}"
+                                                Height="{Binding Height}" IsVisible="{Binding !IsEmpty}"
+                                                ToolTip.Tip="{Binding Tooltip}"/>
+                                    </Panel>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>

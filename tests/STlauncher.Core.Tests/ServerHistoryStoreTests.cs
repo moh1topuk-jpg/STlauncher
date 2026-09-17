@@ -49,10 +49,30 @@ public class ServerHistoryStoreTests
         store.Add(70, now);
 
         var bars = store.GetHourlyBars(TimeSpan.FromDays(3), now);
+        var withData = bars.Where(b => b.Peak > 0).ToList();
 
-        Assert.Equal(3, bars.Count);
-        Assert.Equal(30, bars[0].Peak);
-        Assert.Equal(70, bars[^1].Peak);
+        Assert.Equal(3, withData.Count);
+        Assert.Equal(30, withData[0].Peak);
+        Assert.Equal(70, withData[^1].Peak);
+    }
+
+    [Fact]
+    public void GetHourlyBars_CoversTheWholeWindowAsATimeline()
+    {
+        var store = new ServerHistoryStore(TempPath());
+        var now = DateTimeOffset.Now;
+
+        store.Add(30, now.AddHours(-2));
+        store.Add(70, now);
+
+        var bars = store.GetHourlyBars(TimeSpan.FromDays(3), now);
+
+        // 3 days of hourly buckets, including the hours without data.
+        Assert.True(bars.Count >= 73, $"expected the full timeline, got {bars.Count}");
+        Assert.Equal(2, bars.Count(b => b.Peak > 0));
+
+        // The newest sample sits at the end of the axis, not at its beginning.
+        Assert.True(bars[^1].Peak > 0);
     }
 
     [Fact]
@@ -66,8 +86,10 @@ public class ServerHistoryStoreTests
 
         var bars = store.GetHourlyBars(TimeSpan.FromDays(3), now);
 
-        Assert.Single(bars);
-        Assert.Equal(11, bars[0].Peak);
+        var withData = bars.Where(b => b.Peak > 0).ToList();
+
+        Assert.Single(withData);
+        Assert.Equal(11, withData[0].Peak);
     }
 
     [Fact]

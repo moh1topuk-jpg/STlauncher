@@ -111,15 +111,14 @@ public sealed class ServerHistoryStore
                     .Where(s => s.Time.ToLocalTime() >= bucketStart && s.Time.ToLocalTime() < bucketEnd)
                     .ToList();
 
-                if (inBucket.Count == 0)
-                {
-                    continue;
-                }
-
-                bars.Add(new ServerHistoryBar(
-                    bucketStart,
-                    inBucket.Average(s => s.Online),
-                    inBucket.Max(s => s.Online)));
+                // Empty hours are kept as zero bars: the chart is a timeline, so skipping
+                // them would move the data to the wrong place on the axis.
+                bars.Add(inBucket.Count == 0
+                    ? new ServerHistoryBar(bucketStart, 0, 0)
+                    : new ServerHistoryBar(
+                        bucketStart,
+                        inBucket.Average(s => s.Online),
+                        inBucket.Max(s => s.Online)));
             }
 
             return bars;
