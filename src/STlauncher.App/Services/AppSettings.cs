@@ -45,7 +45,14 @@ public sealed class AppSettings
 
     public bool BackupsEnabled { get; set; }
 
-    public int BackupsIntervalMinutes { get; set; } = 30;
+    /// <summary>Back up before every launch.</summary>
+    public bool BackupsBeforeLaunch { get; set; }
+
+    /// <summary>Back up before launch, but at most once per day.</summary>
+    public bool BackupsDaily { get; set; } = true;
+
+    /// <summary>Back up before installing or changing mods.</summary>
+    public bool BackupsBeforeModChanges { get; set; } = true;
 
     public int BackupsMaxCount { get; set; } = 10;
 

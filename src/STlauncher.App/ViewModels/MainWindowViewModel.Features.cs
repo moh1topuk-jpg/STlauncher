@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -23,7 +23,6 @@ public partial class MainWindowViewModel
 {
     private readonly List<CatalogSection> _catalogSections = new();
     private ContentCatalog? _loadedCatalog;
-    private DispatcherTimer? _backupTimer;
 
     // ===================== Window lifecycle =====================
 
@@ -258,9 +257,11 @@ public partial class MainWindowViewModel
         {
             foreach (var installation in _java.DiscoverInstalled())
             {
-                JavaChoices.Add(new JavaChoice(
-                    $"Java {installation.MajorVersion} — {installation.ExecutablePath}",
-                    installation.ExecutablePath));
+                var display = string.IsNullOrWhiteSpace(installation.Vendor)
+                    ? $"Java {installation.MajorVersion}"
+                    : $"Java {installation.MajorVersion} — {installation.Vendor}";
+
+                JavaChoices.Add(new JavaChoice(display, installation.ExecutablePath));
             }
         }
         catch (Exception ex)
@@ -412,6 +413,7 @@ public partial class MainWindowViewModel
         }
 
         AppendConsole($"--- Ensuring {pending.Count} build item(s) ---");
+        MaybeBackup(BackupTrigger.BeforeModChange);
 
         foreach (var item in pending)
         {
@@ -435,7 +437,13 @@ public partial class MainWindowViewModel
     private bool _backupsEnabled;
 
     [ObservableProperty]
-    private decimal _backupsIntervalMinutes = 30;
+    private bool _backupsBeforeLaunch;
+
+    [ObservableProperty]
+    private bool _backupsDaily = true;
+
+    [ObservableProperty]
+    private bool _backupsBeforeModChanges = true;
 
     [ObservableProperty]
     private decimal _backupsMaxCount = 10;
@@ -446,9 +454,13 @@ public partial class MainWindowViewModel
     [ObservableProperty]
     private string _backupStatus = string.Empty;
 
-    partial void OnBackupsEnabledChanged(bool value) => RestartBackupTimer();
+    partial void OnBackupsEnabledChanged(bool value) => PersistSettings();
 
-    partial void OnBackupsIntervalMinutesChanged(decimal value) => RestartBackupTimer();
+    partial void OnBackupsBeforeLaunchChanged(bool value) => PersistSettings();
+
+    partial void OnBackupsDailyChanged(bool value) => PersistSettings();
+
+    partial void OnBackupsBeforeModChangesChanged(bool value) => PersistSettings();
 
     partial void OnBackupsMaxCountChanged(decimal value) => PersistSettings();
 
@@ -518,25 +530,39 @@ public partial class MainWindowViewModel
             (int)BackupsMaxCount,
             (long)BackupsMaxTotalMb * 1024 * 1024);
 
-    private void RestartBackupTimer()
+    /// <summary>
+    /// Creates a backup when the configured trigger applies. There is no background
+    /// timer: the "once a day" rule is evaluated when the launcher actually launches
+    /// the game or touches mods.
+    /// </summary>
+    public bool MaybeBackup(BackupTrigger trigger)
     {
-        _backupTimer?.Stop();
-        _backupTimer = null;
-
-        if (!BackupsEnabled)
+        if (!BackupsEnabled || SelectedInstance is null)
         {
-            PersistSettings();
-            return;
+            return false;
         }
 
-        var minutes = Math.Max(1, (int)BackupsIntervalMinutes);
+        var due = trigger switch
+        {
+            BackupTrigger.BeforeLaunch => BackupsBeforeLaunch || (BackupsDaily && IsDailyBackupDue()),
+            BackupTrigger.BeforeModChange => BackupsBeforeModChanges,
+            _ => false
+        };
 
-        _backupTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(minutes) };
-        _backupTimer.Tick += (_, _) => CreateBackupNow();
-        _backupTimer.Start();
+        if (!due)
+        {
+            return false;
+        }
 
-        BackupStatus = $"Automatic backups every {minutes} min.";
-        PersistSettings();
+        CreateBackupNow();
+        return true;
+    }
+
+    private bool IsDailyBackupDue()
+    {
+        var latest = _backups.List(BackupsDirectory, SelectedInstance?.Id).FirstOrDefault();
+
+        return latest is null || DateTimeOffset.Now - latest.CreatedAt >= TimeSpan.FromDays(1);
     }
 
     private static string Localize(string key, string fallback)
@@ -548,6 +574,13 @@ public partial class MainWindowViewModel
 public sealed record JavaChoice(string Display, string? Path);
 
 public sealed record AfterLaunchOption(AfterLaunchAction Action, string Display);
+
+/// <summary>What caused a backup check.</summary>
+public enum BackupTrigger
+{
+    BeforeLaunch,
+    BeforeModChange
+}
 
 public sealed class CatalogSectionView
 {

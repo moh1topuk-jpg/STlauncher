@@ -238,7 +238,9 @@ public partial class MainWindowViewModel : ViewModelBase
         _globalJavaPath = settings.JavaPath ?? string.Empty;
 
         BackupsEnabled = settings.BackupsEnabled;
-        BackupsIntervalMinutes = settings.BackupsIntervalMinutes;
+        BackupsBeforeLaunch = settings.BackupsBeforeLaunch;
+        BackupsDaily = settings.BackupsDaily;
+        BackupsBeforeModChanges = settings.BackupsBeforeModChanges;
         BackupsMaxCount = settings.BackupsMaxCount;
         BackupsMaxTotalMb = settings.BackupsMaxTotalMb;
         _backupDirectoryOverride = settings.BackupsDirectory ?? string.Empty;
@@ -285,7 +287,6 @@ public partial class MainWindowViewModel : ViewModelBase
 
         RefreshMods();
         await LoadCatalogAsync();
-        RestartBackupTimer();
     }
 
     private Instance CreateMigratedInstance(AppSettings settings)
@@ -401,6 +402,7 @@ public partial class MainWindowViewModel : ViewModelBase
             IsBusy = true;
             Progress = 0;
             AppendConsole($"--- Launching {SelectedVersion.Id} as {Username} ---");
+            MaybeBackup(BackupTrigger.BeforeLaunch);
 
             var account = OfflineAuth.Login(Username);
             PersistSettings();
@@ -552,6 +554,7 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             IsModsBusy = true;
+            MaybeBackup(BackupTrigger.BeforeModChange);
             Status = $"Resolving {SelectedMod.Title}...";
 
             var versions = await _modrinth.GetVersionsAsync(SelectedMod.ProjectId, SelectedVersion.Id, SelectedLoader);
@@ -663,6 +666,7 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             IsCatalogBusy = true;
+            MaybeBackup(BackupTrigger.BeforeModChange);
             Status = $"Installing {item.Name}...";
             AppendConsole($"--- Installing '{item.Name}' ({item.Type}) into '{SelectedInstance?.Name}' ---");
 
@@ -713,6 +717,7 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             IsModsBusy = true;
+            MaybeBackup(BackupTrigger.BeforeModChange);
             Status = "Reading modpack...";
 
             var progress = new Progress<DownloadProgress>(p =>
@@ -839,6 +844,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         try
         {
+            MaybeBackup(BackupTrigger.BeforeModChange);
             _mods.Uninstall(mod.Path);
             RefreshMods();
         }
@@ -1069,7 +1075,9 @@ public partial class MainWindowViewModel : ViewModelBase
             AfterLaunch = AfterLaunch,
             ForceUpdate = ForceUpdate,
             BackupsEnabled = BackupsEnabled,
-            BackupsIntervalMinutes = (int)BackupsIntervalMinutes,
+            BackupsBeforeLaunch = BackupsBeforeLaunch,
+            BackupsDaily = BackupsDaily,
+            BackupsBeforeModChanges = BackupsBeforeModChanges,
             BackupsMaxCount = (int)BackupsMaxCount,
             BackupsMaxTotalMb = (int)BackupsMaxTotalMb,
             BackupsDirectory = string.IsNullOrWhiteSpace(_backupDirectoryOverride) ? null : _backupDirectoryOverride,
@@ -1099,3 +1107,5 @@ public partial class MainWindowViewModel : ViewModelBase
         });
     }
 }
+
+
