@@ -26,6 +26,7 @@
     <x:String x:Key="Game_Play">Play</x:String>
     <x:String x:Key="Game_PlayOnServer">Play on server</x:String>
     <x:String x:Key="Game_Ready">Ready</x:String>
+    <x:String x:Key="Game_BuildsHint">Version, loader and mods are configured in the Builds section.</x:String>
     <x:String x:Key="Game_OfflineMode">Offline mode</x:String>
 
     <!-- Builds page -->
@@ -39,6 +40,10 @@
     <x:String x:Key="Builds_ServerMods">Server mods</x:String>
     <x:String x:Key="Mods_InstalledBadge">Installed</x:String>
     <x:String x:Key="Mods_AllCategories">All categories</x:String>
+    <x:String x:Key="Mods_LoadMore">Show more</x:String>
+    <x:String x:Key="Mods_ShownOfTotal">Shown {0} of {1}</x:String>
+    <x:String x:Key="Builds_NotConfigured">Pick a game version and a loader in the build settings first - they decide which mods are available.</x:String>
+    <x:String x:Key="Builds_GoSettings">Open build settings</x:String>
     <x:String x:Key="Mods_ModrinthResults">Search results</x:String>
     <x:String x:Key="Builds_Selected">Selected build</x:String>
     <x:String x:Key="Builds_Rename">Rename</x:String>
@@ -206,6 +211,33 @@
     <x:String x:Key="Update_UpToDate">You are up to date ({0})</x:String>
     <x:String x:Key="Update_NothingToApply">Nothing to apply</x:String>
     <x:String x:Key="Update_Failed">Update check failed: {0}</x:String>
+
+    <!-- Modrinth categories -->
+    <x:String x:Key="Category_adventure">Adventure</x:String>
+    <x:String x:Key="Category_cursed">Cursed</x:String>
+    <x:String x:Key="Category_decoration">Decoration</x:String>
+    <x:String x:Key="Category_economy">Economy</x:String>
+    <x:String x:Key="Category_equipment">Equipment</x:String>
+    <x:String x:Key="Category_food">Food</x:String>
+    <x:String x:Key="Category_game-mechanics">Game mechanics</x:String>
+    <x:String x:Key="Category_library">Library</x:String>
+    <x:String x:Key="Category_magic">Magic</x:String>
+    <x:String x:Key="Category_management">Management</x:String>
+    <x:String x:Key="Category_minigame">Minigame</x:String>
+    <x:String x:Key="Category_mobs">Mobs</x:String>
+    <x:String x:Key="Category_optimization">Optimization</x:String>
+    <x:String x:Key="Category_social">Social</x:String>
+    <x:String x:Key="Category_storage">Storage</x:String>
+    <x:String x:Key="Category_technology">Technology</x:String>
+    <x:String x:Key="Category_transportation">Transportation</x:String>
+    <x:String x:Key="Category_utility">Utility</x:String>
+    <x:String x:Key="Category_worldgen">World generation</x:String>
+
+    <!-- Sort -->
+    <x:String x:Key="ModSort_Relevance">By relevance</x:String>
+    <x:String x:Key="ModSort_Downloads">By downloads</x:String>
+    <x:String x:Key="ModSort_Newest">Newest</x:String>
+    <x:String x:Key="ModSort_Updated">Updated</x:String>
 
     <!-- Common -->
     <x:String x:Key="Common_Close">Close</x:String>

@@ -26,6 +26,7 @@
     <x:String x:Key="Game_Play">Играть</x:String>
     <x:String x:Key="Game_PlayOnServer">Играть на сервере</x:String>
     <x:String x:Key="Game_Ready">Готово</x:String>
+    <x:String x:Key="Game_BuildsHint">Версия, загрузчик и моды настраиваются во вкладке «Сборки».</x:String>
     <x:String x:Key="Game_OfflineMode">Офлайн-режим</x:String>
 
     <!-- Builds page -->
@@ -39,6 +40,10 @@
     <x:String x:Key="Builds_ServerMods">Моды сервера</x:String>
     <x:String x:Key="Mods_InstalledBadge">Установлен</x:String>
     <x:String x:Key="Mods_AllCategories">Все категории</x:String>
+    <x:String x:Key="Mods_LoadMore">Показать ещё</x:String>
+    <x:String x:Key="Mods_ShownOfTotal">Показано {0} из {1}</x:String>
+    <x:String x:Key="Builds_NotConfigured">Сначала выберите версию игры и загрузчик в настройках сборки — от них зависит, какие моды доступны.</x:String>
+    <x:String x:Key="Builds_GoSettings">Перейти в настройки сборки</x:String>
     <x:String x:Key="Mods_ModrinthResults">Результаты поиска</x:String>
     <x:String x:Key="Builds_Selected">Выбранная сборка</x:String>
     <x:String x:Key="Builds_Rename">Переименовать</x:String>
@@ -206,6 +211,33 @@
     <x:String x:Key="Update_UpToDate">Обновлений нет (версия {0})</x:String>
     <x:String x:Key="Update_NothingToApply">Нечего применять</x:String>
     <x:String x:Key="Update_Failed">Не удалось проверить обновления: {0}</x:String>
+
+    <!-- Modrinth categories -->
+    <x:String x:Key="Category_adventure">Приключения</x:String>
+    <x:String x:Key="Category_cursed">Проклятые</x:String>
+    <x:String x:Key="Category_decoration">Декор</x:String>
+    <x:String x:Key="Category_economy">Экономика</x:String>
+    <x:String x:Key="Category_equipment">Снаряжение</x:String>
+    <x:String x:Key="Category_food">Еда</x:String>
+    <x:String x:Key="Category_game-mechanics">Механики</x:String>
+    <x:String x:Key="Category_library">Библиотеки</x:String>
+    <x:String x:Key="Category_magic">Магия</x:String>
+    <x:String x:Key="Category_management">Управление</x:String>
+    <x:String x:Key="Category_minigame">Мини-игры</x:String>
+    <x:String x:Key="Category_mobs">Мобы</x:String>
+    <x:String x:Key="Category_optimization">Оптимизация</x:String>
+    <x:String x:Key="Category_social">Социальные</x:String>
+    <x:String x:Key="Category_storage">Хранилища</x:String>
+    <x:String x:Key="Category_technology">Технологии</x:String>
+    <x:String x:Key="Category_transportation">Транспорт</x:String>
+    <x:String x:Key="Category_utility">Утилиты</x:String>
+    <x:String x:Key="Category_worldgen">Генерация мира</x:String>
+
+    <!-- Sort -->
+    <x:String x:Key="ModSort_Relevance">По релевантности</x:String>
+    <x:String x:Key="ModSort_Downloads">По загрузкам</x:String>
+    <x:String x:Key="ModSort_Newest">Новые</x:String>
+    <x:String x:Key="ModSort_Updated">Обновлённые</x:String>
 
     <!-- Common -->
     <x:String x:Key="Common_Close">Закрыть</x:String>

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
@@ -20,6 +21,9 @@ public enum BuildTab
 }
 
 public sealed record ModSortOption(string Value, string Display);
+
+/// <summary>A category ready for display: the machine name plus a translated label.</summary>
+public sealed record ModCategoryOption(string Name, string Display);
 
 /// <summary>A Modrinth search hit together with its lazily loaded logo and install state.</summary>
 public partial class ModBrowserItem : ObservableObject
@@ -68,19 +72,12 @@ public partial class MainWindowViewModel
 
     public ObservableCollection<ModBrowserItem> ModBrowserItems { get; } = new();
 
-    public ObservableCollection<ModCategory> ModCategories { get; } = new();
+    public ObservableCollection<ModCategoryOption> ModCategories { get; } = new();
 
-    public IReadOnlyList<ModSortOption> ModSortOptions { get; } =
-        new List<ModSortOption>
-        {
-            new("relevance", "По релевантности"),
-            new("downloads", "По загрузкам"),
-            new("newest", "Новые"),
-            new("updated", "Обновлённые")
-        };
+    public ObservableCollection<ModSortOption> ModSortOptions { get; } = new();
 
     [ObservableProperty]
-    private ModCategory? _selectedCategory;
+    private ModCategoryOption? _selectedCategory;
 
     [ObservableProperty]
     private ModSortOption? _selectedModSort;
@@ -88,6 +85,17 @@ public partial class MainWindowViewModel
     [ObservableProperty]
     private bool _isBrowserBusy;
 
+    [ObservableProperty]
+    private bool _canLoadMore;
+
+    [ObservableProperty]
+    private string _browserSummary = string.Empty;
+
+    private const int BrowserPageSize = 20;
+
+    private int _browserOffset;
+    private int _browserTotal;
+    private CancellationTokenSource? _browserDebounce;
     private bool _categoriesLoaded;
 
     public async Task LoadCategoriesAsync()
@@ -97,68 +105,142 @@ public partial class MainWindowViewModel
             return;
         }
 
-        _categoriesLoaded = true;
-
         try
         {
             var categories = await _modrinth.GetCategoriesAsync();
 
+            LoadSortOptions();
+
+            var previous = SelectedCategory?.Name ?? string.Empty;
+
             ModCategories.Clear();
-            ModCategories.Add(new ModCategory(string.Empty, Localize("Mods_AllCategories", "All categories")));
+            ModCategories.Add(new ModCategoryOption(
+                string.Empty,
+                Localize("Mods_AllCategories", "All categories")));
 
             foreach (var category in categories)
             {
-                ModCategories.Add(category);
+                ModCategories.Add(new ModCategoryOption(
+                    category.Name,
+                    Localize($"Category_{category.Name}", category.Display)));
             }
 
-            SelectedCategory = ModCategories[0];
+            _categoriesLoaded = true;
+            SelectedCategory = ModCategories.FirstOrDefault(c => c.Name == previous) ?? ModCategories[0];
         }
         catch (Exception ex)
         {
             AppendConsole($"[modrinth] categories failed: {ex.Message}");
         }
 
-        SelectedModSort ??= ModSortOptions[0];
+        SelectedModSort ??= ModSortOptions.FirstOrDefault();
+    }
+
+    /// <summary>Rebuilt so the labels follow the interface language.</summary>
+    private void LoadSortOptions()
+    {
+        var previous = SelectedModSort?.Value ?? "relevance";
+
+        ModSortOptions.Clear();
+        ModSortOptions.Add(new ModSortOption("relevance", Localize("ModSort_Relevance", "By relevance")));
+        ModSortOptions.Add(new ModSortOption("downloads", Localize("ModSort_Downloads", "By downloads")));
+        ModSortOptions.Add(new ModSortOption("newest", Localize("ModSort_Newest", "Newest")));
+        ModSortOptions.Add(new ModSortOption("updated", Localize("ModSort_Updated", "Updated")));
+
+        SelectedModSort = ModSortOptions.FirstOrDefault(o => o.Value == previous) ?? ModSortOptions[0];
+    }
+
+    /// <summary>Re-translates the category and sort labels after a language change.</summary>
+    public void ReloadLocalizedBrowserOptions()
+    {
+        _categoriesLoaded = false;
+        _ = LoadCategoriesAsync();
     }
 
     [RelayCommand]
     private async Task SearchModsAsync()
     {
-        if (SelectedVersion is null)
+        await LoadBrowserPageAsync(reset: true);
+    }
+
+    [RelayCommand]
+    private async Task LoadMoreModsAsync()
+    {
+        await LoadBrowserPageAsync(reset: false);
+    }
+
+    /// <summary>
+    /// Loads one page of the Modrinth browser. An empty query browses the whole category,
+    /// which is why the catalog has content without pressing the search button.
+    /// </summary>
+    private async Task LoadBrowserPageAsync(bool reset)
+    {
+        if (IsBrowserBusy)
         {
-            Status = Localize("Status_SelectVersion", "Select a version first");
             return;
         }
 
-        if (SelectedLoader == Core.Loaders.LoaderKind.Vanilla)
+        if (!IsBuildConfigured)
         {
-            Status = Localize("Status_SelectLoader", "Select a mod loader first");
+            ModBrowserItems.Clear();
+            BrowserSummary = string.Empty;
+            CanLoadMore = false;
             return;
         }
 
         try
         {
             IsBrowserBusy = true;
-            Status = Localize("Status_SearchingMods", "Searching Modrinth…");
+
+            if (reset)
+            {
+                _browserOffset = 0;
+                Status = Localize("Status_SearchingMods", "Searching Modrinth…");
+            }
+
+#if DEBUG
+            System.Console.Error.WriteLine(
+                $"[browser] version={SelectedVersion?.Id ?? "-"} loader={SelectedLoader} " +
+                $"category={SelectedCategory?.Name ?? "-"} sort={SelectedModSort?.Value ?? "-"} offset={_browserOffset}");
+#endif
 
             var category = string.IsNullOrWhiteSpace(SelectedCategory?.Name) ? null : SelectedCategory!.Name;
 
-            var results = await _modrinth.SearchAsync(
+            var page = await _modrinth.SearchAsync(
                 ModSearchQuery,
-                SelectedVersion.Id,
+                SelectedVersion!.Id,
                 SelectedLoader,
                 category,
-                SelectedModSort?.Value ?? "relevance");
+                SelectedModSort?.Value ?? "relevance",
+                BrowserPageSize,
+                _browserOffset);
 
-            ModBrowserItems.Clear();
-
-            foreach (var result in results)
+            if (reset)
             {
-                ModBrowserItems.Add(new ModBrowserItem(result, IsProjectInstalled(result.Slug)));
+                ModBrowserItems.Clear();
             }
 
-            Status = Localize("Status_FoundMods", "Found {0} mods", ModBrowserItems.Count);
-            _ = LoadIconsAsync(ModBrowserItems.ToList());
+            var added = new List<ModBrowserItem>();
+
+            foreach (var result in page.Items)
+            {
+                var item = new ModBrowserItem(result, IsProjectInstalled(result.Slug));
+                ModBrowserItems.Add(item);
+                added.Add(item);
+            }
+
+            _browserOffset += page.Items.Count;
+            _browserTotal = page.TotalHits;
+            CanLoadMore = page.Items.Count > 0 && _browserOffset < _browserTotal;
+
+            BrowserSummary = Localize("Mods_ShownOfTotal", "Shown {0} of {1}", ModBrowserItems.Count, _browserTotal);
+            Status = BrowserSummary;
+
+#if DEBUG
+            System.Console.Error.WriteLine($"[browser] got {page.Items.Count} of {page.TotalHits}");
+#endif
+
+            _ = LoadIconsAsync(added);
         }
         catch (Exception ex)
         {
@@ -169,6 +251,40 @@ public partial class MainWindowViewModel
             IsBrowserBusy = false;
         }
     }
+
+    /// <summary>True when the build has a game version and a mod loader to search against.</summary>
+    public bool IsBuildConfigured => SelectedVersion is not null && SelectedLoader != Core.Loaders.LoaderKind.Vanilla;
+
+    /// <summary>Re-runs the browser after the build or the filters change, with a short delay.</summary>
+    private void ScheduleBrowserReload()
+    {
+        _browserDebounce?.Cancel();
+        var cts = new CancellationTokenSource();
+        _browserDebounce = cts;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(350, cts.Token);
+
+                // A newer request may have arrived while this one waited.
+                if (cts.IsCancellationRequested)
+                {
+                    return;
+                }
+
+                await Dispatcher.UIThread.InvokeAsync(async () => await LoadBrowserPageAsync(reset: true));
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        });
+    }
+
+    partial void OnSelectedCategoryChanged(ModCategoryOption? value) => ScheduleBrowserReload();
+
+    partial void OnSelectedModSortChanged(ModSortOption? value) => ScheduleBrowserReload();
 
     [RelayCommand]
     private async Task InstallBrowserItemAsync(ModBrowserItem? item)

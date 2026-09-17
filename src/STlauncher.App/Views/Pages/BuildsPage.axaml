@@ -97,9 +97,20 @@
             <Panel Grid.Row="2">
 
                 <!-- ======== Modrinth catalog ======== -->
-                <Grid IsVisible="{Binding IsBuildCatalog}" RowDefinitions="Auto,*" RowSpacing="12">
+                <Grid IsVisible="{Binding IsBuildCatalog}" RowDefinitions="Auto,*,Auto" RowSpacing="12">
 
                     <StackPanel Spacing="8">
+                        <Border Classes="panel" Padding="12" IsVisible="{Binding !IsBuildConfigured}">
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="{DynamicResource Builds_NotConfigured}" Classes="faint"
+                                           TextWrapping="Wrap"/>
+                                <Button Classes="ghost small" HorizontalAlignment="Left"
+                                        Content="{DynamicResource Builds_GoSettings}"
+                                        Command="{Binding SelectBuildTabCommand}"
+                                        CommandParameter="Settings"/>
+                            </StackPanel>
+                        </Border>
+
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                             <TextBox Text="{Binding ModSearchQuery}"
                                      Watermark="{DynamicResource Mods_SearchHint}"/>
@@ -114,8 +125,8 @@
                                       SelectedItem="{Binding SelectedCategory}"
                                       HorizontalAlignment="Stretch">
                                 <ComboBox.ItemTemplate>
-                                    <DataTemplate x:DataType="mods:ModCategory">
-                                        <TextBlock Text="{Binding Header}" TextTrimming="CharacterEllipsis"/>
+                                    <DataTemplate x:DataType="vm:ModCategoryOption">
+                                        <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis"/>
                                     </DataTemplate>
                                 </ComboBox.ItemTemplate>
                             </ComboBox>
@@ -129,8 +140,6 @@
                                 </ComboBox.ItemTemplate>
                             </ComboBox>
                         </Grid>
-
-                        <TextBlock Text="{Binding Status}" Classes="faint" TextWrapping="Wrap"/>
                     </StackPanel>
 
                     <ListBox Grid.Row="1" ItemsSource="{Binding ModBrowserItems}">
@@ -165,6 +174,16 @@
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
+
+                    <Grid Grid.Row="2" ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                        <TextBlock Text="{Binding BrowserSummary}" Classes="faint"
+                                   VerticalAlignment="Center"/>
+                        <Button Grid.Column="1" Classes="ghost"
+                                Content="{DynamicResource Mods_LoadMore}"
+                                Command="{Binding LoadMoreModsCommand}"
+                                IsVisible="{Binding CanLoadMore}"
+                                IsEnabled="{Binding !IsBrowserBusy}"/>
+                    </Grid>
                 </Grid>
 
                 <!-- ======== Build settings ======== -->

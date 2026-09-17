@@ -15,74 +15,29 @@
 
                 <!-- Build (instance) -->
                 <Border Classes="card">
-                    <StackPanel Spacing="14">
-                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-                            <StackPanel Spacing="6">
-                                <TextBlock Text="{DynamicResource Game_Instance}" Classes="label"/>
-                                <ComboBox ItemsSource="{Binding Instances}"
-                                          SelectedItem="{Binding SelectedInstance}"
-                                          HorizontalAlignment="Stretch">
-                                    <ComboBox.ItemTemplate>
-                                        <DataTemplate x:DataType="inst:Instance">
-                                            <TextBlock Text="{Binding Name}"/>
-                                        </DataTemplate>
-                                    </ComboBox.ItemTemplate>
-                                </ComboBox>
-                            </StackPanel>
-                            <Button Grid.Column="1" Classes="ghost small"
-                                    Content="{DynamicResource Game_NewInstance}"
-                                    Command="{Binding CreateInstanceCommand}"
-                                    VerticalAlignment="Bottom"/>
-                            <Button Grid.Column="2" Classes="danger small"
-                                    Content="{DynamicResource Game_DeleteInstance}"
-                                    Command="{Binding DeleteInstanceCommand}"
-                                    VerticalAlignment="Bottom"/>
-                        </Grid>
-                        <TextBox Text="{Binding NewInstanceName}"
-                                 Watermark="{DynamicResource Game_InstanceNameHint}"/>
-                    </StackPanel>
-                </Border>
-
-                <!-- Version + loader -->
-                <Border Classes="card">
-                    <StackPanel Spacing="14">
-                        <TextBlock Text="{DynamicResource Game_Profile}" Classes="label"/>
-
-                        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                            <StackPanel Spacing="6">
-                                <TextBlock Text="{DynamicResource Game_Version}" Classes="faint"/>
-                                <ComboBox ItemsSource="{Binding Versions}"
-                                          SelectedItem="{Binding SelectedVersion}"
-                                          HorizontalAlignment="Stretch">
-                                    <ComboBox.ItemTemplate>
-                                        <DataTemplate x:DataType="m:VersionSummary">
-                                            <TextBlock Text="{Binding Id}"/>
-                                        </DataTemplate>
-                                    </ComboBox.ItemTemplate>
-                                </ComboBox>
-                            </StackPanel>
-
-                            <StackPanel Grid.Column="1" Spacing="6">
-                                <TextBlock Text="{DynamicResource Game_Loader}" Classes="faint"/>
-                                <ComboBox ItemsSource="{Binding LoaderKinds}"
-                                          SelectedItem="{Binding SelectedLoader}"
-                                          HorizontalAlignment="Stretch"/>
-                            </StackPanel>
-                        </Grid>
-
-                        <StackPanel Spacing="6">
-                            <TextBlock Text="{DynamicResource Game_LoaderVersion}" Classes="faint"/>
-                            <ComboBox ItemsSource="{Binding LoaderVersions}"
-                                      SelectedItem="{Binding SelectedLoaderVersion}"
-                                      IsEnabled="{Binding !IsLoaderBusy}"
-                                      HorizontalAlignment="Stretch">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate x:DataType="loaders:LoaderVersion">
-                                        <TextBlock Text="{Binding Version}"/>
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
-                        </StackPanel>
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="{DynamicResource Game_Instance}" Classes="label"/>
+                        <ComboBox ItemsSource="{Binding Instances}"
+                                  SelectedItem="{Binding SelectedInstance}"
+                                  HorizontalAlignment="Stretch">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="inst:Instance">
+                                    <StackPanel Spacing="2">
+                                        <TextBlock Text="{Binding Name}"/>
+                                        <TextBlock Classes="faint">
+                                            <TextBlock.Text>
+                                                <MultiBinding StringFormat="{}{0} · {1}">
+                                                    <Binding Path="VersionId" TargetNullValue="—"/>
+                                                    <Binding Path="Loader"/>
+                                                </MultiBinding>
+                                            </TextBlock.Text>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <TextBlock Text="{DynamicResource Game_BuildsHint}" Classes="faint"
+                                   TextWrapping="Wrap"/>
                     </StackPanel>
                 </Border>
 

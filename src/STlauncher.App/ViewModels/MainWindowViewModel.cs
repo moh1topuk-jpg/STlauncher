@@ -288,6 +288,7 @@ public partial class MainWindowViewModel : ViewModelBase
         RefreshMods();
         await LoadCatalogAsync();
         await LoadCategoriesAsync();
+        ScheduleBrowserReload();
     }
 
     /// <summary>
@@ -909,13 +910,25 @@ public partial class MainWindowViewModel : ViewModelBase
     partial void OnSelectedLoaderChanged(LoaderKind value)
     {
         SyncInstance();
-        if (!_applyingInstance) _ = LoadLoaderVersionsAsync();
+
+        if (!_applyingInstance)
+        {
+            OnPropertyChanged(nameof(IsBuildConfigured));
+            _ = LoadLoaderVersionsAsync();
+            ScheduleBrowserReload();
+        }
     }
 
     partial void OnSelectedVersionChanged(VersionSummary? value)
     {
         SyncInstance();
-        if (!_applyingInstance) _ = LoadLoaderVersionsAsync();
+
+        if (!_applyingInstance)
+        {
+            OnPropertyChanged(nameof(IsBuildConfigured));
+            _ = LoadLoaderVersionsAsync();
+            ScheduleBrowserReload();
+        }
     }
 
     partial void OnSelectedLoaderVersionChanged(LoaderVersion? value) => SyncInstance();
@@ -962,6 +975,8 @@ public partial class MainWindowViewModel : ViewModelBase
         RefreshMods();
         RebuildCatalogViews();
         RefreshBrowserInstallState();
+        OnPropertyChanged(nameof(IsBuildConfigured));
+        ScheduleBrowserReload();
         PersistSettings();
     }
 
@@ -1012,6 +1027,7 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         _localization.Apply(value);
         LoadAfterLaunchOptions();
+        ReloadLocalizedBrowserOptions();
         PersistSettings();
     }
 

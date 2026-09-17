@@ -10,7 +10,26 @@ using STlauncher.Core.Loaders;
 
 namespace STlauncher.Core.Mods;
 
-public sealed record ModCategory(string Name, string Header);
+/// <summary>
+/// Modrinth returns header="categories" for every mod category, so the display name is
+/// derived from the machine name instead.
+/// </summary>
+public sealed record ModCategory(string Name, string Header)
+{
+    public string Display => string.IsNullOrWhiteSpace(Name) ? Header : Humanize(Name);
+
+    private static string Humanize(string name)
+    {
+        var parts = name.Split('-', StringSplitOptions.RemoveEmptyEntries);
+
+        return parts.Length == 0
+            ? name
+            : string.Join(' ', parts.Select(p => char.ToUpperInvariant(p[0]) + p[1..]));
+    }
+}
+
+/// <summary>One page of search results together with the total match count.</summary>
+public sealed record ModSearchPage(IReadOnlyList<ModSearchResult> Items, int TotalHits);
 
 public sealed record ModSearchResult(
     string ProjectId,
@@ -51,7 +70,7 @@ public sealed class ModrinthClient
         _http = http ?? throw new ArgumentNullException(nameof(http));
     }
 
-    public async Task<IReadOnlyList<ModSearchResult>> SearchAsync(
+    public async Task<ModSearchPage> SearchAsync(
         string query,
         string? gameVersion,
         LoaderKind loader,
@@ -70,17 +89,19 @@ public sealed class ModrinthClient
         var json = await _http.GetStringAsync(url, cancellationToken).ConfigureAwait(false);
         var response = JsonSerializer.Deserialize<SearchResponse>(json, Json.Options);
 
-        return response?.Hits
-                   .Select(h => new ModSearchResult(
-                       h.ProjectId ?? string.Empty,
-                       h.Slug ?? string.Empty,
-                       h.Title ?? string.Empty,
-                       h.Description ?? string.Empty,
-                       h.IconUrl,
-                       h.Downloads,
-                       h.Author))
-                   .ToList()
-               ?? new List<ModSearchResult>();
+        var items = response?.Hits
+                        .Select(h => new ModSearchResult(
+                            h.ProjectId ?? string.Empty,
+                            h.Slug ?? string.Empty,
+                            h.Title ?? string.Empty,
+                            h.Description ?? string.Empty,
+                            h.IconUrl,
+                            h.Downloads,
+                            h.Author))
+                        .ToList()
+                    ?? new List<ModSearchResult>();
+
+        return new ModSearchPage(items, response?.TotalHits ?? items.Count);
     }
 
     /// <summary>Available categories for a project type, used by the browser filters.</summary>
@@ -190,6 +211,9 @@ public sealed class ModrinthClient
     {
         [JsonPropertyName("hits")]
         public List<SearchHit> Hits { get; set; } = new();
+
+        [JsonPropertyName("total_hits")]
+        public int TotalHits { get; set; }
     }
 
     private sealed class SearchHit

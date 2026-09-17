@@ -329,11 +329,11 @@ internal static class Program
 
         Console.WriteLine($"facets: {ModrinthClient.BuildFacets(gameVersion, loader, category)}");
 
-        var results = await client.SearchAsync(query, gameVersion, loader, category, Option(args, "--sort") ?? "relevance");
+        var page = await client.SearchAsync(query, gameVersion, loader, category, Option(args, "--sort") ?? "relevance");
 
-        Console.WriteLine($"{results.Count} result(s):");
+        Console.WriteLine($"{page.Items.Count} of {page.TotalHits} result(s):");
 
-        foreach (var result in results)
+        foreach (var result in page.Items)
         {
             Console.WriteLine($"  {result.Slug,-24} {result.Title}");
             Console.WriteLine($"      {result.Description}");
