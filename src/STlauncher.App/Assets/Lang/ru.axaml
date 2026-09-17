@@ -123,8 +123,86 @@
     <x:String x:Key="Settings_CheckUpdates">Проверить обновления</x:String>
     <x:String x:Key="Settings_RestartUpdate">Перезапустить</x:String>
 
+    <!-- Status messages -->
+    <x:String x:Key="Status_Ready">Готово</x:String>
+    <x:String x:Key="Status_LoadingVersions">Загрузка списка версий…</x:String>
+    <x:String x:Key="Status_VersionsLoaded">Загружено версий: {0}</x:String>
+    <x:String x:Key="Status_NoVersions">Версий не найдено</x:String>
+    <x:String x:Key="Status_SelectVersion">Сначала выберите версию</x:String>
+    <x:String x:Key="Status_SelectLoader">Сначала выберите загрузчик для модов</x:String>
+    <x:String x:Key="Status_InvalidNickname">Ник: 3–16 символов, латиница, цифры и подчёркивание</x:String>
+    <x:String x:Key="Status_InstallingLoader">Установка {0}…</x:String>
+    <x:String x:Key="Status_CheckingBuildMods">Проверка модов сборки…</x:String>
+    <x:String x:Key="Status_Preparing">Подготовка…</x:String>
+    <x:String x:Key="Status_StartingGame">Запуск Minecraft…</x:String>
+    <x:String x:Key="Status_GameExited">Игра завершена, код {0}</x:String>
+    <x:String x:Key="Status_Files">Файлы {0}/{1}</x:String>
+    <x:String x:Key="Status_FilesFailed">Файлы {0}/{1}, ошибок: {2}</x:String>
+
+    <!-- Mods -->
+    <x:String x:Key="Status_SearchingMods">Поиск на Modrinth…</x:String>
+    <x:String x:Key="Status_FoundMods">Найдено модов: {0}</x:String>
+    <x:String x:Key="Status_ResolvingMod">Получение «{0}»…</x:String>
+    <x:String x:Key="Status_InstallingFile">Установка {0}…</x:String>
+    <x:String x:Key="Status_InstalledFile">Установлено: {0}</x:String>
+    <x:String x:Key="Status_NoCompatibleFile">Нет совместимого файла для этой версии и загрузчика</x:String>
+    <x:String x:Key="Status_ImportingModpack">Чтение модпака…</x:String>
+    <x:String x:Key="Status_ModpackFiles">Файлы модпака {0}/{1}</x:String>
+    <x:String x:Key="Status_ModpackInstalled">Модпак «{0}» установлен</x:String>
+
+    <!-- Builds -->
+    <x:String x:Key="Status_BuildModsCount">В сборке {0} элемент(ов) — установятся перед запуском</x:String>
+    <x:String x:Key="Status_BuildApplied">Сборка «{0}» применена: элементов {1}</x:String>
+    <x:String x:Key="Status_BuildDuplicated">Создана сборка «{0}» на основе «{1}»</x:String>
+    <x:String x:Key="Status_BuildRenamed">Сборка переименована в «{0}»</x:String>
+    <x:String x:Key="Status_BuildCreated">Сборка «{0}» создана</x:String>
+    <x:String x:Key="Status_BuildDeleted">Сборка «{0}» удалена</x:String>
+
+    <!-- Errors -->
+    <x:String x:Key="Error_LoadVersions">Не удалось загрузить список версий: {0}</x:String>
+    <x:String x:Key="Error_LoaderVersions">Не удалось загрузить версии {0}: {1}</x:String>
+    <x:String x:Key="Error_CreateBuild">Не удалось создать сборку: {0}</x:String>
+    <x:String x:Key="Error_DeleteBuild">Не удалось удалить сборку: {0}</x:String>
+    <x:String x:Key="Error_DuplicateBuild">Не удалось скопировать сборку: {0}</x:String>
+    <x:String x:Key="Error_RenameBuild">Не удалось переименовать сборку: {0}</x:String>
+    <x:String x:Key="Error_SaveBuild">Не удалось сохранить сборку: {0}</x:String>
+    <x:String x:Key="Error_OpenFolder">Не удалось открыть папку: {0}</x:String>
+    <x:String x:Key="Error_ReadMods">Не удалось прочитать моды: {0}</x:String>
+    <x:String x:Key="Error_ToggleMod">Не удалось переключить мод: {0}</x:String>
+    <x:String x:Key="Error_RemoveMod">Не удалось удалить мод: {0}</x:String>
+    <x:String x:Key="Error_SearchMods">Ошибка поиска модов: {0}</x:String>
+    <x:String x:Key="Error_InstallMod">Не удалось установить мод: {0}</x:String>
+    <x:String x:Key="Error_CatalogInstall">Не удалось установить из каталога: {0}</x:String>
+    <x:String x:Key="Error_Modpack">Не удалось импортировать модпак: {0}</x:String>
+    <x:String x:Key="Error_Launch">Не удалось запустить игру: {0}</x:String>
+
+    <!-- Catalog -->
+    <x:String x:Key="Catalog_NotLoaded">Каталог ещё не загружен</x:String>
+    <x:String x:Key="Catalog_Loading">Загрузка каталога…</x:String>
+    <x:String x:Key="Catalog_Summary">{0}: разделов — {1}, элементов — {2}, сборок — {3}</x:String>
+    <x:String x:Key="Catalog_SummaryLocal">{0} (локальный файл)</x:String>
+    <x:String x:Key="Catalog_SummaryCache">{0} (кэш: источник недоступен)</x:String>
+    <x:String x:Key="Catalog_NotFound">Каталог не найден. Положите catalog.json рядом с settings.json ({0}) или укажите адрес в настройках</x:String>
+    <x:String x:Key="Catalog_Failed">Не удалось загрузить каталог: {0}</x:String>
+
+    <!-- Backups -->
+    <x:String x:Key="Backup_Created">Бэкап создан: {0} ({1} КБ)</x:String>
+    <x:String x:Key="Backup_Failed">Не удалось сделать бэкап: {0}</x:String>
+    <x:String x:Key="Backup_FailedFolder">Не удалось открыть папку бэкапов: {0}</x:String>
+
+    <!-- Updates -->
+    <x:String x:Key="Update_OnlyInstalled">Обновления доступны только в установленной версии</x:String>
+    <x:String x:Key="Update_Checking">Проверка обновлений…</x:String>
+    <x:String x:Key="Update_Downloading">Загрузка {0}…</x:String>
+    <x:String x:Key="Update_DownloadingPercent">Загрузка {0}… {1}%</x:String>
+    <x:String x:Key="Update_Ready">Обновление {0} готово к установке</x:String>
+    <x:String x:Key="Update_UpToDate">Обновлений нет (версия {0})</x:String>
+    <x:String x:Key="Update_NothingToApply">Нечего применять</x:String>
+    <x:String x:Key="Update_Failed">Не удалось проверить обновления: {0}</x:String>
+
     <!-- Common -->
     <x:String x:Key="Common_Close">Закрыть</x:String>
+    <x:String x:Key="Common_Back">Назад</x:String>
     <x:String x:Key="Common_Minimize">Свернуть</x:String>
     <x:String x:Key="Common_Maximize">Развернуть</x:String>
     <x:String x:Key="Common_Cancel">Отмена</x:String>

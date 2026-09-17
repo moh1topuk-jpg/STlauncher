@@ -128,7 +128,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private bool _isModsBusy;
 
     [ObservableProperty]
-    private string _updateStatus = "Updates are only available in the installed build.";
+    private string _updateStatus = string.Empty;
 
     [ObservableProperty]
     private bool _isUpdateBusy;
@@ -159,13 +159,18 @@ public partial class MainWindowViewModel : ViewModelBase
     private string _catalogUrl = string.Empty;
 
     [ObservableProperty]
-    private string _catalogStatus = "Catalog not loaded yet.";
+    private string _catalogStatus = string.Empty;
 
     [ObservableProperty]
     private bool _isCatalogBusy;
 
     [ObservableProperty]
     private ShellSection _section = ShellSection.Game;
+
+    [ObservableProperty]
+    private bool _canGoBack;
+
+    private readonly List<ShellSection> _navigationHistory = new();
 
     [ObservableProperty]
     private string _language = LocalizationService.DefaultLanguage;
@@ -184,7 +189,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public IReadOnlyList<string> Languages => _localization.AvailableLanguages;
 
     [ObservableProperty]
-    private string _status = "Ready";
+    private string _status = string.Empty;
 
     [ObservableProperty]
     private double _progress;
@@ -258,6 +263,10 @@ public partial class MainWindowViewModel : ViewModelBase
         LoadAfterLaunchOptions();
         RefreshBackups();
 
+        Status = Localize("Status_Ready", "Ready");
+        CatalogStatus = Localize("Catalog_NotLoaded", "Catalog not loaded yet");
+        UpdateStatus = Localize("Update_OnlyInstalled", "Updates are only available in the installed build");
+
         _gameLauncher.OutputReceived += line => AppendConsole(line);
         _gameLauncher.ErrorReceived += line => AppendConsole(line);
 
@@ -315,11 +324,11 @@ public partial class MainWindowViewModel : ViewModelBase
             Instances.Add(instance);
             SelectedInstance = instance;
             NewInstanceName = string.Empty;
-            Status = $"Instance '{instance.Name}' created.";
+            Status = Localize("Status_BuildCreated", "Build \"{0}\" created", instance.Name);
         }
         catch (Exception ex)
         {
-            Status = "Failed to create instance: " + ex.Message;
+            Status = Localize("Error_CreateBuild", "Failed to create the build: {0}", ex.Message);
         }
     }
 
@@ -337,11 +346,11 @@ public partial class MainWindowViewModel : ViewModelBase
             _instances.Delete(SelectedInstance.Id);
             Instances.Remove(SelectedInstance);
             SelectedInstance = Instances.FirstOrDefault();
-            Status = $"Instance '{name}' deleted.";
+            Status = Localize("Status_BuildDeleted", "Build \"{0}\" deleted", name);
         }
         catch (Exception ex)
         {
-            Status = "Failed to delete instance: " + ex.Message;
+            Status = Localize("Error_DeleteBuild", "Failed to delete the build: {0}", ex.Message);
         }
     }
 
@@ -360,11 +369,11 @@ public partial class MainWindowViewModel : ViewModelBase
 
             Instances.Add(copy);
             SelectedInstance = copy;
-            Status = $"Build '{copy.Name}' created from '{sourceName}'.";
+            Status = Localize("Status_BuildDuplicated", "Build \"{0}\" created from \"{1}\"", copy.Name, sourceName);
         }
         catch (Exception ex)
         {
-            Status = "Failed to duplicate the build: " + ex.Message;
+            Status = Localize("Error_DuplicateBuild", "Failed to duplicate the build: {0}", ex.Message);
         }
     }
 
@@ -390,11 +399,11 @@ public partial class MainWindowViewModel : ViewModelBase
                 SelectedInstance = current;
             }
 
-            Status = $"Build renamed to '{SelectedInstance.Name}'.";
+            Status = Localize("Status_BuildRenamed", "Build renamed to \"{0}\"", SelectedInstance.Name);
         }
         catch (Exception ex)
         {
-            Status = "Failed to rename the build: " + ex.Message;
+            Status = Localize("Error_RenameBuild", "Failed to rename the build: {0}", ex.Message);
         }
     }
 
@@ -404,19 +413,19 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             IsBusy = true;
-            Status = "Loading version list...";
+            Status = Localize("Status_LoadingVersions", "Loading version list…");
 
             var manifest = await _versions.GetManifestAsync();
             _allVersions = manifest.Versions;
             ApplyVersionFilter();
 
             Status = SelectedVersion is not null
-                ? $"Loaded {Versions.Count} versions."
-                : "No versions available.";
+                ? Localize("Status_VersionsLoaded", "{0} versions loaded", Versions.Count)
+                : Localize("Status_NoVersions", "No versions found");
         }
         catch (Exception ex)
         {
-            Status = "Failed to load versions: " + ex.Message;
+            Status = Localize("Error_LoadVersions", "Failed to load versions: {0}", ex.Message);
             AppendConsole(ex.ToString());
         }
         finally
@@ -440,13 +449,13 @@ public partial class MainWindowViewModel : ViewModelBase
 
         if (SelectedVersion is null)
         {
-            Status = "Select a version first.";
+            Status = Localize("Status_SelectVersion", "Select a version first");
             return;
         }
 
         if (!OfflineAuth.IsValidUsername(Username))
         {
-            Status = "Nickname must be 3-16 characters: A-Z, a-z, 0-9, underscore.";
+            Status = Localize("Status_InvalidNickname", "Nickname: 3-16 characters, letters, digits and underscore");
             return;
         }
 
@@ -464,7 +473,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
             if (SelectedLoader != LoaderKind.Vanilla)
             {
-                Status = $"Installing {SelectedLoader}...";
+                Status = Localize("Status_InstallingLoader", "Installing {0}…", SelectedLoader);
                 AppendConsole($"--- Installing {SelectedLoader} for {versionId} ---");
 
                 var gameJava = (await _versions.ResolveAsync(versionId)).JavaVersion?.MajorVersion ?? 8;
@@ -480,7 +489,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 AppendConsole($"--- Loader ready: {versionId} ---");
             }
 
-            Status = "Checking build mods...";
+            Status = Localize("Status_CheckingBuildMods", "Checking build mods…");
             await EnsureBuildItemsInstalledAsync();
 
             var settings = new LaunchSettings
@@ -502,24 +511,24 @@ public partial class MainWindowViewModel : ViewModelBase
             {
                 Progress = p.Fraction * 100;
                 Status = p.Failed > 0
-                    ? $"Files {p.Completed}/{p.Total} (failed: {p.Failed})"
-                    : $"Files {p.Completed}/{p.Total}";
+                    ? Localize("Status_FilesFailed", "Files {0}/{1}, failed: {2}", p.Completed, p.Total, p.Failed)
+                    : Localize("Status_Files", "Files {0}/{1}", p.Completed, p.Total);
             });
 
-            Status = "Preparing...";
+            Status = Localize("Status_Preparing", "Preparing…");
             var command = await _launch.PrepareAsync(versionId, account, settings, progress);
 
-            Status = "Starting Minecraft...";
+            Status = Localize("Status_StartingGame", "Starting Minecraft…");
             IsGameRunning = true;
 
             var exitCode = await LaunchAndReactAsync(command, settings);
 
-            Status = $"Game exited with code {exitCode}.";
+            Status = Localize("Status_GameExited", "Game exited with code {0}", exitCode);
             AppendConsole($"--- Game exited with code {exitCode} ---");
         }
         catch (Exception ex)
         {
-            Status = "Launch failed: " + ex.Message;
+            Status = Localize("Error_Launch", "Launch failed: {0}", ex.Message);
             AppendConsole(ex.ToString());
         }
         finally
@@ -552,7 +561,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Status = "Failed to open the game folder: " + ex.Message;
+            Status = Localize("Error_OpenFolder", "Failed to open the folder: {0}", ex.Message);
         }
     }
 
@@ -561,20 +570,20 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         if (SelectedVersion is null)
         {
-            Status = "Select a version first.";
+            Status = Localize("Status_SelectVersion", "Select a version first");
             return;
         }
 
         if (SelectedLoader == LoaderKind.Vanilla)
         {
-            Status = "Select a mod loader before searching for mods.";
+            Status = Localize("Status_SelectLoader", "Select a mod loader first");
             return;
         }
 
         try
         {
             IsModsBusy = true;
-            Status = "Searching Modrinth...";
+            Status = Localize("Status_SearchingMods", "Searching Modrinth…");
 
             var results = await _modrinth.SearchAsync(ModSearchQuery, SelectedVersion.Id, SelectedLoader);
             ModSearchResults.Clear();
@@ -584,11 +593,11 @@ public partial class MainWindowViewModel : ViewModelBase
                 ModSearchResults.Add(result);
             }
 
-            Status = $"Found {ModSearchResults.Count} mods.";
+            Status = Localize("Status_FoundMods", "Found {0} mods", ModSearchResults.Count);
         }
         catch (Exception ex)
         {
-            Status = "Mod search failed: " + ex.Message;
+            Status = Localize("Error_SearchMods", "Mod search failed: {0}", ex.Message);
         }
         finally
         {
@@ -608,26 +617,26 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             IsModsBusy = true;
             MaybeBackup(BackupTrigger.BeforeModChange);
-            Status = $"Resolving {SelectedMod.Title}...";
+            Status = Localize("Status_ResolvingMod", "Resolving {0}…", SelectedMod.Title);
 
             var versions = await _modrinth.GetVersionsAsync(SelectedMod.ProjectId, SelectedVersion.Id, SelectedLoader);
             var file = versions.FirstOrDefault()?.PrimaryFile;
 
             if (file is null || string.IsNullOrEmpty(file.Url))
             {
-                Status = "No compatible file found for this version and loader.";
+                Status = Localize("Status_NoCompatibleFile", "No compatible file for this version and loader");
                 return;
             }
 
-            Status = $"Installing {file.FileName}...";
+            Status = Localize("Status_InstallingFile", "Installing {0}…", file.FileName);
             await _mods.InstallAsync(InstanceDirectory, file.FileName, file.Url, file.Sha1, file.Size);
             AppendConsole($"Installed mod: {file.FileName}");
             RefreshMods();
-            Status = $"Installed {file.FileName}.";
+            Status = Localize("Status_InstalledFile", "Installed {0}", file.FileName);
         }
         catch (Exception ex)
         {
-            Status = "Mod install failed: " + ex.Message;
+            Status = Localize("Error_InstallMod", "Mod install failed: {0}", ex.Message);
             AppendConsole(ex.ToString());
         }
         finally
@@ -647,7 +656,7 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             IsCatalogBusy = true;
-            CatalogStatus = "Loading catalog...";
+            CatalogStatus = Localize("Catalog_Loading", "Loading catalog…");
 
             var result = await _catalog.LoadAsync();
 
@@ -671,36 +680,40 @@ public partial class MainWindowViewModel : ViewModelBase
 
             RebuildCatalogViews();
 
-            var summary = $"{result.Catalog?.Name ?? "Catalog"}: " +
-                          $"{CatalogViews.Count} section(s), {result.Catalog?.ItemCount ?? 0} item(s), " +
-                          $"{CatalogBuilds.Count} build(s).";
+            var summary = Localize(
+                "Catalog_Summary",
+                "{0}: {1} section(s), {2} item(s), {3} build(s)",
+                result.Catalog?.Name ?? "Catalog",
+                CatalogViews.Count,
+                result.Catalog?.ItemCount ?? 0,
+                CatalogBuilds.Count);
 
             if (result.Catalog is null)
             {
                 CatalogStatus = string.IsNullOrWhiteSpace(CatalogUrl)
-                    ? $"No catalog found. Put {ContentCatalogService.LocalFileName} next to settings.json " +
-                      $"({_catalog.DropInPath}) or set a URL/path in Settings."
-                    : $"Failed to load the catalog: {result.Error}";
+                    ? Localize("Catalog_NotFound", "No catalog found", _catalog.DropInPath)
+                    : Localize("Catalog_Failed", "Failed to load the catalog: {0}", result.Error);
                 return;
             }
 
             CatalogStatus = result.Origin switch
             {
                 CatalogOrigin.Remote => summary,
-                CatalogOrigin.LocalFile => $"{summary} (local file)",
-                CatalogOrigin.Cache => $"{summary} (cached copy: source unavailable)",
-                CatalogOrigin.DropIn => $"{summary} (local file)",
+                CatalogOrigin.LocalFile => Localize("Catalog_SummaryLocal", "{0} (local file)", summary),
+                CatalogOrigin.Cache => Localize("Catalog_SummaryCache", "{0} (cached: source unavailable)", summary),
+                CatalogOrigin.DropIn => Localize("Catalog_SummaryLocal", "{0} (local file)", summary),
                 _ => summary
             };
 
-            if (result.Error is not null && result.Origin is not CatalogOrigin.Remote)
+            // The technical reason is noise for players who still got a working catalog.
+            if (result.Error is not null && result.Origin is not CatalogOrigin.Remote && ShowDeveloperConsole)
             {
                 CatalogStatus += $" — {result.Error}";
             }
         }
         catch (Exception ex)
         {
-            CatalogStatus = "Failed to load the catalog: " + ex.Message;
+            CatalogStatus = Localize("Catalog_Failed", "Failed to load the catalog: {0}", ex.Message);
         }
         finally
         {
@@ -720,7 +733,7 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             IsCatalogBusy = true;
             MaybeBackup(BackupTrigger.BeforeModChange);
-            Status = $"Installing {item.Name}...";
+            Status = Localize("Status_InstallingFile", "Installing {0}…", item.Name);
             AppendConsole($"--- Installing '{item.Name}' ({item.Type}) into '{SelectedInstance?.Name}' ---");
 
             var result = await _catalogInstaller.InstallAsync(
@@ -739,7 +752,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Status = "Catalog install failed: " + ex.Message;
+            Status = Localize("Error_CatalogInstall", "Catalog install failed: {0}", ex.Message);
             AppendConsole(ex.ToString());
         }
         finally
@@ -761,7 +774,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Status = "Failed to read mods: " + ex.Message;
+            Status = Localize("Error_ReadMods", "Failed to read mods: {0}", ex.Message);
         }
     }
 
@@ -771,12 +784,12 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             IsModsBusy = true;
             MaybeBackup(BackupTrigger.BeforeModChange);
-            Status = "Reading modpack...";
+            Status = Localize("Status_ImportingModpack", "Reading the modpack…");
 
             var progress = new Progress<DownloadProgress>(p =>
             {
                 Progress = p.Fraction * 100;
-                Status = $"Modpack files {p.Completed}/{p.Total}";
+                Status = Localize("Status_ModpackFiles", "Modpack files {0}/{1}", p.Completed, p.Total);
             });
 
             var result = await _modpacks.InstallAsync(mrpackPath, InstanceDirectory, progress);
@@ -804,11 +817,11 @@ public partial class MainWindowViewModel : ViewModelBase
             }
 
             RefreshMods();
-            Status = $"Modpack '{result.Plan.Name}' installed.";
+            Status = Localize("Status_ModpackInstalled", "Modpack \"{0}\" installed", result.Plan.Name);
         }
         catch (Exception ex)
         {
-            Status = "Modpack import failed: " + ex.Message;
+            Status = Localize("Error_Modpack", "Modpack import failed: {0}", ex.Message);
             AppendConsole(ex.ToString());
         }
         finally
@@ -824,33 +837,35 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             IsUpdateBusy = true;
-            UpdateStatus = "Checking for updates...";
+            UpdateStatus = Localize("Update_Checking", "Checking for updates…");
 
             var status = await _updates.CheckAsync();
 
             if (!status.IsInstalled)
             {
-                UpdateStatus = "Updates are only available in the installed build.";
+                UpdateStatus = Localize("Update_OnlyInstalled", "Updates are only available in the installed build");
                 CanRestartToUpdate = false;
                 return;
             }
 
             if (!status.IsUpdateAvailable)
             {
-                UpdateStatus = $"You are up to date ({status.CurrentVersion}).";
+                UpdateStatus = Localize("Update_UpToDate", "You are up to date ({0})", status.CurrentVersion);
                 CanRestartToUpdate = false;
                 return;
             }
 
-            UpdateStatus = $"Downloading {status.AvailableVersion}...";
-            var progress = new Progress<int>(p => UpdateStatus = $"Downloading {status.AvailableVersion}... {p}%");
+            UpdateStatus = Localize("Update_Downloading", "Downloading {0}…", status.AvailableVersion);
+            var progress = new Progress<int>(p =>
+                UpdateStatus = Localize("Update_DownloadingPercent", "Downloading {0}… {1}%", status.AvailableVersion, p));
+
             await _updates.DownloadAsync(progress);
-            UpdateStatus = $"Update {status.AvailableVersion} is ready.";
+            UpdateStatus = Localize("Update_Ready", "Update {0} is ready", status.AvailableVersion);
             CanRestartToUpdate = true;
         }
         catch (Exception ex)
         {
-            UpdateStatus = "Update check failed: " + ex.Message;
+            UpdateStatus = Localize("Update_Failed", "Update check failed: {0}", ex.Message);
             CanRestartToUpdate = false;
         }
         finally
@@ -864,7 +879,7 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         if (!_updates.ApplyAndRestart())
         {
-            UpdateStatus = "Nothing to apply.";
+            UpdateStatus = Localize("Update_NothingToApply", "Nothing to apply");
         }
     }
 
@@ -883,7 +898,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Status = "Failed to toggle mod: " + ex.Message;
+            Status = Localize("Error_ToggleMod", "Failed to toggle the mod: {0}", ex.Message);
         }
     }
 
@@ -903,7 +918,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Status = "Failed to remove mod: " + ex.Message;
+            Status = Localize("Error_RemoveMod", "Failed to remove the mod: {0}", ex.Message);
         }
     }
 
@@ -992,7 +1007,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Status = "Failed to save instance: " + ex.Message;
+            Status = Localize("Error_SaveBuild", "Failed to save the build: {0}", ex.Message);
         }
     }
 
@@ -1024,8 +1039,44 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         if (Enum.TryParse<ShellSection>(section, ignoreCase: true, out var parsed))
         {
-            Section = parsed;
+            NavigateTo(parsed);
         }
+    }
+
+    [RelayCommand]
+    private void GoBack()
+    {
+        if (_navigationHistory.Count == 0)
+        {
+            return;
+        }
+
+        var target = _navigationHistory[^1];
+        _navigationHistory.RemoveAt(_navigationHistory.Count - 1);
+        NavigateTo(target, recordHistory: false);
+    }
+
+    /// <summary>Switches the visible section, remembering where the user came from.</summary>
+    private void NavigateTo(ShellSection section, bool recordHistory = true)
+    {
+        if (section == Section)
+        {
+            return;
+        }
+
+        if (recordHistory)
+        {
+            _navigationHistory.Add(Section);
+
+            // Keep the trail bounded; the back button is a convenience, not a browser.
+            while (_navigationHistory.Count > 20)
+            {
+                _navigationHistory.RemoveAt(0);
+            }
+        }
+
+        Section = section;
+        CanGoBack = _navigationHistory.Count > 0;
     }
 
     private async Task UpdateAvatarAsync()
@@ -1076,7 +1127,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Status = $"Failed to load {SelectedLoader} versions: {ex.Message}";
+            Status = Localize("Error_LoaderVersions", "Failed to load {0} versions: {1}", SelectedLoader, ex.Message);
         }
         finally
         {
@@ -1161,6 +1212,7 @@ public partial class MainWindowViewModel : ViewModelBase
         });
     }
 }
+
 
 
 

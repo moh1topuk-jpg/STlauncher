@@ -26,6 +26,11 @@
                 <StackPanel Orientation="Horizontal" Spacing="10" Margin="14,0" VerticalAlignment="Center">
                     <Border Width="3" Height="16" CornerRadius="2" Background="{DynamicResource AccentBrush}"/>
                     <TextBlock Text="STLAUNCHER" Classes="label" VerticalAlignment="Center"/>
+
+                    <Button Classes="chrome" Content="&#x2190;" Width="30" Height="26"
+                            IsVisible="{Binding CanGoBack}"
+                            Command="{Binding GoBackCommand}"
+                            ToolTip.Tip="{DynamicResource Common_Back}"/>
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">

@@ -123,8 +123,86 @@
     <x:String x:Key="Settings_CheckUpdates">Check for updates</x:String>
     <x:String x:Key="Settings_RestartUpdate">Restart</x:String>
 
+    <!-- Status messages -->
+    <x:String x:Key="Status_Ready">Ready</x:String>
+    <x:String x:Key="Status_LoadingVersions">Loading version list…</x:String>
+    <x:String x:Key="Status_VersionsLoaded">{0} versions loaded</x:String>
+    <x:String x:Key="Status_NoVersions">No versions found</x:String>
+    <x:String x:Key="Status_SelectVersion">Select a version first</x:String>
+    <x:String x:Key="Status_SelectLoader">Select a mod loader first</x:String>
+    <x:String x:Key="Status_InvalidNickname">Nickname: 3-16 characters, letters, digits and underscore</x:String>
+    <x:String x:Key="Status_InstallingLoader">Installing {0}…</x:String>
+    <x:String x:Key="Status_CheckingBuildMods">Checking build mods…</x:String>
+    <x:String x:Key="Status_Preparing">Preparing…</x:String>
+    <x:String x:Key="Status_StartingGame">Starting Minecraft…</x:String>
+    <x:String x:Key="Status_GameExited">Game exited with code {0}</x:String>
+    <x:String x:Key="Status_Files">Files {0}/{1}</x:String>
+    <x:String x:Key="Status_FilesFailed">Files {0}/{1}, failed: {2}</x:String>
+
+    <!-- Mods -->
+    <x:String x:Key="Status_SearchingMods">Searching Modrinth…</x:String>
+    <x:String x:Key="Status_FoundMods">Found {0} mods</x:String>
+    <x:String x:Key="Status_ResolvingMod">Resolving {0}…</x:String>
+    <x:String x:Key="Status_InstallingFile">Installing {0}…</x:String>
+    <x:String x:Key="Status_InstalledFile">Installed {0}</x:String>
+    <x:String x:Key="Status_NoCompatibleFile">No compatible file for this version and loader</x:String>
+    <x:String x:Key="Status_ImportingModpack">Reading the modpack…</x:String>
+    <x:String x:Key="Status_ModpackFiles">Modpack files {0}/{1}</x:String>
+    <x:String x:Key="Status_ModpackInstalled">Modpack "{0}" installed</x:String>
+
+    <!-- Builds -->
+    <x:String x:Key="Status_BuildModsCount">{0} item(s) in this build - they install before launch</x:String>
+    <x:String x:Key="Status_BuildApplied">Build "{0}" applied: {1} item(s)</x:String>
+    <x:String x:Key="Status_BuildDuplicated">Build "{0}" created from "{1}"</x:String>
+    <x:String x:Key="Status_BuildRenamed">Build renamed to "{0}"</x:String>
+    <x:String x:Key="Status_BuildCreated">Build "{0}" created</x:String>
+    <x:String x:Key="Status_BuildDeleted">Build "{0}" deleted</x:String>
+
+    <!-- Errors -->
+    <x:String x:Key="Error_LoadVersions">Failed to load versions: {0}</x:String>
+    <x:String x:Key="Error_LoaderVersions">Failed to load {0} versions: {1}</x:String>
+    <x:String x:Key="Error_CreateBuild">Failed to create the build: {0}</x:String>
+    <x:String x:Key="Error_DeleteBuild">Failed to delete the build: {0}</x:String>
+    <x:String x:Key="Error_DuplicateBuild">Failed to duplicate the build: {0}</x:String>
+    <x:String x:Key="Error_RenameBuild">Failed to rename the build: {0}</x:String>
+    <x:String x:Key="Error_SaveBuild">Failed to save the build: {0}</x:String>
+    <x:String x:Key="Error_OpenFolder">Failed to open the folder: {0}</x:String>
+    <x:String x:Key="Error_ReadMods">Failed to read mods: {0}</x:String>
+    <x:String x:Key="Error_ToggleMod">Failed to toggle the mod: {0}</x:String>
+    <x:String x:Key="Error_RemoveMod">Failed to remove the mod: {0}</x:String>
+    <x:String x:Key="Error_SearchMods">Mod search failed: {0}</x:String>
+    <x:String x:Key="Error_InstallMod">Mod install failed: {0}</x:String>
+    <x:String x:Key="Error_CatalogInstall">Catalog install failed: {0}</x:String>
+    <x:String x:Key="Error_Modpack">Modpack import failed: {0}</x:String>
+    <x:String x:Key="Error_Launch">Launch failed: {0}</x:String>
+
+    <!-- Catalog -->
+    <x:String x:Key="Catalog_NotLoaded">Catalog not loaded yet</x:String>
+    <x:String x:Key="Catalog_Loading">Loading catalog…</x:String>
+    <x:String x:Key="Catalog_Summary">{0}: {1} section(s), {2} item(s), {3} build(s)</x:String>
+    <x:String x:Key="Catalog_SummaryLocal">{0} (local file)</x:String>
+    <x:String x:Key="Catalog_SummaryCache">{0} (cached: source unavailable)</x:String>
+    <x:String x:Key="Catalog_NotFound">No catalog found. Put catalog.json next to settings.json ({0}) or set a URL in Settings</x:String>
+    <x:String x:Key="Catalog_Failed">Failed to load the catalog: {0}</x:String>
+
+    <!-- Backups -->
+    <x:String x:Key="Backup_Created">Backup created: {0} ({1} KB)</x:String>
+    <x:String x:Key="Backup_Failed">Backup failed: {0}</x:String>
+    <x:String x:Key="Backup_FailedFolder">Failed to open the backups folder: {0}</x:String>
+
+    <!-- Updates -->
+    <x:String x:Key="Update_OnlyInstalled">Updates are only available in the installed build</x:String>
+    <x:String x:Key="Update_Checking">Checking for updates…</x:String>
+    <x:String x:Key="Update_Downloading">Downloading {0}…</x:String>
+    <x:String x:Key="Update_DownloadingPercent">Downloading {0}… {1}%</x:String>
+    <x:String x:Key="Update_Ready">Update {0} is ready</x:String>
+    <x:String x:Key="Update_UpToDate">You are up to date ({0})</x:String>
+    <x:String x:Key="Update_NothingToApply">Nothing to apply</x:String>
+    <x:String x:Key="Update_Failed">Update check failed: {0}</x:String>
+
     <!-- Common -->
     <x:String x:Key="Common_Close">Close</x:String>
+    <x:String x:Key="Common_Back">Back</x:String>
     <x:String x:Key="Common_Minimize">Minimize</x:String>
     <x:String x:Key="Common_Maximize">Maximize</x:String>
     <x:String x:Key="Common_Cancel">Cancel</x:String>

@@ -170,7 +170,7 @@ public partial class MainWindowViewModel
 
         if (!Core.Auth.OfflineAuth.IsValidUsername(nickname))
         {
-            Status = "Nickname must be 3-16 characters: A-Z, a-z, 0-9, underscore.";
+            Status = Localize("Status_InvalidNickname", "Nickname: 3-16 characters, letters, digits and underscore");
             return;
         }
 
@@ -338,7 +338,7 @@ public partial class MainWindowViewModel
 
         SyncInstance();
         RebuildCatalogViews();
-        Status = $"Build '{build.Name}' applied. {build.Items.Count} item(s) will be installed on launch.";
+        Status = Localize("Status_BuildApplied", "Build \"{0}\" applied: {1} item(s)", build.Name, build.Items.Count);
     }
 
     [RelayCommand]
@@ -363,7 +363,7 @@ public partial class MainWindowViewModel
 
         _instances.Save(SelectedInstance);
         OnPropertyChanged(nameof(BuildModCount));
-        Status = $"Build now has {items.Count} item(s); they install before launch.";
+        Status = Localize("Status_BuildModsCount", "{0} item(s) in this build - they install before launch", items.Count);
     }
 
     private void RebuildCatalogViews()
@@ -487,12 +487,12 @@ public partial class MainWindowViewModel
             PruneBackups();
             RefreshBackups();
 
-            BackupStatus = $"Backup created: {backup.FileName} ({backup.Size / 1024} KB)";
+            BackupStatus = Localize("Backup_Created", "Backup created: {0} ({1} KB)", backup.FileName, backup.Size / 1024);
             AppendConsole($"[backup] {backup.Path}");
         }
         catch (Exception ex)
         {
-            BackupStatus = "Backup failed: " + ex.Message;
+            BackupStatus = Localize("Backup_Failed", "Backup failed: {0}", ex.Message);
             AppendConsole($"[backup] failed: {ex}");
         }
     }
@@ -511,7 +511,7 @@ public partial class MainWindowViewModel
         }
         catch (Exception ex)
         {
-            BackupStatus = "Failed to open the backups folder: " + ex.Message;
+            BackupStatus = Localize("Backup_FailedFolder", "Failed to open the backups folder: {0}", ex.Message);
         }
     }
 
@@ -566,10 +566,19 @@ public partial class MainWindowViewModel
         return latest is null || DateTimeOffset.Now - latest.CreatedAt >= TimeSpan.FromDays(1);
     }
 
-    private static string Localize(string key, string fallback)
-        => Application.Current?.Resources.TryGetResource(key, null, out var value) == true && value is string text
-            ? text
+    /// <summary>
+    /// Looks up a localized string. The fallback keeps the UI readable if a key is
+    /// missing, and the UI resource tests fail the build in that case anyway.
+    /// </summary>
+    private static string Localize(string key, string fallback, params object?[] args)
+    {
+        var text = Application.Current?.Resources.TryGetResource(key, null, out var value) == true &&
+                   value is string found
+            ? found
             : fallback;
+
+        return args.Length == 0 ? text : string.Format(text, args);
+    }
 }
 
 public sealed record JavaChoice(string Display, string? Path);
