@@ -112,6 +112,10 @@ public sealed class LaunchService
 
         Directory.CreateDirectory(settings.GameDirectory);
 
+        // Written before the first launch so the language picker and the accessibility
+        // onboarding are skipped and server resource packs are accepted.
+        GameOptions.EnsureDefaults(settings.GameDirectory, settings.LanguageCode);
+
         if (!string.IsNullOrWhiteSpace(settings.ServerListAddress))
         {
             var serversDat = Path.Combine(settings.GameDirectory, Instances.ServerList.FileName);

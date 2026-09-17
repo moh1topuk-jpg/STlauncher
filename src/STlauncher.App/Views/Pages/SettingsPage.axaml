@@ -185,15 +185,18 @@
                              Watermark="https://example.com/catalog.json  or  C:\path\catalog.json"/>
                     <TextBlock Text="{DynamicResource Settings_CatalogHint}" Classes="faint"
                                TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
 
-                    <Border Classes="hairline"/>
-
-                    <TextBlock Text="{DynamicResource Settings_Updates}" Classes="faint"/>
+            <!-- Updates: always visible, not hidden behind the developer console -->
+            <Border Classes="card">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="{DynamicResource Settings_Updates}" Classes="label"/>
                     <TextBlock Text="{Binding UpdateStatus}" Classes="faint" TextWrapping="Wrap"/>
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Button Classes="ghost small" Content="{DynamicResource Settings_CheckUpdates}"
+                        <Button Classes="primary" Content="{DynamicResource Settings_CheckUpdates}"
                                 Command="{Binding CheckForUpdatesCommand}" IsEnabled="{Binding !IsUpdateBusy}"/>
-                        <Button Classes="ghost small" Content="{DynamicResource Settings_RestartUpdate}"
+                        <Button Classes="ghost" Content="{DynamicResource Settings_RestartUpdate}"
                                 Command="{Binding RestartToUpdateCommand}"
                                 IsEnabled="{Binding CanRestartToUpdate}"/>
                     </StackPanel>

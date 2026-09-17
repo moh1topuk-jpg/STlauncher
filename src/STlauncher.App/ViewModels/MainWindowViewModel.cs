@@ -215,6 +215,9 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private string _serverPeak = string.Empty;
 
+    [ObservableProperty]
+    private string _serverMonitoringNote = string.Empty;
+
     private ServerHistoryStore _serverHistory = null!;
     private DispatcherTimer? _serverTimer;
 
@@ -289,6 +292,9 @@ public partial class MainWindowViewModel : ViewModelBase
         ServerPeak = HasServerHistory
             ? Localize("Server_Peak", "Peak: {0}", top)
             : string.Empty;
+        ServerMonitoringNote = HasServerHistory
+            ? string.Empty
+            : Localize("Server_NoData", "No data yet - samples appear as the launcher runs.");
     }
 
     private void StartServerTimer()
@@ -434,9 +440,13 @@ public partial class MainWindowViewModel : ViewModelBase
         _allInstances.Clear();
         _allInstances.AddRange(_instances.List());
 
+        // The catalog has to be read before the first instance is created: a fresh
+        // installation should start from the recommended build, not from an empty profile.
+        await LoadCatalogAsync();
+
         if (_allInstances.Count == 0)
         {
-            _allInstances.Add(CreateMigratedInstance(settings));
+            _allInstances.Add(CreateDefaultInstance(settings));
         }
 
         ApplyBuildFilter();
@@ -455,7 +465,6 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         RefreshMods();
-        await LoadCatalogAsync();
         await LoadCategoriesAsync();
         ScheduleBrowserReload();
     }
@@ -475,18 +484,42 @@ public partial class MainWindowViewModel : ViewModelBase
         return stored;
     }
 
-    private Instance CreateMigratedInstance(AppSettings settings)
+    /// <summary>
+    /// First run. When the catalog offers a recommended build the profile is created from
+    /// it, so a new device starts with the right version, loader and mods instead of an
+    /// empty instance the player would have to configure by hand.
+    /// </summary>
+    private Instance CreateDefaultInstance(AppSettings settings)
     {
-        var instance = _instances.Create("Default");
-        instance.MaxMemoryMb = settings.MaxMemoryMb;
-        instance.MinMemoryMb = settings.MinMemoryMb;
-        instance.ServerName = settings.ServerName;
-        instance.ServerAddress = settings.ServerAddress;
-        instance.Loader = settings.Loader;
-        instance.LoaderVersion = settings.LoaderVersion;
-        instance.VersionId = settings.SelectedVersionId;
+        var build = CatalogBuilds.FirstOrDefault();
+
+        if (build is null)
+        {
+            var legacy = _instances.Create("Default");
+            legacy.MaxMemoryMb = settings.MaxMemoryMb;
+            legacy.MinMemoryMb = settings.MinMemoryMb;
+            legacy.Loader = settings.Loader;
+            legacy.LoaderVersion = settings.LoaderVersion;
+            legacy.VersionId = settings.SelectedVersionId;
+            _instances.Save(legacy);
+
+            return legacy;
+        }
+
+        var instance = _instances.Create(build.Name);
+        instance.VersionId = build.GameVersion;
+        instance.Loader = build.Loader;
+        instance.LoaderVersion = build.LoaderVersion;
+        instance.EnabledCatalogItems = build.Items.ToList();
+
+        if (build.MemoryMb is > 0)
+        {
+            instance.MaxMemoryMb = build.MemoryMb.Value;
+        }
+
         _instances.Save(instance);
 
+        AppendConsole($"[setup] created '{instance.Name}' from the recommended build");
         return instance;
     }
 
@@ -677,7 +710,8 @@ public partial class MainWindowViewModel : ViewModelBase
                 ForceUpdate = ForceUpdate,
                 ServerAddress = joinServer && !string.IsNullOrWhiteSpace(ServerAddress) ? ServerAddress : null,
                 ServerListName = ServerName,
-                ServerListAddress = string.IsNullOrWhiteSpace(ServerAddress) ? null : ServerAddress
+                ServerListAddress = string.IsNullOrWhiteSpace(ServerAddress) ? null : ServerAddress,
+                LanguageCode = Language == "en" ? "en_us" : "ru_ru"
             };
 
             var progress = new Progress<DownloadProgress>(p =>

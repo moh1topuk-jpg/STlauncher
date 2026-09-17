@@ -78,6 +78,7 @@
     <x:String x:Key="Server_MonitoringHint">Данные собирает сам лаунчер: образец онлайна при каждом запуске и обновлении статуса.</x:String>
     <x:String x:Key="Server_Average">Средний онлайн: {0:F0}</x:String>
     <x:String x:Key="Server_Peak">Пик: {0}</x:String>
+    <x:String x:Key="Server_NoData">Данных пока нет — они появятся по мере запусков лаунчера.</x:String>
     <x:String x:Key="Server_Community">Сообщество</x:String>
     <x:String x:Key="Server_Open">Открыть</x:String>
     <x:String x:Key="Error_OpenLink">Не удалось открыть ссылку: {0}</x:String>

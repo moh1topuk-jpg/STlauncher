@@ -78,6 +78,7 @@
     <x:String x:Key="Server_MonitoringHint">Collected by the launcher itself: one sample per launch and status refresh.</x:String>
     <x:String x:Key="Server_Average">Average online: {0:F0}</x:String>
     <x:String x:Key="Server_Peak">Peak: {0}</x:String>
+    <x:String x:Key="Server_NoData">No data yet - samples appear as the launcher runs.</x:String>
     <x:String x:Key="Server_Community">Community</x:String>
     <x:String x:Key="Server_Open">Open</x:String>
     <x:String x:Key="Error_OpenLink">Failed to open the link: {0}</x:String>

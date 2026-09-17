@@ -30,4 +30,7 @@ public sealed class LaunchSettings
     public string? ServerListName { get; init; }
 
     public string? ServerListAddress { get; init; }
+
+    /// <summary>Minecraft language code, e.g. "ru_ru". Applied on the first launch.</summary>
+    public string LanguageCode { get; init; } = "ru_ru";
 }

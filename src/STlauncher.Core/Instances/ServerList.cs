@@ -6,12 +6,28 @@ using STlauncher.Core.Nbt;
 
 namespace STlauncher.Core.Instances;
 
-public sealed record ServerEntry(string Name, string Address);
+/// <summary>
+/// One entry of servers.dat.
+/// </summary>
+/// <param name="AcceptTextures">
+/// 1 accepts the server resource pack, 0 means the player chose "Never".
+/// </param>
+public sealed record ServerEntry(
+    string Name,
+    string Address,
+    int AcceptTextures = 1,
+    bool Hidden = false,
+    string? Icon = null);
 
 public static class ServerList
 {
     public const string FileName = "servers.dat";
 
+    /// <summary>
+    /// Adds the server if it is missing, refreshes its name and makes sure the server
+    /// resource pack is accepted. Without the last part the game keeps the "Never"
+    /// choice and never downloads the pack.
+    /// </summary>
     public static bool EnsureServer(string serversDatPath, string name, string address)
     {
         var servers = Load(serversDatPath);
@@ -20,18 +36,19 @@ public static class ServerList
 
         if (existing is not null)
         {
-            if (string.Equals(existing.Name, name, StringComparison.Ordinal))
+            if (string.Equals(existing.Name, name, StringComparison.Ordinal) &&
+                existing.AcceptTextures == 1)
             {
                 return false;
             }
 
             var index = servers.IndexOf(existing);
-            servers[index] = existing with { Name = name };
+            servers[index] = existing with { Name = name, AcceptTextures = 1 };
             Save(serversDatPath, servers);
             return true;
         }
 
-        servers.Add(new ServerEntry(name, address));
+        servers.Add(new ServerEntry(name, address, AcceptTextures: 1));
         Save(serversDatPath, servers);
         return true;
     }
@@ -60,10 +77,17 @@ public static class ServerList
                 var name = item.GetString("name") ?? string.Empty;
                 var ip = item.GetString("ip") ?? string.Empty;
 
-                if (!string.IsNullOrEmpty(ip))
+                if (string.IsNullOrEmpty(ip))
                 {
-                    result.Add(new ServerEntry(name, ip));
+                    continue;
                 }
+
+                result.Add(new ServerEntry(
+                    name,
+                    ip,
+                    item.GetByte("acceptTextures") is { } textures ? textures : 1,
+                    item.GetByte("hidden") is 1,
+                    item.GetString("icon")));
             }
         }
         catch (Exception)
@@ -90,8 +114,14 @@ public static class ServerList
             var entry = new NbtCompound();
             entry.Set("name", new NbtString(server.Name));
             entry.Set("ip", new NbtString(server.Address));
-            entry.Set("hidden", new NbtByte(0));
-            entry.Set("acceptTextures", new NbtByte(0));
+            entry.Set("acceptTextures", new NbtByte((sbyte)server.AcceptTextures));
+            entry.Set("hidden", new NbtByte(server.Hidden ? (sbyte)1 : (sbyte)0));
+
+            if (!string.IsNullOrEmpty(server.Icon))
+            {
+                entry.Set("icon", new NbtString(server.Icon!));
+            }
+
             list.Items.Add(entry);
         }
 

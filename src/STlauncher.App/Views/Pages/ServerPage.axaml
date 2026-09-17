@@ -77,6 +77,8 @@
 
                     <TextBlock Text="{DynamicResource Server_MonitoringHint}" Classes="faint"
                                TextWrapping="Wrap"/>
+                    <TextBlock Text="{Binding ServerMonitoringNote}" Classes="gold"
+                               IsVisible="{Binding !HasServerHistory}" TextWrapping="Wrap"/>
                 </StackPanel>
             </Border>
 

@@ -92,8 +92,15 @@ public sealed class ServerHistoryStore
             var start = new DateTimeOffset(
                 from.Year, from.Month, from.Day, from.Hour, 0, 0, from.Offset);
 
+            var lastBucket = new DateTimeOffset(
+                end.Year, end.Month, end.Day, end.Hour, 0, 0, end.Offset);
+
+            // Both ends are included: rounding "from" down means a fixed hour count would
+            // stop short of "now" and drop the newest sample, which is the one a fresh
+            // installation has.
+            var hours = (int)Math.Ceiling((lastBucket - start).TotalHours) + 1;
+
             var bars = new List<ServerHistoryBar>();
-            var hours = (int)Math.Ceiling(window.TotalHours);
 
             for (var i = 0; i < hours; i++)
             {
