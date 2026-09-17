@@ -184,9 +184,9 @@ public partial class MainWindowViewModel : ViewModelBase
     /// <summary>The launch progress block is shown while preparing or running.</summary>
     public bool ShowLaunchProgress => IsBusy || IsGameRunning;
 
-    /// <summary>Reminder that Play connects straight to the server.</summary>
+    /// <summary>Reminder that the server button connects straight to the server.</summary>
     public string ServerJoinHint
-        => Localize("Game_ServerJoinHint", "Launching connects you to {0}", ServerAddress);
+        => Localize("Game_ServerJoinHint", "Play on server connects you to {0}", ServerAddress);
 
     [ObservableProperty]
     private Bitmap? _serverLogo;
@@ -544,7 +544,7 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private Task PlayAsync() => StartAsync(joinServer: true);
+    private Task PlayAsync() => StartAsync(joinServer: false);
 
     [RelayCommand]
     private Task PlayOnServerAsync() => StartAsync(joinServer: true);

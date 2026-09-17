@@ -69,6 +69,14 @@ public sealed record ModVersion(
     string VersionType = "release")
 {
     public ModFile? PrimaryFile => Files.FirstOrDefault(f => f.Primary) ?? Files.FirstOrDefault();
+
+    /// <summary>
+    /// Picks the file for a specific platform. One Modrinth version can carry several
+    /// files - e.g. a Fabric jar next to a NeoForge or Paper one - so the loader and game
+    /// version in the file name decide, and "primary" is only a hint.
+    /// </summary>
+    public ModFile? SelectFile(string? gameVersion, LoaderKind loader)
+        => ModrinthClient.SelectFile(this, gameVersion, loader);
 }
 
 public sealed class ModrinthClient
@@ -242,6 +250,66 @@ public sealed class ModrinthClient
             "alpha" => 2,
             _ => 1
         };
+    }
+
+    /// <summary>
+    /// Narrows versions that share the same number across game versions - "1.10.5" can
+    /// exist for several Minecraft releases - to the one matching the request.
+    /// </summary>
+    public static IReadOnlyList<ModVersion> NarrowTo(
+        IEnumerable<ModVersion> versions,
+        string? gameVersion,
+        LoaderKind loader)
+    {
+        var list = versions.ToList();
+
+        if (list.Count <= 1)
+        {
+            return list;
+        }
+
+        var loaderName = ToModrinthLoader(loader);
+
+        var matching = list
+            .Where(v => string.IsNullOrEmpty(gameVersion) || v.GameVersions.Contains(gameVersion))
+            .Where(v => loaderName is null ||
+                        v.Loaders.Contains(loaderName, StringComparer.OrdinalIgnoreCase))
+            .ToList();
+
+        return matching.Count > 0 ? matching : list;
+    }
+
+    /// <summary>
+    /// Chooses the file for a platform. A version may carry a Fabric jar alongside a
+    /// NeoForge or Paper one, so the file name decides and "primary" is only a hint.
+    /// </summary>
+    public static ModFile? SelectFile(ModVersion version, string? gameVersion, LoaderKind loader)
+    {
+        var files = version.Files;
+
+        if (files.Count == 0)
+        {
+            return null;
+        }
+
+        if (files.Count == 1)
+        {
+            return files[0];
+        }
+
+        var loaderName = ToModrinthLoader(loader);
+
+        bool ByLoader(ModFile file) => loaderName is null ||
+                                        file.FileName.Contains(loaderName, StringComparison.OrdinalIgnoreCase);
+
+        bool ByVersion(ModFile file) => string.IsNullOrEmpty(gameVersion) ||
+                                        file.FileName.Contains(gameVersion, StringComparison.OrdinalIgnoreCase);
+
+        return files.FirstOrDefault(f => f.Primary && ByLoader(f) && ByVersion(f))
+               ?? files.FirstOrDefault(f => ByLoader(f) && ByVersion(f))
+               ?? files.FirstOrDefault(f => ByLoader(f))
+               ?? files.FirstOrDefault(f => f.Primary)
+               ?? files[0];
     }
 
     public static string BuildFacets(string? gameVersion, LoaderKind loader, string? category = null)

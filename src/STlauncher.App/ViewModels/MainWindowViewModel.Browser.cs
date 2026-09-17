@@ -320,7 +320,8 @@ public partial class MainWindowViewModel
             Status = Localize("Status_ResolvingMod", "Resolving {0}…", item.Result.Title);
 
             var versions = await _modrinth.GetVersionsAsync(item.Result.ProjectId, SelectedVersion?.Id, SelectedLoader);
-            var file = ModrinthClient.SelectPreferred(versions)?.PrimaryFile;
+            var preferred = ModrinthClient.SelectPreferred(versions);
+            var file = preferred is null ? null : ModrinthClient.SelectFile(preferred, SelectedVersion?.Id, SelectedLoader);
 
             if (file is null || string.IsNullOrEmpty(file.Url))
             {

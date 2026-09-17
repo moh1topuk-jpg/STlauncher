@@ -23,6 +23,9 @@ namespace STlauncher.Cli;
 
 internal static class Program
 {
+    /// <summary>Same address the launcher injects into every instance; see ServerDefaults.</summary>
+    private const string LauncherServerAddress = "mc.showtime.su";
+
     private static async Task<int> Main(string[] args)
     {
         Console.OutputEncoding = System.Text.Encoding.UTF8;
@@ -66,6 +69,7 @@ internal static class Program
                 "catalog-install" => await InstallCatalogItemAsync(http, paths, downloader, args),
                 "mods-search" => await SearchModsAsync(http, args),
                 "build-plan" => await ShowBuildPlanAsync(http, args),
+                "build-install" => await InstallBuildAsync(http, paths, downloader, args),
                 "server-status" => await ShowServerStatusAsync(args),
                 _ => Unknown(args[0])
             };
@@ -202,8 +206,11 @@ internal static class Program
             MaxMemoryMb = memory,
             MinMemoryMb = 512,
             ServerAddress = server,
-            ServerListName = Option(args, "--server-name") ?? "Server",
-            ServerListAddress = server
+
+            // The launcher always adds its server to the in-game list, so the CLI does the
+            // same unless explicitly told not to.
+            ServerListName = Option(args, "--server-name") ?? "Showtime",
+            ServerListAddress = args.Contains("--no-server-list") ? null : server ?? LauncherServerAddress
         };
 
         var progress = new Progress<DownloadProgress>(p =>
@@ -317,6 +324,81 @@ internal static class Program
     /// Resolves every mod of a recommended build, without downloading anything. This is the
     /// check to run after the mod list changes.
     /// </summary>
+    /// <summary>
+    /// Installs a recommended build into an instance using the same CatalogInstaller the
+    /// launcher uses, so this verifies the real code path rather than a reimplementation.
+    /// </summary>
+    private static async Task<int> InstallBuildAsync(
+        HttpClient http,
+        LauncherPaths paths,
+        DownloadClient downloader,
+        string[] args)
+    {
+        var service = new ContentCatalogService(http, paths) { CatalogUrl = Option(args, "--catalog") };
+        var loaded = await service.LoadAsync();
+
+        if (loaded.Catalog is null)
+        {
+            Console.Error.WriteLine(loaded.Error ?? "No catalog configured. Pass --catalog <url|path>.");
+            return 1;
+        }
+
+        var catalog = loaded.Catalog;
+        var buildId = Option(args, "--build");
+        var build = buildId is null
+            ? catalog.Builds.FirstOrDefault()
+            : catalog.Builds.FirstOrDefault(b => string.Equals(b.Id, buildId, StringComparison.OrdinalIgnoreCase));
+
+        if (build is null)
+        {
+            Console.Error.WriteLine("Build not found.");
+            return 1;
+        }
+
+        var instanceId = Option(args, "--instance") ?? "build-test";
+        var instanceDir = paths.InstanceDirectory(instanceId);
+        Directory.CreateDirectory(instanceDir);
+
+        Console.WriteLine($"build    : {build.Name}");
+        Console.WriteLine($"instance : {instanceId}");
+        Console.WriteLine($"mods     : {build.Items.Count}");
+        Console.WriteLine();
+
+        var installer = new CatalogInstaller(downloader, new ModrinthClient(http));
+        var failed = 0;
+
+        foreach (var id in build.Items)
+        {
+            var item = catalog.FindItem(id);
+
+            if (item is null)
+            {
+                Console.WriteLine($"  {id,-26} MISSING in catalog");
+                failed++;
+                continue;
+            }
+
+            var result = await installer.InstallAsync(item, instanceDir, build.GameVersion, build.Loader);
+
+            if (result.Success)
+            {
+                Console.WriteLine($"  {id,-26} {System.IO.Path.GetFileName(result.Path)}");
+            }
+            else
+            {
+                Console.WriteLine($"  {id,-26} FAILED: {result.Message}");
+                failed++;
+            }
+        }
+
+        Console.WriteLine();
+        Console.WriteLine(failed == 0
+            ? $"Installed into {instanceDir}"
+            : $"{failed} mod(s) failed.");
+
+        return failed == 0 ? 0 : 1;
+    }
+
     /// <summary>Pings a Minecraft server and prints what the launcher would show.</summary>
     private static async Task<int> ShowServerStatusAsync(string[] args)
     {
@@ -403,18 +485,43 @@ internal static class Program
 
             try
             {
-                var versions = await client.GetVersionsAsync(project, build.GameVersion, build.Loader);
-                var preferred = ModrinthClient.SelectPreferred(versions);
-                var file = preferred?.PrimaryFile;
+                IReadOnlyList<ModVersion> versions;
+                var pinned = item.Source.Version;
+
+                if (!string.IsNullOrWhiteSpace(pinned))
+                {
+                    // A pinned version is authoritative and must not be filtered by
+                    // version or loader, otherwise the pin silently does nothing.
+                    var all = await client.GetVersionsAsync(project, null, LoaderKind.Vanilla);
+                    var matches = all
+                        .Where(v => string.Equals(v.Id, pinned, StringComparison.OrdinalIgnoreCase) ||
+                                    string.Equals(v.VersionNumber, pinned, StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+
+                    versions = ModrinthClient.NarrowTo(matches, build.GameVersion, build.Loader);
+                }
+                else
+                {
+                    var available = await client.GetVersionsAsync(project, build.GameVersion, build.Loader);
+                    var preferred = ModrinthClient.SelectPreferred(available);
+                    versions = preferred is null ? Array.Empty<ModVersion>() : new[] { preferred };
+                }
+
+                var chosen = versions.FirstOrDefault();
+                var file = chosen is null ? null : ModrinthClient.SelectFile(chosen, build.GameVersion, build.Loader);
 
                 if (file is null)
                 {
-                    Console.WriteLine($"  {id,-26} NOT FOUND for {build.GameVersion} + {build.Loader}");
+                    Console.WriteLine(
+                        string.IsNullOrWhiteSpace(pinned)
+                            ? $"  {id,-26} NOT FOUND for {build.GameVersion} + {build.Loader}"
+                            : $"  {id,-26} PINNED VERSION NOT FOUND: {pinned}");
                     failed++;
                     continue;
                 }
 
-                Console.WriteLine($"  {id,-26} [{preferred!.VersionType,-7}] {file.FileName}");
+                var mark = string.IsNullOrWhiteSpace(pinned) ? "     " : "PIN  ";
+                Console.WriteLine($"  {id,-26} {mark}[{chosen!.VersionType,-7}] {file.FileName}");
             }
             catch (Exception ex)
             {
@@ -620,12 +727,14 @@ internal static class Program
               catalog [--catalog <url|path>]       show the content catalog
               catalog-install <itemId> [options]   install one catalog item
               build-plan [--build id]              resolve every mod of a recommended build
+              build-install [--build id] [--instance name]  install a build the way the launcher does
               server-status [--server host[:port]]  ping a Minecraft server
 
             options:
               --loader <fabric|quilt|forge|neoforge>
               --loader-version <version>
-              --server <host[:port]>
+              --server <host[:port]>               quick-play: join this server on launch
+              --no-server-list                     do not add the launcher server to the list
               --memory <mb>
               --instance <id>                      game directory (default: "default")
             """);

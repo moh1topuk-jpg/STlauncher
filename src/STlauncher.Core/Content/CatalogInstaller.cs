@@ -83,14 +83,17 @@ public sealed class CatalogInstaller
 
         if (!string.IsNullOrWhiteSpace(item.Source.Version))
         {
-            // A pinned version is authoritative: do not filter it by the instance.
+            // A pinned version is authoritative, but the same number can exist for several
+            // Minecraft releases, so narrow it to the requested game version and loader.
             var all = await _modrinth.GetVersionsAsync(project!, null, LoaderKind.Vanilla, cancellationToken)
                 .ConfigureAwait(false);
 
-            versions = all
+            var matches = all
                 .Where(v => string.Equals(v.Id, item.Source.Version, StringComparison.OrdinalIgnoreCase) ||
                             string.Equals(v.VersionNumber, item.Source.Version, StringComparison.OrdinalIgnoreCase))
                 .ToList();
+
+            versions = ModrinthClient.NarrowTo(matches, gameVersion, loader);
         }
         else
         {
@@ -102,7 +105,8 @@ public sealed class CatalogInstaller
             versions = preferred is null ? Array.Empty<ModVersion>() : new[] { preferred };
         }
 
-        var file = versions.FirstOrDefault()?.PrimaryFile;
+        var version = versions.FirstOrDefault();
+        var file = version is null ? null : ModrinthClient.SelectFile(version, gameVersion, loader);
 
         if (file is null || string.IsNullOrEmpty(file.Url))
         {

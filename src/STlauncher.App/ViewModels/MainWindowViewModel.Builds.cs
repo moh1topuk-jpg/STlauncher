@@ -287,7 +287,9 @@ public partial class MainWindowViewModel
     [RelayCommand]
     private async Task InstallVersionAsync(ModVersion? version)
     {
-        var file = version?.PrimaryFile;
+        var file = version is null
+            ? null
+            : ModrinthClient.SelectFile(version, SelectedVersion?.Id, SelectedLoader);
 
         if (file is null || string.IsNullOrEmpty(file.Url) || IsProjectBusy)
         {
