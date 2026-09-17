@@ -327,26 +327,68 @@ public partial class MainWindowViewModel
     [RelayCommand]
     private void ApplySelectedBuild() => ApplyBuild(SelectedBuild);
 
+    /// <summary>
+    /// Makes the instance match the recommended build. The build file in the repository is
+    /// the source of truth: adding a mod there installs it for everyone, removing one
+    /// uninstalls it. Mods are not bumped to newer Modrinth releases by themselves - to
+    /// update one, pin its version in the catalog.
+    /// </summary>
     private async Task EnsureBuildItemsInstalledAsync()
     {
-        if (SelectedInstance is null || SelectedInstance.EnabledCatalogItems.Count == 0)
+        if (SelectedInstance is null)
         {
             return;
         }
 
-        var pending = SelectedInstance.EnabledCatalogItems
-            .Select(id => _loadedCatalog?.FindItem(id))
-            .Where(item => item is not null)
-            .Select(item => item!)
+        MaybeBackup(BackupTrigger.BeforeModChange);
+
+        var enabledIds = SelectedInstance.EnabledCatalogItems;
+
+        // Catalog mods that are no longer part of the build are removed.
+        var removed = SelectedInstance.InstalledMods
+            .Where(m => m.Source == ModSource.Catalog &&
+                        m.Id is not null &&
+                        !enabledIds.Contains(m.Id, StringComparer.OrdinalIgnoreCase))
             .ToList();
+
+        foreach (var record in removed)
+        {
+            DeleteInstalledFile(record);
+        }
+
+        var pending = new List<CatalogItem>();
+
+        foreach (var id in enabledIds)
+        {
+            var item = _loadedCatalog?.FindItem(id);
+
+            if (item is null)
+            {
+                continue;
+            }
+
+            var record = FindCatalogRecord(id);
+            var installed = record is not null &&
+                            System.IO.File.Exists(System.IO.Path.Combine(
+                                ModManager.ModsDirectory(InstanceDirectory),
+                                record.FileName));
+
+            // Already present and not pinned: leave the file as it is.
+            if (installed && string.IsNullOrWhiteSpace(item.Source.Version))
+            {
+                continue;
+            }
+
+            pending.Add(item);
+        }
 
         if (pending.Count == 0)
         {
+            RefreshMods();
             return;
         }
 
-        AppendConsole($"--- Ensuring {pending.Count} build item(s) ---");
-        MaybeBackup(BackupTrigger.BeforeModChange);
+        AppendConsole($"--- Build: {pending.Count} mod(s) to install ---");
 
         foreach (var item in pending)
         {
@@ -358,31 +400,62 @@ public partial class MainWindowViewModel
 
             AppendConsole($"[build] {item.Name}: {result.Message}");
 
-            if (result.Success && result.Path is not null)
+            if (!result.Success || result.Path is null)
             {
-                // A newer version has a new file name, so the previous jar has to go -
-                // otherwise an updated build would keep both copies.
-                var fileName = System.IO.Path.GetFileName(result.Path);
-
-                ReplaceInstalledFile(item.Id, fileName);
-                RecordInstalledMod(new InstalledModRecord
-                {
-                    FileName = fileName,
-                    Source = ModSource.Catalog,
-                    Id = item.Id,
-                    Name = item.Name,
-                    IconUrl = item.IconUrl,
-                    Required = item.Required
-                });
+                continue;
             }
+
+            var fileName = System.IO.Path.GetFileName(result.Path);
+
+            ReplaceInstalledFile(item.Id, fileName);
+            RecordInstalledMod(new InstalledModRecord
+            {
+                FileName = fileName,
+                Source = ModSource.Catalog,
+                Id = item.Id,
+                Name = item.Name,
+                IconUrl = item.IconUrl,
+                Required = item.Required
+            });
         }
 
         RefreshMods();
     }
 
+    private InstalledModRecord? FindCatalogRecord(string id)
+        => SelectedInstance?.InstalledMods.FirstOrDefault(m =>
+            m.Source == ModSource.Catalog &&
+            string.Equals(m.Id, id, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>Deletes a recorded file and forgets it.</summary>
+    private void DeleteInstalledFile(InstalledModRecord record)
+    {
+        if (SelectedInstance is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var path = System.IO.Path.Combine(ModManager.ModsDirectory(InstanceDirectory), record.FileName);
+
+            if (System.IO.File.Exists(path))
+            {
+                System.IO.File.Delete(path);
+                AppendConsole($"[build] removed {record.FileName}");
+            }
+        }
+        catch (Exception ex)
+        {
+            AppendConsole($"[build] could not remove {record.FileName}: {ex.Message}");
+        }
+
+        SelectedInstance.InstalledMods.Remove(record);
+        _instances.Save(SelectedInstance);
+    }
+
     /// <summary>
-    /// Removes the file previously installed for a project when it was replaced by a
-    /// different one, which is what makes a recommended build self-updating.
+    /// Removes the file previously installed for a project when a different one replaced it.
     /// </summary>
     private void ReplaceInstalledFile(string? projectId, string newFileName)
     {

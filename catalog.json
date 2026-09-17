@@ -35,7 +35,22 @@
         { "id": "simple-voice-chat", "type": "mod", "name": "Simple Voice Chat", "description": "Голосовой чат прямо в игре.", "required": true, "source": { "kind": "modrinth", "project": "simple-voice-chat" } },
 
         { "id": "xaeros-minimap", "type": "mod", "name": "Xaero's Minimap", "description": "Миникарта с метками и путевыми точками.", "required": true, "source": { "kind": "modrinth", "project": "xaeros-minimap" } },
-        { "id": "xaeros-world-map", "type": "mod", "name": "Xaero's World Map", "description": "Полноценная карта мира.", "required": true, "source": { "kind": "modrinth", "project": "xaeros-world-map" } }
+        {
+          "id": "xaeros-world-map",
+          "type": "mod",
+          "name": "Xaero's World Map",
+          "description": "Полноценная карта мира.",
+          "required": true,
+          "source": { "kind": "modrinth", "project": "xaeros-world-map" }
+        },
+        {
+          "id": "female-gender",
+          "type": "mod",
+          "name": "Female Gender Mod",
+          "description": "Косметические модели и настройки внешнего вида игрока.",
+          "required": true,
+          "source": { "kind": "modrinth", "project": "female-gender" }
+        }
       ]
     }
   ],
@@ -74,7 +89,8 @@
         "dreamdisplays",
         "simple-voice-chat",
         "xaeros-minimap",
-        "xaeros-world-map"
+        "xaeros-world-map",
+        "female-gender"
       ]
     }
   ]
