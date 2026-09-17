@@ -27,6 +27,25 @@
     <x:String x:Key="Game_PlayOnServer">Играть на сервере</x:String>
     <x:String x:Key="Game_Ready">Готово</x:String>
     <x:String x:Key="Game_BuildsHint">Версия, загрузчик и моды настраиваются во вкладке «Сборки».</x:String>
+    <x:String x:Key="Game_SetupBuild">Настроить сборку</x:String>
+    <x:String x:Key="Game_OpenConsole">Открыть консоль</x:String>
+    <x:String x:Key="Builds_SearchHint">Поиск по названию или версии</x:String>
+    <x:String x:Key="Builds_Play">Играть</x:String>
+    <x:String x:Key="Builds_NeverPlayed">ещё не запускалась</x:String>
+    <x:String x:Key="Builds_LastPlayed">Запуск: {0}</x:String>
+    <x:String x:Key="Builds_WizardTitle">Новая сборка</x:String>
+    <x:String x:Key="Builds_WizardName">Название сборки</x:String>
+    <x:String x:Key="Builds_WizardVersion">Версия игры</x:String>
+    <x:String x:Key="Builds_WizardLoader">Загрузчик</x:String>
+    <x:String x:Key="Builds_WizardHint">Версия и загрузчик определяют, какие моды будут доступны в каталоге.</x:String>
+    <x:String x:Key="Builds_WizardCreate">Создать</x:String>
+    <x:String x:Key="Builds_UseRecommended">Взять рекомендуемую</x:String>
+    <x:String x:Key="Builds_OnlyInstalled">Только установленные</x:String>
+    <x:String x:Key="Builds_Details">Описание</x:String>
+    <x:String x:Key="Builds_DetailsVersions">Версии</x:String>
+    <x:String x:Key="Builds_DetailsDownloads">Загрузок: {0}</x:String>
+    <x:String x:Key="Builds_DetailsNoVersions">Нет версий под эту сборку</x:String>
+    <x:String x:Key="Common_Close2">Закрыть</x:String>
     <x:String x:Key="Game_OfflineMode">Офлайн-режим</x:String>
 
     <!-- Builds page -->
@@ -60,6 +79,7 @@
     <x:String x:Key="Server_Address">Адрес</x:String>
     <x:String x:Key="Server_Join">Играть на сервере</x:String>
     <x:String x:Key="Server_Hint">Сервер добавляется в игровой список серверов автоматически для каждой сборки. Автовход происходит только по кнопке «Играть на сервере».</x:String>
+    <x:String x:Key="Server_GlobalHint">Адрес один для всего лаунчера: он попадает в список серверов всех сборок.</x:String>
 
     <!-- Mods page -->
     <x:String x:Key="Mods_SearchHint">Поиск на Modrinth…</x:String>

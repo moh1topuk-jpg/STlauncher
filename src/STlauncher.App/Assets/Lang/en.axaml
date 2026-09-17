@@ -27,6 +27,25 @@
     <x:String x:Key="Game_PlayOnServer">Play on server</x:String>
     <x:String x:Key="Game_Ready">Ready</x:String>
     <x:String x:Key="Game_BuildsHint">Version, loader and mods are configured in the Builds section.</x:String>
+    <x:String x:Key="Game_SetupBuild">Configure build</x:String>
+    <x:String x:Key="Game_OpenConsole">Open console</x:String>
+    <x:String x:Key="Builds_SearchHint">Search by name or version</x:String>
+    <x:String x:Key="Builds_Play">Play</x:String>
+    <x:String x:Key="Builds_NeverPlayed">never launched</x:String>
+    <x:String x:Key="Builds_LastPlayed">Launched: {0}</x:String>
+    <x:String x:Key="Builds_WizardTitle">New build</x:String>
+    <x:String x:Key="Builds_WizardName">Build name</x:String>
+    <x:String x:Key="Builds_WizardVersion">Game version</x:String>
+    <x:String x:Key="Builds_WizardLoader">Loader</x:String>
+    <x:String x:Key="Builds_WizardHint">The version and loader decide which mods the catalog offers.</x:String>
+    <x:String x:Key="Builds_WizardCreate">Create</x:String>
+    <x:String x:Key="Builds_UseRecommended">Use recommended</x:String>
+    <x:String x:Key="Builds_OnlyInstalled">Installed only</x:String>
+    <x:String x:Key="Builds_Details">Description</x:String>
+    <x:String x:Key="Builds_DetailsVersions">Versions</x:String>
+    <x:String x:Key="Builds_DetailsDownloads">Downloads: {0}</x:String>
+    <x:String x:Key="Builds_DetailsNoVersions">No versions for this build</x:String>
+    <x:String x:Key="Common_Close2">Close</x:String>
     <x:String x:Key="Game_OfflineMode">Offline mode</x:String>
 
     <!-- Builds page -->
@@ -60,6 +79,7 @@
     <x:String x:Key="Server_Address">Address</x:String>
     <x:String x:Key="Server_Join">Play on server</x:String>
     <x:String x:Key="Server_Hint">The server is added to the in-game server list automatically for every build. Joining happens only via "Play on server".</x:String>
+    <x:String x:Key="Server_GlobalHint">One address for the whole launcher: it is added to the server list of every build.</x:String>
 
     <!-- Mods page -->
     <x:String x:Key="Mods_SearchHint">Search Modrinth…</x:String>

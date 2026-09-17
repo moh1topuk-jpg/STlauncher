@@ -28,6 +28,17 @@ public sealed record ModCategory(string Name, string Header)
     }
 }
 
+/// <summary>A mod project page: long description plus gallery.</summary>
+public sealed record ModProject(
+    string Id,
+    string Slug,
+    string Title,
+    string Description,
+    string? Body,
+    string? IconUrl,
+    long Downloads,
+    IReadOnlyList<string> Gallery);
+
 /// <summary>One page of search results together with the total match count.</summary>
 public sealed record ModSearchPage(IReadOnlyList<ModSearchResult> Items, int TotalHits);
 
@@ -102,6 +113,46 @@ public sealed class ModrinthClient
                     ?? new List<ModSearchResult>();
 
         return new ModSearchPage(items, response?.TotalHits ?? items.Count);
+    }
+
+    /// <summary>Full project page: long description and gallery images.</summary>
+    public async Task<ModProject?> GetProjectAsync(
+        string idOrSlug,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var json = await _http
+                .GetStringAsync($"{BaseUrl}/project/{Uri.EscapeDataString(idOrSlug)}", cancellationToken)
+                .ConfigureAwait(false);
+
+            var dto = JsonSerializer.Deserialize<ProjectDto>(json, Json.Options);
+
+            if (dto is null)
+            {
+                return null;
+            }
+
+            var gallery = (dto.Gallery ?? new List<GalleryDto>())
+                .Select(g => g.Url)
+                .Where(u => !string.IsNullOrWhiteSpace(u))
+                .Select(u => u!)
+                .ToList();
+
+            return new ModProject(
+                dto.Id ?? string.Empty,
+                dto.Slug ?? string.Empty,
+                dto.Title ?? string.Empty,
+                dto.Description ?? string.Empty,
+                dto.Body,
+                dto.IconUrl,
+                dto.Downloads,
+                gallery);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
     }
 
     /// <summary>Available categories for a project type, used by the browser filters.</summary>
@@ -298,5 +349,41 @@ public sealed class ModrinthClient
 
         [JsonPropertyName("project_type")]
         public string? ProjectType { get; set; }
+    }
+
+    private sealed class ProjectDto
+    {
+        [JsonPropertyName("id")]
+        public string? Id { get; set; }
+
+        [JsonPropertyName("slug")]
+        public string? Slug { get; set; }
+
+        [JsonPropertyName("title")]
+        public string? Title { get; set; }
+
+        [JsonPropertyName("description")]
+        public string? Description { get; set; }
+
+        [JsonPropertyName("body")]
+        public string? Body { get; set; }
+
+        [JsonPropertyName("icon_url")]
+        public string? IconUrl { get; set; }
+
+        [JsonPropertyName("downloads")]
+        public long Downloads { get; set; }
+
+        [JsonPropertyName("gallery")]
+        public List<GalleryDto>? Gallery { get; set; }
+    }
+
+    private sealed class GalleryDto
+    {
+        [JsonPropertyName("url")]
+        public string? Url { get; set; }
+
+        [JsonPropertyName("title")]
+        public string? Title { get; set; }
     }
 }

@@ -177,6 +177,13 @@ public partial class MainWindowViewModel : ViewModelBase
     public bool IsConsoleSection => Section == ShellSection.Console;
     public bool IsSettingsSection => Section == ShellSection.Settings;
 
+    /// <summary>The launch progress block is shown while preparing or running.</summary>
+    public bool ShowLaunchProgress => IsBusy || IsGameRunning;
+
+    partial void OnIsBusyChanged(bool value) => OnPropertyChanged(nameof(ShowLaunchProgress));
+
+    partial void OnIsGameRunningChanged(bool value) => OnPropertyChanged(nameof(ShowLaunchProgress));
+
     public IReadOnlyList<string> Languages => _localization.AvailableLanguages;
 
     [ObservableProperty]
@@ -261,16 +268,15 @@ public partial class MainWindowViewModel : ViewModelBase
         _gameLauncher.OutputReceived += line => AppendConsole(line);
         _gameLauncher.ErrorReceived += line => AppendConsole(line);
 
-        Instances.Clear();
-        foreach (var existing in _instances.List())
+        _allInstances.Clear();
+        _allInstances.AddRange(_instances.List());
+
+        if (_allInstances.Count == 0)
         {
-            Instances.Add(existing);
+            _allInstances.Add(CreateMigratedInstance(settings));
         }
 
-        if (Instances.Count == 0)
-        {
-            Instances.Add(CreateMigratedInstance(settings));
-        }
+        ApplyBuildFilter();
 
         await LoadVersionsAsync();
 
@@ -329,7 +335,8 @@ public partial class MainWindowViewModel : ViewModelBase
             var name = string.IsNullOrWhiteSpace(NewInstanceName) ? "New instance" : NewInstanceName.Trim();
             var instance = _instances.Create(name);
 
-            Instances.Add(instance);
+            _allInstances.Add(instance);
+            ApplyBuildFilter();
             SelectedInstance = instance;
             NewInstanceName = string.Empty;
             Status = Localize("Status_BuildCreated", "Build \"{0}\" created", instance.Name);
@@ -352,7 +359,8 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             var name = SelectedInstance.Name;
             _instances.Delete(SelectedInstance.Id);
-            Instances.Remove(SelectedInstance);
+            _allInstances.RemoveAll(i => i.Id == SelectedInstance.Id);
+            ApplyBuildFilter();
             SelectedInstance = Instances.FirstOrDefault();
             Status = Localize("Status_BuildDeleted", "Build \"{0}\" deleted", name);
         }
@@ -375,7 +383,8 @@ public partial class MainWindowViewModel : ViewModelBase
             var sourceName = SelectedInstance.Name;
             var copy = _instances.Duplicate(SelectedInstance.Id);
 
-            Instances.Add(copy);
+            _allInstances.Add(copy);
+            ApplyBuildFilter();
             SelectedInstance = copy;
             Status = Localize("Status_BuildDuplicated", "Build \"{0}\" created from \"{1}\"", copy.Name, sourceName);
         }
@@ -399,14 +408,7 @@ public partial class MainWindowViewModel : ViewModelBase
             _instances.Save(SelectedInstance);
 
             // The collection holds the same object, so refresh the list item text.
-            var index = Instances.IndexOf(SelectedInstance);
-            if (index >= 0)
-            {
-                var current = SelectedInstance;
-                Instances[index] = current;
-                SelectedInstance = current;
-            }
-
+            RefreshBuildListItem(SelectedInstance);
             Status = Localize("Status_BuildRenamed", "Build renamed to \"{0}\"", SelectedInstance.Name);
         }
         catch (Exception ex)
@@ -528,6 +530,13 @@ public partial class MainWindowViewModel : ViewModelBase
 
             Status = Localize("Status_StartingGame", "Starting Minecraft…");
             IsGameRunning = true;
+
+            if (SelectedInstance is not null)
+            {
+                SelectedInstance.LastPlayedAt = DateTimeOffset.Now;
+                _instances.Save(SelectedInstance);
+                RefreshBuildListItem(SelectedInstance);
+            }
 
             var exitCode = await LaunchAndReactAsync(command, settings);
 
@@ -953,8 +962,6 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             MaxMemoryMb = value.MaxMemoryMb;
             MinMemoryMb = value.MinMemoryMb;
-            ServerName = value.ServerName ?? "My Server";
-            ServerAddress = value.ServerAddress ?? string.Empty;
             SelectedLoader = value.Loader;
             SelectedVersion = value.VersionId is null
                 ? null
@@ -993,8 +1000,6 @@ public partial class MainWindowViewModel : ViewModelBase
         SelectedInstance.LoaderVersion = SelectedLoaderVersion?.Version;
         SelectedInstance.MaxMemoryMb = (int)MaxMemoryMb;
         SelectedInstance.MinMemoryMb = (int)MinMemoryMb;
-        SelectedInstance.ServerName = ServerName;
-        SelectedInstance.ServerAddress = string.IsNullOrWhiteSpace(ServerAddress) ? null : ServerAddress;
         SelectedInstance.ExtraGameArgs = string.IsNullOrWhiteSpace(ExtraGameArgs) ? null : ExtraGameArgs;
         SelectedInstance.Width = Width > 0 ? (int)Width : null;
         SelectedInstance.Height = Height > 0 ? (int)Height : null;

@@ -27,6 +27,7 @@
 
                     <Border Classes="hairline"/>
                     <TextBlock Text="{DynamicResource Server_Hint}" Classes="faint" TextWrapping="Wrap"/>
+                    <TextBlock Text="{DynamicResource Server_GlobalHint}" Classes="faint" TextWrapping="Wrap"/>
                 </StackPanel>
             </Border>
         </StackPanel>

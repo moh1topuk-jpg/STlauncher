@@ -1,6 +1,9 @@
 using System.Linq;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Layout;
 using Avalonia.Platform.Storage;
 using STlauncher.App.ViewModels;
 
@@ -11,6 +14,38 @@ public partial class BuildsPage : UserControl
     public BuildsPage()
     {
         InitializeComponent();
+    }
+
+    /// <summary>Opens the project card when a mod row is clicked.</summary>
+    private void OnModRowPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (sender is not Control { DataContext: ModBrowserItem item } ||
+            DataContext is not MainWindowViewModel viewModel)
+        {
+            return;
+        }
+
+        // Clicks on the row's own buttons belong to those buttons.
+        if (e.Source is Button || e.Source is TextBlock { TemplatedParent: Button })
+        {
+            return;
+        }
+
+        viewModel.OpenProjectCommand.Execute(item);
+    }
+
+    /// <summary>Loads the next page when the sentinel scrolls into view.</summary>
+    private void OnLoadMoreSentinel(object? sender, EffectiveViewportChangedEventArgs e)
+    {
+        if (e.EffectiveViewport.Height <= 0 ||
+            DataContext is not MainWindowViewModel viewModel ||
+            !viewModel.CanLoadMore ||
+            viewModel.IsBrowserBusy)
+        {
+            return;
+        }
+
+        viewModel.LoadMoreModsCommand.Execute(null);
     }
 
     private async void OnImportModpackClick(object? sender, RoutedEventArgs e)

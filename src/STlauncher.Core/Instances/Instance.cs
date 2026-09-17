@@ -57,6 +57,14 @@ public sealed class Instance
     [JsonPropertyName("installedMods")]
     public List<InstalledModRecord> InstalledMods { get; set; } = new();
 
+    /// <summary>Last time this build was launched, for sorting and display.</summary>
+    [JsonPropertyName("lastPlayedAt")]
+    public DateTimeOffset? LastPlayedAt { get; set; }
+
+    /// <summary>Catalog mods the build installs before launch. Not serialized.</summary>
+    [JsonIgnore]
+    public int ModCount => EnabledCatalogItems.Count;
+
     [JsonPropertyName("createdAt")]
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }

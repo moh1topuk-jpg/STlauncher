@@ -9,367 +9,540 @@
              x:Class="STlauncher.App.Views.Pages.BuildsPage"
              x:DataType="vm:MainWindowViewModel">
 
-    <Grid Margin="22" ColumnDefinitions="270,*" ColumnSpacing="16">
+    <Grid>
+        <Grid Margin="22" ColumnDefinitions="300,*" ColumnSpacing="16">
 
-        <!-- ============ Build list ============ -->
-        <Border Classes="card" Padding="12">
-            <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="10">
-                <StackPanel Spacing="3">
-                    <TextBlock Text="{DynamicResource Builds_Title}" Classes="label"/>
-                    <TextBlock Text="{DynamicResource Builds_Hint}" Classes="faint" TextWrapping="Wrap"/>
-                </StackPanel>
-
-                <StackPanel Grid.Row="1" Spacing="4">
-                    <TextBlock Text="{DynamicResource Content_Builds}" Classes="faint"/>
-                    <ComboBox ItemsSource="{Binding CatalogBuilds}"
-                              SelectedItem="{Binding SelectedBuild}"
-                              HorizontalAlignment="Stretch"
-                              PlaceholderText="{DynamicResource Content_BuildsHint}">
-                        <ComboBox.ItemTemplate>
-                            <DataTemplate x:DataType="content:CatalogBuild">
-                                <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis"/>
-                            </DataTemplate>
-                        </ComboBox.ItemTemplate>
-                    </ComboBox>
-                </StackPanel>
-
-                <ListBox Grid.Row="2" ItemsSource="{Binding Instances}"
-                         SelectedItem="{Binding SelectedInstance}">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate x:DataType="inst:Instance">
-                            <StackPanel Spacing="3">
-                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
-                                           TextTrimming="CharacterEllipsis"/>
-                                <TextBlock Classes="faint">
-                                    <TextBlock.Text>
-                                        <MultiBinding StringFormat="{}{0} · {1}">
-                                            <Binding Path="VersionId" TargetNullValue="—"/>
-                                            <Binding Path="Loader"/>
-                                        </MultiBinding>
-                                    </TextBlock.Text>
-                                </TextBlock>
-                            </StackPanel>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-
-                <Grid Grid.Row="3" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
-                    <TextBox Text="{Binding NewInstanceName}"
-                             Watermark="{DynamicResource Game_InstanceNameHint}"/>
-                    <Button Grid.Column="1" Classes="ghost small"
-                            Content="{DynamicResource Game_NewInstance}"
-                            Command="{Binding CreateInstanceCommand}"/>
-                    <Button Grid.Column="2" Classes="ghost small"
-                            Content="{DynamicResource Builds_Duplicate}"
-                            Command="{Binding DuplicateInstanceCommand}"/>
-                </Grid>
-            </Grid>
-        </Border>
-
-        <!-- ============ Build editor ============ -->
-        <Grid Grid.Column="1" RowDefinitions="Auto,Auto,*" RowSpacing="14">
-
-            <StackPanel Spacing="4">
-                <TextBlock Text="{Binding SelectedInstance.Name}" FontSize="18" FontWeight="SemiBold"
-                           TextTrimming="CharacterEllipsis"/>
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <TextBlock Text="{Binding SelectedInstance.VersionId, TargetNullValue=—}"
-                               Classes="faint"/>
-                    <TextBlock Text="·" Classes="faint"/>
-                    <TextBlock Text="{Binding SelectedInstance.Loader}" Classes="faint"/>
-                    <TextBlock Text="·" Classes="faint"/>
-                    <TextBlock Text="{Binding BuildModCount}" Classes="gold"/>
-                    <TextBlock Text="{DynamicResource Builds_ModsShort}" Classes="faint"/>
-                </StackPanel>
-            </StackPanel>
-
-            <Border Grid.Row="1" Classes="panel" Padding="4" HorizontalAlignment="Left">
-                <StackPanel Orientation="Horizontal" Spacing="2">
-                    <Button Classes="segment" Classes.active="{Binding IsBuildCatalog}"
-                            Content="{DynamicResource Builds_TabCatalog}"
-                            Command="{Binding SelectBuildTabCommand}" CommandParameter="Catalog"/>
-                    <Button Classes="segment" Classes.active="{Binding IsBuildSettings}"
-                            Content="{DynamicResource Builds_TabSettings}"
-                            Command="{Binding SelectBuildTabCommand}" CommandParameter="Settings"/>
-                </StackPanel>
-            </Border>
-
-            <Panel Grid.Row="2">
-
-                <!-- ======== Modrinth catalog ======== -->
-                <Grid IsVisible="{Binding IsBuildCatalog}" RowDefinitions="Auto,*,Auto" RowSpacing="12">
-
-                    <StackPanel Spacing="8">
-                        <Border Classes="panel" Padding="12" IsVisible="{Binding !IsBuildConfigured}">
-                            <StackPanel Spacing="8">
-                                <TextBlock Text="{DynamicResource Builds_NotConfigured}" Classes="faint"
-                                           TextWrapping="Wrap"/>
-                                <Button Classes="ghost small" HorizontalAlignment="Left"
-                                        Content="{DynamicResource Builds_GoSettings}"
-                                        Command="{Binding SelectBuildTabCommand}"
-                                        CommandParameter="Settings"/>
-                            </StackPanel>
-                        </Border>
-
-                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                            <TextBox Text="{Binding ModSearchQuery}"
-                                     Watermark="{DynamicResource Mods_SearchHint}"/>
-                            <Button Grid.Column="1" Classes="primary"
-                                    Content="{DynamicResource Mods_Search}"
-                                    Command="{Binding SearchModsCommand}"
-                                    IsEnabled="{Binding !IsBrowserBusy}"/>
-                        </Grid>
-
-                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                            <ComboBox ItemsSource="{Binding ModCategories}"
-                                      SelectedItem="{Binding SelectedCategory}"
-                                      HorizontalAlignment="Stretch">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:ModCategoryOption">
-                                        <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis"/>
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
-                            <ComboBox Grid.Column="1" ItemsSource="{Binding ModSortOptions}"
-                                      SelectedItem="{Binding SelectedModSort}"
-                                      HorizontalAlignment="Stretch">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:ModSortOption">
-                                        <TextBlock Text="{Binding Display}"/>
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
-                        </Grid>
+            <!-- ============ Build list ============ -->
+            <Border Classes="card" Padding="12">
+                <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" RowSpacing="10">
+                    <StackPanel Spacing="3">
+                        <TextBlock Text="{DynamicResource Builds_Title}" Classes="label"/>
+                        <TextBlock Text="{DynamicResource Builds_Hint}" Classes="faint" TextWrapping="Wrap"/>
                     </StackPanel>
 
-                    <ListBox Grid.Row="1" ItemsSource="{Binding ModBrowserItems}">
-                        <ListBox.ItemTemplate>
-                            <DataTemplate x:DataType="vm:ModBrowserItem">
-                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                                    <Border Width="40" Height="40" CornerRadius="6" Background="#2A2028"
-                                            ClipToBounds="True">
-                                        <Image Source="{Binding Icon}" Stretch="Uniform"
-                                               Width="40" Height="40"/>
-                                    </Border>
+                    <TextBox Grid.Row="1" Text="{Binding BuildFilter}"
+                             Watermark="{DynamicResource Builds_SearchHint}"/>
 
-                                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding Result.Title}" FontWeight="SemiBold"
+                    <StackPanel Grid.Row="2" Spacing="4">
+                        <TextBlock Text="{DynamicResource Content_Builds}" Classes="faint"/>
+                        <ComboBox ItemsSource="{Binding CatalogBuilds}"
+                                  SelectedItem="{Binding SelectedBuild}"
+                                  HorizontalAlignment="Stretch"
+                                  PlaceholderText="{DynamicResource Content_BuildsHint}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="content:CatalogBuild">
+                                    <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+
+                    <ListBox Grid.Row="3" ItemsSource="{Binding Instances}"
+                             SelectedItem="{Binding SelectedInstance}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="inst:Instance">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                    <StackPanel Spacing="3" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
                                                    TextTrimming="CharacterEllipsis"/>
-                                        <TextBlock Text="{Binding Result.Description}" Classes="faint"
-                                                   MaxLines="2" TextWrapping="Wrap"
-                                                   TextTrimming="CharacterEllipsis"/>
-                                        <TextBlock Text="{Binding Result.Author}" Classes="faint"/>
+                                        <TextBlock Classes="faint">
+                                            <TextBlock.Text>
+                                                <MultiBinding StringFormat="{}{0} · {1}">
+                                                    <Binding Path="VersionId" TargetNullValue="—"/>
+                                                    <Binding Path="Loader"/>
+                                                </MultiBinding>
+                                            </TextBlock.Text>
+                                        </TextBlock>
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock Classes="faint">
+                                                <TextBlock.Text>
+                                                    <MultiBinding StringFormat="{}{0} {1}">
+                                                        <Binding Path="ModCount"/>
+                                                        <Binding Source="{DynamicResource Builds_ModsShort}"/>
+                                                    </MultiBinding>
+                                                </TextBlock.Text>
+                                            </TextBlock>
+                                            <TextBlock Text="{Binding LastPlayedAt, StringFormat={}{0:dd.MM.yyyy}}"
+                                                       Classes="faint"/>
+                                        </StackPanel>
                                     </StackPanel>
 
-                                    <Panel Grid.Column="2" VerticalAlignment="Center">
-                                        <Button Classes="ghost small"
-                                                Content="{DynamicResource Content_Install}"
-                                                IsVisible="{Binding !Installed}"
-                                                Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).InstallBrowserItemCommand}"
-                                                CommandParameter="{Binding}"/>
-                                        <TextBlock Text="{DynamicResource Mods_InstalledBadge}" Classes="gold"
-                                                   IsVisible="{Binding Installed}" VerticalAlignment="Center"/>
-                                    </Panel>
+                                    <Button Grid.Column="1" Classes="ghost small" VerticalAlignment="Center"
+                                            Content="{DynamicResource Builds_Play}"
+                                            Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).PlayBuildCommand}"
+                                            CommandParameter="{Binding}"/>
                                 </Grid>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
 
-                    <Grid Grid.Row="2" ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                        <TextBlock Text="{Binding BrowserSummary}" Classes="faint"
-                                   VerticalAlignment="Center"/>
-                        <Button Grid.Column="1" Classes="ghost"
-                                Content="{DynamicResource Mods_LoadMore}"
-                                Command="{Binding LoadMoreModsCommand}"
-                                IsVisible="{Binding CanLoadMore}"
-                                IsEnabled="{Binding !IsBrowserBusy}"/>
+                    <Grid Grid.Row="4" ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                        <Button Classes="ghost small" HorizontalAlignment="Stretch"
+                                Content="{DynamicResource Game_NewInstance}"
+                                Command="{Binding OpenNewBuildCommand}"/>
+                        <Button Grid.Column="1" Classes="ghost small"
+                                Content="{DynamicResource Builds_Duplicate}"
+                                Command="{Binding DuplicateInstanceCommand}"/>
                     </Grid>
                 </Grid>
+            </Border>
 
-                <!-- ======== Build settings ======== -->
-                <ScrollViewer IsVisible="{Binding IsBuildSettings}">
-                    <StackPanel Spacing="14" MaxWidth="640" HorizontalAlignment="Left">
+            <!-- ============ Build editor ============ -->
+            <Grid Grid.Column="1" RowDefinitions="Auto,Auto,*" RowSpacing="14">
 
-                        <Border Classes="card">
-                            <StackPanel Spacing="12">
-                                <TextBlock Text="{DynamicResource Builds_Selected}" Classes="label"/>
-                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                    <TextBox Text="{Binding InstanceNameEdit}"
-                                             Watermark="{DynamicResource Game_InstanceNameHint}"/>
-                                    <Button Grid.Column="1" Classes="ghost"
-                                            Content="{DynamicResource Builds_Rename}"
-                                            Command="{Binding RenameInstanceCommand}"/>
-                                </Grid>
-                            </StackPanel>
-                        </Border>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="{Binding SelectedInstance.Name}" FontSize="18" FontWeight="SemiBold"
+                               TextTrimming="CharacterEllipsis"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="{Binding SelectedInstance.VersionId, TargetNullValue=—}"
+                                   Classes="faint"/>
+                        <TextBlock Text="·" Classes="faint"/>
+                        <TextBlock Text="{Binding SelectedInstance.Loader}" Classes="faint"/>
+                        <TextBlock Text="·" Classes="faint"/>
+                        <TextBlock Text="{Binding BuildModCount}" Classes="gold"/>
+                        <TextBlock Text="{DynamicResource Builds_ModsShort}" Classes="faint"/>
+                    </StackPanel>
+                </StackPanel>
 
-                        <Border Classes="card">
-                            <StackPanel Spacing="12">
-                                <TextBlock Text="{DynamicResource Game_Profile}" Classes="label"/>
+                <Border Grid.Row="1" Classes="panel" Padding="4" HorizontalAlignment="Left">
+                    <StackPanel Orientation="Horizontal" Spacing="2">
+                        <Button Classes="segment" Classes.active="{Binding IsBuildCatalog}"
+                                Content="{DynamicResource Builds_TabCatalog}"
+                                Command="{Binding SelectBuildTabCommand}" CommandParameter="Catalog"/>
+                        <Button Classes="segment" Classes.active="{Binding IsBuildSettings}"
+                                Content="{DynamicResource Builds_TabSettings}"
+                                Command="{Binding SelectBuildTabCommand}" CommandParameter="Settings"/>
+                    </StackPanel>
+                </Border>
 
-                                <StackPanel Spacing="6">
-                                    <TextBlock Text="{DynamicResource Game_Version}" Classes="faint"/>
-                                    <ComboBox ItemsSource="{Binding Versions}"
-                                              SelectedItem="{Binding SelectedVersion}"
-                                              HorizontalAlignment="Stretch">
-                                        <ComboBox.ItemTemplate>
-                                            <DataTemplate x:DataType="m:VersionSummary">
-                                                <TextBlock Text="{Binding Id}"/>
-                                            </DataTemplate>
-                                        </ComboBox.ItemTemplate>
-                                    </ComboBox>
+                <Panel Grid.Row="2">
+
+                    <!-- ======== Modrinth catalog ======== -->
+                    <Grid IsVisible="{Binding IsBuildCatalog}" RowDefinitions="Auto,*" RowSpacing="12">
+
+                        <StackPanel Spacing="8">
+                            <Border Classes="panel" Padding="12" IsVisible="{Binding !IsBuildConfigured}">
+                                <StackPanel Spacing="8">
+                                    <TextBlock Text="{DynamicResource Builds_NotConfigured}" Classes="faint"
+                                               TextWrapping="Wrap"/>
+                                    <Button Classes="ghost small" HorizontalAlignment="Left"
+                                            Content="{DynamicResource Builds_GoSettings}"
+                                            Command="{Binding SelectBuildTabCommand}"
+                                            CommandParameter="Settings"/>
                                 </StackPanel>
+                            </Border>
 
-                                <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                <TextBox Text="{Binding ModSearchQuery}"
+                                         Watermark="{DynamicResource Mods_SearchHint}"/>
+                                <Button Grid.Column="1" Classes="primary"
+                                        Content="{DynamicResource Mods_Search}"
+                                        Command="{Binding SearchModsCommand}"
+                                        IsEnabled="{Binding !IsBrowserBusy}"/>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="*,*,Auto" ColumnSpacing="8">
+                                <ComboBox ItemsSource="{Binding ModCategories}"
+                                          SelectedItem="{Binding SelectedCategory}"
+                                          HorizontalAlignment="Stretch">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:ModCategoryOption">
+                                            <TextBlock Text="{Binding Display}"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                                <ComboBox Grid.Column="1" ItemsSource="{Binding ModSortOptions}"
+                                          SelectedItem="{Binding SelectedModSort}"
+                                          HorizontalAlignment="Stretch">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:ModSortOption">
+                                            <TextBlock Text="{Binding Display}"/>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                                <CheckBox Grid.Column="2" VerticalAlignment="Center"
+                                          Content="{DynamicResource Builds_OnlyInstalled}"
+                                          IsChecked="{Binding BrowserOnlyInstalled}"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <Grid Grid.Row="1" RowDefinitions="*,Auto" RowSpacing="8">
+                            <ScrollViewer Name="BrowserScroll">
+                                <StackPanel>
+                                    <ItemsControl ItemsSource="{Binding ModBrowserItems}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:ModBrowserItem">
+                                                <Border Classes="panel" Padding="12" Margin="0,0,0,6"
+                                                        PointerPressed="OnModRowPressed">
+                                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                                        <Border Width="42" Height="42" CornerRadius="6"
+                                                                Background="#2A2028" ClipToBounds="True">
+                                                            <Image Source="{Binding Icon}" Stretch="Uniform"
+                                                                   Width="42" Height="42"/>
+                                                        </Border>
+
+                                                        <StackPanel Grid.Column="1" Spacing="2"
+                                                                    VerticalAlignment="Center">
+                                                            <TextBlock Text="{Binding Result.Title}"
+                                                                       FontWeight="SemiBold"
+                                                                       TextTrimming="CharacterEllipsis"/>
+                                                            <TextBlock Text="{Binding Result.Description}"
+                                                                       Classes="faint" MaxLines="2"
+                                                                       TextWrapping="Wrap"
+                                                                       TextTrimming="CharacterEllipsis"/>
+                                                        </StackPanel>
+
+                                                        <Panel Grid.Column="2" VerticalAlignment="Center">
+                                                            <Button Classes="ghost small"
+                                                                    Content="{DynamicResource Content_Install}"
+                                                                    IsVisible="{Binding !Installed}"
+                                                                    Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).InstallBrowserItemCommand}"
+                                                                    CommandParameter="{Binding}"/>
+                                                            <TextBlock Text="{DynamicResource Mods_InstalledBadge}"
+                                                                       Classes="gold" IsVisible="{Binding Installed}"
+                                                                       VerticalAlignment="Center"/>
+                                                        </Panel>
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                    <Border Name="LoadMoreSentinel" Height="1"
+                                            EffectiveViewportChanged="OnLoadMoreSentinel"/>
+                                </StackPanel>
+                            </ScrollViewer>
+
+                            <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                <TextBlock Text="{Binding BrowserSummary}" Classes="faint"
+                                           VerticalAlignment="Center"/>
+                                <Button Grid.Column="1" Classes="ghost"
+                                        Content="{DynamicResource Mods_LoadMore}"
+                                        Command="{Binding LoadMoreModsCommand}"
+                                        IsVisible="{Binding CanLoadMore}"
+                                        IsEnabled="{Binding !IsBrowserBusy}"/>
+                            </Grid>
+                        </Grid>
+                    </Grid>
+
+                    <!-- ======== Build settings ======== -->
+                    <ScrollViewer IsVisible="{Binding IsBuildSettings}">
+                        <StackPanel Spacing="14" MaxWidth="640" HorizontalAlignment="Left">
+
+                            <Border Classes="card">
+                                <StackPanel Spacing="12">
+                                    <TextBlock Text="{DynamicResource Builds_Selected}" Classes="label"/>
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                        <TextBox Text="{Binding InstanceNameEdit}"
+                                                 Watermark="{DynamicResource Game_InstanceNameHint}"/>
+                                        <Button Grid.Column="1" Classes="ghost"
+                                                Content="{DynamicResource Builds_Rename}"
+                                                Command="{Binding RenameInstanceCommand}"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Classes="card">
+                                <StackPanel Spacing="12">
+                                    <TextBlock Text="{DynamicResource Game_Profile}" Classes="label"/>
+
                                     <StackPanel Spacing="6">
-                                        <TextBlock Text="{DynamicResource Game_Loader}" Classes="faint"/>
-                                        <ComboBox ItemsSource="{Binding LoaderKinds}"
-                                                  SelectedItem="{Binding SelectedLoader}"
-                                                  HorizontalAlignment="Stretch"/>
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="1" Spacing="6">
-                                        <TextBlock Text="{DynamicResource Game_LoaderVersion}" Classes="faint"/>
-                                        <ComboBox ItemsSource="{Binding LoaderVersions}"
-                                                  SelectedItem="{Binding SelectedLoaderVersion}"
-                                                  IsEnabled="{Binding !IsLoaderBusy}"
+                                        <TextBlock Text="{DynamicResource Game_Version}" Classes="faint"/>
+                                        <ComboBox ItemsSource="{Binding Versions}"
+                                                  SelectedItem="{Binding SelectedVersion}"
                                                   HorizontalAlignment="Stretch">
                                             <ComboBox.ItemTemplate>
-                                                <DataTemplate x:DataType="loaders:LoaderVersion">
-                                                    <TextBlock Text="{Binding Version}"/>
+                                                <DataTemplate x:DataType="m:VersionSummary">
+                                                    <TextBlock Text="{Binding Id}"/>
                                                 </DataTemplate>
                                             </ComboBox.ItemTemplate>
                                         </ComboBox>
                                     </StackPanel>
-                                </Grid>
 
-                                <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                                        <StackPanel Spacing="6">
+                                            <TextBlock Text="{DynamicResource Game_Loader}" Classes="faint"/>
+                                            <ComboBox ItemsSource="{Binding LoaderKinds}"
+                                                      SelectedItem="{Binding SelectedLoader}"
+                                                      HorizontalAlignment="Stretch"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" Spacing="6">
+                                            <TextBlock Text="{DynamicResource Game_LoaderVersion}"
+                                                       Classes="faint"/>
+                                            <ComboBox ItemsSource="{Binding LoaderVersions}"
+                                                      SelectedItem="{Binding SelectedLoaderVersion}"
+                                                      IsEnabled="{Binding !IsLoaderBusy}"
+                                                      HorizontalAlignment="Stretch">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate x:DataType="loaders:LoaderVersion">
+                                                        <TextBlock Text="{Binding Version}"/>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                                        <StackPanel Spacing="6">
+                                            <TextBlock Text="{DynamicResource Settings_Resolution}"
+                                                       Classes="faint"/>
+                                            <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="6">
+                                                <NumericUpDown Value="{Binding Width}" Minimum="0"
+                                                               Maximum="7680" Increment="10"
+                                                               FormatString="0" ShowButtonSpinner="False"/>
+                                                <TextBlock Grid.Column="1" Text="&#x00D7;"
+                                                           VerticalAlignment="Center" Classes="faint"/>
+                                                <NumericUpDown Grid.Column="2" Value="{Binding Height}"
+                                                               Minimum="0" Maximum="4320" Increment="10"
+                                                               FormatString="0" ShowButtonSpinner="False"/>
+                                            </Grid>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" Spacing="6">
+                                            <TextBlock Text="{DynamicResource Settings_Memory}" Classes="faint"/>
+                                            <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="6">
+                                                <NumericUpDown Value="{Binding MinMemoryMb}" Minimum="256"
+                                                               Maximum="32768" Increment="256"
+                                                               FormatString="0" ShowButtonSpinner="False"/>
+                                                <TextBlock Grid.Column="1" Text="&#x2013;"
+                                                           VerticalAlignment="Center" Classes="faint"/>
+                                                <NumericUpDown Grid.Column="2" Value="{Binding MaxMemoryMb}"
+                                                               Minimum="512" Maximum="65536" Increment="512"
+                                                               FormatString="0" ShowButtonSpinner="False"/>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Grid>
+
                                     <StackPanel Spacing="6">
-                                        <TextBlock Text="{DynamicResource Settings_Resolution}" Classes="faint"/>
-                                        <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="6">
-                                            <NumericUpDown Value="{Binding Width}" Minimum="0" Maximum="7680"
-                                                           Increment="10" FormatString="0"
-                                                           ShowButtonSpinner="False"/>
-                                            <TextBlock Grid.Column="1" Text="&#x00D7;"
-                                                       VerticalAlignment="Center" Classes="faint"/>
-                                            <NumericUpDown Grid.Column="2" Value="{Binding Height}" Minimum="0"
-                                                           Maximum="4320" Increment="10" FormatString="0"
-                                                           ShowButtonSpinner="False"/>
-                                        </Grid>
+                                        <TextBlock Text="{DynamicResource Settings_ExtraArgs}" Classes="faint"/>
+                                        <TextBox Text="{Binding ExtraGameArgs}"
+                                                 Watermark="--fullscreen --width 1920"/>
                                     </StackPanel>
-                                    <StackPanel Grid.Column="1" Spacing="6">
-                                        <TextBlock Text="{DynamicResource Settings_Memory}" Classes="faint"/>
-                                        <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="6">
-                                            <NumericUpDown Value="{Binding MinMemoryMb}" Minimum="256"
-                                                           Maximum="32768" Increment="256" FormatString="0"
-                                                           ShowButtonSpinner="False"/>
-                                            <TextBlock Grid.Column="1" Text="&#x2013;"
-                                                       VerticalAlignment="Center" Classes="faint"/>
-                                            <NumericUpDown Grid.Column="2" Value="{Binding MaxMemoryMb}" Minimum="512"
-                                                           Maximum="65536" Increment="512" FormatString="0"
-                                                           ShowButtonSpinner="False"/>
-                                        </Grid>
-                                    </StackPanel>
-                                </Grid>
-
-                                <StackPanel Spacing="6">
-                                    <TextBlock Text="{DynamicResource Settings_ExtraArgs}" Classes="faint"/>
-                                    <TextBox Text="{Binding ExtraGameArgs}"
-                                             Watermark="--fullscreen --width 1920"/>
                                 </StackPanel>
-                            </StackPanel>
+                            </Border>
+
+                            <Border Classes="card">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="{DynamicResource Builds_ServerMods}" Classes="label"/>
+                                    <TextBlock Text="{DynamicResource Builds_ModsHint}" Classes="faint"
+                                               TextWrapping="Wrap"/>
+                                    <TextBlock Text="{Binding CatalogStatus}" Classes="faint"
+                                               TextWrapping="Wrap"/>
+
+                                    <ItemsControl ItemsSource="{Binding CatalogViews}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:CatalogSectionView">
+                                                <StackPanel Spacing="6" Margin="0,4,0,10">
+                                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold"
+                                                               FontSize="13"/>
+                                                    <ItemsControl ItemsSource="{Binding Items}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate x:DataType="vm:CatalogItemView">
+                                                                <Border Classes="panel" Padding="10" Margin="0,2">
+                                                                    <Grid ColumnDefinitions="Auto,*"
+                                                                          ColumnSpacing="10">
+                                                                        <CheckBox IsChecked="{Binding Enabled}"
+                                                                                  VerticalAlignment="Center"/>
+                                                                        <StackPanel Grid.Column="1" Spacing="2"
+                                                                                    VerticalAlignment="Center">
+                                                                            <TextBlock Text="{Binding Item.Name}"
+                                                                                       FontWeight="SemiBold"/>
+                                                                            <TextBlock Text="{Binding Item.Description}"
+                                                                                       Classes="faint"
+                                                                                       TextWrapping="Wrap"/>
+                                                                        </StackPanel>
+                                                                    </Grid>
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Classes="card">
+                                <StackPanel Spacing="10">
+                                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                                        <TextBlock Text="{DynamicResource Mods_Installed}" Classes="label"
+                                                   VerticalAlignment="Center"/>
+                                        <Button Grid.Column="1" Classes="ghost small"
+                                                Content="{DynamicResource Mods_Refresh}"
+                                                Command="{Binding RefreshModsCommand}"/>
+                                        <Button Grid.Column="2" Classes="ghost small"
+                                                Content="{DynamicResource Mods_Import}"
+                                                Click="OnImportModpackClick"
+                                                IsEnabled="{Binding !IsModsBusy}"/>
+                                    </Grid>
+
+                                    <ListBox ItemsSource="{Binding InstalledMods}">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate x:DataType="mods:InstalledMod">
+                                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                                                    <StackPanel VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding DisplayName}"
+                                                                   TextTrimming="CharacterEllipsis"/>
+                                                        <TextBlock Text="{Binding FileName}" Classes="faint"
+                                                                   TextTrimming="CharacterEllipsis"/>
+                                                    </StackPanel>
+                                                    <Button Grid.Column="1" Classes="ghost small"
+                                                            Content="{DynamicResource Mods_Toggle}"
+                                                            Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).ToggleModCommand}"
+                                                            CommandParameter="{Binding}"/>
+                                                    <Button Grid.Column="2" Classes="danger small"
+                                                            Content="{DynamicResource Mods_Delete}"
+                                                            Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).UninstallModCommand}"
+                                                            CommandParameter="{Binding}"/>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Classes="card">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="{DynamicResource Builds_Danger}" Classes="label"/>
+                                    <Button Classes="danger" HorizontalAlignment="Left"
+                                            Content="{DynamicResource Game_DeleteInstance}"
+                                            Command="{Binding DeleteInstanceCommand}"/>
+                                </StackPanel>
+                            </Border>
+
+                        </StackPanel>
+                    </ScrollViewer>
+
+                </Panel>
+            </Grid>
+        </Grid>
+
+        <!-- ============ New build wizard ============ -->
+        <Border Background="#B0000000" IsVisible="{Binding IsNewBuildOpen}">
+            <Border Classes="card" Width="460" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Padding="22">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="{DynamicResource Builds_WizardTitle}" FontSize="17"
+                               FontWeight="SemiBold"/>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="{DynamicResource Builds_WizardName}" Classes="faint"/>
+                        <TextBox Text="{Binding NewBuildName}"
+                                 Watermark="{DynamicResource Game_InstanceNameHint}"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="{DynamicResource Builds_WizardVersion}" Classes="faint"/>
+                        <ComboBox ItemsSource="{Binding Versions}" SelectedItem="{Binding NewBuildVersion}"
+                                  HorizontalAlignment="Stretch">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="m:VersionSummary">
+                                    <TextBlock Text="{Binding Id}"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="{DynamicResource Builds_WizardLoader}" Classes="faint"/>
+                        <ComboBox ItemsSource="{Binding LoaderKinds}" SelectedItem="{Binding NewBuildLoader}"
+                                  HorizontalAlignment="Stretch"/>
+                    </StackPanel>
+
+                    <TextBlock Text="{DynamicResource Builds_WizardHint}" Classes="faint"
+                               TextWrapping="Wrap"/>
+
+                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                        <Button Classes="ghost" Content="{DynamicResource Common_Cancel}"
+                                Command="{Binding CloseNewBuildCommand}"/>
+                        <Button Classes="primary" Content="{DynamicResource Builds_WizardCreate}"
+                                Command="{Binding CreateBuildFromWizardCommand}"
+                                IsEnabled="{Binding CanCreateBuild}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Border>
+
+        <!-- ============ Mod details ============ -->
+        <Border Background="#B0000000" IsVisible="{Binding IsProjectOpen}">
+            <Border Classes="card" Width="720" MaxHeight="620" HorizontalAlignment="Center"
+                    VerticalAlignment="Center" Padding="22">
+                <Grid RowDefinitions="Auto,*,Auto" RowSpacing="14">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                        <Border Width="64" Height="64" CornerRadius="8" Background="#2A2028"
+                                ClipToBounds="True">
+                            <Image Source="{Binding OpenedProject.IconUrl}" Stretch="Uniform"
+                                   Width="64" Height="64"/>
                         </Border>
 
-                        <Border Classes="card">
-                            <StackPanel Spacing="10">
-                                <TextBlock Text="{DynamicResource Builds_ServerMods}" Classes="label"/>
-                                <TextBlock Text="{DynamicResource Builds_ModsHint}" Classes="faint"
-                                           TextWrapping="Wrap"/>
-                                <TextBlock Text="{Binding CatalogStatus}" Classes="faint" TextWrapping="Wrap"/>
+                        <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding OpenedProject.Title}" FontSize="17"
+                                       FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding OpenedProject.Slug}" Classes="faint"/>
+                            <TextBlock Classes="faint"
+                                       Text="{Binding OpenedProject.Downloads, StringFormat={}{0:N0} }"/>
+                        </StackPanel>
 
-                                <ItemsControl ItemsSource="{Binding CatalogViews}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:CatalogSectionView">
-                                            <StackPanel Spacing="6" Margin="0,4,0,10">
-                                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold"
-                                                           FontSize="13"/>
-                                                <ItemsControl ItemsSource="{Binding Items}">
-                                                    <ItemsControl.ItemTemplate>
-                                                        <DataTemplate x:DataType="vm:CatalogItemView">
-                                                            <Border Classes="panel" Padding="10" Margin="0,2">
-                                                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
-                                                                    <CheckBox IsChecked="{Binding Enabled}"
-                                                                              VerticalAlignment="Center"/>
-                                                                    <StackPanel Grid.Column="1" Spacing="2"
-                                                                                VerticalAlignment="Center">
-                                                                        <TextBlock Text="{Binding Item.Name}"
-                                                                                   FontWeight="SemiBold"/>
-                                                                        <TextBlock Text="{Binding Item.Description}"
-                                                                                   Classes="faint"
-                                                                                   TextWrapping="Wrap"/>
-                                                                    </StackPanel>
-                                                                </Grid>
-                                                            </Border>
-                                                        </DataTemplate>
-                                                    </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
+                        <Button Grid.Column="2" Classes="ghost small" VerticalAlignment="Top"
+                                Content="{DynamicResource Common_Close2}"
+                                Command="{Binding CloseProjectCommand}"/>
+                    </Grid>
+
+                    <ScrollViewer Grid.Row="1">
+                        <StackPanel Spacing="14">
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="{DynamicResource Builds_Details}" Classes="label"/>
+                                <TextBlock Text="{Binding OpenedProjectDescription}" TextWrapping="Wrap"
+                                           Classes="faint"/>
                             </StackPanel>
-                        </Border>
 
-                        <Border Classes="card">
-                            <StackPanel Spacing="10">
-                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-                                    <TextBlock Text="{DynamicResource Mods_Installed}" Classes="label"
-                                               VerticalAlignment="Center"/>
-                                    <Button Grid.Column="1" Classes="ghost small"
-                                            Content="{DynamicResource Mods_Refresh}"
-                                            Command="{Binding RefreshModsCommand}"/>
-                                    <Button Grid.Column="2" Classes="ghost small"
-                                            Content="{DynamicResource Mods_Import}"
-                                            Click="OnImportModpackClick" IsEnabled="{Binding !IsModsBusy}"/>
-                                </Grid>
+                            <ItemsControl ItemsSource="{Binding OpenedProjectGallery}"
+                                          IsVisible="{Binding OpenedProjectGallery.Count}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Width="150" Height="90" CornerRadius="6" Margin="0,0,8,8"
+                                                Background="#2A2028" ClipToBounds="True">
+                                            <Image Source="{Binding}" Stretch="UniformToFill"/>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
 
-                                <ListBox ItemsSource="{Binding InstalledMods}">
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="{DynamicResource Builds_DetailsVersions}" Classes="label"/>
+
+                                <ListBox ItemsSource="{Binding OpenedProjectVersions}" MaxHeight="260">
                                     <ListBox.ItemTemplate>
-                                        <DataTemplate x:DataType="mods:InstalledMod">
-                                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                                        <DataTemplate x:DataType="mods:ModVersion">
+                                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
                                                 <StackPanel VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding DisplayName}"
-                                                               TextTrimming="CharacterEllipsis"/>
-                                                    <TextBlock Text="{Binding FileName}" Classes="faint"
+                                                    <TextBlock Text="{Binding VersionNumber}"
+                                                               FontWeight="SemiBold"/>
+                                                    <TextBlock Text="{Binding Name}" Classes="faint"
                                                                TextTrimming="CharacterEllipsis"/>
                                                 </StackPanel>
-                                                <Button Grid.Column="1" Classes="ghost small"
-                                                        Content="{DynamicResource Mods_Toggle}"
-                                                        Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).ToggleModCommand}"
-                                                        CommandParameter="{Binding}"/>
-                                                <Button Grid.Column="2" Classes="danger small"
-                                                        Content="{DynamicResource Mods_Delete}"
-                                                        Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).UninstallModCommand}"
+                                                <TextBlock Grid.Column="1" Classes="faint"
+                                                           VerticalAlignment="Center"
+                                                           Text="{Binding GameVersions[0]}"/>
+                                                <Button Grid.Column="2" Classes="ghost small"
+                                                        Content="{DynamicResource Content_Install}"
+                                                        Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).InstallVersionCommand}"
                                                         CommandParameter="{Binding}"/>
                                             </Grid>
                                         </DataTemplate>
                                     </ListBox.ItemTemplate>
                                 </ListBox>
                             </StackPanel>
-                        </Border>
-
-                        <Border Classes="card">
-                            <StackPanel Spacing="10">
-                                <TextBlock Text="{DynamicResource Builds_Danger}" Classes="label"/>
-                                <Button Classes="danger" HorizontalAlignment="Left"
-                                        Content="{DynamicResource Game_DeleteInstance}"
-                                        Command="{Binding DeleteInstanceCommand}"/>
-                            </StackPanel>
-                        </Border>
-
-                    </StackPanel>
-                </ScrollViewer>
-
-            </Panel>
-        </Grid>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+        </Border>
     </Grid>
 </UserControl>

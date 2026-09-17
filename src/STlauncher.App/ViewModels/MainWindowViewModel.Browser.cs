@@ -182,7 +182,8 @@ public partial class MainWindowViewModel
 
         if (!IsBuildConfigured)
         {
-            ModBrowserItems.Clear();
+            _allBrowserItems.Clear();
+            ApplyBrowserFilter();
             BrowserSummary = string.Empty;
             CanLoadMore = false;
             return;
@@ -198,12 +199,6 @@ public partial class MainWindowViewModel
                 Status = Localize("Status_SearchingMods", "Searching Modrinth…");
             }
 
-#if DEBUG
-            System.Console.Error.WriteLine(
-                $"[browser] version={SelectedVersion?.Id ?? "-"} loader={SelectedLoader} " +
-                $"category={SelectedCategory?.Name ?? "-"} sort={SelectedModSort?.Value ?? "-"} offset={_browserOffset}");
-#endif
-
             var category = string.IsNullOrWhiteSpace(SelectedCategory?.Name) ? null : SelectedCategory!.Name;
 
             var page = await _modrinth.SearchAsync(
@@ -217,7 +212,7 @@ public partial class MainWindowViewModel
 
             if (reset)
             {
-                ModBrowserItems.Clear();
+                _allBrowserItems.Clear();
             }
 
             var added = new List<ModBrowserItem>();
@@ -225,20 +220,18 @@ public partial class MainWindowViewModel
             foreach (var result in page.Items)
             {
                 var item = new ModBrowserItem(result, IsProjectInstalled(result.Slug));
-                ModBrowserItems.Add(item);
+                _allBrowserItems.Add(item);
                 added.Add(item);
             }
+
+            ApplyBrowserFilter();
 
             _browserOffset += page.Items.Count;
             _browserTotal = page.TotalHits;
             CanLoadMore = page.Items.Count > 0 && _browserOffset < _browserTotal;
 
-            BrowserSummary = Localize("Mods_ShownOfTotal", "Shown {0} of {1}", ModBrowserItems.Count, _browserTotal);
+            BrowserSummary = Localize("Mods_ShownOfTotal", "Shown {0} of {1}", _allBrowserItems.Count, _browserTotal);
             Status = BrowserSummary;
-
-#if DEBUG
-            System.Console.Error.WriteLine($"[browser] got {page.Items.Count} of {page.TotalHits}");
-#endif
 
             _ = LoadIconsAsync(added);
         }
@@ -364,10 +357,12 @@ public partial class MainWindowViewModel
     /// <summary>Re-evaluates the "installed" badge after the build or its files change.</summary>
     private void RefreshBrowserInstallState()
     {
-        foreach (var item in ModBrowserItems)
+        foreach (var item in _allBrowserItems)
         {
             item.Installed = IsProjectInstalled(item.Result.Slug);
         }
+
+        ApplyBrowserFilter();
     }
 
     /// <summary>Drops records whose file is no longer on disk.</summary>

@@ -323,12 +323,6 @@ public partial class MainWindowViewModel
                 MaxMemoryMb = build.MemoryMb.Value;
             }
 
-            if (!string.IsNullOrWhiteSpace(build.ServerAddress))
-            {
-                ServerAddress = build.ServerAddress!;
-                ServerName = build.ServerName ?? ServerName;
-            }
-
             SelectedInstance.EnabledCatalogItems = build.Items.ToList();
         }
         finally
