@@ -63,6 +63,7 @@ public static class LauncherHost
         services.AddSingleton<LaunchService>();
         services.AddSingleton<SkinService>();
         services.AddSingleton<RemoteImageService>();
+        services.AddSingleton<TranslationService>();
         services.AddSingleton<LocalizationService>();
         services.AddSingleton<InstanceManager>();
         services.AddSingleton<InstanceBackupService>();

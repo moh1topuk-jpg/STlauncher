@@ -67,10 +67,8 @@
                                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                                 Height="56" FontSize="18"/>
 
-                        <Button Classes="ghost" Content="{DynamicResource Game_PlayOnServer}"
-                                Command="{Binding PlayOnServerCommand}" IsEnabled="{Binding !IsBusy}"
-                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                                Height="42"/>
+                        <TextBlock Classes="faint" TextWrapping="Wrap"
+                                   Text="{Binding ServerJoinHint}"/>
 
                         <!-- Launch progress -->
                         <Border Classes="panel" Padding="14" IsVisible="{Binding ShowLaunchProgress}">

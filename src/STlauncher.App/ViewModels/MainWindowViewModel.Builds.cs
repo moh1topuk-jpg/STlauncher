@@ -68,18 +68,6 @@ public partial class MainWindowViewModel
         }
     }
 
-    [RelayCommand]
-    private async Task PlayBuildAsync(Instance? instance)
-    {
-        if (instance is null)
-        {
-            return;
-        }
-
-        SelectedInstance = instance;
-        await StartAsync(joinServer: false);
-    }
-
     // ===================== New build wizard =====================
 
     [ObservableProperty]
@@ -161,10 +149,18 @@ public partial class MainWindowViewModel
     private ModProject? _openedProject;
 
     [ObservableProperty]
+    private Bitmap? _openedProjectIcon;
+
+    [ObservableProperty]
     private bool _isProjectBusy;
 
     [ObservableProperty]
     private string _openedProjectDescription = string.Empty;
+
+    [ObservableProperty]
+    private bool _isProjectTranslated;
+
+    private string _projectOriginalDescription = string.Empty;
 
     public ObservableCollection<ModVersion> OpenedProjectVersions { get; } = new();
 
@@ -183,17 +179,29 @@ public partial class MainWindowViewModel
             IsProjectBusy = true;
             IsProjectOpen = true;
             OpenedProject = null;
+            OpenedProjectIcon = null;
             OpenedProjectVersions.Clear();
             OpenedProjectGallery.Clear();
             OpenedProjectDescription = item.Result.Description;
 
+            // The list already has the logo cached, so show it immediately.
+            OpenedProjectIcon = await _images.GetAsync(item.Result.IconUrl).ConfigureAwait(true);
+
             var project = await _modrinth.GetProjectAsync(item.Result.ProjectId).ConfigureAwait(true);
             OpenedProject = project;
+
+            if (project?.IconUrl is { Length: > 0 } iconUrl && OpenedProjectIcon is null)
+            {
+                OpenedProjectIcon = await _images.GetAsync(iconUrl).ConfigureAwait(true);
+            }
 
             if (project?.Body is { Length: > 0 } body)
             {
                 OpenedProjectDescription = StripMarkdown(body);
             }
+
+            _projectOriginalDescription = OpenedProjectDescription;
+            IsProjectTranslated = false;
 
             var versions = await _modrinth
                 .GetVersionsAsync(item.Result.ProjectId, SelectedVersion?.Id, SelectedLoader)
@@ -232,8 +240,48 @@ public partial class MainWindowViewModel
     {
         IsProjectOpen = false;
         OpenedProject = null;
+        OpenedProjectIcon = null;
         OpenedProjectVersions.Clear();
         OpenedProjectGallery.Clear();
+    }
+
+    /// <summary>Translates the project description in place; a second click restores it.</summary>
+    [RelayCommand]
+    private async Task TranslateProjectAsync()
+    {
+        if (IsProjectTranslated)
+        {
+            OpenedProjectDescription = _projectOriginalDescription;
+            IsProjectTranslated = false;
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_projectOriginalDescription) || IsProjectBusy)
+        {
+            return;
+        }
+
+        try
+        {
+            IsProjectBusy = true;
+            var translated = await _translations.TranslateAsync(
+                _projectOriginalDescription,
+                _localization.Current);
+
+            if (!string.IsNullOrWhiteSpace(translated))
+            {
+                OpenedProjectDescription = translated;
+                IsProjectTranslated = true;
+            }
+            else
+            {
+                Status = Localize("Builds_TranslateFailed", "Translation is unavailable right now");
+            }
+        }
+        finally
+        {
+            IsProjectBusy = false;
+        }
     }
 
     [RelayCommand]

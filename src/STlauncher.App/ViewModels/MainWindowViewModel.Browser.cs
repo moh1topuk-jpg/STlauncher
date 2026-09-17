@@ -32,6 +32,7 @@ public partial class ModBrowserItem : ObservableObject
     {
         Result = result;
         _installed = installed;
+        _displayDescription = result.Description;
     }
 
     public ModSearchResult Result { get; }
@@ -41,6 +42,10 @@ public partial class ModBrowserItem : ObservableObject
 
     [ObservableProperty]
     private bool _installed;
+
+    /// <summary>Description in the interface language; falls back to the original.</summary>
+    [ObservableProperty]
+    private string _displayDescription;
 }
 
 public partial class MainWindowViewModel
@@ -251,11 +256,11 @@ public partial class MainWindowViewModel
                 to,
                 result.TotalHits);
 
-            Status = BrowserSummary;
-
-            // Only the current page's logos are fetched; this is what kept the old
-            // infinite-scroll list from bogging down.
-            _ = LoadIconsAsync(ModBrowserItems.ToList());
+            // The summary belongs to the catalog footer only; writing it to Status made
+            // it show up in the always-visible status bar on every section.
+            var pageItems = ModBrowserItems.ToList();
+            _ = LoadIconsAsync(pageItems);
+            _ = TranslateBrowserItemsAsync(pageItems);
         }
         catch (Exception ex)
         {
@@ -414,6 +419,33 @@ public partial class MainWindowViewModel
             if (icon is not null)
             {
                 await Dispatcher.UIThread.InvokeAsync(() => item.Icon = icon);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Translates the short descriptions of one page into the interface language.
+    /// Titles stay original on purpose.
+    /// </summary>
+    private async Task TranslateBrowserItemsAsync(IReadOnlyList<ModBrowserItem> items)
+    {
+        var target = _localization.Current;
+
+        // Modrinth descriptions are English; translating to English is a no-op.
+        if (string.Equals(target, "en", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        foreach (var item in items)
+        {
+            var translated = await _translations
+                .TranslateAsync(item.Result.Description, target)
+                .ConfigureAwait(false);
+
+            if (!string.IsNullOrWhiteSpace(translated))
+            {
+                await Dispatcher.UIThread.InvokeAsync(() => item.DisplayDescription = translated);
             }
         }
     }

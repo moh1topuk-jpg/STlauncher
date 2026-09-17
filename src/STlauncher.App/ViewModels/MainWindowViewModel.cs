@@ -33,6 +33,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly SettingsService _settings;
     private readonly SkinService _skins;
     private readonly RemoteImageService _images;
+    private readonly TranslationService _translations;
     private readonly ModrinthClient _modrinth;
     private readonly ModManager _mods;
     private readonly ModpackInstaller _modpacks;
@@ -59,6 +60,7 @@ public partial class MainWindowViewModel : ViewModelBase
         SettingsService settings,
         SkinService skins,
         RemoteImageService images,
+        TranslationService translations,
         ModrinthClient modrinth,
         ModManager mods,
         ModpackInstaller modpacks,
@@ -78,6 +80,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _settings = settings;
         _skins = skins;
         _images = images;
+        _translations = translations;
         _modrinth = modrinth;
         _mods = mods;
         _modpacks = modpacks;
@@ -180,6 +183,31 @@ public partial class MainWindowViewModel : ViewModelBase
     /// <summary>The launch progress block is shown while preparing or running.</summary>
     public bool ShowLaunchProgress => IsBusy || IsGameRunning;
 
+    /// <summary>Reminder that Play connects straight to the server.</summary>
+    public string ServerJoinHint
+        => Localize("Game_ServerJoinHint", "Launching connects you to {0}", ServerAddress);
+
+    [ObservableProperty]
+    private Bitmap? _serverLogo;
+
+    /// <summary>
+    /// Loads Assets/server-logo.png when it exists. A missing file simply leaves the
+    /// placeholder in place, so the build never depends on an artwork asset.
+    /// </summary>
+    private void LoadServerLogo()
+    {
+        try
+        {
+            var uri = new Uri("avares://STlauncher.App/Assets/server-logo.png");
+            using var stream = Avalonia.Platform.AssetLoader.Open(uri);
+            ServerLogo = new Bitmap(stream);
+        }
+        catch (Exception)
+        {
+            ServerLogo = null;
+        }
+    }
+
     partial void OnIsBusyChanged(bool value) => OnPropertyChanged(nameof(ShowLaunchProgress));
 
     partial void OnIsGameRunningChanged(bool value) => OnPropertyChanged(nameof(ShowLaunchProgress));
@@ -226,6 +254,10 @@ public partial class MainWindowViewModel : ViewModelBase
 
         var settings = _settings.Load();
         Username = settings.Username;
+
+        // The launcher exists for one server: its address is fixed, not per build or user.
+        ServerName = ServerDefaults.Name;
+        ServerAddress = ServerDefaults.Address;
         ShowSnapshots = settings.ShowSnapshots;
         CatalogUrl = ResolveCatalogUrl(settings.CatalogUrl);
         _catalog.CatalogUrl = CatalogUrl;
@@ -259,6 +291,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         LoadJavaChoices();
         LoadAfterLaunchOptions();
+        LoadServerLogo();
         RefreshBackups();
 
         Status = Localize("Status_Ready", "Ready");
@@ -445,7 +478,7 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private Task PlayAsync() => StartAsync(joinServer: false);
+    private Task PlayAsync() => StartAsync(joinServer: true);
 
     [RelayCommand]
     private Task PlayOnServerAsync() => StartAsync(joinServer: true);
@@ -1043,6 +1076,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _localization.Apply(value);
         LoadAfterLaunchOptions();
         ReloadLocalizedBrowserOptions();
+        OnPropertyChanged(nameof(ServerJoinHint));
         PersistSettings();
     }
 

@@ -29,6 +29,10 @@
     <x:String x:Key="Game_BuildsHint">Версия, загрузчик и моды настраиваются во вкладке «Сборки».</x:String>
     <x:String x:Key="Game_SetupBuild">Настроить сборку</x:String>
     <x:String x:Key="Game_OpenConsole">Открыть консоль</x:String>
+    <x:String x:Key="Game_ServerJoinHint">Запуск сразу подключит к {0}</x:String>
+    <x:String x:Key="Builds_Translate">Перевод</x:String>
+    <x:String x:Key="Builds_ShowOriginal">Оригинал</x:String>
+    <x:String x:Key="Builds_TranslateFailed">Перевод сейчас недоступен</x:String>
     <x:String x:Key="Builds_SearchHint">Поиск по названию или версии</x:String>
     <x:String x:Key="Builds_Play">Играть</x:String>
     <x:String x:Key="Builds_NeverPlayed">ещё не запускалась</x:String>

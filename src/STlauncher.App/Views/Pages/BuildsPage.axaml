@@ -41,37 +41,30 @@
                              SelectedItem="{Binding SelectedInstance}">
                         <ListBox.ItemTemplate>
                             <DataTemplate x:DataType="inst:Instance">
-                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                    <StackPanel Spacing="3" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
-                                                   TextTrimming="CharacterEllipsis"/>
+                                <StackPanel Spacing="3">
+                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
+                                               TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Classes="faint">
+                                        <TextBlock.Text>
+                                            <MultiBinding StringFormat="{}{0} · {1}">
+                                                <Binding Path="VersionId" TargetNullValue="—"/>
+                                                <Binding Path="Loader"/>
+                                            </MultiBinding>
+                                        </TextBlock.Text>
+                                    </TextBlock>
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
                                         <TextBlock Classes="faint">
                                             <TextBlock.Text>
-                                                <MultiBinding StringFormat="{}{0} · {1}">
-                                                    <Binding Path="VersionId" TargetNullValue="—"/>
-                                                    <Binding Path="Loader"/>
+                                                <MultiBinding StringFormat="{}{0} {1}">
+                                                    <Binding Path="ModCount"/>
+                                                    <Binding Source="{DynamicResource Builds_ModsShort}"/>
                                                 </MultiBinding>
                                             </TextBlock.Text>
                                         </TextBlock>
-                                        <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <TextBlock Classes="faint">
-                                                <TextBlock.Text>
-                                                    <MultiBinding StringFormat="{}{0} {1}">
-                                                        <Binding Path="ModCount"/>
-                                                        <Binding Source="{DynamicResource Builds_ModsShort}"/>
-                                                    </MultiBinding>
-                                                </TextBlock.Text>
-                                            </TextBlock>
-                                            <TextBlock Text="{Binding LastPlayedAt, StringFormat={}{0:dd.MM.yyyy}}"
-                                                       Classes="faint"/>
-                                        </StackPanel>
+                                        <TextBlock Text="{Binding LastPlayedAt, StringFormat={}{0:dd.MM.yyyy}}"
+                                                   Classes="faint"/>
                                     </StackPanel>
-
-                                    <Button Grid.Column="1" Classes="ghost small" VerticalAlignment="Center"
-                                            Content="{DynamicResource Builds_Play}"
-                                            Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).PlayBuildCommand}"
-                                            CommandParameter="{Binding}"/>
-                                </Grid>
+                                </StackPanel>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
@@ -183,10 +176,10 @@
                                                         <TextBlock Text="{Binding Result.Title}"
                                                                    FontWeight="SemiBold"
                                                                    TextTrimming="CharacterEllipsis"/>
-                                                        <TextBlock Text="{Binding Result.Description}"
-                                                                   Classes="faint" MaxLines="2"
-                                                                   TextWrapping="Wrap"
-                                                                   TextTrimming="CharacterEllipsis"/>
+                                                            <TextBlock Text="{Binding DisplayDescription}"
+                                                                       Classes="faint" MaxLines="2"
+                                                                       TextWrapping="Wrap"
+                                                                       TextTrimming="CharacterEllipsis"/>
                                                     </StackPanel>
 
                                                     <Panel Grid.Column="2" VerticalAlignment="Center">
@@ -427,7 +420,7 @@
                     <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
                         <Border Width="64" Height="64" CornerRadius="8" Background="#2A2028"
                                 ClipToBounds="True">
-                            <Image Source="{Binding OpenedProject.IconUrl}" Stretch="Uniform"
+                            <Image Source="{Binding OpenedProjectIcon}" Stretch="Uniform"
                                    Width="64" Height="64"/>
                         </Border>
 
@@ -439,9 +432,20 @@
                                        Text="{Binding OpenedProject.Downloads, StringFormat={}{0:N0} }"/>
                         </StackPanel>
 
-                        <Button Grid.Column="2" Classes="ghost small" VerticalAlignment="Top"
-                                Content="{DynamicResource Common_Close2}"
-                                Command="{Binding CloseProjectCommand}"/>
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6"
+                                    VerticalAlignment="Top">
+                            <Button Classes="ghost small"
+                                    Content="{DynamicResource Builds_Translate}"
+                                    IsVisible="{Binding !IsProjectTranslated}"
+                                    Command="{Binding TranslateProjectCommand}"/>
+                            <Button Classes="ghost small"
+                                    Content="{DynamicResource Builds_ShowOriginal}"
+                                    IsVisible="{Binding IsProjectTranslated}"
+                                    Command="{Binding TranslateProjectCommand}"/>
+                            <Button Classes="ghost small"
+                                    Content="{DynamicResource Common_Close2}"
+                                    Command="{Binding CloseProjectCommand}"/>
+                        </StackPanel>
                     </Grid>
 
                     <ScrollViewer Grid.Row="1">

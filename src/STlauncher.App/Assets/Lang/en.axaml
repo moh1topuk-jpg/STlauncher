@@ -29,6 +29,10 @@
     <x:String x:Key="Game_BuildsHint">Version, loader and mods are configured in the Builds section.</x:String>
     <x:String x:Key="Game_SetupBuild">Configure build</x:String>
     <x:String x:Key="Game_OpenConsole">Open console</x:String>
+    <x:String x:Key="Game_ServerJoinHint">Launching connects you to {0}</x:String>
+    <x:String x:Key="Builds_Translate">Translate</x:String>
+    <x:String x:Key="Builds_ShowOriginal">Original</x:String>
+    <x:String x:Key="Builds_TranslateFailed">Translation is unavailable right now</x:String>
     <x:String x:Key="Builds_SearchHint">Search by name or version</x:String>
     <x:String x:Key="Builds_Play">Play</x:String>
     <x:String x:Key="Builds_NeverPlayed">never launched</x:String>
