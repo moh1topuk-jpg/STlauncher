@@ -167,7 +167,7 @@ internal static class Program
         }
 
         var paths = LauncherPaths.Default();
-        var gameDir = paths.InstanceDirectory("default");
+        var gameDir = paths.InstanceDirectory(Option(args, "--instance") ?? "default");
 
         if (loaderKind != LoaderKind.Vanilla)
         {
@@ -195,7 +195,9 @@ internal static class Program
             GameDirectory = gameDir,
             MaxMemoryMb = memory,
             MinMemoryMb = 512,
-            ServerAddress = server
+            ServerAddress = server,
+            ServerListName = Option(args, "--server-name") ?? "Server",
+            ServerListAddress = server
         };
 
         var progress = new Progress<DownloadProgress>(p =>
@@ -365,6 +367,7 @@ internal static class Program
               --loader-version <version>
               --server <host[:port]>
               --memory <mb>
+              --instance <id>                      game directory (default: "default")
               --api-key <curseforgeKey>            (or set CURSEFORGE_API_KEY)
             """);
     }

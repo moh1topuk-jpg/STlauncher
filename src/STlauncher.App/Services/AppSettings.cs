@@ -6,6 +6,8 @@ public sealed class AppSettings
 
     public string? SelectedVersionId { get; set; }
 
+    public string? SelectedInstanceId { get; set; }
+
     public STlauncher.Core.Loaders.LoaderKind Loader { get; set; } = Core.Loaders.LoaderKind.Vanilla;
 
     public string? LoaderVersion { get; set; }

@@ -11,6 +11,7 @@
 - **Офлайн-вход** — UUID v3 генерируется из ника по алгоритму `OfflinePlayer:<ник>`, полностью совместим с ванильным.
 - **Авто-загрузка Java** — поиск установленной JRE, при отсутствии — автоматическое скачивание Adoptium JRE нужной мажорной версии.
 - **Мод-лоадеры** — Fabric, Quilt (через profile JSON), Forge, NeoForge (через installer).
+- **Инстансы** — несколько независимых профилей: своя версия, лоадер, память, моды и свой `servers.dat` у каждого.
 - **Моды** — поиск и установка с Modrinth, вкл/выкл и удаление в `mods/`.
 - **Модпаки** — импорт `.mrpack` (Modrinth) и `.zip` (CurseForge) с проверкой хэшей и распаковкой overrides.
 - **Свой сервер** — пресет в отдельной вкладке, авто-добавление сервера в `servers.dat` для любой версии, быстрый вход через `--quickPlayMultiplayer`.
@@ -55,7 +56,7 @@ src/
     Loaders/              Fabric, Quilt, Forge, NeoForge
     Mods/                 менеджер mods/ и Modrinth API
     Modpacks/             импорт .mrpack (Modrinth)
-    Instances/            servers.dat (NBT)
+    Instances/            инстансы (профили) и servers.dat (NBT)
     Nbt/                  минимальный NBT reader/writer
   STlauncher.App/         Avalonia UI (MVVM)
 tools/
@@ -86,6 +87,14 @@ dotnet run --project tools/STlauncher.Cli -- modpack pack.mrpack
 
 Всё хранится в `%APPDATA%\STlauncher`: версии, библиотеки, assets, рантаймы Java,
 инстансы и `settings.json`.
+
+## Инстансы
+
+Каждый инстанс — отдельный профиль со своей папкой в `instances/`: версия игры,
+лоадер, память, разрешение, набор модов и собственный `servers.dat`.
+Версия, лоадер и память хранятся в `instances/<id>/instance.json`, поэтому переключение
+инстанса полностью меняет окружение запуска. Старые настройки из `settings.json`
+автоматически переносятся в инстанс «Default» при первом запуске новой версии.
 
 ## Пресет сервера
 

@@ -6,6 +6,7 @@ using STlauncher.App.ViewModels;
 using STlauncher.Core;
 using STlauncher.Core.Assets;
 using STlauncher.Core.Http;
+using STlauncher.Core.Instances;
 using STlauncher.Core.Java;
 using STlauncher.Core.Launch;
 using STlauncher.Core.Loaders;
@@ -60,6 +61,7 @@ public static class LauncherHost
         services.AddSingleton<ModpackInstaller>();
         services.AddSingleton<LaunchService>();
         services.AddSingleton<SkinService>();
+        services.AddSingleton<InstanceManager>();
         services.AddSingleton<UpdateService>();
 
         services.AddTransient<MainWindowViewModel>();

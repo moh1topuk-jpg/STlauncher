@@ -4,6 +4,7 @@
         xmlns:m="using:STlauncher.Core.Metadata"
         xmlns:loaders="using:STlauncher.Core.Loaders"
         xmlns:mods="using:STlauncher.Core.Mods"
+        xmlns:inst="using:STlauncher.Core.Instances"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="960" d:DesignHeight="640"
@@ -48,6 +49,23 @@
 
             <TabItem Header="Game">
                 <StackPanel Margin="16" Spacing="14" Width="420" HorizontalAlignment="Left">
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Instance"/>
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                            <ComboBox ItemsSource="{Binding Instances}" SelectedItem="{Binding SelectedInstance}"
+                                      HorizontalAlignment="Stretch">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="inst:Instance">
+                                        <TextBlock Text="{Binding Name}"/>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                            <Button Grid.Column="1" Content="New" Command="{Binding CreateInstanceCommand}"/>
+                            <Button Grid.Column="2" Content="Del" Command="{Binding DeleteInstanceCommand}"/>
+                        </Grid>
+                        <TextBox Text="{Binding NewInstanceName}" Watermark="Name for a new instance"/>
+                    </StackPanel>
 
                     <StackPanel Orientation="Horizontal" Spacing="12">
                         <Border Width="64" Height="64" CornerRadius="8" Background="#2A2A31" ClipToBounds="True">

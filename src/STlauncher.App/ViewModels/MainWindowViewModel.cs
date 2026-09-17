@@ -12,6 +12,7 @@ using STlauncher.App.Services;
 using STlauncher.Core;
 using STlauncher.Core.Auth;
 using STlauncher.Core.Http;
+using STlauncher.Core.Instances;
 using STlauncher.Core.Launch;
 using STlauncher.Core.Loaders;
 using STlauncher.Core.Metadata;
@@ -23,8 +24,6 @@ namespace STlauncher.App.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase
 {
-    private const string DefaultInstanceId = "default";
-
     private readonly VersionService _versions;
     private readonly LaunchService _launch;
     private readonly LoaderService _loaders;
@@ -35,11 +34,13 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly ModManager _mods;
     private readonly ModpackInstaller _modpacks;
     private readonly UpdateService _updates;
+    private readonly InstanceManager _instances;
     private readonly LauncherPaths _paths;
     private readonly GameLauncher _gameLauncher;
 
     private List<VersionSummary> _allVersions = new();
     private bool _initialized;
+    private bool _applyingInstance;
     private CancellationTokenSource? _avatarCts;
 
     public MainWindowViewModel(
@@ -53,6 +54,7 @@ public partial class MainWindowViewModel : ViewModelBase
         ModManager mods,
         ModpackInstaller modpacks,
         UpdateService updates,
+        InstanceManager instances,
         LauncherPaths paths,
         GameLauncher gameLauncher)
     {
@@ -66,9 +68,12 @@ public partial class MainWindowViewModel : ViewModelBase
         _mods = mods;
         _modpacks = modpacks;
         _updates = updates;
+        _instances = instances;
         _paths = paths;
         _gameLauncher = gameLauncher;
     }
+
+    public ObservableCollection<Instance> Instances { get; } = new();
 
     public ObservableCollection<VersionSummary> Versions { get; } = new();
 
@@ -148,7 +153,16 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isGameRunning;
 
-    public string InstanceDirectory => _paths.InstanceDirectory(DefaultInstanceId);
+    [ObservableProperty]
+    private Instance? _selectedInstance;
+
+    [ObservableProperty]
+    private string _newInstanceName = string.Empty;
+
+    public string InstanceDirectory
+        => SelectedInstance is null
+            ? _paths.InstanceDirectory("default")
+            : _instances.GameDirectory(SelectedInstance.Id);
 
     public async Task InitializeAsync()
     {
@@ -161,25 +175,93 @@ public partial class MainWindowViewModel : ViewModelBase
 
         var settings = _settings.Load();
         Username = settings.Username;
-        MaxMemoryMb = settings.MaxMemoryMb;
-        MinMemoryMb = settings.MinMemoryMb;
         ShowSnapshots = settings.ShowSnapshots;
-        ServerName = settings.ServerName;
-        ServerAddress = settings.ServerAddress ?? string.Empty;
         CurseForgeApiKey = settings.CurseForgeApiKey ?? string.Empty;
         _curseForge.ApiKey = settings.CurseForgeApiKey;
-        SelectedLoader = settings.Loader;
 
         _gameLauncher.OutputReceived += line => AppendConsole(line);
         _gameLauncher.ErrorReceived += line => AppendConsole(line);
 
-        await LoadVersionsAsync();
-        await LoadLoaderVersionsAsync();
-        RefreshMods();
-
-        if (!string.IsNullOrEmpty(settings.LoaderVersion))
+        Instances.Clear();
+        foreach (var existing in _instances.List())
         {
-            SelectedLoaderVersion = LoaderVersions.FirstOrDefault(v => v.Version == settings.LoaderVersion);
+            Instances.Add(existing);
+        }
+
+        if (Instances.Count == 0)
+        {
+            Instances.Add(CreateMigratedInstance(settings));
+        }
+
+        await LoadVersionsAsync();
+
+        SelectedInstance = Instances.FirstOrDefault(i => i.Id == settings.SelectedInstanceId)
+                           ?? Instances.FirstOrDefault();
+
+        await LoadLoaderVersionsAsync();
+
+        if (SelectedInstance?.LoaderVersion is { Length: > 0 } loaderVersion)
+        {
+            SelectedLoaderVersion = LoaderVersions.FirstOrDefault(v => v.Version == loaderVersion)
+                                    ?? SelectedLoaderVersion;
+        }
+
+        RefreshMods();
+    }
+
+    private Instance CreateMigratedInstance(AppSettings settings)
+    {
+        var instance = _instances.Create("Default");
+        instance.MaxMemoryMb = settings.MaxMemoryMb;
+        instance.MinMemoryMb = settings.MinMemoryMb;
+        instance.ServerName = settings.ServerName;
+        instance.ServerAddress = settings.ServerAddress;
+        instance.Loader = settings.Loader;
+        instance.LoaderVersion = settings.LoaderVersion;
+        instance.VersionId = settings.SelectedVersionId;
+        _instances.Save(instance);
+
+        return instance;
+    }
+
+    [RelayCommand]
+    private void CreateInstance()
+    {
+        try
+        {
+            var name = string.IsNullOrWhiteSpace(NewInstanceName) ? "New instance" : NewInstanceName.Trim();
+            var instance = _instances.Create(name);
+
+            Instances.Add(instance);
+            SelectedInstance = instance;
+            NewInstanceName = string.Empty;
+            Status = $"Instance '{instance.Name}' created.";
+        }
+        catch (Exception ex)
+        {
+            Status = "Failed to create instance: " + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private void DeleteInstance()
+    {
+        if (SelectedInstance is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var name = SelectedInstance.Name;
+            _instances.Delete(SelectedInstance.Id);
+            Instances.Remove(SelectedInstance);
+            SelectedInstance = Instances.FirstOrDefault();
+            Status = $"Instance '{name}' deleted.";
+        }
+        catch (Exception ex)
+        {
+            Status = "Failed to delete instance: " + ex.Message;
         }
     }
 
@@ -266,7 +348,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
             var settings = new LaunchSettings
             {
-                GameDirectory = _paths.InstanceDirectory(DefaultInstanceId),
+                GameDirectory = InstanceDirectory,
                 MaxMemoryMb = (int)MaxMemoryMb,
                 MinMemoryMb = (int)MinMemoryMb,
                 ServerAddress = joinServer && !string.IsNullOrWhiteSpace(ServerAddress) ? ServerAddress : null,
@@ -545,9 +627,82 @@ public partial class MainWindowViewModel : ViewModelBase
 
     partial void OnShowSnapshotsChanged(bool value) => ApplyVersionFilter();
 
-    partial void OnSelectedLoaderChanged(LoaderKind value) => _ = LoadLoaderVersionsAsync();
+    partial void OnSelectedLoaderChanged(LoaderKind value)
+    {
+        SyncInstance();
+        if (!_applyingInstance) _ = LoadLoaderVersionsAsync();
+    }
 
-    partial void OnSelectedVersionChanged(VersionSummary? value) => _ = LoadLoaderVersionsAsync();
+    partial void OnSelectedVersionChanged(VersionSummary? value)
+    {
+        SyncInstance();
+        if (!_applyingInstance) _ = LoadLoaderVersionsAsync();
+    }
+
+    partial void OnSelectedLoaderVersionChanged(LoaderVersion? value) => SyncInstance();
+
+    partial void OnMaxMemoryMbChanged(decimal value) => SyncInstance();
+
+    partial void OnMinMemoryMbChanged(decimal value) => SyncInstance();
+
+    partial void OnServerNameChanged(string value) => SyncInstance();
+
+    partial void OnServerAddressChanged(string value) => SyncInstance();
+
+    partial void OnSelectedInstanceChanged(Instance? value)
+    {
+        if (value is null)
+        {
+            return;
+        }
+
+        _applyingInstance = true;
+        try
+        {
+            MaxMemoryMb = value.MaxMemoryMb;
+            MinMemoryMb = value.MinMemoryMb;
+            ServerName = value.ServerName ?? "My Server";
+            ServerAddress = value.ServerAddress ?? string.Empty;
+            SelectedLoader = value.Loader;
+            SelectedVersion = value.VersionId is null
+                ? null
+                : _allVersions.FirstOrDefault(v => v.Id == value.VersionId);
+        }
+        finally
+        {
+            _applyingInstance = false;
+        }
+
+        _ = LoadLoaderVersionsAsync();
+        RefreshMods();
+        PersistSettings();
+    }
+
+    /// <summary>Writes the current editing values back into the selected instance.</summary>
+    private void SyncInstance()
+    {
+        if (_applyingInstance || SelectedInstance is null)
+        {
+            return;
+        }
+
+        SelectedInstance.VersionId = SelectedVersion?.Id;
+        SelectedInstance.Loader = SelectedLoader;
+        SelectedInstance.LoaderVersion = SelectedLoaderVersion?.Version;
+        SelectedInstance.MaxMemoryMb = (int)MaxMemoryMb;
+        SelectedInstance.MinMemoryMb = (int)MinMemoryMb;
+        SelectedInstance.ServerName = ServerName;
+        SelectedInstance.ServerAddress = string.IsNullOrWhiteSpace(ServerAddress) ? null : ServerAddress;
+
+        try
+        {
+            _instances.Save(SelectedInstance);
+        }
+        catch (Exception ex)
+        {
+            Status = "Failed to save instance: " + ex.Message;
+        }
+    }
 
     partial void OnUsernameChanged(string value) => _ = UpdateAvatarAsync();
 
@@ -634,15 +789,18 @@ public partial class MainWindowViewModel : ViewModelBase
         var settings = new AppSettings
         {
             Username = Username,
+            ShowSnapshots = ShowSnapshots,
+            CurseForgeApiKey = string.IsNullOrWhiteSpace(CurseForgeApiKey) ? null : CurseForgeApiKey,
+            SelectedInstanceId = SelectedInstance?.Id,
+
+            // Legacy global fields, kept so older settings files can be migrated into an instance.
             SelectedVersionId = SelectedVersion?.Id,
             Loader = SelectedLoader,
             LoaderVersion = SelectedLoaderVersion?.Version,
             MaxMemoryMb = (int)MaxMemoryMb,
             MinMemoryMb = (int)MinMemoryMb,
-            ShowSnapshots = ShowSnapshots,
             ServerName = ServerName,
-            ServerAddress = string.IsNullOrWhiteSpace(ServerAddress) ? null : ServerAddress,
-            CurseForgeApiKey = string.IsNullOrWhiteSpace(CurseForgeApiKey) ? null : CurseForgeApiKey
+            ServerAddress = string.IsNullOrWhiteSpace(ServerAddress) ? null : ServerAddress
         };
 
         _settings.Save(settings);
