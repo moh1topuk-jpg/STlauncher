@@ -267,6 +267,11 @@ UpgradeLog*.htm
 ServiceFabricBackup/
 *.rptproj.bak
 
+# The rule above is meant for Visual Studio upgrade leftovers, but it also
+# matched our own source directory and silently kept it out of the repository,
+# which broke every CI build. Keep our source tracked.
+!src/STlauncher.Core/Backups/
+
 # SQL Server files
 *.mdf
 *.ldf
