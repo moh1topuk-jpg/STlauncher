@@ -126,7 +126,10 @@ public sealed partial class LoaderService
 
         var directory = _paths.VersionDirectory(id);
         Directory.CreateDirectory(directory);
-        await File.WriteAllTextAsync(_paths.VersionJsonPath(id), json, cancellationToken).ConfigureAwait(false);
+
+        // A half-written profile is worse than no profile: the launcher would read it on
+        // the next launch and fail to resolve the version instead of reinstalling it.
+        AtomicFile.WriteAllText(_paths.VersionJsonPath(id), json);
 
         _logger?.LogInformation("Installed loader profile {Id}.", id);
         return id;

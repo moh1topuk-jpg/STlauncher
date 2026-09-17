@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -42,8 +43,25 @@ public sealed class VersionService
         return await _metadata.DownloadVersionJsonAsync(versionId, summary.Url, cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task<ResolvedVersion> ResolveAsync(string versionId, CancellationToken cancellationToken = default)
+    public Task<ResolvedVersion> ResolveAsync(string versionId, CancellationToken cancellationToken = default)
+        => ResolveAsync(versionId, new HashSet<string>(StringComparer.OrdinalIgnoreCase), cancellationToken);
+
+    /// <summary>
+    /// Walks the <c>inheritsFrom</c> chain. The visited set is not a nicety: a loader
+    /// profile that names itself - or two profiles that name each other - used to recurse
+    /// until the stack overflowed, which kills the process outright and cannot be caught.
+    /// </summary>
+    private async Task<ResolvedVersion> ResolveAsync(
+        string versionId,
+        HashSet<string> visited,
+        CancellationToken cancellationToken)
     {
+        if (!visited.Add(versionId))
+        {
+            throw new InvalidDataException(
+                $"Version '{versionId}' inherits from itself: {string.Join(" -> ", visited)} -> {versionId}.");
+        }
+
         var path = await EnsureVersionJsonAsync(versionId, cancellationToken).ConfigureAwait(false);
         var json = _metadata.ReadVersionJsonFile(path);
 
@@ -52,7 +70,7 @@ public sealed class VersionService
             return ResolvedVersion.FromLeaf(json);
         }
 
-        var parent = await ResolveAsync(json.InheritsFrom, cancellationToken).ConfigureAwait(false);
+        var parent = await ResolveAsync(json.InheritsFrom, visited, cancellationToken).ConfigureAwait(false);
         return ResolvedVersion.Merge(parent, json);
     }
 }

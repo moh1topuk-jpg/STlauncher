@@ -29,8 +29,10 @@ public sealed class MetadataClient
         var json = await _http.GetStringAsync(VersionManifestUrl, cancellationToken).ConfigureAwait(false);
 
         Directory.CreateDirectory(_paths.Meta);
-        var cachePath = Path.Combine(_paths.Meta, "version_manifest_v2.json");
-        await File.WriteAllTextAsync(cachePath, json, cancellationToken).ConfigureAwait(false);
+
+        // Atomic like every other file the launcher owns: a torn write here leaves a
+        // manifest that parses as "no versions at all" on the next start.
+        AtomicFile.WriteAllText(Path.Combine(_paths.Meta, "version_manifest_v2.json"), json);
 
         var manifest = JsonSerializer.Deserialize<VersionManifest>(json, MetadataJson.Options)
                        ?? throw new InvalidDataException("Version manifest is empty.");
@@ -56,7 +58,7 @@ public sealed class MetadataClient
 
         var json = await _http.GetStringAsync(url, cancellationToken).ConfigureAwait(false);
         var path = _paths.VersionJsonPath(versionId);
-        await File.WriteAllTextAsync(path, json, cancellationToken).ConfigureAwait(false);
+        AtomicFile.WriteAllText(path, json);
 
         return path;
     }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -143,5 +143,68 @@ public class ModpackReaderTests
 
         Assert.Equal(expected, loader);
         Assert.Equal("1.0", version);
+    }
+}
+
+public class ModpackOverridesTests : IDisposable
+{
+    private readonly string _root = Path.Combine(
+        Path.GetTempPath(), "stlauncher-tests", Guid.NewGuid().ToString("N"));
+
+    private string Pack(params (string Path, string Content)[] entries)
+    {
+        Directory.CreateDirectory(_root);
+        var path = Path.Combine(_root, "pack.mrpack");
+
+        using var file = File.Create(path);
+        using var zip = new ZipArchive(file, ZipArchiveMode.Create);
+
+        foreach (var (entryPath, content) in entries)
+        {
+            using var writer = new StreamWriter(zip.CreateEntry(entryPath).Open());
+            writer.Write(content);
+        }
+
+        return path;
+    }
+
+    [Fact]
+    public void ExtractOverrides_PlacesFilesInsideTheInstance()
+    {
+        var pack = Pack(("overrides/config/sodium.json", "{}"));
+        var instance = Path.Combine(_root, "instance");
+
+        ModpackInstaller.ExtractOverrides(pack, instance, ModpackReader.OverrideFolderPrefixes());
+
+        Assert.True(File.Exists(Path.Combine(instance, "config", "sodium.json")));
+    }
+
+    [Fact]
+    public void ExtractOverrides_RejectsAnEntryThatClimbsOutOfTheInstance()
+    {
+        // Two layers guard this: the relative path is rejected outright, and the resolved
+        // path is checked against the instance root - with the trailing separator, so
+        // "…/instances/foo" no longer matches "…/instances/foobar".
+        var pack = Pack(("overrides/../foobar/owned.txt", "x"));
+        var instance = Path.Combine(_root, "instances", "foo");
+        Directory.CreateDirectory(Path.Combine(_root, "instances", "foobar"));
+
+        ModpackInstaller.ExtractOverrides(pack, instance, ModpackReader.OverrideFolderPrefixes());
+
+        Assert.False(File.Exists(Path.Combine(_root, "instances", "foobar", "owned.txt")));
+    }
+
+    public void Dispose()
+    {
+        try
+        {
+            if (Directory.Exists(_root))
+            {
+                Directory.Delete(_root, recursive: true);
+            }
+        }
+        catch (IOException)
+        {
+        }
     }
 }

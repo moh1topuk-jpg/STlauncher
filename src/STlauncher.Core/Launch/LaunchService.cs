@@ -56,7 +56,7 @@ public sealed class LaunchService
 
         if (settings.ForceUpdate)
         {
-            await ForceCleanAsync(versionId, cancellationToken).ConfigureAwait(false);
+            ForceClean(versionId);
         }
 
         var resolved = await _versions.ResolveAsync(versionId, cancellationToken).ConfigureAwait(false);
@@ -158,24 +158,16 @@ public sealed class LaunchService
     /// Removes the vanilla version JSON and client jar so they are fetched again.
     /// Loader profiles are left alone: the launcher re-installs them on every launch.
     /// </summary>
-    private async Task ForceCleanAsync(string versionId, CancellationToken cancellationToken)
+    /// <remarks>
+    /// Deliberately does not consult the manifest first. Looking the version up cost a
+    /// full manifest download and changed nothing: the files are deleted by id either
+    /// way, and <see cref="VersionService.EnsureVersionJsonAsync"/> reports a version
+    /// that genuinely does not exist a moment later.
+    /// </remarks>
+    private void ForceClean(string versionId)
     {
-        try
-        {
-            var summary = await _versions.FindAsync(versionId, cancellationToken).ConfigureAwait(false);
-
-            if (summary is null)
-            {
-                return;
-            }
-
-            TryDeleteFile(_paths.VersionJsonPath(versionId));
-            TryDeleteFile(_paths.VersionJarPath(versionId));
-        }
-        catch (Exception ex)
-        {
-            _logger?.LogWarning(ex, "Force update could not clean version {Version}.", versionId);
-        }
+        TryDeleteFile(_paths.VersionJsonPath(versionId));
+        TryDeleteFile(_paths.VersionJarPath(versionId));
     }
 
     private void ForceCleanResolved(ResolvedVersion resolved)

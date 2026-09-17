@@ -64,7 +64,6 @@ public static class LibraryResolver
                     continue;
                 }
 
-                var fileName = Path.GetFileName(relative);
                 var destination = paths.LibraryPath(relative);
                 var url = library.Url.TrimEnd('/') + "/" + relative;
                 result.Downloads.Add(new DownloadItem(url, destination));

@@ -70,7 +70,14 @@ public sealed class ModpackInstaller
         IReadOnlyList<string> prefixes)
     {
         Directory.CreateDirectory(instanceDirectory);
+
         var root = Path.GetFullPath(instanceDirectory);
+
+        // The separator matters: without it "...\instances\foo" also matches
+        // "...\instances\foobar", so an entry could land in a sibling instance.
+        var rootWithSeparator = root.EndsWith(Path.DirectorySeparatorChar)
+            ? root
+            : root + Path.DirectorySeparatorChar;
 
         using var archive = ZipFile.OpenRead(modpackPath);
 
@@ -96,7 +103,7 @@ public sealed class ModpackInstaller
             }
 
             var target = Path.GetFullPath(SafeCombine(root, relative));
-            if (!target.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+            if (!target.StartsWith(rootWithSeparator, StringComparison.OrdinalIgnoreCase))
             {
                 throw new IOException($"Blocked modpack entry outside of the instance: {entry.FullName}");
             }
