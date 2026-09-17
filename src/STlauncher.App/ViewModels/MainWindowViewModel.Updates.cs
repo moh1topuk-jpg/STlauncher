@@ -35,22 +35,63 @@ public partial class MainWindowViewModel
     [ObservableProperty]
     private string _availableUpdateVersion = string.Empty;
 
+    /// <summary>
+    /// An update is waiting. Drives the permanent control in the sidebar, which is the
+    /// one place the state is always visible - the banner can be dismissed, and Settings
+    /// is three clicks away.
+    /// </summary>
+    [ObservableProperty]
+    private bool _hasUpdate;
+
+    /// <summary>Label of that control: what pressing it will do right now.</summary>
+    [ObservableProperty]
+    private string _updateActionLabel = string.Empty;
+
+    /// <summary>The running version, shown next to the control.</summary>
+    [ObservableProperty]
+    private string _currentVersionLabel = string.Empty;
+
+    partial void OnHasUpdateChanged(bool value) => RefreshUpdateActionLabel();
+
+    partial void OnIsUpdateBusyChanged(bool value) => RefreshUpdateActionLabel();
 
     /// <summary>
-    /// Looks for a new release shortly after startup and then every six hours, so a
-    /// launcher left open for days still notices a release.
+    /// One button, three states. Separate "check" and "update" buttons would mean one of
+    /// them is always the wrong one to press.
+    /// </summary>
+    private void RefreshUpdateActionLabel()
+    {
+        UpdateActionLabel = IsUpdateBusy
+            ? Localize("Update_Working", "Working…")
+            : HasUpdate
+                ? Localize("Update_ToVersion", "Update to {0}", AvailableUpdateVersion)
+                : Localize("Update_Check", "Check for updates");
+    }
+
+    /// <summary>Checks, or installs when something is already waiting.</summary>
+    [RelayCommand]
+    private Task UpdateAction() => HasUpdate ? InstallUpdateAsync() : RunUpdateCheckAsync(announce: true);
+
+
+    /// <summary>
+    /// Checks on every start and then every six hours, so a launcher left open for days
+    /// still notices a release.
     /// </summary>
     private void StartUpdateWatcher()
     {
+        CurrentVersionLabel = _updates.CurrentVersion ?? Localize("Update_DevBuild", "dev build");
+        RefreshUpdateActionLabel();
+
         if (!_updates.IsSupported)
         {
             return;
         }
 
-        // Deliberately delayed: startup already saturates the network with catalog,
-        // version manifest and mod icon requests, and the banner is not urgent.
+        // Delayed by a few seconds rather than fired immediately: startup already
+        // saturates the network with the catalog, the version manifest and mod icons,
+        // and an update notice a moment later costs the player nothing.
         _updateTimer?.Stop();
-        _updateTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(8) };
+        _updateTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
         _updateTimer.Tick += (_, _) =>
         {
             // After the first tick settle into the long interval.
@@ -107,6 +148,7 @@ public partial class MainWindowViewModel
             {
                 IsUpdateBannerVisible = false;
                 CanRestartToUpdate = false;
+                HasUpdate = false;
 
                 if (announce)
                 {
@@ -132,7 +174,9 @@ public partial class MainWindowViewModel
 
             UpdateStatus = UpdateBannerText;
             CanRestartToUpdate = ready;
+            HasUpdate = true;
             IsUpdateBannerVisible = true;
+            RefreshUpdateActionLabel();
         }
         catch (Exception ex)
         {

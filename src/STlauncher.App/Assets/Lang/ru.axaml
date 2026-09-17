@@ -29,7 +29,7 @@
     <x:String x:Key="Game_BuildsHint">Версия, загрузчик и моды настраиваются во вкладке «Сборки».</x:String>
     <x:String x:Key="Game_SetupBuild">Настроить сборку</x:String>
     <x:String x:Key="Game_OpenConsole">Открыть консоль</x:String>
-    <x:String x:Key="Game_ServerJoinHint">Кнопка «Играть на сервере» сразу подключит к {0}</x:String>
+    <x:String x:Key="Game_ServerJoinHint">сразу подключит к {0}</x:String>
     <x:String x:Key="Builds_Translate">Перевод</x:String>
     <x:String x:Key="Builds_ShowOriginal">Оригинал</x:String>
     <x:String x:Key="Builds_TranslateFailed">Перевод сейчас недоступен</x:String>
@@ -331,10 +331,19 @@
     <x:String x:Key="Server_Record">Рекорд: {0}</x:String>
     <x:String x:Key="Server_RecordAt">Рекорд: {0} ({1})</x:String>
     <x:String x:Key="Server_Uptime">Аптайм: {0:F0}%</x:String>
-    <x:String x:Key="Server_Rank">Место в рейтинге: #{0}</x:String>
+    <x:String x:Key="Server_Rank">#{0} на Top-Minecrafter</x:String>
     <x:String x:Key="Server_SourceLocal">Сборщик статистики недоступен — показаны собственные замеры лаунчера.</x:String>
     <x:String x:Key="Server_SourceCache">Сохранённая копия: сборщик статистики сейчас недоступен.</x:String>
     <x:String x:Key="Settings_StatsUrl">Адрес сборщика статистики</x:String>
     <x:String x:Key="Settings_StatsUrlHint">Обычно берётся из каталога. Поле нужно, чтобы проверить свой сборщик до публикации.</x:String>
+
+    <x:String x:Key="Update_Working">Работаю…</x:String>
+    <x:String x:Key="Update_ToVersion">Обновить до {0}</x:String>
+    <x:String x:Key="Update_Check">Проверить обновления</x:String>
+    <x:String x:Key="Update_DevBuild">сборка для разработки</x:String>
+
+    <x:String x:Key="Builds_ModsOne">мод</x:String>
+    <x:String x:Key="Builds_ModsFew">мода</x:String>
+    <x:String x:Key="Builds_ModsMany">модов</x:String>
 
 </ResourceDictionary>

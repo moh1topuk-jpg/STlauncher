@@ -75,6 +75,46 @@ public partial class MainWindowViewModel
                                     ?? AfterLaunchOptions[^1];
     }
 
+    // ===================== Interface language =====================
+
+    public ObservableCollection<LanguageOption> LanguageOptions { get; } = new();
+
+    [ObservableProperty]
+    private LanguageOption? _selectedLanguageOption;
+
+    partial void OnSelectedLanguageOptionChanged(LanguageOption? value)
+    {
+        if (value is not null)
+        {
+            Language = value.Code;
+        }
+    }
+
+    /// <summary>
+    /// Languages are listed under their own names. The picker used to show the raw codes
+    /// ("ru", "en"), which is the sort of thing only the person who wrote it can read.
+    /// </summary>
+    private void LoadLanguageOptions()
+    {
+        LanguageOptions.Clear();
+
+        foreach (var code in _localization.AvailableLanguages)
+        {
+            LanguageOptions.Add(new LanguageOption(code, NativeLanguageName(code)));
+        }
+
+        SelectedLanguageOption = LanguageOptions.FirstOrDefault(o =>
+                                     string.Equals(o.Code, Language, StringComparison.OrdinalIgnoreCase))
+                                 ?? LanguageOptions.FirstOrDefault();
+    }
+
+    private static string NativeLanguageName(string code) => code.ToLowerInvariant() switch
+    {
+        "ru" => "Русский",
+        "en" => "English",
+        _ => code
+    };
+
     [ObservableProperty]
     private string _extraGameArgs = string.Empty;
 
@@ -441,6 +481,9 @@ public partial class MainWindowViewModel
 }
 
 public sealed record JavaChoice(string Display, string? Path);
+
+/// <summary>An interface language, shown under its own name rather than as a code.</summary>
+public sealed record LanguageOption(string Code, string Display);
 
 public sealed record AfterLaunchOption(AfterLaunchAction Action, string Display);
 

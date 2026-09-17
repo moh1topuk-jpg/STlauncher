@@ -165,8 +165,6 @@ public partial class MainWindowViewModel : ViewModelBase
 
     partial void OnIsGameRunningChanged(bool value) => OnPropertyChanged(nameof(ShowLaunchProgress));
 
-    public IReadOnlyList<string> Languages => _localization.AvailableLanguages;
-
     [ObservableProperty]
     private string _status = string.Empty;
 
@@ -256,6 +254,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         LoadJavaChoices();
         LoadAfterLaunchOptions();
+        LoadLanguageOptions();
         RefreshBackups();
 
         Status = Localize("Status_Ready", "Ready");

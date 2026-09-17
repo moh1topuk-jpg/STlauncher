@@ -29,7 +29,7 @@
     <x:String x:Key="Game_BuildsHint">Version, loader and mods are configured in the Builds section.</x:String>
     <x:String x:Key="Game_SetupBuild">Configure build</x:String>
     <x:String x:Key="Game_OpenConsole">Open console</x:String>
-    <x:String x:Key="Game_ServerJoinHint">"Play on server" connects you to {0}</x:String>
+    <x:String x:Key="Game_ServerJoinHint">connects you straight to {0}</x:String>
     <x:String x:Key="Builds_Translate">Translate</x:String>
     <x:String x:Key="Builds_ShowOriginal">Original</x:String>
     <x:String x:Key="Builds_TranslateFailed">Translation is unavailable right now</x:String>
@@ -332,10 +332,19 @@
     <x:String x:Key="Server_Record">Record: {0}</x:String>
     <x:String x:Key="Server_RecordAt">Record: {0} ({1})</x:String>
     <x:String x:Key="Server_Uptime">Uptime: {0:F0}%</x:String>
-    <x:String x:Key="Server_Rank">Rank: #{0}</x:String>
+    <x:String x:Key="Server_Rank">#{0} on Top-Minecrafter</x:String>
     <x:String x:Key="Server_SourceLocal">Collector unavailable - showing this launcher's own samples.</x:String>
     <x:String x:Key="Server_SourceCache">Saved copy: the collector is unreachable right now.</x:String>
     <x:String x:Key="Settings_StatsUrl">Server stats collector URL</x:String>
     <x:String x:Key="Settings_StatsUrlHint">Normally supplied by the catalog. This field is for testing a collector before publishing it.</x:String>
+
+    <x:String x:Key="Update_Working">Working…</x:String>
+    <x:String x:Key="Update_ToVersion">Update to {0}</x:String>
+    <x:String x:Key="Update_Check">Check for updates</x:String>
+    <x:String x:Key="Update_DevBuild">dev build</x:String>
+
+    <x:String x:Key="Builds_ModsOne">mod</x:String>
+    <x:String x:Key="Builds_ModsFew">mods</x:String>
+    <x:String x:Key="Builds_ModsMany">mods</x:String>
 
 </ResourceDictionary>

@@ -6,6 +6,7 @@
              xmlns:loaders="using:STlauncher.Core.Loaders"
              xmlns:mods="using:STlauncher.Core.Mods"
              xmlns:content="using:STlauncher.Core.Content"
+             xmlns:conv="using:STlauncher.App.Converters"
              x:Class="STlauncher.App.Views.Pages.BuildsPage"
              x:DataType="vm:MainWindowViewModel">
 
@@ -66,15 +67,13 @@
                                             </MultiBinding>
                                         </TextBlock.Text>
                                     </TextBlock>
+                                    <!-- Two TextBlocks rather than a MultiBinding: a
+                                         {DynamicResource} used as a MultiBinding source
+                                         binds to the markup extension object itself, and
+                                         the row printed its type name to the user. -->
                                     <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <TextBlock Classes="faint">
-                                            <TextBlock.Text>
-                                                <MultiBinding StringFormat="{}{0} {1}">
-                                                    <Binding Path="ModCount"/>
-                                                    <Binding Source="{DynamicResource Builds_ModsShort}"/>
-                                                </MultiBinding>
-                                            </TextBlock.Text>
-                                        </TextBlock>
+                                        <TextBlock Classes="faint"
+                                                   Text="{Binding ModCount, Converter={x:Static conv:ModCountConverter.Instance}}"/>
                                         <TextBlock Text="{Binding LastPlayedAt, StringFormat={}{0:dd.MM.yyyy}}"
                                                    Classes="faint"/>
                                     </StackPanel>
@@ -106,8 +105,8 @@
                         <TextBlock Text="·" Classes="faint"/>
                         <TextBlock Text="{Binding SelectedInstance.Loader}" Classes="faint"/>
                         <TextBlock Text="·" Classes="faint"/>
-                        <TextBlock Text="{Binding BuildModCount}" Classes="gold"/>
-                        <TextBlock Text="{DynamicResource Builds_ModsShort}" Classes="faint"/>
+                        <TextBlock Classes="gold"
+                                   Text="{Binding BuildModCount, Converter={x:Static conv:ModCountConverter.Instance}}"/>
                     </StackPanel>
                 </StackPanel>
 

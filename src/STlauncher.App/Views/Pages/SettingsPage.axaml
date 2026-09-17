@@ -88,8 +88,15 @@
 
                     <StackPanel Spacing="6">
                         <TextBlock Text="{DynamicResource Settings_Language}" Classes="faint"/>
-                        <ComboBox ItemsSource="{Binding Languages}" SelectedItem="{Binding Language}"
-                                  HorizontalAlignment="Stretch"/>
+                        <ComboBox ItemsSource="{Binding LanguageOptions}"
+                                  SelectedItem="{Binding SelectedLanguageOption}"
+                                  HorizontalAlignment="Stretch">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="vm:LanguageOption">
+                                    <TextBlock Text="{Binding Display}"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
                     </StackPanel>
 
                     <StackPanel Spacing="6">
