@@ -5,7 +5,7 @@
              x:DataType="vm:MainWindowViewModel">
 
     <ScrollViewer>
-        <StackPanel Margin="22" Spacing="14" MaxWidth="620" HorizontalAlignment="Left">
+        <StackPanel Margin="22" Spacing="14" MaxWidth="680" HorizontalAlignment="Left">
 
             <TextBlock Text="{DynamicResource Nav_Server}" Classes="label"/>
 
@@ -45,19 +45,69 @@
                 </StackPanel>
             </Border>
 
-            <!-- Website -->
+            <!-- Monitoring -->
             <Border Classes="card">
-                <StackPanel Spacing="10">
-                    <TextBlock Text="{DynamicResource Server_Site}" Classes="label"/>
-                    <TextBlock Text="showtime.su" FontWeight="SemiBold"/>
-                    <Button Classes="ghost" HorizontalAlignment="Left"
-                            Content="{DynamicResource Server_OpenSite}"
-                            Command="{Binding OpenWebsiteCommand}"/>
+                <StackPanel Spacing="12">
+                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="14">
+                        <TextBlock Text="{DynamicResource Server_Monitoring}" Classes="label"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="{Binding ServerAverage}" Classes="gold"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="2" Text="{Binding ServerPeak}" Classes="faint"
+                                   VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <Border Height="80" Classes="panel" Padding="8" IsVisible="{Binding HasServerHistory}">
+                        <ItemsControl ItemsSource="{Binding ServerHistoryBars}" VerticalAlignment="Bottom">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="2"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:ServerHistoryBarView">
+                                    <Border Width="5" CornerRadius="2" VerticalAlignment="Bottom"
+                                            Background="{DynamicResource AccentBrush}"
+                                            Height="{Binding Height}"
+                                            ToolTip.Tip="{Binding Tooltip}"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Border>
+
+                    <TextBlock Text="{DynamicResource Server_MonitoringHint}" Classes="faint"
+                               TextWrapping="Wrap"/>
                 </StackPanel>
             </Border>
 
+            <!-- Community -->
             <Border Classes="card">
-                <TextBlock Text="{DynamicResource Server_More}" Classes="faint" TextWrapping="Wrap"/>
+                <StackPanel Spacing="10">
+                    <TextBlock Text="{DynamicResource Server_Community}" Classes="label"/>
+
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                        <TextBlock Text="showtime.su" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <Button Grid.Column="1" Classes="ghost small"
+                                Content="{DynamicResource Server_Open}" Command="{Binding OpenWebsiteCommand}"/>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                        <TextBlock Text="t.me/ShowTimeMc" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <Button Grid.Column="1" Classes="ghost small"
+                                Content="{DynamicResource Server_Open}"
+                                Command="{Binding OpenUrlCommand}"
+                                CommandParameter="https://t.me/ShowTimeMc"/>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                        <TextBlock Text="discord.gg/showtimes" FontWeight="SemiBold"
+                                   VerticalAlignment="Center"/>
+                        <Button Grid.Column="1" Classes="ghost small"
+                                Content="{DynamicResource Server_Open}"
+                                Command="{Binding OpenUrlCommand}"
+                                CommandParameter="https://discord.gg/showtimes"/>
+                    </Grid>
+                </StackPanel>
             </Border>
 
         </StackPanel>

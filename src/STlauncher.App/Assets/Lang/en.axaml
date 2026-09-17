@@ -74,6 +74,13 @@
     <x:String x:Key="Server_Refresh">Refresh</x:String>
     <x:String x:Key="Server_Players">Players: {0} / {1}</x:String>
     <x:String x:Key="Server_Offline">The server did not respond</x:String>
+    <x:String x:Key="Server_Monitoring">3-day monitoring</x:String>
+    <x:String x:Key="Server_MonitoringHint">Collected by the launcher itself: one sample per launch and status refresh.</x:String>
+    <x:String x:Key="Server_Average">Average online: {0:F0}</x:String>
+    <x:String x:Key="Server_Peak">Peak: {0}</x:String>
+    <x:String x:Key="Server_Community">Community</x:String>
+    <x:String x:Key="Server_Open">Open</x:String>
+    <x:String x:Key="Error_OpenLink">Failed to open the link: {0}</x:String>
     <x:String x:Key="Builds_NotConfigured">Pick a game version and a loader in the build settings first - they decide which mods are available.</x:String>
     <x:String x:Key="Builds_GoSettings">Open build settings</x:String>
     <x:String x:Key="Mods_ModrinthResults">Search results</x:String>

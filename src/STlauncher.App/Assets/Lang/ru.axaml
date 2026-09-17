@@ -74,6 +74,13 @@
     <x:String x:Key="Server_Refresh">Обновить</x:String>
     <x:String x:Key="Server_Players">Игроков: {0} / {1}</x:String>
     <x:String x:Key="Server_Offline">Сервер не ответил</x:String>
+    <x:String x:Key="Server_Monitoring">Мониторинг за 3 дня</x:String>
+    <x:String x:Key="Server_MonitoringHint">Данные собирает сам лаунчер: образец онлайна при каждом запуске и обновлении статуса.</x:String>
+    <x:String x:Key="Server_Average">Средний онлайн: {0:F0}</x:String>
+    <x:String x:Key="Server_Peak">Пик: {0}</x:String>
+    <x:String x:Key="Server_Community">Сообщество</x:String>
+    <x:String x:Key="Server_Open">Открыть</x:String>
+    <x:String x:Key="Error_OpenLink">Не удалось открыть ссылку: {0}</x:String>
     <x:String x:Key="Builds_NotConfigured">Сначала выберите версию игры и загрузчик в настройках сборки — от них зависит, какие моды доступны.</x:String>
     <x:String x:Key="Builds_GoSettings">Перейти в настройки сборки</x:String>
     <x:String x:Key="Mods_ModrinthResults">Результаты поиска</x:String>

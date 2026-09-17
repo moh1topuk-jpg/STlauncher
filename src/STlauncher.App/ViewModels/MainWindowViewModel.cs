@@ -204,6 +204,23 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isServerStatusBusy;
 
+    public ObservableCollection<ServerHistoryBarView> ServerHistoryBars { get; } = new();
+
+    [ObservableProperty]
+    private bool _hasServerHistory;
+
+    [ObservableProperty]
+    private string _serverAverage = string.Empty;
+
+    [ObservableProperty]
+    private string _serverPeak = string.Empty;
+
+    private ServerHistoryStore _serverHistory = null!;
+    private DispatcherTimer? _serverTimer;
+
+    /// <summary>Highest bar in the window; used to scale the chart.</summary>
+    private const double ChartHeight = 80;
+
     [RelayCommand]
     private async Task RefreshServerStatusAsync()
     {
@@ -223,6 +240,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 ServerMotd = Localize("Server_Offline", "Server did not respond");
                 ServerPlayers = string.Empty;
                 ServerIcon = ServerLogo;
+                RefreshServerHistory();
                 return;
             }
 
@@ -231,6 +249,9 @@ public partial class MainWindowViewModel : ViewModelBase
             ServerIcon = status.Favicon is { Length: > 0 }
                 ? CreateBitmap(status.Favicon) ?? ServerLogo
                 : ServerLogo;
+
+            _serverHistory.Add(status.Online);
+            RefreshServerHistory();
         }
         catch (Exception ex)
         {
@@ -240,6 +261,44 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             IsServerStatusBusy = false;
         }
+    }
+
+    private void RefreshServerHistory()
+    {
+        var window = TimeSpan.FromDays(3);
+        var bars = _serverHistory.GetHourlyBars(window);
+        var peak = bars.Count == 0 ? 0 : bars.Max(b => b.Peak);
+
+        ServerHistoryBars.Clear();
+
+        foreach (var bar in bars)
+        {
+            var fraction = peak == 0 ? 0 : bar.Average / peak;
+
+            ServerHistoryBars.Add(new ServerHistoryBarView(
+                Math.Max(2, fraction * ChartHeight),
+                $"{bar.Label} — {bar.Average:F0} (пик {bar.Peak})"));
+        }
+
+        HasServerHistory = ServerHistoryBars.Count > 0;
+
+        var (average, top) = _serverHistory.GetSummary(window);
+        ServerAverage = HasServerHistory
+            ? Localize("Server_Average", "Average: {0:F0}", average)
+            : string.Empty;
+        ServerPeak = HasServerHistory
+            ? Localize("Server_Peak", "Peak: {0}", top)
+            : string.Empty;
+    }
+
+    private void StartServerTimer()
+    {
+        _serverTimer?.Stop();
+
+        // One sample every ten minutes while the launcher is open.
+        _serverTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(10) };
+        _serverTimer.Tick += (_, _) => _ = RefreshServerStatusAsync();
+        _serverTimer.Start();
     }
 
     private static Bitmap? CreateBitmap(byte[] bytes)
@@ -358,7 +417,12 @@ public partial class MainWindowViewModel : ViewModelBase
         LoadAfterLaunchOptions();
         LoadServerLogo();
         RefreshBackups();
+
+        _serverHistory = new ServerHistoryStore(
+            System.IO.Path.Combine(_paths.Root, "server-history.json"));
+
         _ = RefreshServerStatusAsync();
+        StartServerTimer();
 
         Status = Localize("Status_Ready", "Ready");
         CatalogStatus = Localize("Catalog_NotLoaded", "Catalog not loaded yet");
@@ -664,19 +728,28 @@ public partial class MainWindowViewModel : ViewModelBase
     private void ClearConsole() => Console.Clear();
 
     [RelayCommand]
-    private void OpenWebsite()
+    private void OpenWebsite() => OpenUrl(ServerDefaults.Website);
+
+    /// <summary>Opens an external link in the default browser.</summary>
+    [RelayCommand]
+    private void OpenUrl(string? url)
     {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return;
+        }
+
         try
         {
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
             {
-                FileName = "https://showtime.su",
+                FileName = url,
                 UseShellExecute = true
             });
         }
         catch (Exception ex)
         {
-            Status = Localize("Error_OpenFolder", "Failed to open the folder: {0}", ex.Message);
+            Status = Localize("Error_OpenLink", "Failed to open the link: {0}", ex.Message);
         }
     }
 
@@ -1058,7 +1131,11 @@ public partial class MainWindowViewModel : ViewModelBase
 
     partial void OnServerNameChanged(string value) => SyncInstance();
 
-    partial void OnServerAddressChanged(string value) => SyncInstance();
+    partial void OnServerAddressChanged(string value)
+    {
+        SyncInstance();
+        OnPropertyChanged(nameof(ServerJoinHint));
+    }
 
     partial void OnSelectedInstanceChanged(Instance? value)
     {

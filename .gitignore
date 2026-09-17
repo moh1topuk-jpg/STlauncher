@@ -494,3 +494,8 @@ CURSEFORGE_API_KEY*
 # The macOS '*.app' bundle pattern above must not swallow our project folder
 !src/STlauncher.App/
 
+
+# Build output for the installer
+publish/
+releases/
+

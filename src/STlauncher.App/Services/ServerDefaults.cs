@@ -11,4 +11,8 @@ public static class ServerDefaults
     public const string Address = "mc.showtime.su";
 
     public const string Website = "https://showtime.su";
+
+    public const string Telegram = "https://t.me/ShowTimeMc";
+
+    public const string Discord = "https://discord.gg/showtimes";
 }

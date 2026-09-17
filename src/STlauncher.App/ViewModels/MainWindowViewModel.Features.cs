@@ -650,6 +650,20 @@ public partial class MainWindowViewModel
     }
 }
 
+/// <summary>One bar of the online chart: pixel height plus a hover tooltip.</summary>
+public sealed class ServerHistoryBarView
+{
+    public ServerHistoryBarView(double height, string tooltip)
+    {
+        Height = height;
+        Tooltip = tooltip;
+    }
+
+    public double Height { get; }
+
+    public string Tooltip { get; }
+}
+
 public sealed record JavaChoice(string Display, string? Path);
 
 public sealed record AfterLaunchOption(AfterLaunchAction Action, string Display);
