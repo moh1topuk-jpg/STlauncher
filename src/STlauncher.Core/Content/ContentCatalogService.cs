@@ -1,18 +1,37 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
 namespace STlauncher.Core.Content;
 
-public sealed record CatalogLoadResult(ContentCatalog? Catalog, bool FromRemote, string? Error);
+public enum CatalogOrigin
+{
+    None,
+
+    /// <summary>Fetched from the configured http(s) URL.</summary>
+    Remote,
+
+    /// <summary>Read from the configured local path or file:// URI.</summary>
+    LocalFile,
+
+    /// <summary>Previously downloaded copy, used when the source is unavailable.</summary>
+    Cache,
+
+    /// <summary>catalog.json placed next to settings.json.</summary>
+    DropIn
+}
+
+public sealed record CatalogLoadResult(ContentCatalog? Catalog, CatalogOrigin Origin, string? Error);
 
 public sealed class ContentCatalogService
 {
     public const int SupportedSchemaVersion = 1;
+    public const string LocalFileName = "catalog.json";
 
     private static readonly JsonSerializerOptions JsonOptions = CreateOptions();
 
@@ -30,55 +49,119 @@ public sealed class ContentCatalogService
         _logger = logger;
     }
 
-    /// <summary>Remote catalog address. Empty means "use the cached copy only".</summary>
+    /// <summary>
+    /// Where to read the catalog from. Accepts an http(s) URL, a file:// URI or a plain
+    /// filesystem path. Empty falls back to the cache and the drop-in file.
+    /// </summary>
     public string? CatalogUrl { get; set; }
 
-    public string CachePath => Path.Combine(_paths.Meta, "catalog.json");
+    public string CachePath => Path.Combine(_paths.Meta, LocalFileName);
+
+    /// <summary>A catalog placed next to settings.json, so hosting is optional.</summary>
+    public string DropInPath => Path.Combine(_paths.Root, LocalFileName);
 
     public async Task<CatalogLoadResult> LoadAsync(CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(CatalogUrl))
+        var error = default(string);
+
+        if (IsHttpUrl(CatalogUrl))
         {
-            return new CatalogLoadResult(LoadCached(), false, null);
+            try
+            {
+                var json = await _http.GetStringAsync(CatalogUrl!, cancellationToken).ConfigureAwait(false);
+                var catalog = Parse(json);
+
+                Directory.CreateDirectory(_paths.Meta);
+                await File.WriteAllTextAsync(CachePath, json, cancellationToken).ConfigureAwait(false);
+
+                _logger?.LogInformation("Loaded catalog '{Name}' with {Count} items.", catalog.Name, catalog.ItemCount);
+                return new CatalogLoadResult(catalog, CatalogOrigin.Remote, null);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "Failed to load the catalog from {Url}.", CatalogUrl);
+                error = ex.Message;
+            }
+        }
+        else if (IsLocalPath(CatalogUrl))
+        {
+            try
+            {
+                var json = await File.ReadAllTextAsync(ResolveLocalFile(CatalogUrl!), cancellationToken).ConfigureAwait(false);
+                return new CatalogLoadResult(Parse(json), CatalogOrigin.LocalFile, null);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "Failed to read the catalog from {Path}.", CatalogUrl);
+                error = ex.Message;
+            }
         }
 
-        try
+        var cached = LoadCached();
+        if (cached is not null)
         {
-            var json = await _http.GetStringAsync(CatalogUrl, cancellationToken).ConfigureAwait(false);
-            var catalog = Parse(json);
-
-            Directory.CreateDirectory(_paths.Meta);
-            await File.WriteAllTextAsync(CachePath, json, cancellationToken).ConfigureAwait(false);
-
-            _logger?.LogInformation("Loaded catalog '{Name}' with {Count} items.", catalog.Name, catalog.ItemCount);
-            return new CatalogLoadResult(catalog, true, null);
+            return new CatalogLoadResult(cached, CatalogOrigin.Cache, error);
         }
-        catch (Exception ex)
+
+        var dropIn = TryReadFile(DropInPath);
+        if (dropIn is not null)
         {
-            _logger?.LogWarning(ex, "Failed to load the catalog from {Url}.", CatalogUrl);
-
-            var cached = LoadCached();
-            return new CatalogLoadResult(cached, false, ex.Message);
+            return new CatalogLoadResult(dropIn, CatalogOrigin.DropIn, error);
         }
+
+        return new CatalogLoadResult(null, CatalogOrigin.None, error);
     }
 
-    public ContentCatalog? LoadCached()
+    public ContentCatalog? LoadCached() => TryReadFile(CachePath);
+
+    public ContentCatalog? TryReadFile(string path)
     {
         try
         {
-            if (!File.Exists(CachePath))
+            if (!File.Exists(path))
             {
                 return null;
             }
 
-            return Parse(File.ReadAllText(CachePath));
+            return Parse(File.ReadAllText(path));
         }
         catch (Exception ex)
         {
-            _logger?.LogWarning(ex, "Failed to read the cached catalog.");
+            _logger?.LogWarning(ex, "Failed to read the catalog at {Path}.", path);
             return null;
         }
     }
+
+    public static bool IsHttpUrl(string? value)
+        => Uri.TryCreate(value, UriKind.Absolute, out var uri) &&
+           (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+
+    public static bool IsLocalPath(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        if (value.StartsWith("file:", StringComparison.OrdinalIgnoreCase))
+        {
+            return Uri.TryCreate(value, UriKind.Absolute, out var fileUri) && fileUri.IsFile;
+        }
+
+        if (Uri.TryCreate(value, UriKind.Absolute, out var absolute))
+        {
+            return absolute.IsFile;
+        }
+
+        return true;
+    }
+
+    public static string ResolveLocalFile(string value)
+        => value.StartsWith("file:", StringComparison.OrdinalIgnoreCase) &&
+           Uri.TryCreate(value, UriKind.Absolute, out var uri) &&
+           uri.IsFile
+            ? uri.LocalPath
+            : value;
 
     public static ContentCatalog Parse(string json)
     {

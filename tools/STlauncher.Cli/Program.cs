@@ -321,13 +321,13 @@ internal static class Program
         if (result.Catalog is null)
         {
             Console.Error.WriteLine(result.Error is null
-                ? "No catalog configured. Pass --catalog <url>."
+                ? "No catalog found. Pass --catalog <url|path>, or drop catalog.json next to settings.json."
                 : $"Failed to load the catalog: {result.Error}");
             return 1;
         }
 
         var catalog = result.Catalog;
-        Console.WriteLine($"catalog : {catalog.Name} (schema {catalog.SchemaVersion}, {(result.FromRemote ? "remote" : "cache")})");
+        Console.WriteLine($"catalog : {catalog.Name} (schema {catalog.SchemaVersion}, {result.Origin})");
         Console.WriteLine($"items   : {catalog.ItemCount}");
         Console.WriteLine();
 
@@ -453,7 +453,7 @@ internal static class Program
               prepare <version> <nick> [options]    download and print the launch command
               run <version> <nick> [options]        download and launch the game
               modpack <file.mrpack> [instanceId]   install a Modrinth/CurseForge modpack
-              catalog [--catalog <url>]            show the content catalog
+              catalog [--catalog <url|path>]       show the content catalog
               catalog-install <itemId> [options]   install one catalog item
 
             options:

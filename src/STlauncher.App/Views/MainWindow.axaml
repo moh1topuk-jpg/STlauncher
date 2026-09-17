@@ -261,10 +261,10 @@
                     <TextBlock TextWrapping="Wrap" Foreground="#9BA3AF" FontSize="11"
                                Text="Stored locally in settings.json (%APPDATA%), never committed to the repository. Can also be supplied via the CURSEFORGE_API_KEY environment variable."/>
 
-                    <TextBlock Text="Content catalog URL" FontWeight="SemiBold" Margin="0,16,0,0"/>
-                    <TextBox Text="{Binding CatalogUrl}" Watermark="https://example.com/catalog.json"/>
+                    <TextBlock Text="Content catalog" FontWeight="SemiBold" Margin="0,16,0,0"/>
+                    <TextBox Text="{Binding CatalogUrl}" Watermark="https://example.com/catalog.json  or  C:\path\catalog.json"/>
                     <TextBlock TextWrapping="Wrap" Foreground="#9BA3AF" FontSize="11"
-                               Text="JSON-каталог модов и другого контента. Скачанные копии кэшируются, поэтому раздел Content работает и при недоступном сервере."/>
+                               Text="Необязательно. Можно указать URL, локальный путь или file:/// URI. Если оставить пустым, будет использован catalog.json рядом с settings.json. Скачанная копия кэшируется."/>
 
                     <TextBlock Text="Updates" FontWeight="SemiBold" Margin="0,16,0,0"/>
                     <TextBlock Text="{Binding UpdateStatus}" TextWrapping="Wrap" Foreground="#9BA3AF"/>

@@ -497,13 +497,6 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(_catalog.CatalogUrl))
-        {
-            CatalogStatus = "No catalog URL configured. Set it in Settings.";
-            CatalogSections.Clear();
-            return;
-        }
-
         try
         {
             IsCatalogBusy = true;
@@ -520,19 +513,30 @@ public partial class MainWindowViewModel : ViewModelBase
                 }
             }
 
-            if (result.FromRemote)
+            var summary = $"{result.Catalog?.Name ?? "Catalog"}: " +
+                          $"{CatalogSections.Count} section(s), {result.Catalog?.ItemCount ?? 0} item(s).";
+
+            if (result.Catalog is null)
             {
-                CatalogStatus = $"{result.Catalog?.Name ?? "Catalog"}: {CatalogSections.Count} section(s), {result.Catalog?.ItemCount ?? 0} item(s).";
-            }
-            else if (result.Error is not null)
-            {
-                CatalogStatus = CatalogSections.Count > 0
-                    ? $"Server unreachable, showing the cached catalog. ({result.Error})"
+                CatalogStatus = string.IsNullOrWhiteSpace(CatalogUrl)
+                    ? $"No catalog found. Put {ContentCatalogService.LocalFileName} next to settings.json " +
+                      $"({_catalog.DropInPath}) or set a URL/path in Settings."
                     : $"Failed to load the catalog: {result.Error}";
+                return;
             }
-            else
+
+            CatalogStatus = result.Origin switch
             {
-                CatalogStatus = "Catalog is empty.";
+                CatalogOrigin.Remote => summary,
+                CatalogOrigin.LocalFile => $"{summary} (local file)",
+                CatalogOrigin.Cache => $"{summary} (cached copy: source unavailable)",
+                CatalogOrigin.DropIn => $"{summary} (local file)",
+                _ => summary
+            };
+
+            if (result.Error is not null && result.Origin is not CatalogOrigin.Remote)
+            {
+                CatalogStatus += $" — {result.Error}";
             }
         }
         catch (Exception ex)

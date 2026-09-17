@@ -181,6 +181,38 @@ public class ContentCatalogTests
     }
 
     [Theory]
+    [InlineData("https://mc.showtime.su/launcher/catalog.json", true)]
+    [InlineData("http://example.com/catalog.json", true)]
+    [InlineData(@"C:\data\catalog.json", false)]
+    [InlineData("file:///C:/data/catalog.json", false)]
+    [InlineData("", false)]
+    [InlineData(null, false)]
+    public void IsHttpUrl_DetectsHttpSources(string? value, bool expected)
+        => Assert.Equal(expected, ContentCatalogService.IsHttpUrl(value));
+
+    [Theory]
+    [InlineData(@"C:\data\catalog.json", true)]
+    [InlineData("catalog.json", true)]
+    [InlineData("file:///C:/data/catalog.json", true)]
+    [InlineData("https://example.com/catalog.json", false)]
+    [InlineData("", false)]
+    [InlineData(null, false)]
+    public void IsLocalPath_DetectsFilesystemSources(string? value, bool expected)
+        => Assert.Equal(expected, ContentCatalogService.IsLocalPath(value));
+
+    [Fact]
+    public void ResolveLocalFile_ConvertsFileUriToPath()
+    {
+        var resolved = ContentCatalogService.ResolveLocalFile("file:///C:/data/catalog.json");
+
+        Assert.Equal(@"C:\data\catalog.json", resolved);
+    }
+
+    [Fact]
+    public void ResolveLocalFile_KeepsPlainPathsUntouched()
+        => Assert.Equal(@"C:\data\catalog.json", ContentCatalogService.ResolveLocalFile(@"C:\data\catalog.json"));
+
+    [Theory]
     [InlineData("https://cdn.example.com/a/b/sodium-fabric-0.5.13%2Bmc1.20.1.jar", "sodium-fabric-0.5.13+mc1.20.1.jar")]
     [InlineData("https://mc.showtime.su/files/stuff.jar", "stuff.jar")]
     [InlineData("not a url", null)]
