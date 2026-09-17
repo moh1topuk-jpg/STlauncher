@@ -43,7 +43,14 @@
     <x:String x:Key="Builds_WizardLoader">Загрузчик</x:String>
     <x:String x:Key="Builds_WizardHint">Версия и загрузчик определяют, какие моды будут доступны в каталоге.</x:String>
     <x:String x:Key="Builds_WizardCreate">Создать</x:String>
-    <x:String x:Key="Builds_UseRecommended">Взять рекомендуемую</x:String>
+    <x:String x:Key="Builds_UseRecommended">Добавить рекомендуемую сборку</x:String>
+    <x:String x:Key="Builds_UseRecommendedHint">Скачает рекомендуемую сборку с GitHub и добавит её отдельной сборкой в список.</x:String>
+    <x:String x:Key="Builds_ImportFetching">Загружаю рекомендуемую сборку…</x:String>
+    <x:String x:Key="Builds_ImportNoCatalog">Не удалось загрузить каталог: {0}</x:String>
+    <x:String x:Key="Builds_ImportNone">В каталоге нет ни одной сборки</x:String>
+    <x:String x:Key="Builds_ImportInstalling">Устанавливаю моды сборки…</x:String>
+    <x:String x:Key="Builds_ImportDone">Сборка «{0}» добавлена ({1} элем.)</x:String>
+    <x:String x:Key="Builds_ImportVersionMissing">Сборка «{0}» добавлена, но версия {1} недоступна — выберите её в настройках сборки.</x:String>
     <x:String x:Key="Builds_OnlyInstalled">Только установленные</x:String>
     <x:String x:Key="Builds_Details">Описание</x:String>
     <x:String x:Key="Builds_DetailsVersions">Версии</x:String>
@@ -220,6 +227,7 @@
     <x:String x:Key="Error_DuplicateBuild">Не удалось скопировать сборку: {0}</x:String>
     <x:String x:Key="Error_RenameBuild">Не удалось переименовать сборку: {0}</x:String>
     <x:String x:Key="Error_SaveBuild">Не удалось сохранить сборку: {0}</x:String>
+    <x:String x:Key="Error_ImportBuild">Не удалось добавить сборку: {0}</x:String>
     <x:String x:Key="Error_OpenFolder">Не удалось открыть папку: {0}</x:String>
     <x:String x:Key="Error_ReadMods">Не удалось прочитать моды: {0}</x:String>
     <x:String x:Key="Error_ToggleMod">Не удалось переключить мод: {0}</x:String>

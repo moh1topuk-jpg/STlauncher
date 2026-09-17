@@ -111,6 +111,14 @@ public sealed class CatalogBuild
     /// <summary>Catalog item ids this build consists of.</summary>
     [JsonPropertyName("items")]
     public List<string> Items { get; set; } = new();
+
+    /// <summary>
+    /// Marks the build the launcher offers by name. When no build sets it, the first one
+    /// in the catalog is treated as recommended, which is how it worked before the flag
+    /// existed.
+    /// </summary>
+    [JsonPropertyName("recommended")]
+    public bool Recommended { get; set; }
 }
 
 public sealed class CatalogSection

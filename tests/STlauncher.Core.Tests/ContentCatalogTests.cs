@@ -160,6 +160,27 @@ public class ContentCatalogTests
         Assert.Equal(4096, build.MemoryMb);
         Assert.Equal("mc.showtime.su", build.ServerAddress);
         Assert.Equal(new[] { "sodium" }, build.Items);
+        Assert.False(build.Recommended);
+    }
+
+    [Fact]
+    public void Parse_ReadsTheRecommendedFlag()
+    {
+        const string json = """
+        {
+          "schemaVersion": 1,
+          "sections": [],
+          "builds": [
+            { "id": "a", "name": "A", "items": [] },
+            { "id": "b", "name": "B", "recommended": true, "items": [] }
+          ]
+        }
+        """;
+
+        var builds = ContentCatalogService.Parse(json).Builds;
+
+        Assert.False(builds[0].Recommended);
+        Assert.True(builds[1].Recommended);
     }
 
     [Theory]

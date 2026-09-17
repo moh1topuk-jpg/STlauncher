@@ -43,7 +43,14 @@
     <x:String x:Key="Builds_WizardLoader">Loader</x:String>
     <x:String x:Key="Builds_WizardHint">The version and loader decide which mods the catalog offers.</x:String>
     <x:String x:Key="Builds_WizardCreate">Create</x:String>
-    <x:String x:Key="Builds_UseRecommended">Use recommended</x:String>
+    <x:String x:Key="Builds_UseRecommended">Add the recommended build</x:String>
+    <x:String x:Key="Builds_UseRecommendedHint">Downloads the recommended build from GitHub and adds it to the list as its own build.</x:String>
+    <x:String x:Key="Builds_ImportFetching">Fetching the recommended build…</x:String>
+    <x:String x:Key="Builds_ImportNoCatalog">Could not load the catalog: {0}</x:String>
+    <x:String x:Key="Builds_ImportNone">The catalog does not offer a build</x:String>
+    <x:String x:Key="Builds_ImportInstalling">Installing build mods…</x:String>
+    <x:String x:Key="Builds_ImportDone">Build "{0}" added ({1} item(s))</x:String>
+    <x:String x:Key="Builds_ImportVersionMissing">Build "{0}" was added, but version {1} is not available - pick one in the build settings.</x:String>
     <x:String x:Key="Builds_OnlyInstalled">Installed only</x:String>
     <x:String x:Key="Builds_Details">Description</x:String>
     <x:String x:Key="Builds_DetailsVersions">Versions</x:String>
@@ -220,6 +227,7 @@
     <x:String x:Key="Error_DuplicateBuild">Failed to duplicate the build: {0}</x:String>
     <x:String x:Key="Error_RenameBuild">Failed to rename the build: {0}</x:String>
     <x:String x:Key="Error_SaveBuild">Failed to save the build: {0}</x:String>
+    <x:String x:Key="Error_ImportBuild">Failed to add the build: {0}</x:String>
     <x:String x:Key="Error_OpenFolder">Failed to open the folder: {0}</x:String>
     <x:String x:Key="Error_ReadMods">Failed to read mods: {0}</x:String>
     <x:String x:Key="Error_ToggleMod">Failed to toggle the mod: {0}</x:String>

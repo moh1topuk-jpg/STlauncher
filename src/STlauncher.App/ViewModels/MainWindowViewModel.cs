@@ -569,7 +569,7 @@ public partial class MainWindowViewModel : ViewModelBase
     /// </summary>
     private Instance CreateDefaultInstance(AppSettings settings)
     {
-        var build = CatalogBuilds.FirstOrDefault();
+        var build = RecommendedBuild;
 
         if (build is null)
         {
@@ -584,7 +584,21 @@ public partial class MainWindowViewModel : ViewModelBase
             return legacy;
         }
 
-        var instance = _instances.Create(build.Name);
+        var instance = CreateInstanceFromBuild(build, uniqueName: false);
+
+        AppendConsole($"[setup] created '{instance.Name}' from the recommended build");
+        return instance;
+    }
+
+    /// <summary>
+    /// Turns a catalog build into a real instance: version, loader, memory, server and the
+    /// list of catalog items it consists of.
+    /// </summary>
+    private Instance CreateInstanceFromBuild(CatalogBuild build, bool uniqueName)
+    {
+        var name = uniqueName ? UniqueInstanceName(build.Name) : build.Name;
+
+        var instance = _instances.Create(name);
         instance.VersionId = build.GameVersion;
         instance.Loader = build.Loader;
         instance.LoaderVersion = build.LoaderVersion;
@@ -595,11 +609,48 @@ public partial class MainWindowViewModel : ViewModelBase
             instance.MaxMemoryMb = build.MemoryMb.Value;
         }
 
-        _instances.Save(instance);
+        if (!string.IsNullOrWhiteSpace(build.ServerName))
+        {
+            instance.ServerName = build.ServerName!;
+        }
 
-        AppendConsole($"[setup] created '{instance.Name}' from the recommended build");
+        if (!string.IsNullOrWhiteSpace(build.ServerAddress))
+        {
+            instance.ServerAddress = build.ServerAddress!;
+        }
+
+        _instances.Save(instance);
         return instance;
     }
+
+    /// <summary>
+    /// Keeps build names distinct: adding the same recommended build twice should not
+    /// produce two entries that read identically in the list.
+    /// </summary>
+    private string UniqueInstanceName(string baseName)
+    {
+        var taken = new HashSet<string>(
+            _allInstances.Select(i => i.Name),
+            StringComparer.OrdinalIgnoreCase);
+
+        if (!taken.Contains(baseName))
+        {
+            return baseName;
+        }
+
+        for (var suffix = 2; suffix < 1000; suffix++)
+        {
+            var candidate = $"{baseName} ({suffix})";
+
+            if (!taken.Contains(candidate))
+            {
+                return candidate;
+            }
+        }
+
+        return baseName;
+    }
+
 
     [RelayCommand]
     private void CreateInstance()

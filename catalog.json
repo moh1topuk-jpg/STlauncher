@@ -45,6 +45,7 @@
     {
       "id": "showtime-fabric-1.21.11",
       "name": "Showtime — Fabric 1.21.11",
+      "recommended": true,
       "description": "Рекомендуемая сборка сервера. Версии модов зафиксированы и проверены на совместимость.",
       "gameVersion": "1.21.11",
       "loader": "fabric",

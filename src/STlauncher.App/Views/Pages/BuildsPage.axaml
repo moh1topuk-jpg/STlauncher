@@ -23,7 +23,7 @@
                     <TextBox Grid.Row="1" Text="{Binding BuildFilter}"
                              Watermark="{DynamicResource Builds_SearchHint}"/>
 
-                    <StackPanel Grid.Row="2" Spacing="4">
+                    <StackPanel Grid.Row="2" Spacing="5">
                         <TextBlock Text="{DynamicResource Content_Builds}" Classes="faint"/>
                         <ComboBox ItemsSource="{Binding CatalogBuilds}"
                                   SelectedItem="{Binding SelectedBuild}"
@@ -35,6 +35,20 @@
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
+
+                        <!-- Adds a brand-new build from the catalog instead of applying the
+                             selection to the build that is already open. -->
+                        <Button Classes="primary small" HorizontalAlignment="Stretch"
+                                Margin="0,3,0,0"
+                                Content="{DynamicResource Builds_UseRecommended}"
+                                Command="{Binding AddRecommendedBuildCommand}"
+                                IsEnabled="{Binding !IsBuildImportBusy}"/>
+
+                        <TextBlock Text="{DynamicResource Builds_UseRecommendedHint}" Classes="faint"
+                                   FontSize="11" TextWrapping="Wrap"/>
+
+                        <ProgressBar IsVisible="{Binding IsBuildImportBusy}"
+                                     IsIndeterminate="True" Height="3" Margin="0,2,0,0"/>
                     </StackPanel>
 
                     <ListBox Grid.Row="3" ItemsSource="{Binding Instances}"

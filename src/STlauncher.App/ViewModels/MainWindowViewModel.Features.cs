@@ -260,7 +260,7 @@ public partial class MainWindowViewModel
             {
                 var display = string.IsNullOrWhiteSpace(installation.Vendor)
                     ? $"Java {installation.MajorVersion}"
-                    : $"Java {installation.MajorVersion} — {installation.Vendor}";
+                    : $"Java {installation.MajorVersion} ï¿½ {installation.Vendor}";
 
                 JavaChoices.Add(new JavaChoice(display, installation.ExecutablePath));
             }
@@ -277,12 +277,24 @@ public partial class MainWindowViewModel
 
     // ===================== Recommended builds =====================
 
-    public ObservableCollection<CatalogBuild> CatalogBuilds { get; } = new();
+public ObservableCollection<CatalogBuild> CatalogBuilds { get; } = new();
 
     [ObservableProperty]
     private CatalogBuild? _selectedBuild;
 
+    /// <summary>True while the recommended build is being fetched and installed.</summary>
+    [ObservableProperty]
+    private bool _isBuildImportBusy;
+
+    /// <summary>
+    /// The build the catalog marks as recommended, falling back to the first entry so an
+    /// older catalog without the flag keeps working.
+    /// </summary>
+    public CatalogBuild? RecommendedBuild =>
+        CatalogBuilds.FirstOrDefault(b => b.Recommended) ?? CatalogBuilds.FirstOrDefault();
+
     partial void OnSelectedBuildChanged(CatalogBuild? value) => ApplyBuild(value);
+
 
     private void ApplyBuild(CatalogBuild? build)
     {
@@ -326,6 +338,144 @@ public partial class MainWindowViewModel
 
     [RelayCommand]
     private void ApplySelectedBuild() => ApplyBuild(SelectedBuild);
+
+    /// <summary>
+    /// Fetches the recommended build from the catalog and adds it to the build list as a
+    /// new build, downloading its mods so it is ready to play.
+    /// </summary>
+    [RelayCommand]
+    private async Task AddRecommendedBuildAsync()
+    {
+        if (IsBuildImportBusy)
+        {
+            return;
+        }
+
+        try
+        {
+            IsBuildImportBusy = true;
+            Status = Localize("Builds_ImportFetching", "Fetching the recommended buildâ€¦");
+
+            // Read the catalog again rather than trusting the loaded copy: the build lives
+            // in the repository, so a change there should be picked up without a restart.
+            var result = await _catalog.LoadAsync();
+
+            if (result.Catalog is null)
+            {
+                Status = Localize(
+                    "Builds_ImportNoCatalog",
+                    "Could not load the catalog: {0}",
+                    result.Error ?? "?");
+                return;
+            }
+
+            _loadedCatalog = result.Catalog;
+
+            CatalogBuilds.Clear();
+            foreach (var catalogBuild in result.Catalog.Builds)
+            {
+                CatalogBuilds.Add(catalogBuild);
+            }
+
+            var build = RecommendedBuild;
+
+            if (build is null)
+            {
+                Status = Localize("Builds_ImportNone", "The catalog does not offer a build");
+                return;
+            }
+
+            var instance = CreateInstanceFromBuild(build, uniqueName: true);
+
+            _allInstances.Add(instance);
+            ApplyBuildFilter();
+            SelectedInstance = instance;
+
+            var versionMissing = await ApplyBuildToEditorAsync(build);
+
+            if (versionMissing)
+            {
+                // The build is in the list and usable, it just needs a version picked by hand.
+                Status = Localize(
+                    "Builds_ImportVersionMissing",
+                    "Build \"{0}\" added, but version {1} is not available - choose one in Settings.",
+                    instance.Name,
+                    build.GameVersion);
+                return;
+            }
+
+            Status = Localize("Builds_ImportInstalling", "Installing build modsâ€¦");
+            await EnsureBuildItemsInstalledAsync();
+
+            RefreshBackups();
+
+            Status = Localize(
+                "Builds_ImportDone",
+                "Build \"{0}\" added ({1} item(s))",
+                instance.Name,
+                build.Items.Count);
+
+            AppendConsole($"[builds] added '{instance.Name}' from the catalog");
+        }
+        catch (Exception ex)
+        {
+            Status = Localize("Error_ImportBuild", "Failed to add the build: {0}", ex.Message);
+        }
+        finally
+        {
+            IsBuildImportBusy = false;
+        }
+    }
+
+    /// <summary>
+    /// Points the editor at what the build describes. Returns true when the build's game
+    /// version could not be resolved, which the caller reports instead of failing.
+    /// </summary>
+    private async Task<bool> ApplyBuildToEditorAsync(CatalogBuild build)
+    {
+        var versionMissing = false;
+
+        _applyingInstance = true;
+        try
+        {
+            if (build.GameVersion is not null)
+            {
+                var version = _allVersions.FirstOrDefault(v => v.Id == build.GameVersion);
+
+                if (version is null)
+                {
+                    versionMissing = true;
+                }
+                else
+                {
+                    SelectedVersion = version;
+                }
+            }
+
+            SelectedLoader = build.Loader;
+
+            if (build.MemoryMb is > 0)
+            {
+                MaxMemoryMb = build.MemoryMb.Value;
+            }
+        }
+        finally
+        {
+            _applyingInstance = false;
+        }
+
+        await LoadLoaderVersionsAsync();
+
+        if (build.LoaderVersion is { Length: > 0 } pinned)
+        {
+            SelectedLoaderVersion = LoaderVersions.FirstOrDefault(v => v.Version == pinned)
+                                    ?? SelectedLoaderVersion;
+        }
+
+        SyncInstance();
+        OnPropertyChanged(nameof(BuildModCount));
+        return versionMissing;
+    }
 
     /// <summary>
     /// Makes the instance match the recommended build. The build file in the repository is
@@ -552,7 +702,7 @@ public partial class MainWindowViewModel
                 return;
             }
 
-            BackupStatus = Localize("Backup_InProgress", "Creating a backup…");
+            BackupStatus = Localize("Backup_InProgress", "Creating a backupï¿½");
             AppendConsole($"[backup] creating a backup of {SelectedInstance.Name}");
 
             var backup = await _backups.CreateAsync(InstanceDirectory, BackupsDirectory, SelectedInstance.Id);
