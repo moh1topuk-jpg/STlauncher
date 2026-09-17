@@ -4,7 +4,12 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <AssemblyTitle>STlauncher</AssemblyTitle>
+    <Product>STlauncher</Product>
+    <Company>Showtime</Company>
+    <Version>0.1.1</Version>
   </PropertyGroup>
 
   <ItemGroup>
