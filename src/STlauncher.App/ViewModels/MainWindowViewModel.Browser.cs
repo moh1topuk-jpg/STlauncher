@@ -16,7 +16,12 @@ namespace STlauncher.App.ViewModels;
 /// <summary>Which half of the build screen is visible.</summary>
 public enum BuildTab
 {
+    /// <summary>What is in the build: its mods, to switch off or remove.</summary>
+    Mods,
+
+    /// <summary>Modrinth, to add more.</summary>
     Catalog,
+
     Settings
 }
 
@@ -56,13 +61,15 @@ public partial class MainWindowViewModel
     // ===================== Build tabs =====================
 
     [ObservableProperty]
-    private BuildTab _buildTab = BuildTab.Catalog;
+    private BuildTab _buildTab = BuildTab.Mods;
 
+    public bool IsBuildMods => BuildTab == BuildTab.Mods;
     public bool IsBuildCatalog => BuildTab == BuildTab.Catalog;
     public bool IsBuildSettings => BuildTab == BuildTab.Settings;
 
     partial void OnBuildTabChanged(BuildTab value)
     {
+        OnPropertyChanged(nameof(IsBuildMods));
         OnPropertyChanged(nameof(IsBuildCatalog));
         OnPropertyChanged(nameof(IsBuildSettings));
     }

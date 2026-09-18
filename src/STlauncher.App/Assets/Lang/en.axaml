@@ -67,6 +67,20 @@
     <x:String x:Key="Builds_TabMods">Mods</x:String>
     <x:String x:Key="Builds_TabCatalog">Mod catalog</x:String>
     <x:String x:Key="Builds_TabSettings">Build settings</x:String>
+    <x:String x:Key="Builds_Add">+ Add</x:String>
+    <x:String x:Key="Builds_AddNew">New build…</x:String>
+    <x:String x:Key="Builds_AddFromCatalog">From the catalog</x:String>
+    <x:String x:Key="Builds_AddCopy">Copy of the selected</x:String>
+    <x:String x:Key="Builds_TagCatalog">From the catalog</x:String>
+    <x:String x:Key="Builds_TagLinked">Other launcher&apos;s folder</x:String>
+    <x:String x:Key="Builds_TagImported">Imported</x:String>
+    <x:String x:Key="Builds_SyncWithCatalog">Check against catalog</x:String>
+    <x:String x:Key="Builds_OpenFolder">Build folder</x:String>
+    <x:String x:Key="Mods_OpenFolder">Mods folder</x:String>
+    <x:String x:Key="Mods_GoCatalog">Open the mod catalog</x:String>
+    <x:String x:Key="Mods_SummaryAll">Mods in the build: {0}</x:String>
+    <x:String x:Key="Mods_SummaryDisabled">Mods in the build: {0}, switched off: {1}</x:String>
+    <x:String x:Key="Size_MbPrecise">{0:F1} MB</x:String>
     <x:String x:Key="Builds_ModsShort">mods</x:String>
     <x:String x:Key="Builds_ServerMods">Server mods</x:String>
     <x:String x:Key="Mods_InstalledBadge">Installed</x:String>
@@ -121,7 +135,7 @@
     <x:String x:Key="Mods_InstallSelected">Install selected</x:String>
     <x:String x:Key="Mods_Toggle">On/Off</x:String>
     <x:String x:Key="Mods_Delete">Delete</x:String>
-    <x:String x:Key="Mods_Empty">No mods yet</x:String>
+    <x:String x:Key="Mods_Empty">This build has no mods yet. Add them from the Modrinth catalog or drop .jar files into the mods folder.</x:String>
 
     <!-- Content page -->
     <x:String x:Key="Content_Builds">Recommended builds</x:String>

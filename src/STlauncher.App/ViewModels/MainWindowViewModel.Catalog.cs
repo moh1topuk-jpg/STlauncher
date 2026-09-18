@@ -38,6 +38,31 @@ public partial class MainWindowViewModel
 
     public ObservableCollection<InstalledMod> InstalledMods { get; } = new();
 
+    /// <summary>The line above the mod list: how many there are, and how many are off.</summary>
+    [ObservableProperty]
+    private string _installedModsSummary = string.Empty;
+
+    public bool HasNoInstalledMods => InstalledMods.Count == 0;
+
+    [RelayCommand]
+    private void OpenModsFolder()
+    {
+        try
+        {
+            var folder = System.IO.Path.Combine(InstanceDirectory, "mods");
+            System.IO.Directory.CreateDirectory(folder);
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = folder,
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            Status = Localize("Error_OpenFolder", "Failed to open the folder: {0}", ex.Message);
+        }
+    }
+
 
     [RelayCommand]
     private async Task LoadCatalogAsync()
@@ -179,6 +204,14 @@ public partial class MainWindowViewModel
             {
                 InstalledMods.Add(mod);
             }
+
+            var enabled = InstalledMods.Count(m => m.Enabled);
+            InstalledModsSummary = InstalledMods.Count == enabled
+                ? Localize("Mods_SummaryAll", "Mods in the build: {0}", enabled)
+                : Localize("Mods_SummaryDisabled", "Mods in the build: {0}, switched off: {1}",
+                    enabled, InstalledMods.Count - enabled);
+
+            OnPropertyChanged(nameof(HasNoInstalledMods));
 
             RefreshBrowserInstallState();
         }

@@ -750,6 +750,7 @@ public partial class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsProfileBuild));
         OnPropertyChanged(nameof(IsNotProfileBuild));
         OnPropertyChanged(nameof(ProfileBuildHint));
+        OnPropertyChanged(nameof(IsCatalogInstance));
 
         ApplyServerFromInstance();
 

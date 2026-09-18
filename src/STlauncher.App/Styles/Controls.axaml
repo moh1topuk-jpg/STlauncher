@@ -70,6 +70,45 @@
         <Setter Property="CornerRadius" Value="8"/>
     </Style>
 
+    <!-- Small pill that says what something is: "From the catalog", "Installed". -->
+    <Style Selector="Border.tag">
+        <Setter Property="Background" Value="{DynamicResource ElevatedBrush}"/>
+        <Setter Property="CornerRadius" Value="4"/>
+        <Setter Property="Padding" Value="6,1"/>
+        <Setter Property="HorizontalAlignment" Value="Left"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+    <Style Selector="Border.tag > TextBlock">
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+    </Style>
+    <Style Selector="Border.tag.accent > TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource AccentHoverBrush}"/>
+    </Style>
+    <Style Selector="Border.tag.success > TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource GoldBrush}"/>
+    </Style>
+
+    <!-- A switched-off mod stays in the list, visibly off. -->
+    <Style Selector="Border.mod-row.off">
+        <Setter Property="Opacity" Value="0.55"/>
+    </Style>
+
+    <!-- A quiet remove button that only turns red when aimed at. -->
+    <Style Selector="Button.icon-danger">
+        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+        <Setter Property="MinWidth" Value="30"/>
+        <Setter Property="Padding" Value="8,4"/>
+    </Style>
+    <Style Selector="Button.icon-danger:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
+    </Style>
+
+    <Style Selector="MenuFlyoutPresenter">
+        <Setter Property="Background" Value="{DynamicResource ElevatedBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
+        <Setter Property="CornerRadius" Value="8"/>
+    </Style>
     <Style Selector="Border.hairline">
         <Setter Property="Height" Value="1"/>
         <Setter Property="Background" Value="{DynamicResource AccentHairlineBrush}"/>

@@ -20,9 +20,6 @@ public partial class MainWindowViewModel
 {
     public ObservableCollection<CatalogBuild> CatalogBuilds { get; } = new();
 
-    [ObservableProperty]
-    private CatalogBuild? _selectedBuild;
-
     /// <summary>True while the recommended build is being fetched and installed.</summary>
     [ObservableProperty]
     private bool _isBuildImportBusy;
@@ -45,7 +42,22 @@ public partial class MainWindowViewModel
                                              ?? CatalogBuilds.FirstOrDefault(b => b.Recommended)
                                              ?? CatalogBuilds.FirstOrDefault();
 
-    partial void OnSelectedBuildChanged(CatalogBuild? value) => ApplyBuild(value);
+    /// <summary>The selected build came from the catalog and is kept in step with it.</summary>
+    public bool IsCatalogInstance => !string.IsNullOrWhiteSpace(SelectedInstance?.CatalogBuildId);
+
+    /// <summary>Adds one build of the catalog, or brings it up to date when it is already here.</summary>
+    [RelayCommand]
+    private Task AddCatalogBuildAsync(CatalogBuild? build) => InstallCatalogBuildAsync(build?.Id);
+
+    /// <summary>Re-checks the selected catalog build against the repository.</summary>
+    [RelayCommand]
+    private Task SyncSelectedBuildAsync()
+    {
+        var build = CatalogBuilds.FirstOrDefault(b =>
+            string.Equals(b.Id, SelectedInstance?.CatalogBuildId, StringComparison.OrdinalIgnoreCase));
+
+        return AddCatalogBuildAsync(build);
+    }
 
     /// <summary>
     /// Brings the build list in line with the catalog. Creates the recommended build when
@@ -176,53 +188,7 @@ public partial class MainWindowViewModel
         await pending;
     }
 
-    /// <summary>
-    /// Applies a catalog build to the instance that is open in the editor. Used by the
-    /// build picker, where the player chose the build explicitly.
-    /// </summary>
-    private void ApplyBuild(CatalogBuild? build)
-    {
-        if (build is null || SelectedInstance is null)
-        {
-            return;
-        }
 
-        _applyingInstance = true;
-        try
-        {
-            CatalogBuildSync.Apply(SelectedInstance, build);
-
-            if (build.GameVersion is not null)
-            {
-                SelectedVersion = _allVersions.FirstOrDefault(v => v.Id == build.GameVersion) ?? SelectedVersion;
-            }
-
-            SelectedLoader = build.Loader;
-
-            if (build.LoaderVersion is not null)
-            {
-                SelectedLoaderVersion = LoaderVersions.FirstOrDefault(v => v.Version == build.LoaderVersion)
-                                        ?? SelectedLoaderVersion;
-            }
-
-            if (build.MemoryMb is > 0)
-            {
-                MaxMemoryMb = build.MemoryMb.Value;
-            }
-        }
-        finally
-        {
-            _applyingInstance = false;
-        }
-
-        SyncInstance();
-        ApplyServerFromInstance();
-        OnPropertyChanged(nameof(BuildModCount));
-        Status = Localize("Status_BuildApplied", "Build \"{0}\" applied: {1} item(s)", build.Name, build.Items.Count);
-    }
-
-    [RelayCommand]
-    private void ApplySelectedBuild() => ApplyBuild(SelectedBuild);
 
     /// <summary>
     /// Re-reads the catalog and brings the recommended build up to date, creating it if
@@ -230,7 +196,14 @@ public partial class MainWindowViewModel
     /// the same build in the list.
     /// </summary>
     [RelayCommand]
-    private async Task AddRecommendedBuildAsync()
+    private Task AddRecommendedBuildAsync() => InstallCatalogBuildAsync(null);
+
+    /// <summary>
+    /// Adds a catalog build, or brings it up to date when it is already in the list.
+    /// Null means the recommended one. Always works on the build's own instance - never
+    /// on whatever happens to be open, which the old picker did.
+    /// </summary>
+    private async Task InstallCatalogBuildAsync(string? buildId)
     {
         if (IsBuildImportBusy)
         {
@@ -267,7 +240,9 @@ public partial class MainWindowViewModel
                 CatalogBuilds.Add(catalogBuild);
             }
 
-            var build = RecommendedBuild;
+            var build = buildId is null
+                ? RecommendedBuild
+                : CatalogBuilds.FirstOrDefault(b => string.Equals(b.Id, buildId, StringComparison.OrdinalIgnoreCase));
 
             if (build is null)
             {

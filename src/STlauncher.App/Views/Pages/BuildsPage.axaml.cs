@@ -35,6 +35,16 @@ public partial class BuildsPage : UserControl
         viewModel.OpenProjectCommand.Execute(item);
     }
 
+    /// <summary>A build picked from the "From the catalog" submenu.</summary>
+    private void OnCatalogBuildClick(object? sender, RoutedEventArgs e)
+    {
+        if (e.Source is MenuItem { DataContext: STlauncher.Core.Content.CatalogBuild build } &&
+            DataContext is MainWindowViewModel viewModel)
+        {
+            viewModel.AddCatalogBuildCommand.Execute(build);
+        }
+    }
+
     private async void OnImportModpackClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not MainWindowViewModel viewModel)

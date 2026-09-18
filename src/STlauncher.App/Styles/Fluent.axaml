@@ -21,6 +21,9 @@
     <SolidColorBrush x:Key="TextControlBackgroundDisabled" Color="#141014"/>
 
     <SolidColorBrush x:Key="TextControlBorderBrush" Color="#382C34"/>
+    <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="#A3243F"/>
+    <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#B8304D"/>
+    <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#8A1E35"/>
     <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#4A3A44"/>
     <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#A3243F"/>
     <SolidColorBrush x:Key="TextControlBorderBrushDisabled" Color="#2E252C"/>

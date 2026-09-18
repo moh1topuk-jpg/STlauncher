@@ -67,6 +67,20 @@
     <x:String x:Key="Builds_TabMods">Моды</x:String>
     <x:String x:Key="Builds_TabCatalog">Каталог модов</x:String>
     <x:String x:Key="Builds_TabSettings">Настройки сборки</x:String>
+    <x:String x:Key="Builds_Add">+ Добавить</x:String>
+    <x:String x:Key="Builds_AddNew">Новая сборка…</x:String>
+    <x:String x:Key="Builds_AddFromCatalog">Из каталога</x:String>
+    <x:String x:Key="Builds_AddCopy">Копия выбранной</x:String>
+    <x:String x:Key="Builds_TagCatalog">Из каталога</x:String>
+    <x:String x:Key="Builds_TagLinked">Папка другого лаунчера</x:String>
+    <x:String x:Key="Builds_TagImported">Импорт</x:String>
+    <x:String x:Key="Builds_SyncWithCatalog">Сверить с каталогом</x:String>
+    <x:String x:Key="Builds_OpenFolder">Папка сборки</x:String>
+    <x:String x:Key="Mods_OpenFolder">Папка модов</x:String>
+    <x:String x:Key="Mods_GoCatalog">Открыть каталог модов</x:String>
+    <x:String x:Key="Mods_SummaryAll">Модов в сборке: {0}</x:String>
+    <x:String x:Key="Mods_SummaryDisabled">Модов в сборке: {0}, выключено: {1}</x:String>
+    <x:String x:Key="Size_MbPrecise">{0:F1} МБ</x:String>
     <x:String x:Key="Builds_ModsShort">модов</x:String>
     <x:String x:Key="Builds_ServerMods">Моды сервера</x:String>
     <x:String x:Key="Mods_InstalledBadge">Установлен</x:String>
@@ -121,7 +135,7 @@
     <x:String x:Key="Mods_InstallSelected">Установить выбранный</x:String>
     <x:String x:Key="Mods_Toggle">Вкл/Выкл</x:String>
     <x:String x:Key="Mods_Delete">Удалить</x:String>
-    <x:String x:Key="Mods_Empty">Модов пока нет</x:String>
+    <x:String x:Key="Mods_Empty">В этой сборке пока нет модов. Их можно добавить из каталога Modrinth или положить .jar в папку модов.</x:String>
 
     <!-- Content page -->
     <x:String x:Key="Content_Builds">Рекомендуемые сборки</x:String>
