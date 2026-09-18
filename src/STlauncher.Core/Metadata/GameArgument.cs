@@ -57,7 +57,11 @@ public sealed class GameArgumentConverter : JsonConverter<GameArgument>
                     rules = JsonSerializer.Deserialize<List<Rule>>(ref reader, options) ?? new List<Rule>();
                     break;
 
+                // "values" is TLauncher's spelling. Ignoring it dropped every argument of
+                // its profiles, "-cp ${classpath}" included, so Java started with no
+                // classpath and could not find the main class.
                 case "value":
+                case "values":
                     values.AddRange(ReadValues(ref reader));
                     break;
 

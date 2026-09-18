@@ -143,6 +143,17 @@ public sealed class Library
 
     [JsonPropertyName("url")]
     public string? Url { get; set; }
+
+    /// <summary>
+    /// TLauncher's place for the artifact, beside the name instead of under
+    /// <c>downloads</c>. Same shape; read so that its profiles have their libraries.
+    /// </summary>
+    [JsonPropertyName("artifact")]
+    public DownloadArtifact? Artifact { get; set; }
+
+    /// <summary>The artifact, wherever the profile put it.</summary>
+    [JsonIgnore]
+    public DownloadArtifact? EffectiveArtifact => Downloads?.Artifact ?? Artifact;
 }
 
 public sealed class LibraryDownloads

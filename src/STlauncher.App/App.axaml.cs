@@ -54,7 +54,14 @@ public partial class App : Application
             // The game process is independent of the launcher, so hiding or closing the
             // window never terminates Minecraft.
             viewModel.RequestHideLauncher += () => window.WindowState = WindowState.Minimized;
+            viewModel.RequestConcealLauncher += () => window.Hide();
             viewModel.RequestCloseLauncher += () => window.Close();
+            viewModel.RequestShowLauncher += () =>
+            {
+                window.Show();
+                window.WindowState = WindowState.Normal;
+                window.Activate();
+            };
 
             // The folder picker needs the window; the view model only gets the answer.
             viewModel.PickFolderAsync = async () =>

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using STlauncher.Core.Metadata;
 
 namespace STlauncher.Core.Launch;
@@ -31,6 +32,16 @@ public static class LaunchCommandBuilder
             : ExpandDefaults(DefaultJvmArguments, values);
 
         arguments.AddRange(jvmArguments);
+
+        // A profile whose arguments carry no classpath - a dialect the parser does not
+        // know, or a hand-edited file - would start Java with nothing to load. The
+        // classpath is the one argument the launcher can always supply itself.
+        if (!jvmArguments.Any(a => a is "-cp" or "-classpath" or "--class-path"))
+        {
+            arguments.Add("-cp");
+            arguments.Add(values["classpath"]);
+        }
+
         arguments.Add(version.MainClass);
 
         if (version.GameArguments.Count > 0)

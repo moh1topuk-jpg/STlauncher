@@ -82,6 +82,19 @@
                                Text="{DynamicResource Builds_SyncBusy}"/>
                 </StackPanel>
 
+                <!-- The last run crashed: say so where the player is looking, with the log
+                     one click away. -->
+                <Border Classes="panel" Padding="14" IsVisible="{Binding HasGameCrashed}"
+                        BorderBrush="{DynamicResource DangerBrush}">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <TextBlock Text="{Binding GameCrashNotice}" TextWrapping="Wrap"
+                                   VerticalAlignment="Center"/>
+                        <Button Grid.Column="1" Classes="ghost small"
+                                Content="{DynamicResource Game_OpenLog}"
+                                Command="{Binding OpenLastGameLogCommand}"/>
+                    </Grid>
+                </Border>
+
                 <!-- Launch progress. Reserved space, so appearing does not shove the
                      buttons down under the cursor. -->
                 <Border Classes="panel" Padding="14" IsVisible="{Binding ShowLaunchProgress}">

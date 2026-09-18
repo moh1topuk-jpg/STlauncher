@@ -43,6 +43,7 @@ public partial class MainWindowViewModel
         Instances.Clear();
         foreach (var instance in filtered)
         {
+            instance.DetectedModCount = CountModFiles(instance);
             Instances.Add(instance);
         }
 

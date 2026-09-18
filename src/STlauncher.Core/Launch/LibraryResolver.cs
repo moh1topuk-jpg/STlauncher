@@ -41,7 +41,7 @@ public static class LibraryResolver
                 continue;
             }
 
-            var artifact = library.Downloads?.Artifact;
+            var artifact = library.EffectiveArtifact;
 
             if (artifact?.Url is not null && artifact.Path is not null)
             {

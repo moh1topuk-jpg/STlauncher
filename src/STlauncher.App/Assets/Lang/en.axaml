@@ -212,6 +212,9 @@
     <x:String x:Key="Status_Preparing">Preparing…</x:String>
     <x:String x:Key="Status_StartingGame">Starting Minecraft…</x:String>
     <x:String x:Key="Status_GameExited">Game exited with code {0}</x:String>
+    <x:String x:Key="Game_CrashNotice">Minecraft closed with an error (code {0}). The game log says why.</x:String>
+    <x:String x:Key="Game_OpenLog">Open log</x:String>
+    <x:String x:Key="Status_GameClosed">Minecraft closed</x:String>
     <x:String x:Key="Status_Files">Files {0}/{1}</x:String>
     <x:String x:Key="Status_FilesFailed">Files {0}/{1}, failed: {2}</x:String>
 

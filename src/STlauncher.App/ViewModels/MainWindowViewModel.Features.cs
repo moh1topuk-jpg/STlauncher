@@ -30,8 +30,46 @@ public partial class MainWindowViewModel
     /// <summary>Raised when the launcher should hide itself after the game starts.</summary>
     public event Action? RequestHideLauncher;
 
-    /// <summary>Raised when the launcher should close after the game starts.</summary>
+    /// <summary>Raised when the launcher should quit: the game it hid for has closed normally.</summary>
     public event Action? RequestCloseLauncher;
+
+    /// <summary>Raised when the window should disappear entirely while the game runs.</summary>
+    public event Action? RequestConcealLauncher;
+
+    /// <summary>Raised when the window should come back: the game ended, or crashed.</summary>
+    public event Action? RequestShowLauncher;
+
+    /// <summary>Why the last game ended badly; empty when it did not.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasGameCrashed))]
+    private string _gameCrashNotice = string.Empty;
+
+    public bool HasGameCrashed => !string.IsNullOrEmpty(GameCrashNotice);
+
+    /// <summary>Log of the last run, for the "open log" button next to a crash notice.</summary>
+    public string? LastGameLogPath { get; private set; }
+
+    [RelayCommand]
+    private void OpenLastGameLog()
+    {
+        if (string.IsNullOrWhiteSpace(LastGameLogPath) || !System.IO.File.Exists(LastGameLogPath))
+        {
+            return;
+        }
+
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = LastGameLogPath,
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            Status = Localize("Error_OpenFolder", "Failed to open the folder: {0}", ex.Message);
+        }
+    }
 
     // ===================== Launch behaviour =====================
 
@@ -155,8 +193,12 @@ public partial class MainWindowViewModel
                         break;
 
                     case AfterLaunchAction.Close:
-                        AppendConsole("[launcher] game started - closing.");
-                        RequestCloseLauncher?.Invoke();
+                        // Out of sight rather than gone. Exiting here broke the game's
+                        // output pipe, cut the log short, and left nobody to report a crash:
+                        // to the player the launcher just vanished. It quits for real once
+                        // the game has closed normally.
+                        AppendConsole("[launcher] game started - hiding until it exits.");
+                        RequestConcealLauncher?.Invoke();
                         break;
 
                     default:
@@ -168,14 +210,38 @@ public partial class MainWindowViewModel
 
         _gameLauncher.GameStarted += OnStarted;
 
+        int exitCode;
+
         try
         {
-            return await _launch.LaunchAsync(command, settings.GameDirectory);
+            exitCode = await _launch.LaunchAsync(command, settings.GameDirectory);
         }
         finally
         {
             _gameLauncher.GameStarted -= OnStarted;
         }
+
+        LastGameLogPath = _gameLauncher.LogFilePath;
+
+        // Exit code 0 is a normal quit. Anything else is a crash the player must hear
+        // about - which is only possible because "close" no longer really closes.
+        GameCrashNotice = exitCode == 0
+            ? string.Empty
+            : Localize(
+                "Game_CrashNotice",
+                "Minecraft closed with an error (code {0}). The game log says why.",
+                exitCode);
+
+        if (AfterLaunch == AfterLaunchAction.Close && exitCode == 0)
+        {
+            RequestCloseLauncher?.Invoke();
+        }
+        else if (AfterLaunch != AfterLaunchAction.Keep)
+        {
+            RequestShowLauncher?.Invoke();
+        }
+
+        return exitCode;
     }
 
     // ===================== Nickname presets =====================

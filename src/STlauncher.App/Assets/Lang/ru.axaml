@@ -212,6 +212,9 @@
     <x:String x:Key="Status_Preparing">Подготовка…</x:String>
     <x:String x:Key="Status_StartingGame">Запуск Minecraft…</x:String>
     <x:String x:Key="Status_GameExited">Игра завершена, код {0}</x:String>
+    <x:String x:Key="Game_CrashNotice">Minecraft закрылся с ошибкой (код {0}). Причина — в логе игры.</x:String>
+    <x:String x:Key="Game_OpenLog">Открыть лог</x:String>
+    <x:String x:Key="Status_GameClosed">Minecraft закрыт</x:String>
     <x:String x:Key="Status_Files">Файлы {0}/{1}</x:String>
     <x:String x:Key="Status_FilesFailed">Файлы {0}/{1}, ошибок: {2}</x:String>
 

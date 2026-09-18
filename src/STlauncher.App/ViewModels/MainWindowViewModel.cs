@@ -621,9 +621,12 @@ public partial class MainWindowViewModel : ViewModelBase
                 RefreshBuildListItem(SelectedInstance);
             }
 
+            GameCrashNotice = string.Empty;
             var exitCode = await LaunchAndReactAsync(command, settings);
 
-            Status = Localize("Status_GameExited", "Game exited with code {0}", exitCode);
+            Status = exitCode == 0
+                ? Localize("Status_GameClosed", "Minecraft closed")
+                : GameCrashNotice;
             AppendConsole($"--- Game exited with code {exitCode} ---");
         }
         catch (Exception ex)
