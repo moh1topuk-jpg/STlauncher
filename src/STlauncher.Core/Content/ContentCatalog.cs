@@ -45,7 +45,7 @@ public sealed class ContentCatalog
     public List<CatalogSection> Sections { get; set; } = new();
 
     /// <summary>
-    /// Where the launcher reads published server statistics from (see docs/MONITORING.md).
+    /// Where the launcher reads published server statistics from (see docs/monitoring.md).
     /// Living in the catalog means the collector can be moved or replaced without a release.
     /// </summary>
     [JsonPropertyName("serverStatsUrl")]
@@ -54,7 +54,7 @@ public sealed class ContentCatalog
     /// <summary>
     /// Mirror for launcher updates. Set this when players cannot reach GitHub: the new
     /// build lives there too, so shipping a fix for a blocked GitHub through GitHub is
-    /// not an option. See docs/UPDATES.md.
+    /// not an option. See docs/updates.md.
     /// </summary>
     [JsonPropertyName("updateFeedUrl")]
     public string? UpdateFeedUrl { get; set; }

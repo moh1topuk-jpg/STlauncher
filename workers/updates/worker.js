@@ -15,7 +15,7 @@
  * Everything is fetched from GitHub on Cloudflare's side and streamed back, so nothing
  * has to be uploaded or kept in sync by hand - publishing a release stays exactly as it is.
  *
- * Setup: see docs/UPDATES.md.
+ * Setup: see docs/updates.md.
  *
  * Bindings expected:
  *   Variable  REPO   "moh1topuk-jpg/STlauncher"

@@ -1,52 +1,32 @@
-# Security Policy
+# Безопасность
 
-## Supported versions
+## Как сообщить об уязвимости
 
-Only the latest release is supported with security fixes.
+Приватно, через GitHub: вкладка **Security** → **Report a vulnerability**. Не открывайте
+публичный issue. Опишите проблему и её последствия, шаги воспроизведения и версию лаунчера.
+Ответ — в течение 72 часов.
 
-## Reporting a vulnerability
+Исправления выходят только для последней версии.
 
-Please report vulnerabilities privately using GitHub Security Advisories
-("Report a vulnerability" on the Security tab) rather than opening a public issue.
+## Как лаунчер защищается
 
-Include:
+Лаунчер по своей природе скачивает и запускает чужой код: файлы игры, Java, загрузчики,
+моды. Поэтому:
 
-- a description of the issue and its impact,
-- steps to reproduce,
-- affected version or commit,
-- any proof-of-concept or logs.
+- **только HTTPS** со стандартной проверкой сертификатов;
+- **проверка файлов**: файлы Mojang сверяются с SHA-1 из официальных манифестов, Java — с
+  SHA-256 от поставщика, моды — с хэшами Modrinth, модпаки — с хэшами из манифеста;
+- **распаковка архивов** (natives, Java, модпаки) не выпускает файлы за пределы целевой
+  папки;
+- **запуск игры** — аргументы передаются списком, а не склеенной строкой;
+- **импорт из других лаунчеров** не копирует их исполняемые файлы, настройки и файлы входа
+  в аккаунт;
+- **учётных данных нет**: вход офлайновый, пароли и токены не хранятся;
+- **ключей в лаунчере нет**: он не использует сторонние API с ключами. Ключ мониторинга
+  хранится только в секрете Cloudflare Worker и в репозиторий не попадает.
 
-We aim to acknowledge reports within 72 hours.
+Подлинность релиза можно проверить по `SHA256SUMS.txt` и attestation — см.
+[README](README.md#проверка-подлинности).
 
-## Security model
-
-STlauncher downloads and executes remote code by design (game files, Java runtimes,
-mod loaders, mods). The following protections are implemented:
-
-- **Transport** — HTTPS only, certificate validation via the .NET default handler.
-- **Integrity** — every Mojang artifact (client jar, libraries, assets) is verified
-  against the SHA-1 from the official manifest before use. Third-party artifacts
-  (Java runtime) are verified against SHA-256 from the vendor API.
-- **Process execution** — arguments are passed via `ProcessStartInfo.ArgumentList`,
-  never through string concatenation, preventing argument injection.
-- **Archive extraction** — ZipSlip protection when extracting natives and Java
-  runtimes: entries resolving outside the destination are rejected.
-- **Credentials** — offline mode stores no real credentials. If account-based
-  authentication is added later, tokens must be stored in the OS credential store
-  (Windows Credential Manager / DPAPI) and never in plaintext.
-
-## Secrets
-
-- The launcher requires **no third-party API keys**. Content is resolved from Modrinth
-  metadata and direct URLs, so players never have to configure credentials.
-- If a future integration needs a secret, it must be read from `settings.json`
-  (outside the repository) or an environment variable — never hardcoded and never
-  committed.
-- Never paste production secrets into issues, pull requests or chat.
-- `.gitignore` excludes build output; `settings.json` lives in `%APPDATA%` and is
-  therefore outside the working tree by design.
-
-## Non-goals
-
-- Verification of mods downloaded from third-party indexes is limited to the hashes
-  provided by those indexes.
+Файлы модов проверяются только по хэшам, которые публикует Modrinth: содержимое самих
+модов лаунчер не анализирует.

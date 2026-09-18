@@ -12,7 +12,7 @@ public sealed class AppSettings
     /// <summary>
     /// The same catalog served through Cloudflare, for players who cannot reach GitHub.
     /// Built in rather than published in the catalog, because the catalog is exactly what
-    /// such a player cannot fetch. See docs/UPDATES.md.
+    /// such a player cannot fetch. See docs/updates.md.
     /// </summary>
     public const string CatalogMirrorUrl = "https://showtime-updates.moh1topuk.workers.dev/catalog.json";
 

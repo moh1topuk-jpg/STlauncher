@@ -43,6 +43,37 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The changelog is the release notes. A tag with no section for its version fails
+      # here, before anything is published: that is what keeps CHANGELOG.md from falling
+      # behind the releases.
+      - name: Release notes from CHANGELOG.md
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          $lines = Get-Content CHANGELOG.md -Encoding utf8
+          $heading = '^## \[' + [regex]::Escape($version) + '\]'
+          $index = -1
+          for ($i = 0; $i -lt $lines.Count; $i++) {
+            if ($lines[$i] -match $heading) { $index = $i; break }
+          }
+          if ($index -lt 0) {
+            Write-Error "CHANGELOG.md has no section for $version. Add '## [$version]' before tagging."
+            exit 1
+          }
+          $body = @()
+          for ($i = $index + 1; $i -lt $lines.Count; $i++) {
+            if ($lines[$i] -match '^## \[' -or $lines[$i] -match '^\[[^\]]+\]:\s') { break }
+            $body += $lines[$i]
+          }
+          $text = ($body -join "`n").Trim()
+          if ([string]::IsNullOrWhiteSpace($text)) {
+            Write-Error "The CHANGELOG.md section for $version is empty."
+            exit 1
+          }
+          $text += "`n`n**Установщик:** [STlauncher-win-Setup.exe](https://showtime-updates.moh1topuk.workers.dev/STlauncher-win-Setup.exe) — работает и без доступа к GitHub."
+          Set-Content release-notes.md $text -Encoding utf8
+          Get-Content release-notes.md -Encoding utf8
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -57,21 +88,6 @@ jobs:
           -p:DebugType=none
           -o publish
 
-      # Optional Authenticode signing. Runs only when a certificate is provided
-      # through the CODE_SIGNING_CERT_BASE64 / CODE_SIGNING_CERT_PASSWORD secrets.
-      # See docs/SIGNING.md.
-      - name: Prepare signing certificate
-        shell: pwsh
-        env:
-          CERT_BASE64: ${{ secrets.CODE_SIGNING_CERT_BASE64 }}
-        run: |
-          if ([string]::IsNullOrWhiteSpace($env:CERT_BASE64)) {
-            Write-Host "No signing certificate configured - skipping."
-            exit 0
-          }
-          [IO.File]::WriteAllBytes("$PWD/signing.pfx", [Convert]::FromBase64String($env:CERT_BASE64))
-          Write-Host "Certificate written to signing.pfx"
-
       # Pinned: an unattended CLI upgrade changed flag names before and silently broke
       # publishing, which is exactly the kind of failure nobody notices until a release
       # never appears.
@@ -80,23 +96,9 @@ jobs:
 
       - name: Pack
         shell: pwsh
-        env:
-          CERT_PASSWORD: ${{ secrets.CODE_SIGNING_CERT_PASSWORD }}
         run: |
           $version = "${{ github.ref_name }}".TrimStart('v')
-          $sign = @()
-          if (Test-Path "signing.pfx") {
-            Write-Host "Packing with Authenticode signing."
-            $sign = @('--signParams', "/f signing.pfx /p $env:CERT_PASSWORD /fd SHA256 /tr http://timestamp.digicert.com /td SHA256")
-          } else {
-            Write-Host "No certificate configured - packing unsigned."
-          }
-          vpk pack -u STlauncher -v $version -p publish -e STlauncher.App.exe -o releases @sign
-
-      - name: Remove signing certificate
-        if: always()
-        shell: pwsh
-        run: Remove-Item -LiteralPath signing.pfx -Force -ErrorAction SilentlyContinue
+          vpk pack -u STlauncher -v $version -p publish -e STlauncher.App.exe -o releases --releaseNotes release-notes.md
 
       # --repoUrl takes a full URL (there is no -r shorthand any more), and --publish
       # takes an explicit value. The old "-r owner/repo ... --publish" form failed here.
@@ -120,11 +122,13 @@ jobs:
             Set-Content releases/SHA256SUMS.txt
           Get-Content releases/SHA256SUMS.txt
 
-      - name: Attach checksums to the release
+      - name: Attach checksums and notes to the release
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload ${{ github.ref_name }} releases/SHA256SUMS.txt --clobber
+        run: |
+          gh release upload ${{ github.ref_name }} releases/SHA256SUMS.txt --clobber
+          gh release edit ${{ github.ref_name }} --notes-file release-notes.md
 
       # Free cryptographic proof that the artifacts were built by this workflow
       # from this repository. Verify with: gh attestation verify <file> -R <owner/repo>

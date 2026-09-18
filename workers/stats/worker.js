@@ -9,7 +9,7 @@
  * keeps the API key here, where players cannot read it. That key also unlocks the vote
  * and donation lists, so shipping it inside the launcher would publish those too.
  *
- * Setup: see docs/MONITORING.md.
+ * Setup: see docs/monitoring.md.
  *
  * Bindings expected:
  *   KV namespace  STATS

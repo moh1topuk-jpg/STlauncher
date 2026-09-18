@@ -8,7 +8,7 @@ using System.Text.Json.Serialization;
 namespace STlauncher.Core.Server;
 
 /// <summary>
-/// Statistics published by the monitoring collector (see docs/MONITORING.md). The
+/// Statistics published by the monitoring collector (see docs/monitoring.md). The
 /// launcher can only sample while it is open, so the history a player sees on a fresh
 /// installation comes from here; the local samples are the fallback.
 /// </summary>

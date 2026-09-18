@@ -8,7 +8,7 @@ namespace STlauncher.Core.Tests;
 
 public class ServerStatsTests
 {
-    /// <summary>A trimmed copy of what the collector in docs/monitoring/worker.js serves.</summary>
+    /// <summary>A trimmed copy of what the collector in workers/stats/worker.js serves.</summary>
     private const string Payload = """
         {
           "schemaVersion": 1,
