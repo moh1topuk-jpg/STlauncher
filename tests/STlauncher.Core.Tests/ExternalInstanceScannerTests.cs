@@ -54,6 +54,67 @@ public class ExternalInstanceScannerTests : IDisposable
     }
 
     [Fact]
+    public void Scan_UsesTheVersionFolderWhenTheBuildLivesInIt()
+    {
+        // TLauncher's "separate folder" mode: the mods, worlds and configs of a build sit in
+        // versions/<id>, next to the profile. The shared .minecraft has none of them - this
+        // is the real layout that imported as "0 mods".
+        var mc = DotMinecraft();
+        const string id = "fabric 1.21.11 shield";
+
+        WriteVersion(mc, id, """
+            {
+              "id": "fabric 1.21.11 shield",
+              "mainClass": "net.fabricmc.loader.impl.launch.knot.KnotClient",
+              "libraries": [
+                { "name": "net.fabricmc:intermediary:1.21.11" },
+                { "name": "net.fabricmc:fabric-loader:0.18.1" }
+              ]
+            }
+            """);
+
+        var versionDirectory = Path.Combine(mc, "versions", id);
+        Directory.CreateDirectory(Path.Combine(versionDirectory, "mods"));
+        File.WriteAllText(Path.Combine(versionDirectory, "mods", "sodium.jar"), "x");
+        File.WriteAllText(Path.Combine(versionDirectory, "mods", "lithium.jar"), "x");
+
+        var found = ExternalInstanceScanner.Scan(mc, ExternalLauncherKind.DotMinecraft).Single();
+
+        Assert.Equal(versionDirectory, found.GameDirectory);
+        Assert.Equal(2, found.ModCount);
+        Assert.Equal("1.21.11", found.GameVersion);
+        Assert.Equal("0.18.1", found.LoaderVersion);
+        Assert.True(found.HasOwnProfile);
+    }
+
+    [Fact]
+    public void Scan_KeepsTheSharedFolderForAnOrdinaryProfile()
+    {
+        var mc = DotMinecraft();
+
+        WriteVersion(mc, "fabric-loader-0.16.0-1.21.1", """
+            { "id": "x", "inheritsFrom": "1.21.1", "mainClass": "net.fabricmc.loader.impl.launch.knot.KnotClient" }
+            """);
+
+        var found = ExternalInstanceScanner.Scan(mc, ExternalLauncherKind.DotMinecraft).Single();
+
+        Assert.Equal(mc, found.GameDirectory);
+        Assert.Equal("1.21.1", found.GameVersion);
+    }
+
+    [Theory]
+    [InlineData("""{ "libraries": [ { "name": "net.minecraftforge:forge:1.20.1-47.2.0" } ] }""", "whatever", "1.20.1")]
+    [InlineData("""{ "libraries": [] }""", "Optifine 1.16.5 HD", "1.16.5")]
+    [InlineData("""{ "libraries": [] }""", "1.21", "1.21")]
+    [InlineData("""{ "libraries": [] }""", "my build", null)]
+    public void DetectGameVersion_ReadsWhatTheProfileIsBuiltOn(string json, string id, string? expected)
+    {
+        var profile = JsonSerializer.Deserialize<VersionJson>(json, MetadataJson.Options)!;
+
+        Assert.Equal(expected, ExternalInstanceScanner.DetectGameVersion(profile, id));
+    }
+
+    [Fact]
     public void Scan_ReportsAVersionFolderWithNoProfile()
     {
         // Exactly what a real .minecraft folder is full of: a jar and natives left behind

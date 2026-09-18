@@ -135,7 +135,7 @@
                                         IsEnabled="{Binding !IsUpdateBusy}"
                                         Content="{Binding UpdateActionLabel}"/>
 
-                                <TextBlock Text="{Binding CurrentVersionLabel}" Classes="faint"
+                                <TextBlock Text="{Binding UpdateStateLabel}" Classes="faint" ToolTip.Tip="{Binding UpdateStatus}" TextTrimming="CharacterEllipsis"
                                            Margin="4,0,0,0"/>
                             </StackPanel>
                         </Border>

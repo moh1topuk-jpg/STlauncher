@@ -16,6 +16,7 @@
     <x:String x:Key="Game_DeleteInstance">Delete</x:String>
     <x:String x:Key="Game_InstanceNameHint">Name for a new build</x:String>
     <x:String x:Key="Game_Version">Version</x:String>
+    <x:String x:Key="Game_ProfileBuild">Started by its own profile &quot;{0}&quot;: Minecraft {1}, {2} {3}. The version and loader are set by that profile.</x:String>
     <x:String x:Key="Game_Loader">Loader</x:String>
     <x:String x:Key="Game_LoaderVersion">Loader version</x:String>
     <x:String x:Key="Game_Nickname">Nickname</x:String>
@@ -342,6 +343,9 @@
     <x:String x:Key="Update_ToVersion">Update to {0}</x:String>
     <x:String x:Key="Update_Check">Check for updates</x:String>
     <x:String x:Key="Update_DevBuild">dev build</x:String>
+    <x:String x:Key="Update_StateLatest">latest version</x:String>
+    <x:String x:Key="Update_StateChecking">checking…</x:String>
+    <x:String x:Key="Update_StateFailed">could not check</x:String>
 
     <x:String x:Key="Builds_ModsOne">mod</x:String>
     <x:String x:Key="Builds_ModsFew">mods</x:String>

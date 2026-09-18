@@ -190,7 +190,26 @@ public partial class MainWindowViewModel : ViewModelBase
     private string _instanceNameEdit = string.Empty;
 
     /// <summary>Number of catalog mods the current build installs before launch.</summary>
-    public int BuildModCount => SelectedInstance?.EnabledCatalogItems.Count ?? 0;
+    public int BuildModCount => SelectedInstance?.ModCount ?? 0;
+
+    /// <summary>
+    /// The selected build starts from its own profile, brought over from another launcher.
+    /// Its version and loader are what that profile says; changing them here would do
+    /// nothing, so the settings show them read-only.
+    /// </summary>
+    public bool IsProfileBuild => !string.IsNullOrWhiteSpace(SelectedInstance?.ProfileVersionId);
+
+    public bool IsNotProfileBuild => !IsProfileBuild;
+
+    public string ProfileBuildHint => IsProfileBuild
+        ? Localize(
+            "Game_ProfileBuild",
+            "Started by its own profile \"{0}\": Minecraft {1}, {2} {3}. The version and loader are set by that profile.",
+            SelectedInstance!.ProfileVersionId!,
+            SelectedInstance.VersionId ?? "?",
+            SelectedInstance.Loader,
+            SelectedInstance.LoaderVersion ?? string.Empty)
+        : string.Empty;
 
     public string InstanceDirectory
         => SelectedInstance is null
@@ -279,6 +298,10 @@ public partial class MainWindowViewModel : ViewModelBase
         // installation should start from the recommended build, not from an empty profile.
         await LoadCatalogAsync();
 
+        // Right after the catalog, which is what points the check at the mirror, and
+        // before anything else that could fail and leave the check never started.
+        StartUpdateWatcher();
+
         if (_allInstances.Count == 0 && _instances.HasAnyInstanceDirectory())
         {
             // A build folder is right there but its definition could not be read.
@@ -317,8 +340,6 @@ public partial class MainWindowViewModel : ViewModelBase
         RefreshMods();
         await LoadCategoriesAsync();
         ScheduleBrowserReload();
-
-        StartUpdateWatcher();
 
         // A nickname generated a moment ago only becomes this installation's identity
         // once it is on disk; without this it would be regenerated on the next start.
@@ -499,7 +520,10 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
         }
 
-        if (SelectedVersion is null)
+        // An imported build starts from its own profile and needs no version picked here.
+        var profileId = SelectedInstance?.ProfileVersionId;
+
+        if (SelectedVersion is null && string.IsNullOrWhiteSpace(profileId))
         {
             Status = Localize("Status_SelectVersion", "Select a version first");
             return;
@@ -515,15 +539,17 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             IsBusy = true;
             Progress = 0;
-            AppendConsole($"--- Launching {SelectedVersion.Id} as {Username} ---");
+            AppendConsole($"--- Launching {(string.IsNullOrWhiteSpace(profileId) ? SelectedVersion!.Id : profileId)} as {Username} ---");
             await MaybeBackupAsync(BackupTrigger.BeforeLaunch);
 
             var account = OfflineAuth.Login(Username);
             PersistSettings();
 
-            var versionId = SelectedVersion.Id;
+            var versionId = string.IsNullOrWhiteSpace(profileId) ? SelectedVersion!.Id : profileId!;
 
-            if (SelectedLoader != LoaderKind.Vanilla)
+            // A profile build already carries its loader; installing one over it would
+            // launch a different build from the one that was imported.
+            if (SelectedLoader != LoaderKind.Vanilla && string.IsNullOrWhiteSpace(profileId))
             {
                 Status = Localize("Status_InstallingLoader", "Installing {0}…", SelectedLoader);
                 AppendConsole($"--- Installing {SelectedLoader} for {versionId} ---");
@@ -721,6 +747,9 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         OnPropertyChanged(nameof(BuildModCount));
+        OnPropertyChanged(nameof(IsProfileBuild));
+        OnPropertyChanged(nameof(IsNotProfileBuild));
+        OnPropertyChanged(nameof(ProfileBuildHint));
 
         ApplyServerFromInstance();
 
@@ -740,9 +769,27 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
         }
 
-        SelectedInstance.VersionId = SelectedVersion?.Id;
-        SelectedInstance.Loader = SelectedLoader;
-        SelectedInstance.LoaderVersion = SelectedLoaderVersion?.Version;
+        // Only real choices are written back. The pickers go empty on their own - a version
+        // missing from the manifest, a loader list still loading - and writing that emptiness
+        // into the build erased its version the moment it was selected.
+        if (SelectedVersion is not null && !IsProfileBuild)
+        {
+            SelectedInstance.VersionId = SelectedVersion.Id;
+        }
+
+        if (!IsProfileBuild)
+        {
+            SelectedInstance.Loader = SelectedLoader;
+        }
+
+        if (SelectedLoaderVersion is not null && !IsProfileBuild)
+        {
+            SelectedInstance.LoaderVersion = SelectedLoaderVersion.Version;
+        }
+        else if (SelectedLoader == LoaderKind.Vanilla && !IsProfileBuild)
+        {
+            SelectedInstance.LoaderVersion = null;
+        }
         SelectedInstance.MaxMemoryMb = (int)MaxMemoryMb;
         SelectedInstance.MinMemoryMb = (int)MinMemoryMb;
         SelectedInstance.ExtraGameArgs = string.IsNullOrWhiteSpace(ExtraGameArgs) ? null : ExtraGameArgs;

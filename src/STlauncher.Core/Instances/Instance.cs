@@ -15,6 +15,14 @@ public sealed class Instance
     [JsonPropertyName("versionId")]
     public string? VersionId { get; set; }
 
+    /// <summary>
+    /// Id of a ready-made profile under <c>versions/</c> that starts this build - one
+    /// imported from another launcher. When set the build launches by it as it is, and
+    /// <see cref="VersionId"/> only says which Minecraft version it is, for the mod catalog.
+    /// </summary>
+    [JsonPropertyName("profileVersionId")]
+    public string? ProfileVersionId { get; set; }
+
     [JsonPropertyName("loader")]
     public LoaderKind Loader { get; set; } = LoaderKind.Vanilla;
 
@@ -81,7 +89,14 @@ public sealed class Instance
 
     /// <summary>Catalog mods the build installs before launch. Not serialized.</summary>
     [JsonIgnore]
-    public int ModCount => EnabledCatalogItems.Count;
+    public int ModCount => EnabledCatalogItems.Count > 0 ? EnabledCatalogItems.Count : DetectedModCount;
+
+    /// <summary>
+    /// Mod files found in the build's folder. Filled in by whoever can look at the disk;
+    /// it is what an imported build has instead of a list from the catalog.
+    /// </summary>
+    [JsonIgnore]
+    public int DetectedModCount { get; set; }
 
     [JsonPropertyName("createdAt")]
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;

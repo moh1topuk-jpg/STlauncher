@@ -214,6 +214,16 @@ public static class ExternalInstanceScanner
     {
         var jsonPath = Path.Combine(directory, id + ".json");
 
+        // TLauncher and the official launcher can give each version its own game folder,
+        // and the usual place for it is the version folder itself: mods, saves and configs
+        // sit next to the profile. The shared .minecraft is then not this build's folder
+        // at all - it has none of its mods.
+        if (IsGameFolder(directory))
+        {
+            gameDirectory = directory;
+            modCount = CountMods(Path.Combine(directory, ModsFolder));
+        }
+
         if (!File.Exists(jsonPath))
         {
             return new ExternalInstance(id, gameDirectory, id, LoaderKind.Vanilla, kind, null, modCount,
@@ -244,7 +254,77 @@ public static class ExternalInstanceScanner
                 ExternalInstanceProblem.IncompleteProfile);
         }
 
-        return new ExternalInstance(id, gameDirectory, id, DetectLoader(json), kind, jsonPath, modCount);
+        return new ExternalInstance(id, gameDirectory, id, DetectLoader(json), kind, jsonPath, modCount)
+        {
+            GameVersion = DetectGameVersion(json, id),
+            LoaderVersion = DetectLoaderVersion(json)
+        };
+    }
+
+    /// <summary>A folder the game has actually been run in, as opposed to a bare profile.</summary>
+    private static bool IsGameFolder(string directory)
+        => Directory.Exists(Path.Combine(directory, ModsFolder)) ||
+           Directory.Exists(Path.Combine(directory, "saves")) ||
+           Directory.Exists(Path.Combine(directory, "config")) ||
+           File.Exists(Path.Combine(directory, "options.txt"));
+
+    /// <summary>
+    /// The Minecraft version behind a profile. The profile's id is a free-form name, so
+    /// the version is read from what the profile is built on, most reliable first.
+    /// </summary>
+    public static string? DetectGameVersion(VersionJson json, string id)
+    {
+        if (!string.IsNullOrWhiteSpace(json.InheritsFrom))
+        {
+            return json.InheritsFrom;
+        }
+
+        foreach (var library in json.Libraries.Select(l => l.Name ?? string.Empty))
+        {
+            var parts = library.Split(':');
+
+            if (parts.Length < 3)
+            {
+                continue;
+            }
+
+            // Fabric and Quilt both map the game through intermediary, named by version.
+            if (parts[0] == "net.fabricmc" && parts[1] == "intermediary")
+            {
+                return parts[2];
+            }
+
+            // Forge: "1.20.1-47.2.0".
+            if (parts[0] == "net.minecraftforge" && parts[1] == "forge")
+            {
+                return parts[2].Split('-')[0];
+            }
+        }
+
+        // A profile with no loader is the game itself, named after its version - unless
+        // someone renamed it, which the pattern below still catches.
+        var match = System.Text.RegularExpressions.Regex.Match(
+            id,
+            @"(?<![\d.])1\.\d{1,2}(\.\d{1,2})?(?![\d.])");
+
+        return match.Success ? match.Value : null;
+    }
+
+    public static string? DetectLoaderVersion(VersionJson json)
+    {
+        foreach (var library in json.Libraries.Select(l => l.Name ?? string.Empty))
+        {
+            var parts = library.Split(':');
+
+            if (parts.Length >= 3 &&
+                ((parts[0] == "net.fabricmc" && parts[1] == "fabric-loader") ||
+                 (parts[0] == "org.quiltmc" && parts[1] == "quilt-loader")))
+            {
+                return parts[2];
+            }
+        }
+
+        return null;
     }
 
     /// <summary>

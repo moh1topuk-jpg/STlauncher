@@ -301,7 +301,7 @@ public partial class MainWindowViewModel
                 System.IO.Path.GetFullPath(i.ExternalGameDirectory!).TrimEnd(System.IO.Path.DirectorySeparatorChar),
                 System.IO.Path.GetFullPath(candidate.GameDirectory).TrimEnd(System.IO.Path.DirectorySeparatorChar),
                 StringComparison.OrdinalIgnoreCase) &&
-            string.Equals(i.VersionId, candidate.VersionId, StringComparison.OrdinalIgnoreCase));
+            string.Equals(i.ProfileVersionId ?? i.VersionId, candidate.VersionId, StringComparison.OrdinalIgnoreCase));
 
     private static string SourceLabel(ExternalLauncherKind kind) => kind switch
     {

@@ -58,6 +58,23 @@ public sealed record ExternalInstance(
     int ModCount,
     ExternalInstanceProblem Problem = ExternalInstanceProblem.None)
 {
+    /// <summary>
+    /// The Minecraft version the build runs, when it differs from <see cref="VersionId"/>:
+    /// a .minecraft profile is named whatever its author liked ("fabric 1.21.11 shield"),
+    /// and the mod catalog needs the real version to offer anything. Null when unknown.
+    /// </summary>
+    public string? GameVersion { get; init; }
+
+    /// <summary>The loader build the profile pins, when it says so.</summary>
+    public string? LoaderVersion { get; init; }
+
+    /// <summary>
+    /// True when the build is started by its own profile JSON rather than assembled by
+    /// the launcher from a version and a loader. Such a build must launch by that
+    /// profile: re-installing a loader over it would throw away what makes it the build.
+    /// </summary>
+    public bool HasOwnProfile => VersionJsonPath is not null;
+
     /// <summary>False when the build needs attention before it can be imported.</summary>
     public bool IsUsable => Problem == ExternalInstanceProblem.None;
 

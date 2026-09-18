@@ -62,9 +62,16 @@ public sealed class InstanceImporter
             throw new ArgumentNullException(nameof(source));
         }
 
-        return Directory.Exists(source.GameDirectory)
-            ? MeasureDirectory(source.GameDirectory)
-            : 0;
+        if (!Directory.Exists(source.GameDirectory))
+        {
+            return 0;
+        }
+
+        var profileJar = source.VersionJsonPath is null
+            ? null
+            : Path.ChangeExtension(source.VersionJsonPath, ".jar");
+
+        return MeasureDirectory(source.GameDirectory, profileJar);
     }
 
     public async Task<ImportResult> ImportAsync(
@@ -87,8 +94,20 @@ public sealed class InstanceImporter
 
         var instance = _instances.Create(string.IsNullOrWhiteSpace(name) ? source.Name : name!);
 
-        instance.VersionId = string.IsNullOrWhiteSpace(source.VersionId) ? null : source.VersionId;
         instance.Loader = source.Loader;
+        instance.DetectedModCount = source.ModCount;
+
+        if (source.HasOwnProfile)
+        {
+            // Launched by its own profile; the version is only what the catalog filters by.
+            instance.ProfileVersionId = source.VersionId;
+            instance.VersionId = source.GameVersion;
+            instance.LoaderVersion = source.LoaderVersion;
+        }
+        else
+        {
+            instance.VersionId = string.IsNullOrWhiteSpace(source.VersionId) ? null : source.VersionId;
+        }
 
         // The profile has to live where the launcher looks for versions, in both modes:
         // it is what describes how the game starts, and it is small.
@@ -107,7 +126,7 @@ public sealed class InstanceImporter
             var destination = _paths.InstanceDirectory(instance.Id);
 
             (copiedBytes, copiedFiles) = await Task.Run(
-                () => CopyGameFiles(source.GameDirectory, destination, progress, cancellationToken),
+                () => CopyGameFiles(source, destination, progress, cancellationToken),
                 cancellationToken).ConfigureAwait(false);
         }
 
@@ -147,12 +166,53 @@ public sealed class InstanceImporter
         }
     }
 
+    /// <summary>
+    /// Loose files in a game folder that belong to the other launcher, not to the game:
+    /// its executables, its own settings and - above all - its account files. Copying
+    /// those would duplicate someone's sign-in into a folder nobody expects to hold it.
+    /// </summary>
+    public static bool IsLauncherFile(string fileName)
+    {
+        var name = fileName.ToLowerInvariant();
+
+        return name.StartsWith("launcher_", StringComparison.Ordinal) ||
+               name.StartsWith("tlauncher", StringComparison.Ordinal) ||
+               name.StartsWith("clientid", StringComparison.Ordinal) ||
+               name.EndsWith(".exe", StringComparison.Ordinal) ||
+               name.Contains(".exe.", StringComparison.Ordinal) ||
+               name.EndsWith(".bin", StringComparison.Ordinal) ||
+               name.EndsWith(".log", StringComparison.Ordinal) ||
+               name is "treatment_tags.json" or "usercache.json" or "usernamecache.json";
+    }
+
+    /// <summary>Folders a launcher keeps for itself: its web views, updaters and backups.</summary>
+    private static readonly string[] LauncherFolders =
+    {
+        "webcache", "webcache2", "tlloader", "backup", "downloads", "staging", ".cache"
+    };
+
+    private static bool IsSkippedFolder(string name)
+        => SkippedFolders.Contains(name, StringComparer.OrdinalIgnoreCase) ||
+           LauncherFolders.Contains(name, StringComparer.OrdinalIgnoreCase);
+
     private static (long Bytes, int Files) CopyGameFiles(
-        string sourceDirectory,
+        ExternalInstance source,
         string destinationDirectory,
         IProgress<string>? progress,
         CancellationToken cancellationToken)
     {
+        var sourceDirectory = source.GameDirectory;
+
+        // When the build's folder is its version folder, the profile and the game jar
+        // sit in it too. They are already copied to versions/, where they belong.
+        var profileFiles = source.VersionJsonPath is null
+            ? Array.Empty<string>()
+            : new[]
+            {
+                Path.GetFileName(source.VersionJsonPath),
+                Path.GetFileName(Path.ChangeExtension(source.VersionJsonPath, ".jar"))
+            };
+
         if (!Directory.Exists(sourceDirectory))
         {
             return (0, 0);
@@ -171,7 +231,7 @@ public sealed class InstanceImporter
 
             if (Directory.Exists(entry))
             {
-                if (SkippedFolders.Contains(name, StringComparer.OrdinalIgnoreCase))
+                if (IsSkippedFolder(name))
                 {
                     continue;
                 }
@@ -185,7 +245,9 @@ public sealed class InstanceImporter
 
             // Loose files in the root: options.txt, servers.dat and the like. The
             // launcher's own definition must never be overwritten by one.
-            if (string.Equals(name, InstanceManager.DefinitionFileName, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(name, InstanceManager.DefinitionFileName, StringComparison.OrdinalIgnoreCase) ||
+                IsLauncherFile(name) ||
+                profileFiles.Contains(name, StringComparer.OrdinalIgnoreCase))
             {
                 continue;
             }
@@ -245,22 +307,25 @@ public sealed class InstanceImporter
         return (bytes, files);
     }
 
-    private static long MeasureDirectory(string directory)
+    private static long MeasureDirectory(string directory, string? profileJar)
     {
         var total = 0L;
 
         foreach (var entry in SafeEntries(directory))
         {
+            var name = Path.GetFileName(entry);
+
             if (Directory.Exists(entry))
             {
-                if (SkippedFolders.Contains(Path.GetFileName(entry), StringComparer.OrdinalIgnoreCase))
+                if (IsSkippedFolder(name))
                 {
                     continue;
                 }
 
                 total += MeasureTree(entry);
             }
-            else
+            else if (!IsLauncherFile(name) &&
+                     !string.Equals(entry, profileJar, StringComparison.OrdinalIgnoreCase))
             {
                 total += SafeLength(entry);
             }

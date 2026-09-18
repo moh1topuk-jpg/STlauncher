@@ -52,6 +52,26 @@ public partial class MainWindowViewModel
         }
     }
 
+    /// <summary>
+    /// Mod files in the build's folder: the count an imported build shows, since it has no
+    /// catalog list. A glance at one directory, cheap enough to do for every row.
+    /// </summary>
+    private int CountModFiles(Instance instance)
+    {
+        try
+        {
+            var mods = System.IO.Path.Combine(_instances.GameDirectory(instance), "mods");
+
+            return System.IO.Directory.Exists(mods)
+                ? System.IO.Directory.EnumerateFiles(mods, "*.jar").Count()
+                : 0;
+        }
+        catch (Exception)
+        {
+            return 0;
+        }
+    }
+
     /// <summary>Replaces the list item so bound text (rename, last played) refreshes.</summary>
     private void RefreshBuildListItem(Instance instance)
     {

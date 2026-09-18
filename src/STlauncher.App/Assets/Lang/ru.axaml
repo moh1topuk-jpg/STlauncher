@@ -16,6 +16,7 @@
     <x:String x:Key="Game_DeleteInstance">Удалить</x:String>
     <x:String x:Key="Game_InstanceNameHint">Название новой сборки</x:String>
     <x:String x:Key="Game_Version">Версия</x:String>
+    <x:String x:Key="Game_ProfileBuild">Сборка запускается своим профилем «{0}»: Minecraft {1}, {2} {3}. Версия и загрузчик заданы в нём и здесь не меняются.</x:String>
     <x:String x:Key="Game_Loader">Загрузчик</x:String>
     <x:String x:Key="Game_LoaderVersion">Версия загрузчика</x:String>
     <x:String x:Key="Game_Nickname">Ник</x:String>
@@ -341,6 +342,9 @@
     <x:String x:Key="Update_ToVersion">Обновить до {0}</x:String>
     <x:String x:Key="Update_Check">Проверить обновления</x:String>
     <x:String x:Key="Update_DevBuild">сборка для разработки</x:String>
+    <x:String x:Key="Update_StateLatest">актуальная версия</x:String>
+    <x:String x:Key="Update_StateChecking">проверка…</x:String>
+    <x:String x:Key="Update_StateFailed">не удалось проверить</x:String>
 
     <x:String x:Key="Builds_ModsOne">мод</x:String>
     <x:String x:Key="Builds_ModsFew">мода</x:String>

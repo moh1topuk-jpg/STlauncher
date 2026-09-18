@@ -256,6 +256,12 @@
                                 <StackPanel Spacing="12">
                                     <TextBlock Text="{DynamicResource Game_Profile}" Classes="label"/>
 
+                                    <!-- An imported build starts from its own profile: its version and
+                                         loader are fixed by it, so they are stated, not offered. -->
+                                    <TextBlock Text="{Binding ProfileBuildHint}" Classes="faint"
+                                               TextWrapping="Wrap" IsVisible="{Binding IsProfileBuild}"/>
+
+                                    <StackPanel Spacing="12" IsVisible="{Binding IsNotProfileBuild}">
                                     <StackPanel Spacing="6">
                                         <TextBlock Text="{DynamicResource Game_Version}" Classes="faint"/>
                                         <ComboBox ItemsSource="{Binding Versions}"
@@ -291,6 +297,7 @@
                                             </ComboBox>
                                         </StackPanel>
                                     </Grid>
+                                    </StackPanel>
 
                                     <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                                         <StackPanel Spacing="6">

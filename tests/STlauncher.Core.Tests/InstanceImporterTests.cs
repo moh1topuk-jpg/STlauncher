@@ -47,7 +47,11 @@ public class InstanceImporterTests : IDisposable
 
         return new ExternalInstance(
             id, mc, id, LoaderKind.Fabric, ExternalLauncherKind.DotMinecraft,
-            Path.Combine(versionDirectory, id + ".json"), ModCount: 1);
+            Path.Combine(versionDirectory, id + ".json"), ModCount: 1)
+        {
+            GameVersion = "1.21.1",
+            LoaderVersion = "0.16.0"
+        };
     }
 
     [Fact]
@@ -116,8 +120,53 @@ public class InstanceImporterTests : IDisposable
     {
         var result = await _importer.ImportAsync(ExternalBuild(), ImportMode.Link);
 
-        Assert.Equal("fabric-1.21.1", result.Instance.VersionId);
+        // Launched by its own profile; the game version is what the mod catalog needs.
+        Assert.Equal("fabric-1.21.1", result.Instance.ProfileVersionId);
+        Assert.Equal("1.21.1", result.Instance.VersionId);
+        Assert.Equal("0.16.0", result.Instance.LoaderVersion);
         Assert.Equal(LoaderKind.Fabric, result.Instance.Loader);
+    }
+
+    [Fact]
+    public async Task Copy_LeavesTheOtherLaunchersFilesBehind()
+    {
+        // A real .minecraft holds the other launcher itself and its Microsoft sign-in.
+        // None of it is the game, and account files must never be duplicated.
+        var external = ExternalBuild();
+        var mc = external.GameDirectory;
+
+        File.WriteAllText(Path.Combine(mc, "TLauncher.exe"), "exe");
+        File.WriteAllText(Path.Combine(mc, "launcher_msa_credentials_microsoft_store.bin"), "secret");
+        File.WriteAllText(Path.Combine(mc, "launcher_profiles.json"), "{}");
+        Directory.CreateDirectory(Path.Combine(mc, "webcache2"));
+        File.WriteAllText(Path.Combine(mc, "webcache2", "page"), "cache");
+
+        var result = await _importer.ImportAsync(external, ImportMode.Copy);
+        var directory = _instances.GameDirectory(result.Instance);
+
+        Assert.False(File.Exists(Path.Combine(directory, "TLauncher.exe")));
+        Assert.False(File.Exists(Path.Combine(directory, "launcher_msa_credentials_microsoft_store.bin")));
+        Assert.False(File.Exists(Path.Combine(directory, "launcher_profiles.json")));
+        Assert.False(Directory.Exists(Path.Combine(directory, "webcache2")));
+        Assert.True(File.Exists(Path.Combine(directory, "options.txt")));
+    }
+
+    [Fact]
+    public async Task Copy_OfAVersionFolderBuild_DoesNotDuplicateTheGameJar()
+    {
+        // When the build's folder is its version folder, the profile and the 30 MB game
+        // jar sit among its files; they already go to versions/.
+        var external = ExternalBuild();
+        var versionDirectory = Path.GetDirectoryName(external.VersionJsonPath)!;
+        Directory.CreateDirectory(Path.Combine(versionDirectory, "mods"));
+        File.WriteAllText(Path.Combine(versionDirectory, "mods", "iris.jar"), "mod");
+
+        var result = await _importer.ImportAsync(external with { GameDirectory = versionDirectory }, ImportMode.Copy);
+        var directory = _instances.GameDirectory(result.Instance);
+
+        Assert.True(File.Exists(Path.Combine(directory, "mods", "iris.jar")));
+        Assert.False(File.Exists(Path.Combine(directory, "fabric-1.21.1.jar")));
+        Assert.False(File.Exists(Path.Combine(directory, "fabric-1.21.1.json")));
     }
 
     [Fact]

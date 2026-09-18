@@ -52,6 +52,17 @@ public partial class MainWindowViewModel
     private string _currentVersionLabel = string.Empty;
 
     /// <summary>
+    /// The running version and what the last check said about it. The automatic check
+    /// must leave a visible trace: a check that stays silent when all is well looks
+    /// exactly like one that never ran.
+    /// </summary>
+    [ObservableProperty]
+    private string _updateStateLabel = string.Empty;
+
+    private void SetUpdateState(string key, string fallback)
+        => UpdateStateLabel = $"{CurrentVersionLabel} · {Localize(key, fallback)}";
+
+    /// <summary>
     /// The check failed in a way the player can do something about: offer the download
     /// page, since the launcher cannot fetch the build itself.
     /// </summary>
@@ -91,6 +102,7 @@ public partial class MainWindowViewModel
     private void StartUpdateWatcher()
     {
         CurrentVersionLabel = _updates.CurrentVersion ?? Localize("Update_DevBuild", "dev build");
+        UpdateStateLabel = CurrentVersionLabel;
         RefreshUpdateActionLabel();
 
         if (!_updates.IsSupported)
@@ -98,17 +110,16 @@ public partial class MainWindowViewModel
             return;
         }
 
-        // Delayed by a few seconds rather than fired immediately: startup already
-        // saturates the network with the catalog, the version manifest and mod icons,
-        // and an update notice a moment later costs the player nothing.
+        SetUpdateState("Update_StateChecking", "checking…");
+
+        // The first check runs right away: it is one small request, and it is the thing
+        // the player is waiting to see. Then every six hours, so a launcher left open for
+        // days still notices a release.
+        _ = CheckForUpdatesQuietlyAsync();
+
         _updateTimer?.Stop();
-        _updateTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
-        _updateTimer.Tick += (_, _) =>
-        {
-            // After the first tick settle into the long interval.
-            _updateTimer!.Interval = TimeSpan.FromHours(6);
-            _ = CheckForUpdatesQuietlyAsync();
-        };
+        _updateTimer = new DispatcherTimer { Interval = TimeSpan.FromHours(6) };
+        _updateTimer.Tick += (_, _) => _ = CheckForUpdatesQuietlyAsync();
         _updateTimer.Start();
     }
 
@@ -161,6 +172,7 @@ public partial class MainWindowViewModel
                 CanRestartToUpdate = false;
                 HasUpdate = false;
                 CanDownloadManually = false;
+                SetUpdateState("Update_StateLatest", "latest version");
 
                 if (announce)
                 {
@@ -188,6 +200,7 @@ public partial class MainWindowViewModel
             CanRestartToUpdate = ready;
             HasUpdate = true;
             IsUpdateBannerVisible = true;
+            UpdateStateLabel = $"{CurrentVersionLabel} → {AvailableUpdateVersion}";
             RefreshUpdateActionLabel();
         }
         catch (Exception ex)
@@ -210,6 +223,11 @@ public partial class MainWindowViewModel
         var error = STlauncher.Core.Http.NetworkFailures.Classify(exception);
 
         CanDownloadManually = true;
+
+        if (!HasUpdate)
+        {
+            SetUpdateState("Update_StateFailed", "could not check");
+        }
 
         var headline = error.Kind switch
         {
