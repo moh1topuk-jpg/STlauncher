@@ -525,7 +525,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 Status = Localize("Status_InstallingLoader", "Installing {0}…", SelectedLoader);
                 AppendConsole($"--- Installing {SelectedLoader} for {versionId} ---");
 
-                var gameJava = (await _versions.ResolveAsync(versionId)).JavaVersion?.MajorVersion ?? 8;
+                var gameJava = (await _versions.ResolveAsync(versionId)).RequiredJavaMajor;
                 var installerLog = new Progress<string>(line => AppendConsole(line));
 
                 versionId = await _loaders.InstallAsync(

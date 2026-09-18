@@ -1,4 +1,5 @@
 using System;
+using System.Text.Json;
 using STlauncher.Core.Metadata;
 using Xunit;
 
@@ -45,5 +46,66 @@ public class MetadataJsonTests
         var version = System.Text.Json.JsonSerializer.Deserialize<VersionJson>(json, MetadataJson.Options)!;
 
         Assert.Equal(default, version.ReleaseTime);
+    }
+}
+public class TolerantNumberTests
+{
+    /// <summary>
+    /// Whole numbers written with a fractional part. TLauncher does this, and it used to
+    /// take the entire profile down: no parse, no resolve, no launch.
+    /// </summary>
+    [Fact]
+    public void Parse_AcceptsWholeNumbersWrittenAsDecimals()
+    {
+        var json = JsonSerializer.Deserialize<VersionJson>("""
+            {
+              "id": "OptiFine 1.21.11",
+              "mainClass": "net.minecraft.launchwrapper.Launch",
+              "complianceLevel": 1.0,
+              "javaVersion": { "component": "java-runtime-delta", "majorVersion": 21.0 }
+            }
+            """, MetadataJson.Options);
+
+        Assert.NotNull(json);
+        Assert.Equal(1, json!.ComplianceLevel);
+        Assert.Equal(21, json.JavaVersion?.MajorVersion);
+    }
+
+    [Theory]
+    [InlineData("17", 17)]
+    [InlineData("17.0", 17)]
+    [InlineData("", 0)]
+    [InlineData("не число", 0)]
+    public void Parse_AcceptsNumbersWrittenAsStrings(string raw, int expected)
+    {
+        var json = JsonSerializer.Deserialize<VersionJson>(
+            $$"""{ "id": "x", "javaVersion": { "majorVersion": "{{raw}}" } }""",
+            MetadataJson.Options);
+
+        Assert.Equal(expected, json!.JavaVersion?.MajorVersion);
+    }
+
+    [Fact]
+    public void RequiredJavaMajor_FallsBackWhenTheProfileStatesNothingUsable()
+    {
+        var stated = ResolvedVersion.FromLeaf(new VersionJson
+        {
+            Id = "x",
+            JavaVersion = new JavaVersionRef { MajorVersion = 21 }
+        });
+
+        // 0 is what an unreadable or missing value parses to; asking for "Java 0" would
+        // send the runtime downloader after a version that does not exist.
+        var unstated = ResolvedVersion.FromLeaf(new VersionJson
+        {
+            Id = "x",
+            JavaVersion = new JavaVersionRef { MajorVersion = 0 }
+        });
+
+        var missing = ResolvedVersion.FromLeaf(new VersionJson { Id = "x" });
+
+        Assert.Equal(21, stated.RequiredJavaMajor);
+        Assert.Equal(8, unstated.RequiredJavaMajor);
+        Assert.Equal(8, missing.RequiredJavaMajor);
     }
 }

@@ -34,6 +34,13 @@ public sealed class ResolvedVersion
 
     public string? MinecraftArguments { get; set; }
 
+    /// <summary>
+    /// Java major version the profile asks for, falling back to 8. A profile that states
+    /// nothing - or states something unreadable, which a tolerant parse turns into 0 -
+    /// must not send the launcher looking for "Java 0".
+    /// </summary>
+    public int RequiredJavaMajor => JavaVersion is { MajorVersion: > 0 } java ? java.MajorVersion : 8;
+
     public static ResolvedVersion FromLeaf(VersionJson json) => Merge(null, json);
 
     public static ResolvedVersion Merge(ResolvedVersion? parent, VersionJson child)

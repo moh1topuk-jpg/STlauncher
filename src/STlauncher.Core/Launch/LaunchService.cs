@@ -107,7 +107,7 @@ public sealed class LaunchService
         }
 
         var javaPath = string.IsNullOrWhiteSpace(settings.JavaPath)
-            ? await _java.EnsureJavaAsync(resolved.JavaVersion?.MajorVersion ?? 8, cancellationToken).ConfigureAwait(false)
+            ? await _java.EnsureJavaAsync(resolved.RequiredJavaMajor, cancellationToken).ConfigureAwait(false)
             : settings.JavaPath!;
 
         Directory.CreateDirectory(settings.GameDirectory);

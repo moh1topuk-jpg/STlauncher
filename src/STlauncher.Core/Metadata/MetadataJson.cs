@@ -18,6 +18,11 @@ public static class MetadataJson
 
         options.Converters.Add(new GameArgumentConverter());
         options.Converters.Add(new TolerantDateTimeOffsetConverter());
+
+        // Profiles written by other launchers are still valid JSON, just not the shape
+        // Mojang uses: whole numbers arrive as 1.0 and 21.0 and would otherwise take the
+        // entire document down with them.
+        options.Converters.Add(new TolerantInt32Converter());
         return options;
     }
 }
