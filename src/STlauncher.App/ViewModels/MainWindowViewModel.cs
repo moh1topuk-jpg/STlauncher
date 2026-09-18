@@ -215,8 +215,8 @@ public partial class MainWindowViewModel : ViewModelBase
             : settings.Username;
 
         ShowSnapshots = settings.ShowSnapshots;
+        // The change handler configures the service - address and mirror together.
         CatalogUrl = ResolveCatalogUrl(settings.CatalogUrl);
-        _catalog.CatalogUrl = CatalogUrl;
         ServerStatsUrl = settings.ServerStatsUrl ?? string.Empty;
         Language = LocalizationService.Normalize(settings.Language);
         ShowDeveloperConsole = settings.ShowDeveloperConsole;
@@ -762,7 +762,16 @@ public partial class MainWindowViewModel : ViewModelBase
     partial void OnUsernameChanged(string value) => _ = UpdateAvatarAsync();
 
 
-    partial void OnCatalogUrlChanged(string value) => _catalog.CatalogUrl = value;
+    partial void OnCatalogUrlChanged(string value)
+    {
+        _catalog.CatalogUrl = value;
+
+        // Only the catalog the launcher ships with has a known mirror. Falling back to it
+        // for a hand-configured catalog would quietly load a different one than was asked for.
+        _catalog.FallbackUrls = string.Equals(value, AppSettings.DefaultCatalogUrl, StringComparison.OrdinalIgnoreCase)
+            ? new[] { AppSettings.CatalogMirrorUrl }
+            : Array.Empty<string>();
+    }
 
     partial void OnSectionChanged(ShellSection value)
     {

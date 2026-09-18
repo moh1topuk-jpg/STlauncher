@@ -61,6 +61,14 @@ public sealed class ContentCatalogService
     /// <summary>A catalog placed next to settings.json, so hosting is optional.</summary>
     public string DropInPath => Path.Combine(_paths.Root, LocalFileName);
 
+    /// <summary>
+    /// Copies of the same catalog on other networks, tried in order when the main address
+    /// fails. The catalog is how the launcher learns where its update mirror is, so a
+    /// player whose provider blocks GitHub entirely could otherwise never find the mirror:
+    /// the address would be delivered through the very network that is blocked.
+    /// </summary>
+    public IReadOnlyList<string> FallbackUrls { get; set; } = Array.Empty<string>();
+
     public async Task<CatalogLoadResult> LoadAsync(CancellationToken cancellationToken = default)
     {
         var error = default(string);
@@ -82,6 +90,15 @@ public sealed class ContentCatalogService
             {
                 _logger?.LogWarning(ex, "Failed to load the catalog from {Url}.", CatalogUrl);
                 error = ex.Message;
+            }
+
+            // Before settling for yesterday's copy, try the same catalog elsewhere: a
+            // live catalog through a mirror beats a stale one from the cache.
+            var mirrored = await TryFallbacksAsync(cancellationToken).ConfigureAwait(false);
+
+            if (mirrored is not null)
+            {
+                return new CatalogLoadResult(mirrored, CatalogOrigin.Remote, null);
             }
         }
         else if (IsLocalPath(CatalogUrl))
@@ -114,6 +131,35 @@ public sealed class ContentCatalogService
     }
 
     public ContentCatalog? LoadCached() => TryReadFile(CachePath);
+
+    private async Task<ContentCatalog?> TryFallbacksAsync(CancellationToken cancellationToken)
+    {
+        foreach (var url in FallbackUrls)
+        {
+            if (!IsHttpUrl(url))
+            {
+                continue;
+            }
+
+            try
+            {
+                var json = await _http.GetStringAsync(url, cancellationToken).ConfigureAwait(false);
+                var catalog = Parse(json);
+
+                Directory.CreateDirectory(_paths.Meta);
+                AtomicFile.WriteAllText(CachePath, json);
+
+                _logger?.LogInformation("Loaded catalog '{Name}' through the mirror {Url}.", catalog.Name, url);
+                return catalog;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "Catalog mirror {Url} failed as well.", url);
+            }
+        }
+
+        return null;
+    }
 
     public ContentCatalog? TryReadFile(string path)
     {

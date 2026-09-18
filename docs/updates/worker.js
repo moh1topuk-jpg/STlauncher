@@ -8,8 +8,12 @@
  *   GET /releases.win.json   the feed
  *   GET /<file>.nupkg        the package named in it
  *
- * Both are fetched from the GitHub release and streamed back, so nothing has to be
- * uploaded or kept in sync by hand - publishing a release stays exactly as it is.
+ * It also serves GET /catalog.json. The launcher learns the mirror's address from the
+ * catalog, and the catalog lives on GitHub too - so a player who cannot reach GitHub at
+ * all could never find the mirror. Serving the catalog from here closes that loop.
+ *
+ * Everything is fetched from GitHub on Cloudflare's side and streamed back, so nothing
+ * has to be uploaded or kept in sync by hand - publishing a release stays exactly as it is.
  *
  * Setup: see docs/UPDATES.md.
  *
@@ -25,6 +29,9 @@ const FEED_CACHE_SECONDS = 300;
 
 /** Packages are immutable once published. */
 const ASSET_CACHE_SECONDS = 86400;
+
+/** The catalog is edited by hand and should show up within a minute. */
+const CATALOG_CACHE_SECONDS = 60;
 
 export default {
   async fetch(request, env, ctx) {
@@ -45,6 +52,10 @@ export default {
     }
 
     try {
+      if (name === 'catalog.json') {
+        return await catalog(env);
+      }
+
       const release = await latestRelease(env);
       const asset = release.assets.find(a => a.name === name);
 
@@ -85,6 +96,27 @@ export default {
     }
   },
 };
+
+/** The catalog from the main branch, fetched on Cloudflare's side of the block. */
+async function catalog(env) {
+  const upstream = await fetch(`https://raw.githubusercontent.com/${env.REPO}/main/catalog.json`, {
+    headers: { 'user-agent': 'STlauncher-update-mirror' },
+    cf: { cacheEverything: true, cacheTtl: CATALOG_CACHE_SECONDS },
+  });
+
+  if (!upstream.ok) {
+    return text(`upstream ${upstream.status}`, 502);
+  }
+
+  return new Response(upstream.body, {
+    status: 200,
+    headers: {
+      'content-type': 'application/json; charset=utf-8',
+      'cache-control': `public, max-age=${CATALOG_CACHE_SECONDS}`,
+      'access-control-allow-origin': '*',
+    },
+  });
+}
 
 async function latestRelease(env) {
   const headers = {

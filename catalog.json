@@ -4,6 +4,7 @@
   "description": "Рекомендуемая сборка сервера mc.showtime.su",
   "updatedAt": "2026-09-17T00:00:00Z",
   "serverStatsUrl": "https://showtime-stats.moh1topuk.workers.dev/",
+  "updateFeedUrl": "https://showtime-updates.moh1topuk.workers.dev/",
 
   "sections": [
     {

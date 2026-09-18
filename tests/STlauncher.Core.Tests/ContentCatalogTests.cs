@@ -307,3 +307,114 @@ public class ContentCatalogTests
     public void FileNameFromUrl_DecodesNames(string url, string? expected)
         => Assert.Equal(expected, CatalogInstaller.FileNameFromUrl(url));
 }
+
+public class ContentCatalogMirrorTests : IDisposable
+{
+    private readonly string _root = System.IO.Path.Combine(
+        System.IO.Path.GetTempPath(), "stlauncher-tests", Guid.NewGuid().ToString("N"));
+
+    private const string Primary = "https://raw.githubusercontent.com/example/catalog.json";
+    private const string Mirror = "https://mirror.example.dev/catalog.json";
+
+    private const string CatalogJson = """
+        { "schemaVersion": 1, "name": "Mirrored", "sections": [] }
+        """;
+
+    /// <summary>Answers per URL; anything unlisted fails the way a blocked host does.</summary>
+    private sealed class StubHandler : System.Net.Http.HttpMessageHandler
+    {
+        private readonly System.Collections.Generic.Dictionary<string, string> _responses;
+
+        public System.Collections.Generic.List<string> Requested { get; } = new();
+
+        public StubHandler(System.Collections.Generic.Dictionary<string, string> responses) => _responses = responses;
+
+        protected override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(
+            System.Net.Http.HttpRequestMessage request,
+            System.Threading.CancellationToken cancellationToken)
+        {
+            var url = request.RequestUri!.ToString();
+            Requested.Add(url);
+
+            if (_responses.TryGetValue(url, out var body))
+            {
+                return System.Threading.Tasks.Task.FromResult(new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.OK)
+                {
+                    Content = new System.Net.Http.StringContent(body)
+                });
+            }
+
+            throw new System.Net.Http.HttpRequestException(
+                "The SSL connection could not be established, see inner exception.");
+        }
+    }
+
+    private ContentCatalogService Service(StubHandler handler)
+        => new(new System.Net.Http.HttpClient(handler), new LauncherPaths(_root))
+        {
+            CatalogUrl = Primary,
+            FallbackUrls = new[] { Mirror }
+        };
+
+    [Fact]
+    public async System.Threading.Tasks.Task BlockedPrimary_FallsBackToTheMirror()
+    {
+        // The player whose provider blocks GitHub: without the mirror they could never
+        // learn where the update mirror is, since that address lives in this catalog.
+        var handler = new StubHandler(new() { [Mirror] = CatalogJson });
+
+        var result = await Service(handler).LoadAsync();
+
+        Assert.NotNull(result.Catalog);
+        Assert.Equal("Mirrored", result.Catalog!.Name);
+        Assert.Equal(CatalogOrigin.Remote, result.Origin);
+        Assert.Null(result.Error);
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task WorkingPrimary_NeverTouchesTheMirror()
+    {
+        var handler = new StubHandler(new() { [Primary] = CatalogJson, [Mirror] = CatalogJson });
+
+        await Service(handler).LoadAsync();
+
+        Assert.DoesNotContain(Mirror, handler.Requested);
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task MirrorCopy_IsCachedForTheNextOfflineStart()
+    {
+        var handler = new StubHandler(new() { [Mirror] = CatalogJson });
+        var service = Service(handler);
+
+        await service.LoadAsync();
+
+        Assert.Equal("Mirrored", service.LoadCached()?.Name);
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task EverythingBlocked_StillFallsBackToTheCache()
+    {
+        var warm = Service(new StubHandler(new() { [Primary] = CatalogJson }));
+        await warm.LoadAsync();
+
+        var result = await Service(new StubHandler(new())).LoadAsync();
+
+        Assert.Equal(CatalogOrigin.Cache, result.Origin);
+        Assert.NotNull(result.Catalog);
+    }
+
+    public void Dispose()
+    {
+        try
+        {
+            if (System.IO.Directory.Exists(_root))
+            {
+                System.IO.Directory.Delete(_root, recursive: true);
+            }
+        }
+        catch (System.IO.IOException)
+        {
+        }
+    }
+}

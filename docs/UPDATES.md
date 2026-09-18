@@ -22,6 +22,22 @@ The SSL connection could not be established, see inner exception.
 `raw.githubusercontent.com` (другая сеть доставки) и, как правило, доступен даже там, где
 `github.com` и `api.github.com` уже нет.
 
+## Текущее состояние
+
+Зеркало развёрнуто: **`https://showtime-updates.moh1topuk.workers.dev/`** и прописано в
+`catalog.json` как `updateFeedUrl`. Проверено библиотекой обновлений самого лаунчера
+(Velopack `SimpleWebSource`): фид читается, последняя версия и пакет находятся.
+
+Воркер отдаёт и сам каталог — `/catalog.json`. Лаунчер (начиная с версии, где это
+появилось) пробует его, если каталог с GitHub не загрузился. Иначе игрок с полностью
+заблокированным GitHub никогда не узнал бы адрес зеркала: он приходит в каталоге, а каталог
+лежит на том же GitHub. Этот адрес зашит в лаунчер (`AppSettings.CatalogMirrorUrl`) и
+используется только для стандартного каталога — вручную заданный адрес каталога
+подменять чужим нельзя.
+
+Ссылка на установщик для тех, кто не может скачать его с GitHub:
+`https://showtime-updates.moh1topuk.workers.dev/STlauncher-win-Setup.exe`
+
 ## Зеркало на Cloudflare
 
 Воркер [`docs/updates/worker.js`](updates/worker.js) отдаёт фид и пакеты, забирая их с

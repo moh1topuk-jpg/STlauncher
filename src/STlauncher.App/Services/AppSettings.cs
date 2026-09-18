@@ -9,6 +9,13 @@ public sealed class AppSettings
     public const string DefaultCatalogUrl =
         "https://raw.githubusercontent.com/moh1topuk-jpg/STlauncher/main/catalog.json";
 
+    /// <summary>
+    /// The same catalog served through Cloudflare, for players who cannot reach GitHub.
+    /// Built in rather than published in the catalog, because the catalog is exactly what
+    /// such a player cannot fetch. See docs/UPDATES.md.
+    /// </summary>
+    public const string CatalogMirrorUrl = "https://showtime-updates.moh1topuk.workers.dev/catalog.json";
+
     /// <summary>Previously shipped default. Treated as "not customised" and upgraded.</summary>
     public const string LegacyCatalogUrl = "https://mc.showtime.su/launcher/catalog.json";
 
