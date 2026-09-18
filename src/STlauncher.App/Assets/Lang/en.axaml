@@ -351,4 +351,34 @@
     <x:String x:Key="Update_NoConnection">No connection to the update server.</x:String>
     <x:String x:Key="Update_DownloadManually">Download manually</x:String>
 
+    <x:String x:Key="Import_Title">Import builds</x:String>
+    <x:String x:Key="Import_Open">Find builds from other launchers</x:String>
+    <x:String x:Key="Import_OpenHint">Picks up builds from TLauncher, the official launcher, Prism, CurseForge and others - mods and worlds included.</x:String>
+    <x:String x:Key="Import_Scanning">Looking for builds…</x:String>
+    <x:String x:Key="Import_Rescan">Search again</x:String>
+    <x:String x:Key="Import_Folder">Choose a folder</x:String>
+    <x:String x:Key="Import_FolderHint">Path to .minecraft or to a folder of instances</x:String>
+    <x:String x:Key="Import_NothingFound">No builds from other launchers were found.</x:String>
+    <x:String x:Key="Import_Found">Found: {0}, of them ready to import: {1}</x:String>
+    <x:String x:Key="Import_ModeTitle">What to do with the files</x:String>
+    <x:String x:Key="Import_ModeLink">Link where they are</x:String>
+    <x:String x:Key="Import_ModeLinkHint">Nothing is copied. The folder stays shared with that launcher: worlds and mods belong to both.</x:String>
+    <x:String x:Key="Import_ModeCopy">Copy them here</x:String>
+    <x:String x:Key="Import_ModeCopyHint">The build becomes independent, at the cost of disk space - the amount is shown below.</x:String>
+    <x:String x:Key="Import_SelectedLink">Selected: {0}</x:String>
+    <x:String x:Key="Import_SelectedCopy">Selected: {0}, about {1} will be copied</x:String>
+    <x:String x:Key="Import_Apply">Import</x:String>
+    <x:String x:Key="Import_Importing">Importing {0}…</x:String>
+    <x:String x:Key="Import_ImportingPart">{0}: {1}</x:String>
+    <x:String x:Key="Import_Done">Imported: {0}</x:String>
+    <x:String x:Key="Import_Failed">Import failed: {0}</x:String>
+    <x:String x:Key="Import_ProblemNoProfile">no version profile - the build is incomplete</x:String>
+    <x:String x:Key="Import_ProblemBrokenProfile">the version profile cannot be read</x:String>
+    <x:String x:Key="Import_ProblemIncomplete">the profile describes no way to start the game</x:String>
+    <x:String x:Key="Import_ProblemAlready">already imported</x:String>
+    <x:String x:Key="Import_Shared">shared folder</x:String>
+    <x:String x:Key="Size_Gb">{0:F1} GB</x:String>
+    <x:String x:Key="Size_Mb">{0:F0} MB</x:String>
+    <x:String x:Key="Size_Kb">{0} KB</x:String>
+
 </ResourceDictionary>

@@ -82,14 +82,20 @@
                         </ListBox.ItemTemplate>
                     </ListBox>
 
-                    <Grid Grid.Row="4" ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                    <StackPanel Grid.Row="4" Spacing="6">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                            <Button Classes="ghost small" HorizontalAlignment="Stretch"
+                                    Content="{DynamicResource Game_NewInstance}"
+                                    Command="{Binding OpenNewBuildCommand}"/>
+                            <Button Grid.Column="1" Classes="ghost small"
+                                    Content="{DynamicResource Builds_Duplicate}"
+                                    Command="{Binding DuplicateInstanceCommand}"/>
+                        </Grid>
+
                         <Button Classes="ghost small" HorizontalAlignment="Stretch"
-                                Content="{DynamicResource Game_NewInstance}"
-                                Command="{Binding OpenNewBuildCommand}"/>
-                        <Button Grid.Column="1" Classes="ghost small"
-                                Content="{DynamicResource Builds_Duplicate}"
-                                Command="{Binding DuplicateInstanceCommand}"/>
-                    </Grid>
+                                Content="{DynamicResource Import_Open}"
+                                Command="{Binding OpenImportCommand}"/>
+                    </StackPanel>
                 </Grid>
             </Border>
 
@@ -378,6 +384,94 @@
                 </Panel>
             </Grid>
         </Grid>
+
+        <!-- ============ Import from other launchers ============ -->
+        <Border Background="#B0000000" IsVisible="{Binding IsImportOpen}">
+            <Border Classes="card" Width="620" MaxHeight="560" HorizontalAlignment="Center"
+                    VerticalAlignment="Center" Padding="22">
+                <Grid RowDefinitions="Auto,Auto,*,Auto,Auto" RowSpacing="14">
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="{DynamicResource Import_Title}" FontSize="17" FontWeight="SemiBold"/>
+                        <TextBlock Text="{Binding ImportStatus}" Classes="faint" TextWrapping="Wrap"/>
+                    </StackPanel>
+
+                    <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                        <TextBox Text="{Binding ImportFolder}"
+                                 Watermark="{DynamicResource Import_FolderHint}"/>
+                        <Button Grid.Column="1" Classes="ghost small"
+                                Content="{DynamicResource Import_Folder}"
+                                Command="{Binding ScanFolderCommand}"
+                                IsEnabled="{Binding !IsImportBusy}"/>
+                        <Button Grid.Column="2" Classes="ghost small"
+                                Content="{DynamicResource Import_Rescan}"
+                                Command="{Binding ScanForInstancesCommand}"
+                                IsEnabled="{Binding !IsImportBusy}"/>
+                    </Grid>
+
+                    <ScrollViewer Grid.Row="2">
+                        <ItemsControl ItemsSource="{Binding ImportCandidates}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:ImportCandidate">
+                                    <Border Classes="panel" Padding="10" Margin="0,0,0,6">
+                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                            <CheckBox IsChecked="{Binding IsSelected}"
+                                                      IsEnabled="{Binding IsUsable}"
+                                                      VerticalAlignment="Center"/>
+
+                                            <StackPanel Grid.Column="1" Spacing="2">
+                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
+                                                           TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock Text="{Binding Summary}" Classes="faint"/>
+
+                                                <!-- A build that cannot be imported is still listed,
+                                                     with the reason: one that vanishes looks like a
+                                                     build the launcher lost. -->
+                                                <TextBlock Text="{Binding ProblemLabel}" Classes="gold"
+                                                           TextWrapping="Wrap"
+                                                           IsVisible="{Binding !IsUsable}"/>
+                                            </StackPanel>
+
+                                            <TextBlock Grid.Column="2" Text="{Binding SourceLabel}"
+                                                       Classes="faint" VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+
+                    <StackPanel Grid.Row="3" Spacing="8">
+                        <TextBlock Text="{DynamicResource Import_ModeTitle}" Classes="label"/>
+
+                        <RadioButton GroupName="ImportMode" IsChecked="{Binding ImportByLinking}"
+                                     Content="{DynamicResource Import_ModeLink}"/>
+                        <TextBlock Text="{DynamicResource Import_ModeLinkHint}" Classes="faint"
+                                   TextWrapping="Wrap" Margin="26,0,0,0"/>
+
+                        <RadioButton GroupName="ImportMode" IsChecked="{Binding ImportByCopying}"
+                                     Content="{DynamicResource Import_ModeCopy}"/>
+                        <TextBlock Text="{DynamicResource Import_ModeCopyHint}" Classes="faint"
+                                   TextWrapping="Wrap" Margin="26,0,0,0"/>
+
+                        <TextBlock Text="{Binding ImportSummary}" Classes="gold" TextWrapping="Wrap"
+                                   IsVisible="{Binding ImportSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    </StackPanel>
+
+                    <Grid Grid.Row="4" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                        <ProgressBar IsVisible="{Binding IsImportBusy}" IsIndeterminate="True"
+                                     Height="3" VerticalAlignment="Center"/>
+                        <Button Grid.Column="1" Classes="ghost"
+                                Content="{DynamicResource Common_Close2}"
+                                Command="{Binding CloseImportCommand}"/>
+                        <Button Grid.Column="2" Classes="primary"
+                                Content="{DynamicResource Import_Apply}"
+                                Command="{Binding ImportSelectedCommand}"
+                                IsEnabled="{Binding !IsImportBusy}"/>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Border>
 
         <!-- ============ New build wizard ============ -->
         <Border Background="#B0000000" IsVisible="{Binding IsNewBuildOpen}">

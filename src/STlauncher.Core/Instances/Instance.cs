@@ -44,6 +44,15 @@ public sealed class Instance
     [JsonPropertyName("catalogBuildId")]
     public string? CatalogBuildId { get; set; }
 
+    /// <summary>
+    /// Game folder outside the launcher's own directory - a build imported from another
+    /// launcher and left where it is. Null means the folder under <c>instances/</c>.
+    /// The definition always stays with the launcher either way, so removing the build
+    /// never touches somebody else's files.
+    /// </summary>
+    [JsonPropertyName("externalGameDirectory")]
+    public string? ExternalGameDirectory { get; set; }
+
     /// <summary>Server pinned by the catalog build. Null means the launcher default.</summary>
     [JsonPropertyName("serverName")]
     public string? ServerName { get; set; }

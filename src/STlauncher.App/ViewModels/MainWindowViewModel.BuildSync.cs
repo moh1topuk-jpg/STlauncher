@@ -402,7 +402,7 @@ public partial class MainWindowViewModel
 
         // The instance is the authority here, not the editor: the startup sync runs for
         // the recommended build even when the player has another one selected.
-        var directory = _instances.GameDirectory(instance.Id);
+        var directory = _instances.GameDirectory(instance);
         var gameVersion = instance.VersionId;
         var loader = instance.Loader;
         var enabledIds = instance.EnabledCatalogItems;
@@ -501,7 +501,7 @@ public partial class MainWindowViewModel
         try
         {
             var path = System.IO.Path.Combine(
-                ModManager.ModsDirectory(_instances.GameDirectory(instance.Id)),
+                ModManager.ModsDirectory(_instances.GameDirectory(instance)),
                 record.FileName);
 
             if (System.IO.File.Exists(path))
@@ -539,7 +539,7 @@ public partial class MainWindowViewModel
             return;
         }
 
-        var directory = ModManager.ModsDirectory(_instances.GameDirectory(instance.Id));
+        var directory = ModManager.ModsDirectory(_instances.GameDirectory(instance));
 
         foreach (var record in stale)
         {

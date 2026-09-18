@@ -81,6 +81,7 @@ public static class LauncherHost
         services.AddSingleton<LocalizationService>();
         services.AddSingleton<InstanceManager>();
         services.AddSingleton<InstanceBackupService>();
+        services.AddSingleton<STlauncher.Core.Import.InstanceImporter>();
         services.AddSingleton<UpdateService>();
 
         services.AddTransient<MainWindowViewModel>();

@@ -6,6 +6,7 @@ using Avalonia.Data.Core.Plugins;
 using System.Linq;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media.Imaging;
+using Avalonia.Platform.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using STlauncher.App.Services;
 using STlauncher.App.ViewModels;
@@ -54,6 +55,15 @@ public partial class App : Application
             // window never terminates Minecraft.
             viewModel.RequestHideLauncher += () => window.WindowState = WindowState.Minimized;
             viewModel.RequestCloseLauncher += () => window.Close();
+
+            // The folder picker needs the window; the view model only gets the answer.
+            viewModel.PickFolderAsync = async () =>
+            {
+                var folders = await window.StorageProvider.OpenFolderPickerAsync(
+                    new FolderPickerOpenOptions { AllowMultiple = false });
+
+                return folders.Count > 0 ? folders[0].TryGetLocalPath() : null;
+            };
 
             window.Opened += (_, _) => SafeInitialize(viewModel);
 

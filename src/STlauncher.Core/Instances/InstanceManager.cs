@@ -26,6 +26,23 @@ public sealed class InstanceManager
 
     public string GameDirectory(string instanceId) => _paths.InstanceDirectory(instanceId);
 
+    /// <summary>
+    /// Where this build's saves, mods and configs live. An imported build can point at
+    /// another launcher's folder; everything else - the definition, and deletion - stays
+    /// inside <c>instances/</c>.
+    /// </summary>
+    public string GameDirectory(Instance instance)
+    {
+        if (instance is null)
+        {
+            throw new ArgumentNullException(nameof(instance));
+        }
+
+        return string.IsNullOrWhiteSpace(instance.ExternalGameDirectory)
+            ? _paths.InstanceDirectory(instance.Id)
+            : instance.ExternalGameDirectory!;
+    }
+
     public string DefinitionPath(string instanceId)
         => Path.Combine(_paths.InstanceDirectory(instanceId), DefinitionFileName);
 
@@ -186,6 +203,10 @@ public sealed class InstanceManager
         copy.ServerName = source.ServerName;
         copy.ServerAddress = source.ServerAddress;
         copy.ExtraGameArgs = source.ExtraGameArgs;
+
+        // Deliberately not copied: two builds sharing one external folder would fight
+        // over the same mods and worlds without either of them saying so.
+        copy.ExternalGameDirectory = null;
         copy.EnabledCatalogItems = source.EnabledCatalogItems.ToList();
 
         Save(copy);

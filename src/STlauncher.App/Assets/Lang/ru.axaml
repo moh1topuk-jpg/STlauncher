@@ -350,4 +350,34 @@
     <x:String x:Key="Update_NoConnection">Нет связи с сервером обновлений.</x:String>
     <x:String x:Key="Update_DownloadManually">Скачать вручную</x:String>
 
+    <x:String x:Key="Import_Title">Импорт сборок</x:String>
+    <x:String x:Key="Import_Open">Найти сборки других лаунчеров</x:String>
+    <x:String x:Key="Import_OpenHint">Подхватит сборки из TLauncher, официального лаунчера, Prism, CurseForge и других — вместе с модами и мирами.</x:String>
+    <x:String x:Key="Import_Scanning">Ищу сборки…</x:String>
+    <x:String x:Key="Import_Rescan">Искать заново</x:String>
+    <x:String x:Key="Import_Folder">Указать папку вручную</x:String>
+    <x:String x:Key="Import_FolderHint">Путь к .minecraft или к папке со сборками</x:String>
+    <x:String x:Key="Import_NothingFound">Сборок других лаунчеров не найдено.</x:String>
+    <x:String x:Key="Import_Found">Найдено: {0}, из них готовы к импорту: {1}</x:String>
+    <x:String x:Key="Import_ModeTitle">Что делать с файлами</x:String>
+    <x:String x:Key="Import_ModeLink">Подключить на месте</x:String>
+    <x:String x:Key="Import_ModeLinkHint">Ничего не копируется. Папка остаётся общей с тем лаунчером: миры и моды будут у вас одни на двоих.</x:String>
+    <x:String x:Key="Import_ModeCopy">Скопировать к себе</x:String>
+    <x:String x:Key="Import_ModeCopyHint">Сборка станет независимой. Займёт место на диске — сколько именно, написано ниже.</x:String>
+    <x:String x:Key="Import_SelectedLink">Выбрано: {0}</x:String>
+    <x:String x:Key="Import_SelectedCopy">Выбрано: {0}, будет скопировано около {1}</x:String>
+    <x:String x:Key="Import_Apply">Импортировать</x:String>
+    <x:String x:Key="Import_Importing">Импортирую {0}…</x:String>
+    <x:String x:Key="Import_ImportingPart">{0}: {1}</x:String>
+    <x:String x:Key="Import_Done">Импортировано: {0}</x:String>
+    <x:String x:Key="Import_Failed">Не удалось импортировать: {0}</x:String>
+    <x:String x:Key="Import_ProblemNoProfile">нет описания версии — сборка неполная</x:String>
+    <x:String x:Key="Import_ProblemBrokenProfile">описание версии не читается</x:String>
+    <x:String x:Key="Import_ProblemIncomplete">в описании не сказано, как запускать игру</x:String>
+    <x:String x:Key="Import_ProblemAlready">уже импортирована</x:String>
+    <x:String x:Key="Import_Shared">общая папка</x:String>
+    <x:String x:Key="Size_Gb">{0:F1} ГБ</x:String>
+    <x:String x:Key="Size_Mb">{0:F0} МБ</x:String>
+    <x:String x:Key="Size_Kb">{0} КБ</x:String>
+
 </ResourceDictionary>

@@ -46,6 +46,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly LocalizationService _localization;
     private readonly JavaManager _java;
     private readonly InstanceBackupService _backups;
+    private readonly STlauncher.Core.Import.InstanceImporter _importer;
     private readonly LauncherPaths _paths;
     private readonly GameLauncher _gameLauncher;
 
@@ -79,6 +80,7 @@ public partial class MainWindowViewModel : ViewModelBase
         LocalizationService localization,
         JavaManager java,
         InstanceBackupService backups,
+        STlauncher.Core.Import.InstanceImporter importer,
         LauncherPaths paths,
         GameLauncher gameLauncher)
     {
@@ -100,6 +102,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _localization = localization;
         _java = java;
         _backups = backups;
+        _importer = importer;
         _paths = paths;
         _gameLauncher = gameLauncher;
     }
@@ -192,7 +195,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public string InstanceDirectory
         => SelectedInstance is null
             ? _paths.InstanceDirectory("default")
-            : _instances.GameDirectory(SelectedInstance.Id);
+            : _instances.GameDirectory(SelectedInstance);
 
     public async Task InitializeAsync()
     {
@@ -561,7 +564,13 @@ public partial class MainWindowViewModel : ViewModelBase
                 ForceUpdate = ForceUpdate,
                 ServerAddress = joinServer && !string.IsNullOrWhiteSpace(ServerAddress) ? ServerAddress : null,
                 ServerListName = ServerName,
-                ServerListAddress = string.IsNullOrWhiteSpace(ServerAddress) ? null : ServerAddress,
+                // Not written into a linked build's folder: that servers.dat belongs to the
+                // other launcher, and quietly adding a server to it is exactly the kind of
+                // pushiness the launcher should not have. Joining still works without it.
+                ServerListAddress = string.IsNullOrWhiteSpace(ServerAddress) ||
+                                    !string.IsNullOrWhiteSpace(SelectedInstance?.ExternalGameDirectory)
+                    ? null
+                    : ServerAddress,
                 LanguageCode = Language == "en" ? "en_us" : "ru_ru"
             };
 
