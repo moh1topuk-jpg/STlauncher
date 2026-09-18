@@ -346,4 +346,8 @@
     <x:String x:Key="Builds_ModsFew">мода</x:String>
     <x:String x:Key="Builds_ModsMany">модов</x:String>
 
+    <x:String x:Key="Update_Blocked">Не удалось связаться с сервером обновлений — похоже, доступ блокирует провайдер или антивирус.</x:String>
+    <x:String x:Key="Update_NoConnection">Нет связи с сервером обновлений.</x:String>
+    <x:String x:Key="Update_DownloadManually">Скачать вручную</x:String>
+
 </ResourceDictionary>

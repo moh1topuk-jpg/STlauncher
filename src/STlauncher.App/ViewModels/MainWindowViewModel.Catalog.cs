@@ -68,6 +68,10 @@ public partial class MainWindowViewModel
                 // The collector address travels with the catalog, so it can be changed
                 // or switched off without releasing a new launcher.
                 ApplyServerStatsUrl(result.Catalog.ServerStatsUrl);
+
+                // Same reasoning, and more urgent: a player who cannot reach GitHub can
+                // never receive a build that fixes it.
+                _updates.UseFeed(result.Catalog.UpdateFeedUrl);
             }
             else
             {

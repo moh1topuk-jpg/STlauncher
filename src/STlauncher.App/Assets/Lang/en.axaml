@@ -347,4 +347,8 @@
     <x:String x:Key="Builds_ModsFew">mods</x:String>
     <x:String x:Key="Builds_ModsMany">mods</x:String>
 
+    <x:String x:Key="Update_Blocked">Could not reach the update server - a provider or security software is likely blocking it.</x:String>
+    <x:String x:Key="Update_NoConnection">No connection to the update server.</x:String>
+    <x:String x:Key="Update_DownloadManually">Download manually</x:String>
+
 </ResourceDictionary>

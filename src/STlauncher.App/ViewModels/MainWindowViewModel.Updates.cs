@@ -51,6 +51,17 @@ public partial class MainWindowViewModel
     [ObservableProperty]
     private string _currentVersionLabel = string.Empty;
 
+    /// <summary>
+    /// The check failed in a way the player can do something about: offer the download
+    /// page, since the launcher cannot fetch the build itself.
+    /// </summary>
+    [ObservableProperty]
+    private bool _canDownloadManually;
+
+    /// <summary>Opens the releases page so a blocked launcher is not a dead end.</summary>
+    [RelayCommand]
+    private void OpenReleasesPage() => OpenUrl(Services.UpdateService.ReleasesUrl);
+
     partial void OnHasUpdateChanged(bool value) => RefreshUpdateActionLabel();
 
     partial void OnIsUpdateBusyChanged(bool value) => RefreshUpdateActionLabel();
@@ -149,6 +160,7 @@ public partial class MainWindowViewModel
                 IsUpdateBannerVisible = false;
                 CanRestartToUpdate = false;
                 HasUpdate = false;
+                CanDownloadManually = false;
 
                 if (announce)
                 {
@@ -180,14 +192,43 @@ public partial class MainWindowViewModel
         }
         catch (Exception ex)
         {
-            if (announce)
-            {
-                UpdateStatus = Localize("Update_Failed", "Update check failed: {0}", ex.Message);
-            }
+            ReportFailure(ex, announce);
         }
         finally
         {
             IsUpdateBusy = false;
+        }
+    }
+
+    /// <summary>
+    /// Says what actually went wrong. "The SSL connection could not be established, see
+    /// inner exception" is what the player used to be shown: it names no cause, suggests
+    /// no action, and hides the one message that would have explained it.
+    /// </summary>
+    private void ReportFailure(Exception exception, bool announce)
+    {
+        var error = STlauncher.Core.Http.NetworkFailures.Classify(exception);
+
+        CanDownloadManually = true;
+
+        var headline = error.Kind switch
+        {
+            STlauncher.Core.Http.NetworkFailureKind.Blocked => Localize(
+                "Update_Blocked",
+                "Could not reach the update server - a provider or security software is likely blocking it."),
+            STlauncher.Core.Http.NetworkFailureKind.NoConnection => Localize(
+                "Update_NoConnection",
+                "No connection to the update server."),
+            _ => Localize("Update_Failed", "Update check failed: {0}", error.Detail)
+        };
+
+        // The detail goes to the log regardless: the next report should arrive with a
+        // cause rather than with the wrapper message.
+        AppendConsole($"[update] {error.Kind}: {error.Detail}");
+
+        if (announce || error.Kind != STlauncher.Core.Http.NetworkFailureKind.Unknown)
+        {
+            UpdateStatus = headline;
         }
     }
 
@@ -237,7 +278,7 @@ public partial class MainWindowViewModel
         }
         catch (Exception ex)
         {
-            UpdateStatus = Localize("Update_Failed", "Update check failed: {0}", ex.Message);
+            ReportFailure(ex, announce: true);
             UpdateBannerText = Localize("Update_FailedBanner", "Update failed - try again later");
             CanRestartToUpdate = _updates.IsReadyToApply;
         }

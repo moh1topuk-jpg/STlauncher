@@ -51,6 +51,14 @@ public sealed class ContentCatalog
     [JsonPropertyName("serverStatsUrl")]
     public string? ServerStatsUrl { get; set; }
 
+    /// <summary>
+    /// Mirror for launcher updates. Set this when players cannot reach GitHub: the new
+    /// build lives there too, so shipping a fix for a blocked GitHub through GitHub is
+    /// not an option. See docs/UPDATES.md.
+    /// </summary>
+    [JsonPropertyName("updateFeedUrl")]
+    public string? UpdateFeedUrl { get; set; }
+
     /// <summary>Recommended ready-made builds the launcher can apply in one click.</summary>
     [JsonPropertyName("builds")]
     public List<CatalogBuild> Builds { get; set; } = new();

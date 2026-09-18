@@ -209,6 +209,10 @@
                     <TextBlock Text="{DynamicResource Settings_Updates}" Classes="label"/>
                     <TextBlock Text="{Binding UpdateStatus}" Classes="faint" TextWrapping="Wrap"/>
                     <StackPanel Orientation="Horizontal" Spacing="8">
+                        <!-- A launcher that cannot update itself must not be a dead end. -->
+                        <Button Classes="ghost" IsVisible="{Binding CanDownloadManually}"
+                                Content="{DynamicResource Update_DownloadManually}"
+                                Command="{Binding OpenReleasesPageCommand}"/>
                         <Button Classes="primary" Content="{DynamicResource Settings_CheckUpdates}"
                                 Command="{Binding CheckForUpdatesCommand}" IsEnabled="{Binding !IsUpdateBusy}"/>
                         <Button Classes="ghost" Content="{DynamicResource Settings_RestartUpdate}"
