@@ -679,7 +679,7 @@
     <x:String x:Key="BuildChange_Updated">Updated: {0}</x:String>
     <x:String x:Key="BuildChange_Hint">The server owner changed the build in the catalog. The files are already in place.</x:String>
     <x:String x:Key="Settings_UsageStats">Anonymous launch statistics</x:String>
-    <x:String x:Key="Settings_UsageStatsHint">Once per launch the launcher sends the statistics collector a random installation id, the version, the language and the OS, so the server owner can see how many people use the launcher. No nickname, files or address are sent.</x:String>
+    <x:String x:Key="Settings_UsageStatsHint">Once per launch the launcher sends the statistics collector a random installation id, the version, the language, the OS and how the update check went; after a game crash, the cause, game version and loader. No nickname, files, paths or address are sent. That is how the server owner sees how many people use the launcher and what breaks for them.</x:String>
     <x:String x:Key="Settings_UsageNumbers">Launcher users: {0} today · {1} over 7 days · launches today: {2}</x:String>
     <x:String x:Key="Settings_UsageNumbersNone">The collector does not publish launcher usage yet (see docs/monitoring.md).</x:String>
 

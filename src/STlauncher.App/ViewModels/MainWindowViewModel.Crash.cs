@@ -64,7 +64,39 @@ public partial class MainWindowViewModel
         CrashFixLabel = FixLabel(_crash);
 
         AppendConsole($"[crash] {CrashReport.Describe(_crash)}");
+        ReportCrash(exitCode);
     }
+
+    /// <summary>
+    /// Anonymous, like the launch ping, and with the same switch. Only a mod name goes
+    /// along as the subject: for a broken file the subject is a path, and a path has the
+    /// player's Windows user name in it.
+    /// </summary>
+    private void ReportCrash(int exitCode)
+    {
+        if (!UsageStats || !_stats.IsConfigured)
+        {
+            return;
+        }
+
+        var subject = _crash.Cause is CrashCause.MissingDependency or CrashCause.ModForOtherVersion
+            or CrashCause.IncompatibleMods or CrashCause.DuplicateMod or CrashCause.MixinFailure
+            ? Truncate(_crash.Subject, 60)
+            : null;
+
+        _ = _usage.ReportCrashAsync(
+            _stats.StatsUrl,
+            _installId,
+            _updates.CurrentVersion ?? "dev",
+            _crash.Cause.ToString(),
+            subject,
+            SelectedInstance?.VersionId,
+            SelectedInstance?.Loader.ToString() ?? "Vanilla",
+            exitCode);
+    }
+
+    private static string? Truncate(string? value, int max)
+        => value is null ? null : value.Length <= max ? value : value[..max];
 
     private void ClearCrashDiagnosis()
     {

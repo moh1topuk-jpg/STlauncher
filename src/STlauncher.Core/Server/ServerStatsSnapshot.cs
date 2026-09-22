@@ -89,6 +89,14 @@ public sealed class ServerStatsLauncher
     [JsonPropertyName("updates")]
     public List<ServerStatsOutcome> Updates { get; set; } = new();
 
+    /// <summary>Which launcher versions players ran over the week.</summary>
+    [JsonPropertyName("versions")]
+    public List<ServerStatsOutcome> Versions { get; set; } = new();
+
+    /// <summary>Game crashes by cause over the week.</summary>
+    [JsonPropertyName("crashes")]
+    public List<ServerStatsOutcome> Crashes { get; set; } = new();
+
     public bool HasAnything => UsersToday is not null || UsersWeek is not null;
 }
 

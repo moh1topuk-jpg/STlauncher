@@ -35,6 +35,7 @@ const MIN_INTERVAL_MS = 4 * 60 * 1000;
  */
 const RETENTION_MS = 8 * 24 * 60 * 60 * 1000;
 
+
 /** The live dashboard, served at /dashboard. Source: workers/stats/dashboard.html - edit
  * that file and re-embed it here; the page fetches the JSON from the same origin. */
 const DASHBOARD_HTML = String.raw`<!doctype html>
@@ -51,6 +52,7 @@ const DASHBOARD_HTML = String.raw`<!doctype html>
     --accent: #b8283f; --accent-soft: rgba(184, 40, 63, 0.14);
     --good: #2f8a5a; --good-soft: rgba(47, 138, 90, 0.16);
     --bad: #b8283f; --bad-soft: rgba(184, 40, 63, 0.16);
+    --warn: #b06a11; --warn-soft: rgba(176, 106, 17, 0.16);
     --grid: #ebe4e7;
     --display: "Manrope", "Segoe UI", system-ui, sans-serif;
     --body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
@@ -63,12 +65,13 @@ const DASHBOARD_HTML = String.raw`<!doctype html>
       --accent: #e0546f; --accent-soft: rgba(224, 84, 111, 0.18);
       --good: #62c58e; --good-soft: rgba(98, 197, 142, 0.18);
       --bad: #ef6f80; --bad-soft: rgba(239, 111, 128, 0.18);
+      --warn: #e2a24a; --warn-soft: rgba(226, 162, 74, 0.18);
       --grid: #241d28;
     }
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.45; padding-inline: 16px; padding-block: 28px 40px; }
-  .wrap { max-width: 760px; margin: 0 auto; display: grid; gap: 18px; }
+  .wrap { max-width: 860px; margin: 0 auto; display: grid; gap: 18px; }
   header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; }
   h1 { font-family: var(--display); font-weight: 800; font-size: 26px; letter-spacing: -0.02em; margin: 0; }
   .stamp { color: var(--muted); font-size: 13px; }
@@ -76,31 +79,36 @@ const DASHBOARD_HTML = String.raw`<!doctype html>
   .stamp .dot { display: inline-block; width: 8px; height: 8px; border-radius: 4px; background: var(--good); margin-right: 5px; vertical-align: 1px; }
   .stamp.stale .dot { background: var(--bad); }
   .label { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
-  .tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
   .tile { background: var(--surface); border-radius: 14px; padding: 14px 16px 12px; display: grid; gap: 2px; }
   .tile .value { font-family: var(--display); font-weight: 800; font-size: 34px; line-height: 1.1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
   .tile .sub { color: var(--ink-2); font-size: 13px; }
-  @media (max-width: 480px) { .tiles { grid-template-columns: 1fr 1fr; } .tiles .tile:first-child { grid-column: 1 / -1; } }
-  section.card { background: var(--surface); border-radius: 14px; padding: 16px 16px 14px; display: grid; gap: 12px; }
+  @media (max-width: 640px) { .tiles { grid-template-columns: 1fr 1fr; } }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 640px) { .two { grid-template-columns: 1fr; } }
+  section.card { background: var(--surface); border-radius: 14px; padding: 16px 16px 14px; display: grid; gap: 12px; align-content: start; }
   section.card h2 { font-family: var(--display); font-weight: 600; font-size: 16px; margin: 0; }
   .card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-  .card-head .note { color: var(--muted); font-size: 13px; }
+  .card-head .note, .note { color: var(--muted); font-size: 13px; }
   .seg { display: inline-flex; background: var(--surface-2); border-radius: 999px; padding: 2px; }
   .seg button { border: 0; background: transparent; color: var(--ink-2); font: inherit; font-size: 13px; padding: 3px 10px; border-radius: 999px; cursor: pointer; }
   .seg button.on { background: var(--surface); color: var(--ink); font-weight: 600; }
   .seg button:focus-visible { outline: 2px solid var(--accent); }
-  .outcomes { display: grid; gap: 8px; }
-  .outcome { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; }
-  .outcome .name { display: flex; align-items: center; gap: 8px; min-width: 0; }
-  .outcome code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 13px; overflow-wrap: anywhere; }
-  .pill { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; padding: 2px 7px; border-radius: 999px; }
+  .rows { display: grid; gap: 8px; }
+  .row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; }
+  .row .name { display: flex; align-items: center; gap: 8px; min-width: 0; flex-wrap: wrap; }
+  .row code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 13px; overflow-wrap: anywhere; }
+  .row .detail { color: var(--muted); font-size: 13px; }
+  .pill { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; padding: 2px 7px; border-radius: 999px; white-space: nowrap; }
   .pill.ok { background: var(--good-soft); color: var(--good); }
   .pill.fail { background: var(--bad-soft); color: var(--bad); }
-  .outcome .count { font-variant-numeric: tabular-nums; font-weight: 600; }
-  .outcome .bar { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
-  .outcome .bar i { display: block; height: 100%; border-radius: 3px; }
-  .outcome.ok .bar i { background: var(--good); }
-  .outcome.fail .bar i { background: var(--bad); }
+  .pill.warn { background: var(--warn-soft); color: var(--warn); }
+  .pill.neutral { background: var(--surface-2); color: var(--ink-2); }
+  .row .count { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .row .bar { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
+  .row .bar i { display: block; height: 100%; border-radius: 3px; background: var(--accent); }
+  .row.ok .bar i { background: var(--good); }
+  .row.fail .bar i { background: var(--bad); }
   .empty { color: var(--muted); font-size: 14px; }
   .chart { position: relative; }
   .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
@@ -112,7 +120,14 @@ const DASHBOARD_HTML = String.raw`<!doctype html>
   .server .kv { background: var(--surface-2); border-radius: 10px; padding: 10px 12px; display: grid; gap: 1px; }
   .server .kv b { font-family: var(--display); font-weight: 800; font-size: 20px; font-variant-numeric: tabular-nums; }
   .server .kv span { color: var(--muted); font-size: 12px; }
-  @media (max-width: 480px) { .server { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 640px) { .server { grid-template-columns: 1fr 1fr; } }
+  .table-wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th { text-align: left; color: var(--muted); font-weight: 600; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 8px 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  td { padding: 5px 8px; border-bottom: 1px solid var(--grid); vertical-align: top; white-space: nowrap; }
+  td.wrap-cell { white-space: normal; min-width: 180px; }
+  td code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 12px; }
+  tr.crash td { background: var(--bad-soft); }
   footer { color: var(--muted); font-size: 12.5px; }
 </style>
 </head>
@@ -127,22 +142,41 @@ const DASHBOARD_HTML = String.raw`<!doctype html>
 
   <section class="card">
     <div class="card-head">
-      <h2>Проверки обновлений</h2>
-      <span class="note">за 7 дней, по первой проверке в каждом запуске</span>
+      <h2>Запуски</h2>
+      <div class="seg" role="group" aria-label="Период запусков">
+        <button type="button" id="launch-day" class="on">по часам, сутки</button>
+        <button type="button" id="launch-week">по дням, неделя</button>
+      </div>
     </div>
-    <div class="outcomes" id="outcomes"><div class="empty">…</div></div>
+    <div class="chart" id="launch-chart"></div>
+  </section>
+
+  <div class="two">
+    <section class="card">
+      <div class="card-head"><h2>Версии лаунчера</h2><span class="note">за 7 дней, по запускам</span></div>
+      <div class="rows" id="versions"><div class="empty">…</div></div>
+    </section>
+    <section class="card">
+      <div class="card-head"><h2>Проверки обновлений</h2><span class="note">за 7 дней</span></div>
+      <div class="rows" id="outcomes"><div class="empty">…</div></div>
+    </section>
+  </div>
+
+  <section class="card">
+    <div class="card-head"><h2>Падения игры</h2><span class="note">за 7 дней · причина, мод, версия</span></div>
+    <div class="rows" id="crashes"><div class="empty">…</div></div>
   </section>
 
   <section class="card">
     <div class="card-head">
       <h2>Онлайн сервера</h2>
-      <div class="seg" role="group" aria-label="Период">
+      <div class="seg" role="group" aria-label="Период онлайна">
         <button type="button" id="range-day" class="on">24 часа</button>
         <button type="button" id="range-week">7 дней</button>
       </div>
     </div>
     <div class="chart" id="chart"></div>
-    <div class="note" id="chart-note" style="color:var(--muted);font-size:13px"></div>
+    <div class="note" id="chart-note"></div>
   </section>
 
   <section class="card">
@@ -150,37 +184,54 @@ const DASHBOARD_HTML = String.raw`<!doctype html>
     <div class="server" id="server"></div>
   </section>
 
-  <footer>Пользователь — одна установка лаунчера по случайному идентификатору; запуск — один старт программы. Сборщик пересчитывает числа раз в пять минут, страница обновляется сама раз в минуту.</footer>
+  <section class="card">
+    <div class="card-head"><h2>Последние события</h2><span class="note">40 последних · id обрезан до 6 знаков</span></div>
+    <div class="table-wrap"><table id="recent"><tbody><tr><td class="empty">…</td></tr></tbody></table></div>
+  </section>
+
+  <footer>Пользователь — одна установка лаунчера по случайному идентификатору; запуск — один старт программы. Ники, файлы и пути не передаются. Сборщик пересчитывает числа раз в пять минут, страница обновляется сама раз в минуту.</footer>
 </div>
 
 <script>
 (function () {
   var data = null;
   var range = 'day';
+  var launchRange = 'day';
 
   function el(id) { return document.getElementById(id); }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function parseTs(t) {
+    // Analytics Engine returns "2026-09-22 17:00:00" in UTC; the collector's own stamps are ISO.
+    var s = String(t);
+    if (s.indexOf('T') < 0 && s.indexOf(' ') > 0) s = s.replace(' ', 'T') + 'Z';
+    return new Date(s);
+  }
   function fmtTime(iso, withDay) {
-    var d = new Date(iso);
+    var d = parseTs(iso);
     return withDay
       ? d.toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
       : d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
   }
-  function fmtDate(iso) { return new Date(iso).toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }); }
+  function fmtDay(iso) { return parseTs(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }); }
+  function fmtDate(iso) { return parseTs(iso).toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }); }
 
   function renderStamp() {
     var stamp = el('stamp');
-    var age = Date.now() - new Date(data.updatedAt).getTime();
+    var age = Date.now() - parseTs(data.updatedAt).getTime();
     stamp.className = 'stamp' + (age > 6 * 3600 * 1000 ? ' stale' : '');
     stamp.innerHTML = '<span class="dot"></span>замер ' + esc(fmtDate(data.updatedAt)) + ' · <a href="./" target="_blank" rel="noopener">JSON</a>';
   }
 
+  function sum(list) { return list.reduce(function (s, o) { return s + o.n; }, 0); }
+
   function renderTiles() {
     var L = data.launcher || {};
+    var crashesWeek = sum(L.crashes || []);
     var rows = [
       ['Пользователей за сутки', L.usersToday, 'установок лаунчера'],
       ['За 7 дней', L.usersWeek, 'разных установок'],
-      ['Запусков за сутки', L.launchesToday, 'стартов программы']
+      ['Запусков за сутки', L.launchesToday, 'стартов программы'],
+      ['Падений за 7 дней', L.crashes ? crashesWeek : null, 'игра закрылась с ошибкой']
     ];
     el('tiles').innerHTML = rows.map(function (r) {
       var v = r[1] == null ? '—' : r[1];
@@ -188,23 +239,71 @@ const DASHBOARD_HTML = String.raw`<!doctype html>
     }).join('');
   }
 
-  function renderOutcomes() {
-    var list = (data.launcher && data.launcher.updates) || [];
-    var host = el('outcomes');
-    if (!list.length) {
-      host.innerHTML = '<div class="empty">Пингов с исходом проверки ещё нет: они приходят с версии 0.3.4.</div>';
-      return;
-    }
-    var total = list.reduce(function (s, o) { return s + o.n; }, 0);
+  function renderList(hostId, list, emptyText, classify, describe) {
+    var host = el(hostId);
+    if (!list || !list.length) { host.innerHTML = '<div class="empty">' + emptyText + '</div>'; return; }
+    var total = sum(list);
     host.innerHTML = list.map(function (o) {
-      var ok = String(o.outcome).indexOf('ok') === 0;
+      var c = classify(o);
       var share = Math.round(o.n / total * 100);
-      var cls = ok ? 'ok' : 'fail';
-      return '<div class="outcome ' + cls + '">' +
-        '<div class="name"><span class="pill ' + cls + '">' + (ok ? 'ок' : 'сбой') + '</span><code>' + esc(o.outcome) + '</code></div>' +
+      return '<div class="row ' + c.cls + '">' +
+        '<div class="name">' + (c.pill ? '<span class="pill ' + c.cls + '">' + c.pill + '</span>' : '') + describe(o) + '</div>' +
         '<div class="count">' + o.n + ' · ' + share + '%</div>' +
         '<div class="bar"><i style="width:' + share + '%"></i></div></div>';
     }).join('');
+  }
+
+  function renderVersions() {
+    var L = data.launcher || {};
+    renderList('versions', L.versions, 'Данных пока нет.', function () { return { cls: 'neutral', pill: '' }; }, function (o) { return '<code>' + esc(o.outcome || '?') + '</code>'; });
+  }
+
+  function renderOutcomes() {
+    var L = data.launcher || {};
+    renderList('outcomes', L.updates, 'Пингов с исходом проверки ещё нет: они приходят с версии 0.3.4.',
+      function (o) { var ok = String(o.outcome).indexOf('ok') === 0; return { cls: ok ? 'ok' : 'fail', pill: ok ? 'ок' : 'сбой' }; },
+      function (o) { return '<code>' + esc(o.outcome) + '</code>'; });
+  }
+
+  function renderCrashes() {
+    var L = data.launcher || {};
+    renderList('crashes', L.crashes, 'Падений не было, либо игроки ещё на версии без отчётов о падениях (нужна 0.3.5).',
+      function () { return { cls: 'fail', pill: '' }; },
+      function (o) {
+        var parts = ['<code>' + esc(o.cause || 'Unknown') + '</code>'];
+        if (o.subject) parts.push('<span class="detail">' + esc(o.subject) + '</span>');
+        if (o.game) parts.push('<span class="pill neutral">' + esc(o.game) + '</span>');
+        return parts.join('');
+      });
+  }
+
+  // Launches as columns: by the hour over a day, by the day over a week.
+  function renderLaunches() {
+    var L = data.launcher || {};
+    var series = launchRange === 'day' ? (L.byHour || []) : (L.byDay || []);
+    var host = el('launch-chart');
+    if (!series.length) { host.innerHTML = '<div class="empty">Данных пока нет.</div>'; return; }
+    var W = 720, H = 150, padL = 30, padR = 8, padT = 12, padB = 24;
+    var n = series.length;
+    var max = Math.max.apply(null, series.map(function (b) { return b.n; })) * 1.15 || 1;
+    var slot = (W - padL - padR) / n;
+    var bw = Math.max(4, Math.min(28, slot - 4));
+    function y(v) { return padT + (H - padT - padB) * (1 - v / max); }
+    var ticks = [0, Math.round(max / 2), Math.round(max)];
+    var grid = ticks.map(function (t) {
+      return '<line x1="' + padL + '" x2="' + (W - padR) + '" y1="' + y(t).toFixed(1) + '" y2="' + y(t).toFixed(1) + '" stroke="var(--grid)"/>' +
+        '<text x="' + (padL - 6) + '" y="' + (y(t) + 4).toFixed(1) + '" text-anchor="end">' + t + '</text>';
+    }).join('');
+    var bars = series.map(function (b, i) {
+      var x = padL + i * slot + (slot - bw) / 2;
+      var top = y(b.n);
+      var label = launchRange === 'day' ? fmtTime(b.t) : fmtDay(b.t);
+      var every = launchRange === 'day' ? Math.max(1, Math.round(n / 8)) : 1;
+      return '<rect x="' + x.toFixed(1) + '" y="' + top.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + Math.max(0, y(0) - top).toFixed(1) + '" rx="3" fill="var(--accent)"><title>' + esc(label) + ' · ' + b.n + '</title></rect>' +
+        (i % every === 0 ? '<text x="' + (x + bw / 2).toFixed(1) + '" y="' + (H - 8) + '" text-anchor="middle">' + esc(label) + '</text>' : '') +
+        (b.n > 0 && n <= 30 ? '<text x="' + (x + bw / 2).toFixed(1) + '" y="' + (top - 4).toFixed(1) + '" text-anchor="middle" style="fill:var(--ink-2)">' + b.n + '</text>' : '');
+    }).join('');
+    host.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Запуски лаунчера">' + grid + bars + '</svg>';
   }
 
   function renderChart() {
@@ -229,7 +328,6 @@ const DASHBOARD_HTML = String.raw`<!doctype html>
         '<text x="' + (padL - 6) + '" y="' + f(y(t) + 4) + '" text-anchor="end">' + t + '</text>';
     }).join('');
 
-    // Gaps (no reading) break the line: a collector that was down is not zero players.
     var avgPath = '', peakPath = '', prevIndex = -2;
     pts.forEach(function (p) {
       var cmd = p[3] === prevIndex + 1 ? 'L' : 'M';
@@ -247,9 +345,8 @@ const DASHBOARD_HTML = String.raw`<!doctype html>
     pts.forEach(function (p, k) { if (k && p[3] !== pts[k - 1][3] + 1) flush(); run.push(p); });
     flush();
 
-    var step = range === 'week' ? 4 : 4;
     var labels = all.map(function (b, i) {
-      return i % step === 0 || i === n - 1 ? '<text x="' + f(x(i)) + '" y="' + (H - 8) + '" text-anchor="middle">' + esc(fmtTime(b.t, range === 'week')) + '</text>' : '';
+      return i % 4 === 0 || i === n - 1 ? '<text x="' + f(x(i)) + '" y="' + (H - 8) + '" text-anchor="middle">' + esc(fmtTime(b.t, range === 'week')) + '</text>' : '';
     }).join('');
 
     var peakOf = pts.reduce(function (m, p, i) { return p[1] > pts[m][1] ? i : m; }, 0);
@@ -288,13 +385,31 @@ const DASHBOARD_HTML = String.raw`<!doctype html>
     var rows = [
       [S.online == null ? '—' : S.online, 'сейчас' + (S.max ? ' из ' + S.max : '')],
       [M.averageWeek == null ? '—' : M.averageWeek, 'в среднем за неделю'],
-      [M.peak == null ? '—' : M.peak, 'рекорд' + (M.peakAt ? ', ' + new Date(M.peakAt).toLocaleDateString('ru-RU') : '')],
+      [M.peak == null ? '—' : M.peak, 'рекорд' + (M.peakAt ? ', ' + parseTs(M.peakAt).toLocaleDateString('ru-RU') : '')],
       [M.rank == null ? '—' : '#' + M.rank, 'Top-Minecrafter']
     ];
     el('server').innerHTML = rows.map(function (r) { return '<div class="kv"><b>' + esc(r[0]) + '</b><span>' + esc(r[1]) + '</span></div>'; }).join('');
   }
 
-  function render() { renderStamp(); renderTiles(); renderOutcomes(); renderChart(); renderServer(); }
+  function renderRecent() {
+    var L = data.launcher || {};
+    var list = L.recent || [];
+    var table = el('recent');
+    if (!list.length) { table.innerHTML = '<tbody><tr><td class="empty">Событий пока нет.</td></tr></tbody>'; return; }
+    var head = '<thead><tr><th>Когда</th><th>Событие</th><th>Установка</th><th>Версия</th><th>ОС</th><th>Подробности</th></tr></thead>';
+    var body = list.map(function (e) {
+      var crash = e.event === 'crash';
+      var detail = crash
+        ? '<code>' + esc(e.cause || 'Unknown') + '</code>' + (e.subject ? ' · ' + esc(e.subject) : '') + (e.game ? ' · ' + esc(e.game) : '')
+        : (e.update ? '<code>' + esc(e.update) + '</code>' : '<span class="note">—</span>');
+      return '<tr' + (crash ? ' class="crash"' : '') + '><td>' + esc(fmtTime(e.t, true)) + '</td>' +
+        '<td><span class="pill ' + (crash ? 'fail' : 'neutral') + '">' + (crash ? 'падение' : 'запуск') + '</span></td>' +
+        '<td><code>' + esc(e.id) + '</code></td><td>' + esc(e.v) + '</td><td>' + esc(e.os) + '</td><td class="wrap-cell">' + detail + '</td></tr>';
+    }).join('');
+    table.innerHTML = head + '<tbody>' + body + '</tbody>';
+  }
+
+  function render() { renderStamp(); renderTiles(); renderLaunches(); renderVersions(); renderOutcomes(); renderCrashes(); renderChart(); renderServer(); renderRecent(); }
 
   function load() {
     fetch('./', { cache: 'no-store' })
@@ -307,8 +422,13 @@ const DASHBOARD_HTML = String.raw`<!doctype html>
       });
   }
 
-  el('range-day').addEventListener('click', function () { range = 'day'; this.classList.add('on'); el('range-week').classList.remove('on'); if (data) renderChart(); });
-  el('range-week').addEventListener('click', function () { range = 'week'; this.classList.add('on'); el('range-day').classList.remove('on'); if (data) renderChart(); });
+  function toggle(onId, offId, set) {
+    el(onId).addEventListener('click', function () { set(); this.classList.add('on'); el(offId).classList.remove('on'); });
+  }
+  toggle('range-day', 'range-week', function () { range = 'day'; if (data) renderChart(); });
+  toggle('range-week', 'range-day', function () { range = 'week'; if (data) renderChart(); });
+  toggle('launch-day', 'launch-week', function () { launchRange = 'day'; if (data) renderLaunches(); });
+  toggle('launch-week', 'launch-day', function () { launchRange = 'week'; if (data) renderLaunches(); });
 
   load();
   setInterval(load, 60 * 1000);
@@ -453,17 +573,25 @@ async function recordPing(body, env) {
       return;
     }
 
+    const event = body?.event === 'crash' ? 'crash' : 'launch';
+
     env.USAGE.writeDataPoint({
       indexes: [id],
-      // blob5: how the update check went ("ok:mirror", "fail:github=Blocked;mirror=Timeout").
+      // blob1 installation id   blob2 launcher version   blob3 os   blob4 language
+      // blob5 update outcome ("ok:mirror", "fail:github=Blocked;mirror=Timeout")
+      // blob6 event: launch | crash   blob7 crash cause   blob8 mod at fault   blob9 game version + loader
       blobs: [
         id,
         String(body?.v ?? '').slice(0, 32),
         String(body?.os ?? '').slice(0, 16),
         String(body?.lang ?? '').slice(0, 8),
         String(body?.update ?? '').slice(0, 120),
+        event,
+        String(body?.cause ?? '').slice(0, 40),
+        String(body?.subject ?? '').slice(0, 60),
+        String(body?.game ?? '').slice(0, 40),
       ],
-      doubles: [1],
+      doubles: [event === 'crash' ? Number(body?.code ?? 0) : 1],
     });
   } catch (error) {
     console.log(`ping ignored: ${error}`);
@@ -484,10 +612,15 @@ async function queryUsage(env) {
   }
 
   try {
-    const [today, week, updates] = await Promise.all([
+    const [today, week, updates, versions, crashes, byHour, byDay, recent] = await Promise.all([
       queryWindow(env, "INTERVAL '1' DAY"),
       queryWindow(env, "INTERVAL '7' DAY"),
-      queryUpdateOutcomes(env),
+      queryGrouped(env, 'blob5', "blob5 != '' AND blob6 != 'crash'", "INTERVAL '7' DAY"),
+      queryGrouped(env, 'blob2', "blob6 != 'crash'", "INTERVAL '7' DAY"),
+      queryCrashes(env),
+      queryTimeline(env, "INTERVAL '1' DAY", "INTERVAL '1' HOUR"),
+      queryTimeline(env, "INTERVAL '7' DAY", "INTERVAL '1' DAY"),
+      queryRecent(env),
     ]);
 
     if (!today || !week) {
@@ -499,6 +632,11 @@ async function queryUsage(env) {
       usersWeek: week.users,
       launchesToday: today.launches,
       updates: updates ?? [],
+      versions: versions ?? [],
+      crashes: crashes ?? [],
+      byHour: byHour ?? [],
+      byDay: byDay ?? [],
+      recent: recent ?? [],
       updatedAt: Date.now(),
     };
   } catch (error) {
@@ -507,15 +645,7 @@ async function queryUsage(env) {
   }
 }
 
-/** How update checks went over the week, most common outcome first. */
-async function queryUpdateOutcomes(env) {
-  const sql = `SELECT blob5 AS outcome, SUM(_sample_interval) AS n
-    FROM stlauncher_usage
-    WHERE timestamp > NOW() - INTERVAL '7' DAY AND blob5 != ''
-    GROUP BY outcome
-    ORDER BY n DESC
-    LIMIT 20`;
-
+async function sqlQuery(env, sql) {
   const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/analytics_engine/sql`, {
     method: 'POST',
     headers: { authorization: `Bearer ${env.CF_API_TOKEN}` },
@@ -523,37 +653,86 @@ async function queryUpdateOutcomes(env) {
   });
 
   if (!response.ok) {
-    console.log(`update outcomes query failed: HTTP ${response.status}`);
+    console.log(`usage query failed: HTTP ${response.status} ${(await response.text()).slice(0, 200)}`);
     return null;
   }
 
   const body = await response.json();
-  const rows = Array.isArray(body?.data) ? body.data : [];
+  return Array.isArray(body?.data) ? body.data : [];
+}
 
-  return rows.map(row => ({ outcome: String(row.outcome ?? ''), n: Number(row.n ?? 0) }));
+/** One column counted over a window, most common value first. */
+async function queryGrouped(env, column, where, interval) {
+  const rows = await sqlQuery(env, `SELECT ${column} AS value, SUM(_sample_interval) AS n
+    FROM stlauncher_usage
+    WHERE timestamp > NOW() - ${interval} AND ${where}
+    GROUP BY value
+    ORDER BY n DESC
+    LIMIT 20`);
+
+  return rows?.map(row => ({ outcome: String(row.value ?? ''), n: Number(row.n ?? 0) })) ?? null;
+}
+
+/** Game crashes by cause, with the mod at fault and the game version when they were reported. */
+async function queryCrashes(env) {
+  const rows = await sqlQuery(env, `SELECT blob7 AS cause, blob8 AS subject, blob9 AS game, SUM(_sample_interval) AS n
+    FROM stlauncher_usage
+    WHERE timestamp > NOW() - INTERVAL '7' DAY AND blob6 = 'crash'
+    GROUP BY cause, subject, game
+    ORDER BY n DESC
+    LIMIT 30`);
+
+  return rows?.map(row => ({
+    cause: String(row.cause ?? ''),
+    subject: String(row.subject ?? ''),
+    game: String(row.game ?? ''),
+    n: Number(row.n ?? 0),
+  })) ?? null;
+}
+
+/** Launches per slice over a window - a day by the hour, a week by the day. */
+async function queryTimeline(env, interval, step) {
+  const rows = await sqlQuery(env, `SELECT toStartOfInterval(timestamp, ${step}) AS t, SUM(_sample_interval) AS n
+    FROM stlauncher_usage
+    WHERE timestamp > NOW() - ${interval} AND blob6 != 'crash'
+    GROUP BY t
+    ORDER BY t
+    LIMIT 200`);
+
+  return rows?.map(row => ({ t: String(row.t ?? ''), n: Number(row.n ?? 0) })) ?? null;
+}
+
+/** The last events, newest first. The id is cut to six characters: enough to spot a repeat. */
+async function queryRecent(env) {
+  const rows = await sqlQuery(env, `SELECT timestamp, blob1, blob2, blob3, blob5, blob6, blob7, blob8, blob9
+    FROM stlauncher_usage
+    WHERE timestamp > NOW() - INTERVAL '7' DAY
+    ORDER BY timestamp DESC
+    LIMIT 40`);
+
+  return rows?.map(row => ({
+    t: String(row.timestamp ?? ''),
+    id: String(row.blob1 ?? '').slice(0, 6),
+    v: String(row.blob2 ?? ''),
+    os: String(row.blob3 ?? ''),
+    update: String(row.blob5 ?? ''),
+    event: String(row.blob6 ?? 'launch') || 'launch',
+    cause: String(row.blob7 ?? ''),
+    subject: String(row.blob8 ?? ''),
+    game: String(row.blob9 ?? ''),
+  })) ?? null;
 }
 
 async function queryWindow(env, interval) {
-  const sql = `SELECT blob1 AS installation, SUM(_sample_interval) AS launches
+  const rows = await sqlQuery(env, `SELECT blob1 AS installation, SUM(_sample_interval) AS launches
     FROM stlauncher_usage
-    WHERE timestamp > NOW() - ${interval}
+    WHERE timestamp > NOW() - ${interval} AND blob6 != 'crash'
     GROUP BY installation
-    LIMIT 100000`;
+    LIMIT 100000`);
 
-  const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/analytics_engine/sql`, {
-    method: 'POST',
-    headers: { authorization: `Bearer ${env.CF_API_TOKEN}` },
-    body: sql,
-  });
-
-  if (!response.ok) {
-    const text = (await response.text()).slice(0, 300);
-    console.log(`usage query failed: HTTP ${response.status} ${text}`);
+  if (!rows) {
     return null;
   }
-
-  const body = await response.json();
-  const rows = Array.isArray(body?.data) ? body.data : [];
 
   return {
     users: rows.length,
@@ -648,6 +827,11 @@ function render(state, env, now) {
           usersWeek: state.usage.usersWeek,
           launchesToday: state.usage.launchesToday,
           updates: state.usage.updates ?? [],
+          versions: state.usage.versions ?? [],
+          crashes: state.usage.crashes ?? [],
+          byHour: state.usage.byHour ?? [],
+          byDay: state.usage.byDay ?? [],
+          recent: state.usage.recent ?? [],
           updatedAt: new Date(state.usage.updatedAt).toISOString(),
         }
       : null,

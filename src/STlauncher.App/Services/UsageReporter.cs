@@ -58,4 +58,49 @@ public sealed class UsageReporter
             // A collector without the endpoint, or no network: nothing to do about it.
         }
     }
+
+    /// <summary>
+    /// The game died: what the log said, in a form that names no one. The cause, the
+    /// mod at fault when there is one, the game version and loader - so the owner sees
+    /// "MissingDependency, 14 times, all on 1.21.11 Fabric" without a single log file.
+    /// </summary>
+    public async Task ReportCrashAsync(
+        string? statsUrl,
+        string installId,
+        string version,
+        string cause,
+        string? subject,
+        string? gameVersion,
+        string loader,
+        int exitCode,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(statsUrl) || string.IsNullOrWhiteSpace(installId))
+        {
+            return;
+        }
+
+        try
+        {
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeout.CancelAfter(TimeSpan.FromSeconds(8));
+
+            var url = statsUrl!.TrimEnd('/') + "/ping";
+
+            using var response = await _http.PostAsJsonAsync(url, new
+            {
+                id = installId,
+                v = version,
+                os = OperatingSystem.IsWindows() ? "windows" : OperatingSystem.IsLinux() ? "linux" : OperatingSystem.IsMacOS() ? "macos" : "other",
+                @event = "crash",
+                cause = cause,
+                subject = subject ?? string.Empty,
+                game = string.IsNullOrWhiteSpace(gameVersion) ? string.Empty : $"{gameVersion} {loader}",
+                code = exitCode
+            }, timeout.Token).ConfigureAwait(false);
+        }
+        catch (Exception)
+        {
+        }
+    }
 }
