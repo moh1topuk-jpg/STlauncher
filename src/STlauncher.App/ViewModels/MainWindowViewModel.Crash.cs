@@ -181,7 +181,7 @@ public partial class MainWindowViewModel
                 SelectedJavaChoice?.Path,
                 (int)MaxMemoryMb,
                 _crashExitCode,
-                InstalledMods.Select(m => m.FileName).ToList());
+                InstalledMods.Where(m => m.IsMod).Select(m => m.FileName).ToList());
 
             var report = CrashReport.Build(context, _crash, _crashLogLines, _crashReportLines);
 

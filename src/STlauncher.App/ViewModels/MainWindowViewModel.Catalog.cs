@@ -202,21 +202,43 @@ public partial class MainWindowViewModel
             ReconcileInstalledMods();
 
             InstalledMods.Clear();
-            foreach (var mod in _mods.ListMods(InstanceDirectory))
+
+            var files = _mods.ListMods(InstanceDirectory)
+                .Concat(_mods.ListPacks(InstanceDirectory, CatalogPlacement.ResourcePacksFolder))
+                .Concat(_mods.ListPacks(InstanceDirectory, CatalogPlacement.ShaderPacksFolder));
+
+            foreach (var mod in files)
             {
                 var record = SelectedInstance?.InstalledMods.FirstOrDefault(m =>
-                    string.Equals(m.FileName, mod.FileName, StringComparison.OrdinalIgnoreCase));
+                    string.Equals(m.FileName, mod.FileName, StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(m.Folder ?? ModManager.ModsFolderName, mod.Folder, StringComparison.OrdinalIgnoreCase));
 
                 var item = new InstalledModItem(mod, record);
                 RestoreKnownUpdate(item);
                 InstalledMods.Add(item);
             }
 
-            var enabled = InstalledMods.Count(m => m.Enabled);
-            InstalledModsSummary = InstalledMods.Count == enabled
+            var mods = InstalledMods.Where(m => m.IsMod).ToList();
+            var enabled = mods.Count(m => m.Enabled);
+            var summary = mods.Count == enabled
                 ? Localize("Mods_SummaryAll", "Mods in the build: {0}", enabled)
                 : Localize("Mods_SummaryDisabled", "Mods in the build: {0}, switched off: {1}",
-                    enabled, InstalledMods.Count - enabled);
+                    enabled, mods.Count - enabled);
+
+            var packs = InstalledMods.Count(m => m.Mod.Folder == CatalogPlacement.ResourcePacksFolder);
+            var shaders = InstalledMods.Count(m => m.Mod.Folder == CatalogPlacement.ShaderPacksFolder);
+
+            if (packs > 0)
+            {
+                summary += " · " + Localize("Mods_SummaryPacks", "resource packs: {0}", packs);
+            }
+
+            if (shaders > 0)
+            {
+                summary += " · " + Localize("Mods_SummaryShaders", "shaders: {0}", shaders);
+            }
+
+            InstalledModsSummary = summary;
 
             OnPropertyChanged(nameof(HasNoInstalledMods));
 

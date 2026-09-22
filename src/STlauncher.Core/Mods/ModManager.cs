@@ -8,7 +8,8 @@ using STlauncher.Core.Http;
 
 namespace STlauncher.Core.Mods;
 
-public sealed record InstalledMod(string FileName, string DisplayName, string Path, bool Enabled, long Size);
+/// <param name="Folder">"mods", "resourcepacks" or "shaderpacks": where the file lives.</param>
+public sealed record InstalledMod(string FileName, string DisplayName, string Path, bool Enabled, long Size, string Folder = ModManager.ModsFolderName);
 
 public sealed class ModManager
 {
@@ -51,6 +52,34 @@ public sealed class ModManager
             .ToList();
     }
 
+    /// <summary>
+    /// Packs in resourcepacks/ or shaderpacks/. They are switched on inside the game, so
+    /// there is no enabled flag to read; the launcher only lists and removes them.
+    /// </summary>
+    public IReadOnlyList<InstalledMod> ListPacks(string gameDirectory, string folder)
+    {
+        var directory = Path.Combine(gameDirectory, folder);
+
+        if (!Directory.Exists(directory))
+        {
+            return Array.Empty<InstalledMod>();
+        }
+
+        return Directory.EnumerateFileSystemEntries(directory, "*", SearchOption.TopDirectoryOnly)
+            .Where(p => !Path.GetFileName(p).StartsWith('.'))
+            .Where(p => Directory.Exists(p) || p.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+            .Select(path =>
+            {
+                var fileName = Path.GetFileName(path);
+                var size = Directory.Exists(path) ? 0 : new FileInfo(path).Length;
+                var display = Directory.Exists(path) ? fileName : Path.GetFileNameWithoutExtension(fileName);
+
+                return new InstalledMod(fileName, display, path, true, size, folder);
+            })
+            .OrderBy(m => m.DisplayName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
     public bool SetEnabled(string path, bool enabled)
     {
         if (!File.Exists(path))
@@ -81,17 +110,33 @@ public sealed class ModManager
         {
             File.Delete(path);
         }
+        else if (Directory.Exists(path))
+        {
+            // An unpacked resource pack is a folder.
+            Directory.Delete(path, recursive: true);
+        }
     }
 
-    public async Task<string> InstallAsync(
+    public Task<string> InstallAsync(
         string gameDirectory,
         string fileName,
         string url,
         string? sha1,
         long size,
         CancellationToken cancellationToken = default)
+        => InstallAsync(gameDirectory, ModsFolderName, fileName, url, sha1, size, cancellationToken);
+
+    /// <summary>Downloads a file into one of the game's content folders.</summary>
+    public async Task<string> InstallAsync(
+        string gameDirectory,
+        string folder,
+        string fileName,
+        string url,
+        string? sha1,
+        long size,
+        CancellationToken cancellationToken = default)
     {
-        var directory = ModsDirectory(gameDirectory);
+        var directory = Path.Combine(gameDirectory, folder);
         Directory.CreateDirectory(directory);
 
         var destination = Path.Combine(directory, fileName);

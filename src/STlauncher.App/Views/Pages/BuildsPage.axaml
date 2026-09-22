@@ -272,13 +272,19 @@
                                                     <!-- The switch shows the state and changes it:
                                                          one button labelled "On/Off" did neither. -->
                                                     <ToggleSwitch IsChecked="{Binding Enabled, Mode=OneWay}"
-                                                                  OnContent="" OffContent=""
+                                                                  OnContent="" OffContent="" IsVisible="{Binding IsMod}"
                                                                   MinWidth="0" VerticalAlignment="Center"
                                                                   Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).ToggleModCommand}"
                                                                   CommandParameter="{Binding}"/>
+                                                    <!-- Packs are switched on inside the game; here they are only listed. -->
+                                                    <PathIcon Data="{StaticResource IconPalette}" Classes="small muted" IsVisible="{Binding !IsMod}"
+                                                              VerticalAlignment="Center" Margin="8,0"/>
                                                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                                         <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center"
                                                                    TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding FileName}"/>
+                                                        <Border Classes="tag" IsVisible="{Binding HasKindLabel}" VerticalAlignment="Center">
+                                                            <TextBlock Text="{Binding KindLabel}"/>
+                                                        </Border>
                                                         <Border Classes="tag" IsVisible="{Binding IsCatalog}" VerticalAlignment="Center"
                                                                 ToolTip.Tip="{DynamicResource Mods_CatalogPinnedHint}">
                                                             <TextBlock Text="{DynamicResource Builds_TagCatalog}"/>
@@ -324,6 +330,21 @@
                         </Border>
 
                         <StackPanel Grid.Row="1" Spacing="10">
+                            <!-- One catalog, three kinds of content. Packs and shaders go to
+                                 their own folders and fit a vanilla build too. -->
+                            <Border Classes="panel" Padding="4" HorizontalAlignment="Left">
+                                <StackPanel Orientation="Horizontal" Spacing="2">
+                                    <Button Classes="segment small" Classes.active="{Binding IsBrowsingMods}"
+                                            Content="{DynamicResource Content_Mods}"
+                                            Command="{Binding SelectBrowserKindCommand}" CommandParameter="mod"/>
+                                    <Button Classes="segment small" Classes.active="{Binding IsBrowsingResourcePacks}"
+                                            Content="{DynamicResource Content_ResourcePacks}"
+                                            Command="{Binding SelectBrowserKindCommand}" CommandParameter="resourcepack"/>
+                                    <Button Classes="segment small" Classes.active="{Binding IsBrowsingShaders}"
+                                            Content="{DynamicResource Content_Shaders}"
+                                            Command="{Binding SelectBrowserKindCommand}" CommandParameter="shader"/>
+                                </StackPanel>
+                            </Border>
                             <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
                                 <Border Classes="panel" Padding="12,0" Height="40">
                                     <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">

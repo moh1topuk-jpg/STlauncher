@@ -240,7 +240,7 @@ public partial class MainWindowViewModel
                 return Localize("Builds_DetailsNoVersions", "No version for this build");
             }
 
-            var file = ModrinthClient.SelectFile(OpenedProjectPreferred, SelectedVersion?.Id, SelectedLoader);
+            var file = ModrinthClient.SelectFile(OpenedProjectPreferred, SelectedVersion?.Id, LoaderFor(BrowserKind));
             var size = file is null ? string.Empty : " · " + FormatSize(file.Size);
             return OpenedProjectPreferred.VersionNumber + size;
         }
@@ -394,7 +394,7 @@ public partial class MainWindowViewModel
             IsProjectTranslated = false;
 
             var versions = await _modrinth
-                .GetVersionsAsync(item.Result.ProjectId, SelectedVersion?.Id, SelectedLoader)
+                .GetVersionsAsync(item.Result.ProjectId, SelectedVersion?.Id, LoaderFor(BrowserKind))
                 .ConfigureAwait(true);
 
             foreach (var version in versions)
@@ -493,7 +493,7 @@ public partial class MainWindowViewModel
     {
         var file = version is null
             ? null
-            : ModrinthClient.SelectFile(version, SelectedVersion?.Id, SelectedLoader);
+            : ModrinthClient.SelectFile(version, SelectedVersion?.Id, LoaderFor(BrowserKind));
 
         if (file is null || string.IsNullOrEmpty(file.Url) || IsProjectBusy)
         {

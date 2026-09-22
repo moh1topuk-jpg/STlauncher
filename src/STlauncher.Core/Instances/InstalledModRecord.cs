@@ -33,6 +33,10 @@ public sealed class InstalledModRecord
     [JsonPropertyName("name")]
     public string? Name { get; set; }
 
+    /// <summary>"mods", "resourcepacks" or "shaderpacks". Missing in old records means mods.</summary>
+    [JsonPropertyName("folder")]
+    public string? Folder { get; set; }
+
     [JsonPropertyName("iconUrl")]
     public string? IconUrl { get; set; }
 

@@ -20,7 +20,22 @@ public partial class InstalledModItem : ObservableObject
         Mod = mod;
         Record = record;
         IsCatalog = record?.Source == ModSource.Catalog;
+        IsMod = string.Equals(mod.Folder, ModManager.ModsFolderName, StringComparison.OrdinalIgnoreCase);
+        KindLabel = mod.Folder switch
+        {
+            "resourcepacks" => MainWindowViewModel.Localize("Content_ResourcePack", "resource pack"),
+            "shaderpacks" => MainWindowViewModel.Localize("Content_Shader", "shader"),
+            _ => string.Empty
+        };
     }
+
+    /// <summary>A jar in mods/. Packs have no switch: the game turns them on itself.</summary>
+    public bool IsMod { get; }
+
+    /// <summary>"resource pack" / "shader" for the row; empty for a mod.</summary>
+    public string KindLabel { get; }
+
+    public bool HasKindLabel => KindLabel.Length > 0;
 
     public InstalledMod Mod { get; }
 
@@ -102,7 +117,7 @@ public partial class MainWindowViewModel
             return;
         }
 
-        var candidates = InstalledMods.Where(m => !m.IsCatalog && m.Enabled).ToList();
+        var candidates = InstalledMods.Where(m => m.IsMod && !m.IsCatalog && m.Enabled).ToList();
 
         if (candidates.Count == 0)
         {

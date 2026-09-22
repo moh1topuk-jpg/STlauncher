@@ -37,7 +37,30 @@ public sealed record ModProject(
     string? Body,
     string? IconUrl,
     long Downloads,
-    IReadOnlyList<string> Gallery);
+    IReadOnlyList<string> Gallery)
+{
+    /// <summary>"mod", "resourcepack", "shader" - what folder the file belongs in.</summary>
+    public string ProjectType { get; init; } = ProjectTypes.Mod;
+}
+
+/// <summary>Modrinth project types the launcher browses. Values are what the API uses.</summary>
+public static class ProjectTypes
+{
+    public const string Mod = "mod";
+    public const string ResourcePack = "resourcepack";
+    public const string Shader = "shader";
+
+    /// <summary>The folder inside the game directory for a project type.</summary>
+    public static string FolderFor(string? projectType) => projectType switch
+    {
+        ResourcePack => "resourcepacks",
+        Shader => "shaderpacks",
+        _ => "mods"
+    };
+
+    /// <summary>Packs are loader-independent; a loader filter would hide all of them.</summary>
+    public static bool UsesLoader(string? projectType) => projectType is null or Mod;
+}
 
 /// <summary>One page of search results together with the total match count.</summary>
 public sealed record ModSearchPage(IReadOnlyList<ModSearchResult> Items, int TotalHits);
@@ -114,9 +137,10 @@ public sealed class ModrinthClient
         string sort = "relevance",
         int limit = 20,
         int offset = 0,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        string projectType = ProjectTypes.Mod)
     {
-        var facets = Uri.EscapeDataString(BuildFacets(gameVersion, loader, category));
+        var facets = Uri.EscapeDataString(BuildFacets(gameVersion, loader, category, projectType));
         var index = string.IsNullOrWhiteSpace(sort) ? "relevance" : sort;
 
         var url = $"{BaseUrl}/search?query={Uri.EscapeDataString(query ?? string.Empty)}" +
@@ -178,7 +202,10 @@ public sealed class ModrinthClient
                 dto.Body,
                 dto.IconUrl,
                 dto.Downloads,
-                gallery);
+                gallery)
+            {
+                ProjectType = string.IsNullOrWhiteSpace(dto.ProjectType) ? ProjectTypes.Mod : dto.ProjectType!
+            };
         }
         catch (Exception)
         {
@@ -408,11 +435,12 @@ public sealed class ModrinthClient
                ?? files[0];
     }
 
-    public static string BuildFacets(string? gameVersion, LoaderKind loader, string? category = null)
+    public static string BuildFacets(string? gameVersion, LoaderKind loader, string? category = null, string projectType = ProjectTypes.Mod)
     {
-        var facets = new List<string> { "[\"project_type:mod\"]" };
+        var facets = new List<string> { $"[\"project_type:{projectType}\"]" };
 
-        var loaderName = ToModrinthLoader(loader);
+        // A resource pack has no loader; asking for "fabric" packs returns none.
+        var loaderName = ProjectTypes.UsesLoader(projectType) ? ToModrinthLoader(loader) : null;
         if (loaderName is not null)
         {
             facets.Add($"[\"categories:{loaderName}\"]");
@@ -566,6 +594,9 @@ public sealed class ModrinthClient
     {
         [JsonPropertyName("id")]
         public string? Id { get; set; }
+
+        [JsonPropertyName("project_type")]
+        public string? ProjectType { get; set; }
 
         [JsonPropertyName("slug")]
         public string? Slug { get; set; }

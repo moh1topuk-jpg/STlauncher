@@ -9,6 +9,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using STlauncher.Core.Content;
 using STlauncher.Core.Instances;
 using STlauncher.Core.Mods;
 
@@ -154,6 +155,36 @@ public partial class MainWindowViewModel
 
     // ===================== Modrinth browser =====================
 
+    /// <summary>What the browser is showing: mods, resource packs or shaders.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsBrowsingMods))]
+    [NotifyPropertyChangedFor(nameof(IsBrowsingResourcePacks))]
+    [NotifyPropertyChangedFor(nameof(IsBrowsingShaders))]
+    [NotifyPropertyChangedFor(nameof(IsBuildConfigured))]
+    private string _browserKind = ProjectTypes.Mod;
+
+    public bool IsBrowsingMods => BrowserKind == ProjectTypes.Mod;
+    public bool IsBrowsingResourcePacks => BrowserKind == ProjectTypes.ResourcePack;
+    public bool IsBrowsingShaders => BrowserKind == ProjectTypes.Shader;
+
+    partial void OnBrowserKindChanged(string value)
+    {
+        // Categories differ per kind ("16x" is not a mod category), and so does the page.
+        _categoriesLoaded = false;
+        CloseProject();
+        _ = LoadCategoriesAsync();
+        ScheduleBrowserReload();
+    }
+
+    [RelayCommand]
+    private void SelectBrowserKind(string? kind)
+    {
+        if (kind is ProjectTypes.Mod or ProjectTypes.ResourcePack or ProjectTypes.Shader)
+        {
+            BrowserKind = kind;
+        }
+    }
+
     public ObservableCollection<ModBrowserItem> ModBrowserItems { get; } = new();
 
     public ObservableCollection<ModCategoryOption> ModCategories { get; } = new();
@@ -194,7 +225,7 @@ public partial class MainWindowViewModel
             : category;
     }
 
-    /// <summary>"into SHOWTIME 1.21.11 · Fabric · mods for 1.21.11 only", under the catalog title.</summary>
+    /// <summary>"into SHOWTIME 1.21.11 · Fabric · only for 1.21.11", under the catalog title.</summary>
     public string CatalogScopeLabel => SelectedInstance is null
         ? string.Empty
         : Localize(
@@ -253,7 +284,7 @@ public partial class MainWindowViewModel
 
         try
         {
-            var categories = await _modrinth.GetCategoriesAsync();
+            var categories = await _modrinth.GetCategoriesAsync(BrowserKind);
 
             LoadSortOptions();
 
@@ -348,7 +379,8 @@ public partial class MainWindowViewModel
                 category,
                 SelectedModSort?.Value ?? "relevance",
                 BrowserPageSize,
-                offset);
+                offset,
+                projectType: BrowserKind);
 
             BrowserPage = page;
             BrowserTotalPages = Math.Max(1, (int)Math.Ceiling(result.TotalHits / (double)BrowserPageSize));
@@ -398,8 +430,16 @@ public partial class MainWindowViewModel
         }
     }
 
-    /// <summary>True when the build has a game version and a mod loader to search against.</summary>
-    public bool IsBuildConfigured => SelectedVersion is not null && SelectedLoader != Core.Loaders.LoaderKind.Vanilla;
+    /// <summary>
+    /// True when the build has what the browser needs: a game version, and for mods a
+    /// loader. Packs and shaders fit a vanilla build too.
+    /// </summary>
+    public bool IsBuildConfigured => SelectedVersion is not null &&
+                                     (SelectedLoader != Core.Loaders.LoaderKind.Vanilla || !ProjectTypes.UsesLoader(BrowserKind));
+
+    /// <summary>The loader to filter versions by: none for packs, which have no loader.</summary>
+    private Core.Loaders.LoaderKind LoaderFor(string projectType)
+        => ProjectTypes.UsesLoader(projectType) ? SelectedLoader : Core.Loaders.LoaderKind.Vanilla;
 
     /// <summary>Re-runs the browser after the build or the filters change, with a short delay.</summary>
     private void ScheduleBrowserReload()
@@ -468,7 +508,7 @@ public partial class MainWindowViewModel
             IsBrowserBusy = true;
             Status = Localize("Status_ResolvingMod", "Resolving {0}…", item.Result.Title);
 
-            var versions = await _modrinth.GetVersionsAsync(item.Result.ProjectId, SelectedVersion?.Id, SelectedLoader);
+            var versions = await _modrinth.GetVersionsAsync(item.Result.ProjectId, SelectedVersion?.Id, LoaderFor(BrowserKind));
             var preferred = ModrinthClient.SelectPreferred(versions);
 
             if (preferred is null)
@@ -481,7 +521,8 @@ public partial class MainWindowViewModel
                 preferred,
                 item.Result.Slug,
                 item.Result.Title,
-                item.Result.IconUrl);
+                item.Result.IconUrl,
+                projectType: BrowserKind);
 
             item.Installed = true;
             RefreshHiddenItems();
@@ -507,9 +548,11 @@ public partial class MainWindowViewModel
         string slug,
         string title,
         string? iconUrl,
-        int depth = 0)
+        int depth = 0,
+        string? projectType = null)
     {
-        var file = ModrinthClient.SelectFile(version, SelectedVersion?.Id, SelectedLoader);
+        projectType ??= BrowserKind;
+        var file = ModrinthClient.SelectFile(version, SelectedVersion?.Id, LoaderFor(projectType));
 
         if (file is null || string.IsNullOrEmpty(file.Url))
         {
@@ -537,7 +580,8 @@ public partial class MainWindowViewModel
 
                 Status = Localize("Status_ResolvingDependency", "Adding {0}, which {1} needs…", project.Title, title);
 
-                var candidates = await _modrinth.GetVersionsAsync(project.Id, SelectedVersion?.Id, SelectedLoader);
+                // A shader's dependency is a mod (Iris); the folder follows the dependency.
+                var candidates = await _modrinth.GetVersionsAsync(project.Id, SelectedVersion?.Id, LoaderFor(project.ProjectType));
                 var pick = dependency.VersionId is { } wanted
                     ? candidates.FirstOrDefault(v => v.Id == wanted) ?? ModrinthClient.SelectPreferred(candidates)
                     : ModrinthClient.SelectPreferred(candidates);
@@ -548,12 +592,14 @@ public partial class MainWindowViewModel
                         Localize("Error_DependencyMissing", "{0} needs {1}, which has no version for this build", title, project.Title));
                 }
 
-                await InstallProjectWithDependenciesAsync(pick, project.Slug, project.Title, project.IconUrl, depth + 1);
+                await InstallProjectWithDependenciesAsync(pick, project.Slug, project.Title, project.IconUrl, depth + 1, project.ProjectType);
             }
         }
 
+        var folder = ProjectTypes.FolderFor(projectType);
+
         Status = Localize("Status_InstallingFile", "Installing {0}…", file.FileName);
-        await _mods.InstallAsync(InstanceDirectory, file.FileName, file.Url, file.Sha1, file.Size);
+        await _mods.InstallAsync(InstanceDirectory, folder, file.FileName, file.Url, file.Sha1, file.Size);
 
         RecordInstalledMod(new InstalledModRecord
         {
@@ -562,7 +608,8 @@ public partial class MainWindowViewModel
             Id = slug,
             Name = title,
             IconUrl = iconUrl,
-            Version = version.VersionNumber
+            Version = version.VersionNumber,
+            Folder = folder
         });
 
         RefreshMods();
@@ -644,10 +691,13 @@ public partial class MainWindowViewModel
         }
 
         var present = _mods.ListMods(InstanceDirectory)
-            .Select(m => m.FileName)
+            .Concat(_mods.ListPacks(InstanceDirectory, CatalogPlacement.ResourcePacksFolder))
+            .Concat(_mods.ListPacks(InstanceDirectory, CatalogPlacement.ShaderPacksFolder))
+            .Select(m => m.Folder + "/" + m.FileName)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        var removed = SelectedInstance.InstalledMods.RemoveAll(m => !present.Contains(m.FileName));
+        var removed = SelectedInstance.InstalledMods.RemoveAll(m =>
+            !present.Contains((m.Folder ?? ModManager.ModsFolderName) + "/" + m.FileName));
 
         if (removed > 0)
         {
