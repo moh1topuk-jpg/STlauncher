@@ -383,7 +383,7 @@
     <x:String x:Key="Server_AddressCopied">Адрес скопирован: {0}</x:String>
     <x:String x:Key="Builds_TabAddMods">Добавить моды</x:String>
     <x:String x:Key="Settings_SectionLauncher">Лаунчер</x:String>
-    <x:String x:Key="Settings_BackupsTitle">Бэкапы миров</x:String>
+    <x:String x:Key="Settings_BackupsTitle">Бэкапы миров и сборок</x:String>
     <x:String x:Key="Settings_MemoryCeiling">больше 8 ГБ не ускорит игру</x:String>
     <x:String x:Key="Settings_MemoryRecommendedValue">Рекомендуемое · {0} МБ</x:String>
     <x:String x:Key="Game_EditNickname">Сменить ник</x:String>
@@ -533,5 +533,34 @@
     <x:String x:Key="Mods_Updating">Обновляю {0} до {1}…</x:String>
     <x:String x:Key="Mods_Updated">{0} обновлён до {1}</x:String>
     <x:String x:Key="Mods_CatalogPinnedHint">Версию этого мода задаёт каталог сервера — обновления приходят вместе со сборкой.</x:String>
+
+    <!-- Backup restore -->
+    <x:String x:Key="Settings_BackupsWhat">В бэкап попадают миры, моды, конфиги, ресурспаки, шейдеры, настройки игры и описание сборки — из него можно восстановить и миры, и всю сборку.</x:String>
+    <x:String x:Key="Settings_BackupsList">Сохранённые бэкапы</x:String>
+    <x:String x:Key="Backup_Restore">Восстановить</x:String>
+    <x:String x:Key="Backup_RestoreWorlds">Только миры</x:String>
+    <x:String x:Key="Backup_RestoreWorldsHint">Вернёт миры из бэкапа. Моды и настройки останутся как сейчас.</x:String>
+    <x:String x:Key="Backup_RestoreAll">Всю сборку</x:String>
+    <x:String x:Key="Backup_RestoreAllHint">Вернёт миры, моды, конфиги и настройки. Текущее состояние сначала сохранится отдельным бэкапом.</x:String>
+    <x:String x:Key="Backup_RestoreNew">Как новую сборку</x:String>
+    <x:String x:Key="Backup_RestoreNewHint">Создаст отдельную сборку из бэкапа, ничего не трогая в существующих.</x:String>
+    <x:String x:Key="Backup_Delete">Удалить бэкап</x:String>
+    <x:String x:Key="Backup_BuildDeleted">сборка удалена</x:String>
+    <x:String x:Key="Backup_Worlds">миров: {0}</x:String>
+    <x:String x:Key="Backup_Mods">модов: {0}</x:String>
+    <x:String x:Key="Backup_Empty">пусто</x:String>
+    <x:String x:Key="Backup_Unreadable">не читается: {0}</x:String>
+    <x:String x:Key="Backup_RestoreBusy">Дождитесь, пока игра и лаунчер закончат работу</x:String>
+    <x:String x:Key="Backup_BuildGone">Этой сборки больше нет — восстановите бэкап как новую сборку</x:String>
+    <x:String x:Key="Backup_SafetyCopy">Сначала сохраняю текущее состояние «{0}»…</x:String>
+    <x:String x:Key="Backup_Restoring">Восстанавливаю «{0}»…</x:String>
+    <x:String x:Key="Backup_RestoredWorlds">Миры от {0} вернулись в «{1}»</x:String>
+    <x:String x:Key="Backup_RestoredAll">«{0}» вернулась к состоянию на {1}</x:String>
+    <x:String x:Key="Backup_RestoreFailed">Не удалось восстановить: {0}</x:String>
+    <x:String x:Key="Backup_NewBuildName">{0} (бэкап {1})</x:String>
+    <x:String x:Key="Backup_RestoredNew">Сборка «{0}» создана из бэкапа</x:String>
+    <x:String x:Key="Backup_RestoredNewNoVersion">Сборка «{0}» создана — выберите версию и загрузчик в её настройках</x:String>
+    <x:String x:Key="Backup_Deleted">Бэкап от {0} удалён</x:String>
+    <x:String x:Key="Backup_DeleteFailed">Не удалось удалить бэкап — возможно, файл занят</x:String>
 
 </ResourceDictionary>

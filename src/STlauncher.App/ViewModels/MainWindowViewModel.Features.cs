@@ -498,8 +498,6 @@ public partial class MainWindowViewModel
 
     // ===================== Backups =====================
 
-    public ObservableCollection<BackupInfo> Backups { get; } = new();
-
     [ObservableProperty]
     private bool _backupsEnabled;
 
@@ -552,7 +550,7 @@ public partial class MainWindowViewModel
             BackupStatus = Localize("Backup_InProgress", "Creating a backup…");
             AppendConsole($"[backup] creating a backup of {SelectedInstance.Name}");
 
-            var backup = await _backups.CreateAsync(InstanceDirectory, BackupsDirectory, SelectedInstance.Id);
+            var backup = await _backups.CreateAsync(InstanceDirectory, BackupsDirectory, SelectedInstance.Id, SelectedInstance);
             PruneBackups();
             RefreshBackups();
 
@@ -581,16 +579,6 @@ public partial class MainWindowViewModel
         catch (Exception ex)
         {
             BackupStatus = Localize("Backup_FailedFolder", "Failed to open the backups folder: {0}", ex.Message);
-        }
-    }
-
-    public void RefreshBackups()
-    {
-        Backups.Clear();
-
-        foreach (var backup in _backups.List(BackupsDirectory))
-        {
-            Backups.Add(backup);
         }
     }
 

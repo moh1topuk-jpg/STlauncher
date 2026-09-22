@@ -383,7 +383,7 @@
     <x:String x:Key="Server_AddressCopied">Address copied: {0}</x:String>
     <x:String x:Key="Builds_TabAddMods">Add mods</x:String>
     <x:String x:Key="Settings_SectionLauncher">Launcher</x:String>
-    <x:String x:Key="Settings_BackupsTitle">World backups</x:String>
+    <x:String x:Key="Settings_BackupsTitle">Backups of worlds and builds</x:String>
     <x:String x:Key="Settings_MemoryCeiling">more than 8 GB will not make it faster</x:String>
     <x:String x:Key="Settings_MemoryRecommendedValue">Recommended · {0} MB</x:String>
     <x:String x:Key="Game_EditNickname">Change nickname</x:String>
@@ -533,5 +533,34 @@
     <x:String x:Key="Mods_Updating">Updating {0} to {1}…</x:String>
     <x:String x:Key="Mods_Updated">{0} updated to {1}</x:String>
     <x:String x:Key="Mods_CatalogPinnedHint">The server catalog sets this mod's version - updates arrive with the build.</x:String>
+
+    <!-- Backup restore -->
+    <x:String x:Key="Settings_BackupsWhat">A backup holds worlds, mods, configs, resource packs, shaders, game options and the build definition, so both the worlds and the whole build can be restored from it.</x:String>
+    <x:String x:Key="Settings_BackupsList">Saved backups</x:String>
+    <x:String x:Key="Backup_Restore">Restore</x:String>
+    <x:String x:Key="Backup_RestoreWorlds">Worlds only</x:String>
+    <x:String x:Key="Backup_RestoreWorldsHint">Brings the worlds back. Mods and settings stay as they are now.</x:String>
+    <x:String x:Key="Backup_RestoreAll">The whole build</x:String>
+    <x:String x:Key="Backup_RestoreAllHint">Brings back worlds, mods, configs and settings. The current state is saved as a separate backup first.</x:String>
+    <x:String x:Key="Backup_RestoreNew">As a new build</x:String>
+    <x:String x:Key="Backup_RestoreNewHint">Creates a separate build from the backup without touching the existing ones.</x:String>
+    <x:String x:Key="Backup_Delete">Delete backup</x:String>
+    <x:String x:Key="Backup_BuildDeleted">build deleted</x:String>
+    <x:String x:Key="Backup_Worlds">{0} world(s)</x:String>
+    <x:String x:Key="Backup_Mods">{0} mod(s)</x:String>
+    <x:String x:Key="Backup_Empty">empty</x:String>
+    <x:String x:Key="Backup_Unreadable">cannot be read: {0}</x:String>
+    <x:String x:Key="Backup_RestoreBusy">Wait for the game and the launcher to finish first</x:String>
+    <x:String x:Key="Backup_BuildGone">That build no longer exists - restore the backup as a new build</x:String>
+    <x:String x:Key="Backup_SafetyCopy">Backing up the current state of "{0}" first…</x:String>
+    <x:String x:Key="Backup_Restoring">Restoring "{0}"…</x:String>
+    <x:String x:Key="Backup_RestoredWorlds">Worlds from {0} are back in "{1}"</x:String>
+    <x:String x:Key="Backup_RestoredAll">"{0}" is back to how it was on {1}</x:String>
+    <x:String x:Key="Backup_RestoreFailed">Restore failed: {0}</x:String>
+    <x:String x:Key="Backup_NewBuildName">{0} (backup {1})</x:String>
+    <x:String x:Key="Backup_RestoredNew">Build "{0}" created from the backup</x:String>
+    <x:String x:Key="Backup_RestoredNewNoVersion">Build "{0}" created - pick its version and loader in the build settings</x:String>
+    <x:String x:Key="Backup_Deleted">Backup from {0} deleted</x:String>
+    <x:String x:Key="Backup_DeleteFailed">Could not delete the backup - it may be in use</x:String>
 
 </ResourceDictionary>
