@@ -1128,6 +1128,13 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private void PersistSettings()
     {
+        // The data has been moved and this process is about to restart: a save now
+        // would recreate settings.json in the abandoned folder.
+        if (_dataMoved)
+        {
+            return;
+        }
+
         var settings = new AppSettings
         {
             Username = Username,

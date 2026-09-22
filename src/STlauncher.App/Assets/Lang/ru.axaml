@@ -179,7 +179,7 @@
     <x:String x:Key="Settings_DevConsoleHint">Показывает раздел с техническим логом. По умолчанию выключена.</x:String>
     <x:String x:Key="Settings_AfterLaunch">После запуска Minecraft</x:String>
     <x:String x:Key="AfterLaunch_Keep">Оставить открытым</x:String>
-    <x:String x:Key="AfterLaunch_Hide">Свернуть</x:String>
+    <x:String x:Key="AfterLaunch_Hide">Свернуть в трей</x:String>
     <x:String x:Key="AfterLaunch_Close">Закрыть лаунчер</x:String>
     <x:String x:Key="Settings_Backups">Бэкапы</x:String>
     <x:String x:Key="Settings_BackupsEnabled">Включить бэкапы</x:String>
@@ -654,5 +654,19 @@
     <x:String x:Key="Category_optimization-shader">Оптимизация</x:String>
     <x:String x:Key="Category_quests">Квесты</x:String>
     <x:String x:Key="Category_challenging">Сложные</x:String>
+
+    <!-- Tray and data folder -->
+    <x:String x:Key="Tray_Show">Показать лаунчер</x:String>
+    <x:String x:Key="Tray_Quit">Выйти из лаунчера</x:String>
+    <x:String x:Key="Settings_DataFolder">Папка данных лаунчера</x:String>
+    <x:String x:Key="Settings_DataFolderChange">Перенести…</x:String>
+    <x:String x:Key="Settings_DataFolderReset">Вернуть по умолчанию</x:String>
+    <x:String x:Key="Settings_DataFolderHint">Здесь лежат сборки, миры, версии игры и Java. Перенос на другой диск копирует всё целиком и перезапускает лаунчер; старая папка очищается только после успешного копирования.</x:String>
+    <x:String x:Key="DataFolder_Busy">Дождитесь, пока игра и загрузки закончат работу</x:String>
+    <x:String x:Key="DataFolder_Same">Это и есть текущая папка</x:String>
+    <x:String x:Key="DataFolder_Moving">Переношу {0} в {1}…</x:String>
+    <x:String x:Key="DataFolder_MovingPart">Переношу: {0}…</x:String>
+    <x:String x:Key="DataFolder_Done">Перенесено файлов: {0}. Перезапускаю лаунчер…</x:String>
+    <x:String x:Key="DataFolder_Failed">Не удалось перенести данные: {0}</x:String>
 
 </ResourceDictionary>

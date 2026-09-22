@@ -179,7 +179,7 @@
     <x:String x:Key="Settings_DevConsoleHint">Shows the technical log section. Disabled by default.</x:String>
     <x:String x:Key="Settings_AfterLaunch">After Minecraft starts</x:String>
     <x:String x:Key="AfterLaunch_Keep">Keep the launcher open</x:String>
-    <x:String x:Key="AfterLaunch_Hide">Minimize</x:String>
+    <x:String x:Key="AfterLaunch_Hide">Minimize to tray</x:String>
     <x:String x:Key="AfterLaunch_Close">Close the launcher</x:String>
     <x:String x:Key="Settings_Backups">Backups</x:String>
     <x:String x:Key="Settings_BackupsEnabled">Enable backups</x:String>
@@ -654,5 +654,19 @@
     <x:String x:Key="Category_optimization-shader">Optimization</x:String>
     <x:String x:Key="Category_quests">Quests</x:String>
     <x:String x:Key="Category_challenging">Challenging</x:String>
+
+    <!-- Tray and data folder -->
+    <x:String x:Key="Tray_Show">Show the launcher</x:String>
+    <x:String x:Key="Tray_Quit">Quit the launcher</x:String>
+    <x:String x:Key="Settings_DataFolder">Launcher data folder</x:String>
+    <x:String x:Key="Settings_DataFolderChange">Move…</x:String>
+    <x:String x:Key="Settings_DataFolderReset">Back to default</x:String>
+    <x:String x:Key="Settings_DataFolderHint">Builds, worlds, game versions and Java live here. Moving to another disk copies everything and restarts the launcher; the old folder is cleared only after the copy succeeds.</x:String>
+    <x:String x:Key="DataFolder_Busy">Wait for the game and downloads to finish first</x:String>
+    <x:String x:Key="DataFolder_Same">That is the current folder</x:String>
+    <x:String x:Key="DataFolder_Moving">Moving {0} to {1}…</x:String>
+    <x:String x:Key="DataFolder_MovingPart">Moving: {0}…</x:String>
+    <x:String x:Key="DataFolder_Done">Moved {0} file(s). Restarting the launcher…</x:String>
+    <x:String x:Key="DataFolder_Failed">Could not move the data: {0}</x:String>
 
 </ResourceDictionary>

@@ -36,11 +36,8 @@ public sealed class LauncherPaths
     public string Instances { get; }
     public string Logs { get; }
 
-    public static LauncherPaths Default()
-    {
-        var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        return new LauncherPaths(Path.Combine(appData, "STlauncher"));
-    }
+    /// <summary>AppData, unless the player moved the data elsewhere (see <see cref="DataLocation"/>).</summary>
+    public static LauncherPaths Default() => new(DataLocation.Resolve());
 
     public string VersionDirectory(string versionId) => Under("versions", versionId);
 

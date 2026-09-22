@@ -53,14 +53,45 @@ public partial class App : Application
 
             // The game process is independent of the launcher, so hiding or closing the
             // window never terminates Minecraft.
-            viewModel.RequestHideLauncher += () => window.WindowState = WindowState.Minimized;
-            viewModel.RequestConcealLauncher += () => window.Hide();
-            viewModel.RequestCloseLauncher += () => window.Close();
-            viewModel.RequestShowLauncher += () =>
+            var tray = CreateTrayIcon(window, viewModel, desktop);
+
+            void ShowWindow()
             {
+                tray.IsVisible = false;
                 window.Show();
                 window.WindowState = WindowState.Normal;
                 window.Activate();
+            }
+
+            void HideToTray()
+            {
+                // Out of the taskbar, into the tray: still one click away, not in the way.
+                RefreshTrayMenu(tray, ShowWindow, desktop);
+                tray.IsVisible = true;
+                window.Hide();
+            }
+
+            viewModel.RequestHideLauncher += HideToTray;
+            viewModel.RequestConcealLauncher += HideToTray;
+            viewModel.RequestCloseLauncher += () => window.Close();
+            viewModel.RequestShowLauncher += ShowWindow;
+
+            // Data moved elsewhere: a fresh process reads the new location, this one quits.
+            viewModel.RequestRestartLauncher += () =>
+            {
+                try
+                {
+                    if (Environment.ProcessPath is { Length: > 0 } exe)
+                    {
+                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(exe) { UseShellExecute = true });
+                    }
+                }
+                catch (Exception)
+                {
+                    // The launcher still quits; the player starts it by hand.
+                }
+
+                desktop.Shutdown();
             };
 
             // The folder picker needs the window; the view model only gets the answer.
@@ -81,6 +112,37 @@ public partial class App : Application
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    /// <summary>
+    /// The tray icon the window folds into while the game runs. Created hidden; shown by
+    /// the hide handlers and hidden again when the window comes back.
+    /// </summary>
+    private TrayIcon CreateTrayIcon(MainWindow window, MainWindowViewModel viewModel, IClassicDesktopStyleApplicationLifetime desktop)
+    {
+        var tray = new TrayIcon
+        {
+            Icon = window.Icon,
+            ToolTipText = "STlauncher",
+            IsVisible = false
+        };
+
+        tray.Clicked += (_, _) => viewModel.ShowFromTray();
+
+        TrayIcon.SetIcons(this, new TrayIcons { tray });
+        return tray;
+    }
+
+    /// <summary>Rebuilt on every hide so the labels follow the interface language.</summary>
+    private static void RefreshTrayMenu(TrayIcon tray, Action show, IClassicDesktopStyleApplicationLifetime desktop)
+    {
+        var showItem = new NativeMenuItem(MainWindowViewModel.Localize("Tray_Show", "Show the launcher"));
+        showItem.Click += (_, _) => show();
+
+        var quitItem = new NativeMenuItem(MainWindowViewModel.Localize("Tray_Quit", "Quit the launcher"));
+        quitItem.Click += (_, _) => desktop.Shutdown();
+
+        tray.Menu = new NativeMenu { Items = { showItem, new NativeMenuItemSeparator(), quitItem } };
     }
 
     /// <summary>

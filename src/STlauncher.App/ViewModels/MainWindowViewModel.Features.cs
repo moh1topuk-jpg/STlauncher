@@ -39,6 +39,9 @@ public partial class MainWindowViewModel
     /// <summary>Raised when the window should come back: the game ended, or crashed.</summary>
     public event Action? RequestShowLauncher;
 
+    /// <summary>The tray icon was clicked: bring the window back.</summary>
+    public void ShowFromTray() => RequestShowLauncher?.Invoke();
+
     /// <summary>Why the last game ended badly; empty when it did not.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasGameCrashed))]
@@ -105,7 +108,7 @@ public partial class MainWindowViewModel
         AfterLaunchOptions.Add(new AfterLaunchOption(AfterLaunchAction.Keep,
             Localize("AfterLaunch_Keep", "Keep the launcher open")));
         AfterLaunchOptions.Add(new AfterLaunchOption(AfterLaunchAction.Hide,
-            Localize("AfterLaunch_Hide", "Minimize")));
+            Localize("AfterLaunch_Hide", "Minimize to tray")));
         AfterLaunchOptions.Add(new AfterLaunchOption(AfterLaunchAction.Close,
             Localize("AfterLaunch_Close", "Close the launcher")));
 
