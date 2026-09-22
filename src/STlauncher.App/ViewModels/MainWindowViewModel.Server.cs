@@ -29,7 +29,7 @@ public sealed record ServerChartBar(double Height, bool HasData, string Tooltip)
 public partial class MainWindowViewModel
 {
     /// <summary>Pixel height of the plot area. Bars are scaled into it.</summary>
-    private const double ChartHeight = 96;
+    private const double ChartHeight = 150;
 
     /// <summary>Visible even when it is the lowest bar of the window.</summary>
     private const double MinimumBarHeight = 3;
@@ -125,6 +125,30 @@ public partial class MainWindowViewModel
 
     [ObservableProperty]
     private bool _hasServerSummary;
+
+    // Bare numbers for the metric tiles, where the caption is drawn separately from the
+    // value. The sentence-shaped properties above stay for tooltips and the status line.
+
+    [ObservableProperty]
+    private string _serverOnlineValue = "—";
+
+    [ObservableProperty]
+    private string _serverOnlineCaption = string.Empty;
+
+    [ObservableProperty]
+    private string _serverAverageWeekValue = "—";
+
+    [ObservableProperty]
+    private string _serverRecordValue = "—";
+
+    [ObservableProperty]
+    private string _serverRecordCaption = string.Empty;
+
+    [ObservableProperty]
+    private string _serverUptimeValue = "—";
+
+    [ObservableProperty]
+    private string _serverRankValue = "—";
 
     /// <summary>Says where the chart came from, so nobody has to guess.</summary>
     [ObservableProperty]
@@ -289,6 +313,8 @@ public partial class MainWindowViewModel
                 ServerPlayers = string.Empty;
                 ServerVersion = string.Empty;
                 ServerIcon = ServerLogo;
+                ServerOnlineValue = "—";
+                ServerOnlineCaption = Localize("Server_Offline", "The server did not respond");
 
                 // Deliberately not recorded as "0 online": a failed ping means the server
                 // was unreachable *from here*, and a chart cannot tell that apart from a
@@ -301,6 +327,8 @@ public partial class MainWindowViewModel
             ServerMotd = status.Motd;
             ServerPlayers = Localize("Server_Players", "Players: {0} / {1}", status.Online, status.Max);
             ServerVersion = status.VersionName ?? string.Empty;
+            ServerOnlineValue = status.Online.ToString(CultureInfo.CurrentCulture);
+            ServerOnlineCaption = Localize("Server_TileOnlineOf", "of {0} slots", status.Max);
             ServerIcon = status.Favicon is { Length: > 0 }
                 ? CreateBitmap(status.Favicon) ?? ServerLogo
                 : ServerLogo;
@@ -435,10 +463,23 @@ public partial class MainWindowViewModel
             ServerRecord = string.Empty;
             ServerUptime = string.Empty;
             ServerRank = string.Empty;
+            ServerAverageWeekValue = "—";
+            ServerRecordValue = "—";
+            ServerRecordCaption = string.Empty;
+            ServerUptimeValue = "—";
+            ServerRankValue = "—";
             return;
         }
 
         HasServerSummary = true;
+
+        ServerAverageWeekValue = summary.AverageWeek is { } averageValue ? averageValue.ToString("F0", CultureInfo.CurrentCulture) : "—";
+        ServerRecordValue = summary.Peak is { } peakValue ? peakValue.ToString(CultureInfo.CurrentCulture) : "—";
+        ServerRecordCaption = summary.PeakAt is { } peakAtValue
+            ? peakAtValue.ToLocalTime().ToString("dd.MM.yyyy", CultureInfo.CurrentCulture)
+            : string.Empty;
+        ServerUptimeValue = summary.Uptime is { } uptimeValue ? $"{uptimeValue:F0}%" : "—";
+        ServerRankValue = summary.Rank is { } rankValue ? $"#{rankValue}" : "—";
 
         ServerAverageWeek = summary.AverageWeek is { } average
             ? Localize("Server_AverageWeek", "Average for the week: {0:F0}", average)

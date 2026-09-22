@@ -11,20 +11,23 @@
              x:DataType="vm:MainWindowViewModel">
 
     <Grid>
-        <Grid Margin="22" ColumnDefinitions="290,*" ColumnSpacing="18">
+        <Grid Margin="24" ColumnDefinitions="290,*" ColumnSpacing="20">
 
             <!-- ============ Build list ============ -->
             <!-- Only the list and one way to add to it. Everything that acts on one build
                  lives next to that build, on the right. -->
             <Border Classes="card" Padding="12">
                 <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="10">
-                    <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Text="{DynamicResource Builds_Title}" Classes="label"
+                    <Grid ColumnDefinitions="*,Auto" Margin="4,2,0,0">
+                        <TextBlock Text="{DynamicResource Builds_Title}" Classes="h3"
                                    VerticalAlignment="Center"/>
 
                         <!-- Every way a build comes into existence, in one menu. -->
-                        <Button Grid.Column="1" Classes="primary small"
-                                Content="{DynamicResource Builds_Add}">
+                        <Button Grid.Column="1" Classes="primary small">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <PathIcon Data="{StaticResource IconPlus}" Classes="small"/>
+                                <TextBlock Text="{DynamicResource Builds_Add}"/>
+                            </StackPanel>
                             <Button.Flyout>
                                 <MenuFlyout Placement="BottomEdgeAlignedRight">
                                     <MenuItem Header="{DynamicResource Builds_AddNew}"
@@ -106,14 +109,14 @@
 
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                     <StackPanel Spacing="4">
-                        <TextBlock Text="{Binding SelectedInstance.Name}" FontSize="20" FontWeight="SemiBold"
+                        <TextBlock Text="{Binding SelectedInstance.Name}" Classes="h1"
                                    TextTrimming="CharacterEllipsis"/>
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <TextBlock Text="{Binding SelectedInstance.VersionId, TargetNullValue=—}"
-                                       Classes="faint"/>
-                            <TextBlock Text="·" Classes="faint"/>
-                            <TextBlock Text="{Binding SelectedInstance.Loader}" Classes="faint"/>
-                            <TextBlock Text="·" Classes="faint"/>
+                                       Classes="muted"/>
+                            <TextBlock Text="·" Classes="muted"/>
+                            <TextBlock Text="{Binding SelectedInstance.Loader}" Classes="muted"/>
+                            <TextBlock Text="·" Classes="muted"/>
                             <TextBlock Classes="gold"
                                        Text="{Binding BuildModCount, Converter={x:Static conv:ModCountConverter.Instance}}"/>
                         </StackPanel>
@@ -197,11 +200,12 @@
                                                                ToolTip.Tip="{Binding FileName}"/>
                                                     <TextBlock Grid.Column="2" Classes="faint" VerticalAlignment="Center"
                                                                Text="{Binding Size, Converter={x:Static conv:FileSizeConverter.Instance}}"/>
-                                                    <Button Grid.Column="3" Classes="ghost small icon-danger"
-                                                            Content="&#x2715;"
+                                                    <Button Grid.Column="3" Classes="plain small icon-danger"
                                                             ToolTip.Tip="{DynamicResource Mods_Delete}"
                                                             Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).UninstallModCommand}"
-                                                            CommandParameter="{Binding}"/>
+                                                            CommandParameter="{Binding}">
+                                                        <PathIcon Data="{StaticResource IconClose}" Classes="small"/>
+                                                    </Button>
                                                 </Grid>
                                             </Border>
                                         </DataTemplate>

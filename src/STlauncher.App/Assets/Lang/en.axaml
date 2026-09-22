@@ -332,6 +332,24 @@
 
     <x:String x:Key="Server_RangeDay">24 hours</x:String>
     <x:String x:Key="Server_RangeWeek">7 days</x:String>
+    <x:String x:Key="Game_EditNickname">Change nickname</x:String>
+    <x:String x:Key="Game_NicknameDone">Done</x:String>
+    <x:String x:Key="Game_RemoveCurrentNickname">Remove the current one from the list</x:String>
+    <x:String x:Key="Server_Online">online</x:String>
+    <x:String x:Key="Server_OfflineTag">not responding</x:String>
+    <x:String x:Key="Server_TileOnline">Right now</x:String>
+    <x:String x:Key="Server_TileOnlineOf">of {0} slots</x:String>
+    <x:String x:Key="Server_TileAverageWeek">This week</x:String>
+    <x:String x:Key="Server_TilePlayers">players on average</x:String>
+    <x:String x:Key="Server_TileRecord">Record</x:String>
+    <x:String x:Key="Server_TileUptime">Uptime</x:String>
+    <x:String x:Key="Server_TileUptimeCaption">per monitoring</x:String>
+    <x:String x:Key="Server_TileRank">Rank</x:String>
+    <x:String x:Key="Settings_MemoryTitle">Memory for the game</x:String>
+    <x:String x:Key="Settings_MemoryRecommended">Recommended</x:String>
+    <x:String x:Key="Settings_MemoryHint">{0} MB of {1} MB - recommended {2} MB</x:String>
+    <x:String x:Key="Settings_ResolutionTitle">Window size</x:String>
+    <x:String x:Key="Settings_ResolutionDefault">Same as the game</x:String>
     <x:String x:Key="Server_Now">now</x:String>
     <x:String x:Key="Server_Collecting">Collecting data: {0} reading(s) so far.</x:String>
     <x:String x:Key="Server_ChartEmpty">The chart appears after the first reading.</x:String>

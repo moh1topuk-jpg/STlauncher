@@ -165,9 +165,98 @@ public partial class MainWindowViewModel
 
     partial void OnExtraGameArgsChanged(string value) => SyncInstance();
 
-    partial void OnWidthChanged(decimal value) => SyncInstance();
+    partial void OnWidthChanged(decimal value)
+    {
+        SyncInstance();
+        OnPropertyChanged(nameof(UseDefaultResolution));
+    }
 
-    partial void OnHeightChanged(decimal value) => SyncInstance();
+    partial void OnHeightChanged(decimal value)
+    {
+        SyncInstance();
+        OnPropertyChanged(nameof(UseDefaultResolution));
+    }
+
+    /// <summary>
+    /// "Let the game decide" as a tick box, instead of the 0 × 0 that meant it before and
+    /// read as a broken setting.
+    /// </summary>
+    public bool UseDefaultResolution
+    {
+        get => Width <= 0 && Height <= 0;
+        set
+        {
+            if (value)
+            {
+                Width = 0;
+                Height = 0;
+            }
+            else if (Width <= 0 || Height <= 0)
+            {
+                Width = 1280;
+                Height = 720;
+            }
+
+            OnPropertyChanged();
+        }
+    }
+
+    // ===================== Memory =====================
+
+    /// <summary>Physical memory of this machine, so the slider ends where the RAM does.</summary>
+    public int TotalMemoryMb { get; } = DetectTotalMemoryMb();
+
+    /// <summary>Upper end of the memory slider: the RAM minus what Windows and the launcher need.</summary>
+    public int MemorySliderMax => Math.Max(2048, TotalMemoryMb - 2048);
+
+    /// <summary>
+    /// A sensible allocation for this machine: a quarter of the RAM, kept between 2 and
+    /// 8 GB. More than that does not make Minecraft faster - it makes garbage collection
+    /// pauses longer.
+    /// </summary>
+    public int RecommendedMemoryMb => Math.Clamp(TotalMemoryMb / 4 / 512 * 512, 2048, 8192);
+
+    public string MemoryHint => Localize(
+        "Settings_MemoryHint",
+        "{0} MB of {1} MB - recommended {2} MB",
+        (int)MaxMemoryMb,
+        TotalMemoryMb,
+        RecommendedMemoryMb);
+
+    [RelayCommand]
+    private void UseRecommendedMemory() => MaxMemoryMb = RecommendedMemoryMb;
+
+    private static int DetectTotalMemoryMb()
+    {
+        try
+        {
+            var bytes = GC.GetGCMemoryInfo().TotalAvailableMemoryBytes;
+            return bytes > 0 ? (int)(bytes / 1024 / 1024) : 8192;
+        }
+        catch (Exception)
+        {
+            return 8192;
+        }
+    }
+
+    // ===================== Nickname editing =====================
+
+    /// <summary>
+    /// The name is shown as text and only becomes a field on request: the main screen
+    /// is for starting the game, not for filling in forms.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isEditingNickname;
+
+    [RelayCommand]
+    private void EditNickname() => IsEditingNickname = true;
+
+    [RelayCommand]
+    private void FinishEditingNickname()
+    {
+        Username = Username.Trim();
+        IsEditingNickname = false;
+    }
 
     /// <summary>Splits a raw argument string, ignoring extra whitespace.</summary>
     public static IReadOnlyList<string> SplitArguments(string? value)

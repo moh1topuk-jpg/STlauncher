@@ -331,6 +331,24 @@
 
     <x:String x:Key="Server_RangeDay">24 часа</x:String>
     <x:String x:Key="Server_RangeWeek">7 дней</x:String>
+    <x:String x:Key="Game_EditNickname">Сменить ник</x:String>
+    <x:String x:Key="Game_NicknameDone">Готово</x:String>
+    <x:String x:Key="Game_RemoveCurrentNickname">Убрать текущий из списка</x:String>
+    <x:String x:Key="Server_Online">онлайн</x:String>
+    <x:String x:Key="Server_OfflineTag">не отвечает</x:String>
+    <x:String x:Key="Server_TileOnline">Сейчас</x:String>
+    <x:String x:Key="Server_TileOnlineOf">из {0} мест</x:String>
+    <x:String x:Key="Server_TileAverageWeek">За неделю</x:String>
+    <x:String x:Key="Server_TilePlayers">игроков в среднем</x:String>
+    <x:String x:Key="Server_TileRecord">Рекорд</x:String>
+    <x:String x:Key="Server_TileUptime">Аптайм</x:String>
+    <x:String x:Key="Server_TileUptimeCaption">по мониторингу</x:String>
+    <x:String x:Key="Server_TileRank">Рейтинг</x:String>
+    <x:String x:Key="Settings_MemoryTitle">Память для игры</x:String>
+    <x:String x:Key="Settings_MemoryRecommended">Рекомендуемое</x:String>
+    <x:String x:Key="Settings_MemoryHint">{0} МБ из {1} МБ · рекомендуется {2} МБ</x:String>
+    <x:String x:Key="Settings_ResolutionTitle">Разрешение окна</x:String>
+    <x:String x:Key="Settings_ResolutionDefault">Как в игре</x:String>
     <x:String x:Key="Server_Now">сейчас</x:String>
     <x:String x:Key="Server_Collecting">Собираем данные: замеров — {0}.</x:String>
     <x:String x:Key="Server_ChartEmpty">График появится после первого замера онлайна.</x:String>

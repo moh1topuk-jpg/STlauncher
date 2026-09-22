@@ -5,219 +5,224 @@
              x:DataType="vm:MainWindowViewModel">
 
     <ScrollViewer>
-        <StackPanel Margin="22" Spacing="14" MaxWidth="760" HorizontalAlignment="Left">
+        <StackPanel Margin="32" Spacing="20" MaxWidth="960">
 
-            <TextBlock Text="{DynamicResource Nav_Settings}" Classes="label"/>
+            <TextBlock Text="{DynamicResource Nav_Settings}" Classes="h1"/>
 
-            <!-- Game -->
-            <Border Classes="card">
-                <StackPanel Spacing="12">
-                    <TextBlock Text="{DynamicResource Settings_TabGame}" Classes="label"/>
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="16" RowDefinitions="Auto,Auto" RowSpacing="16">
 
-                    <StackPanel Spacing="6">
-                        <TextBlock Text="{DynamicResource Settings_GameDirectory}" Classes="faint"/>
-                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                            <TextBox Text="{Binding InstanceDirectory, Mode=OneWay}" IsReadOnly="True"/>
-                            <Button Grid.Column="1" Classes="ghost"
-                                    Content="{DynamicResource Settings_OpenFolder}"
-                                    Command="{Binding OpenGameFolderCommand}"/>
-                        </Grid>
-                    </StackPanel>
+                <!-- ======== Game ======== -->
+                <Border Grid.Column="0" Grid.Row="0" Classes="card" VerticalAlignment="Stretch">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="{DynamicResource Settings_TabGame}" Classes="h3"/>
 
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                        <!-- Memory: a slider with the recommendation marked, instead of two
+                             number boxes with no hint of what is sensible. -->
                         <StackPanel Spacing="6">
-                            <TextBlock Text="{DynamicResource Settings_Resolution}" Classes="faint"/>
-                            <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="6">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Text="{DynamicResource Settings_MemoryTitle}" Classes="muted"/>
+                                <Button Grid.Column="1" Classes="plain small"
+                                        Content="{DynamicResource Settings_MemoryRecommended}"
+                                        Command="{Binding UseRecommendedMemoryCommand}"/>
+                            </Grid>
+                            <Slider Value="{Binding MaxMemoryMb}" Minimum="1024"
+                                    Maximum="{Binding MemorySliderMax}" TickFrequency="512" IsSnapToTickEnabled="True"/>
+                            <TextBlock Text="{Binding MemoryHint}" Classes="faint" TextWrapping="Wrap"/>
+                        </StackPanel>
+
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="{DynamicResource Settings_ResolutionTitle}" Classes="muted"/>
+                            <CheckBox Content="{DynamicResource Settings_ResolutionDefault}"
+                                      IsChecked="{Binding UseDefaultResolution}"/>
+                            <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="8" MaxWidth="300" HorizontalAlignment="Left"
+                                  IsEnabled="{Binding !UseDefaultResolution}">
                                 <NumericUpDown Value="{Binding Width}" Minimum="0" Maximum="7680"
                                                Increment="10" FormatString="0" ShowButtonSpinner="False"/>
-                                <TextBlock Grid.Column="1" Text="&#x00D7;" VerticalAlignment="Center"
-                                           Classes="faint"/>
+                                <TextBlock Grid.Column="1" Text="&#x00D7;" VerticalAlignment="Center" Classes="faint"/>
                                 <NumericUpDown Grid.Column="2" Value="{Binding Height}" Minimum="0"
                                                Maximum="4320" Increment="10" FormatString="0"
                                                ShowButtonSpinner="False"/>
                             </Grid>
                         </StackPanel>
 
-                        <StackPanel Grid.Column="1" Spacing="6">
-                            <TextBlock Text="{DynamicResource Settings_Memory}" Classes="faint"/>
-                            <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="6">
-                                <NumericUpDown Value="{Binding MinMemoryMb}" Minimum="256" Maximum="32768"
-                                               Increment="256" FormatString="0" ShowButtonSpinner="False"/>
-                                <TextBlock Grid.Column="1" Text="&#x2013;" VerticalAlignment="Center"
-                                           Classes="faint"/>
-                                <NumericUpDown Grid.Column="2" Value="{Binding MaxMemoryMb}" Minimum="512"
-                                               Maximum="65536" Increment="512" FormatString="0"
-                                               ShowButtonSpinner="False"/>
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="{DynamicResource Settings_ExtraArgs}" Classes="muted"/>
+                            <TextBox Text="{Binding ExtraGameArgs}" Watermark="--fullscreen --width 1920"/>
+                            <TextBlock Text="{DynamicResource Settings_ExtraArgsHint}" Classes="faint"
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
+
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="{DynamicResource Settings_GameDirectory}" Classes="muted"/>
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                <TextBox Text="{Binding InstanceDirectory, Mode=OneWay}" IsReadOnly="True"/>
+                                <Button Grid.Column="1" Classes="ghost"
+                                        ToolTip.Tip="{DynamicResource Settings_OpenFolder}"
+                                        Command="{Binding OpenGameFolderCommand}">
+                                    <PathIcon Data="{StaticResource IconFolder}"/>
+                                </Button>
                             </Grid>
                         </StackPanel>
-                    </Grid>
 
-                    <StackPanel Spacing="6">
-                        <TextBlock Text="{DynamicResource Settings_ExtraArgs}" Classes="faint"/>
-                        <TextBox Text="{Binding ExtraGameArgs}" Watermark="--fullscreen --width 1920"/>
-                        <TextBlock Text="{DynamicResource Settings_ExtraArgsHint}" Classes="faint"
-                                   TextWrapping="Wrap"/>
+                        <CheckBox Content="{DynamicResource Settings_ForceUpdate}"
+                                  IsChecked="{Binding ForceUpdate}"/>
                     </StackPanel>
+                </Border>
 
-                    <CheckBox Content="{DynamicResource Settings_ForceUpdate}"
-                              IsChecked="{Binding ForceUpdate}"/>
-                </StackPanel>
-            </Border>
+                <!-- ======== Launcher ======== -->
+                <StackPanel Grid.Column="1" Grid.Row="0" Spacing="16">
+                    <Border Classes="card">
+                        <StackPanel Spacing="16">
+                            <TextBlock Text="{DynamicResource Settings_TabInterface}" Classes="h3"/>
 
-            <!-- Versions -->
-            <Border Classes="card">
-                <StackPanel Spacing="10">
-                    <TextBlock Text="{DynamicResource Settings_Versions}" Classes="label"/>
-                    <WrapPanel>
-                        <CheckBox Content="{DynamicResource Settings_VersionsRelease}"
-                                  IsChecked="{Binding ShowOldReleases}" Margin="0,0,18,0"/>
-                        <CheckBox Content="{DynamicResource Settings_VersionsSnapshot}"
-                                  IsChecked="{Binding ShowSnapshots}" Margin="0,0,18,0"/>
-                        <CheckBox Content="{DynamicResource Settings_VersionsBeta}"
-                                  IsChecked="{Binding ShowBeta}" Margin="0,0,18,0"/>
-                        <CheckBox Content="{DynamicResource Settings_VersionsAlpha}"
-                                  IsChecked="{Binding ShowAlpha}"/>
-                    </WrapPanel>
-                </StackPanel>
-            </Border>
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="{DynamicResource Settings_Language}" Classes="muted"/>
+                                <ComboBox ItemsSource="{Binding LanguageOptions}"
+                                          SelectedItem="{Binding SelectedLanguageOption}"
+                                          HorizontalAlignment="Stretch">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:LanguageOption">
+                                            <TextBlock Text="{Binding Display}"/>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </StackPanel>
 
-            <!-- Interface -->
-            <Border Classes="card">
-                <StackPanel Spacing="12">
-                    <TextBlock Text="{DynamicResource Settings_TabInterface}" Classes="label"/>
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="{DynamicResource Settings_AfterLaunch}" Classes="muted"/>
+                                <ComboBox ItemsSource="{Binding AfterLaunchOptions}"
+                                          SelectedItem="{Binding SelectedAfterLaunchOption}"
+                                          HorizontalAlignment="Stretch">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:AfterLaunchOption">
+                                            <TextBlock Text="{Binding Display}"/>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </StackPanel>
 
-                    <StackPanel Spacing="6">
-                        <TextBlock Text="{DynamicResource Settings_Language}" Classes="faint"/>
-                        <ComboBox ItemsSource="{Binding LanguageOptions}"
-                                  SelectedItem="{Binding SelectedLanguageOption}"
-                                  HorizontalAlignment="Stretch">
-                            <ComboBox.ItemTemplate>
-                                <DataTemplate x:DataType="vm:LanguageOption">
-                                    <TextBlock Text="{Binding Display}"/>
-                                </DataTemplate>
-                            </ComboBox.ItemTemplate>
-                        </ComboBox>
-                    </StackPanel>
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="{DynamicResource Settings_Versions}" Classes="muted"/>
+                                <WrapPanel>
+                                    <CheckBox Content="{DynamicResource Settings_VersionsSnapshot}"
+                                              IsChecked="{Binding ShowSnapshots}" Margin="0,0,16,0"/>
+                                    <CheckBox Content="{DynamicResource Settings_VersionsRelease}"
+                                              IsChecked="{Binding ShowOldReleases}" Margin="0,0,16,0"/>
+                                    <CheckBox Content="{DynamicResource Settings_VersionsBeta}"
+                                              IsChecked="{Binding ShowBeta}" Margin="0,0,16,0"/>
+                                    <CheckBox Content="{DynamicResource Settings_VersionsAlpha}"
+                                              IsChecked="{Binding ShowAlpha}"/>
+                                </WrapPanel>
+                            </StackPanel>
 
-                    <StackPanel Spacing="6">
-                        <TextBlock Text="{DynamicResource Settings_AfterLaunch}" Classes="faint"/>
-                        <ComboBox ItemsSource="{Binding AfterLaunchOptions}"
-                                  SelectedItem="{Binding SelectedAfterLaunchOption}"
-                                  HorizontalAlignment="Stretch">
-                            <ComboBox.ItemTemplate>
-                                <DataTemplate x:DataType="vm:AfterLaunchOption">
-                                    <TextBlock Text="{Binding Display}"/>
-                                </DataTemplate>
-                            </ComboBox.ItemTemplate>
-                        </ComboBox>
-                    </StackPanel>
-
-                    <CheckBox Content="{DynamicResource Settings_DevConsole}"
-                              IsChecked="{Binding ShowDeveloperConsole}"/>
-                    <TextBlock Text="{DynamicResource Settings_DevConsoleHint}" Classes="faint"
-                               TextWrapping="Wrap"/>
-                </StackPanel>
-            </Border>
-
-            <!-- Backups -->
-            <Border Classes="card">
-                <StackPanel Spacing="12">
-                    <TextBlock Text="{DynamicResource Settings_Backups}" Classes="label"/>
-
-                    <CheckBox Content="{DynamicResource Settings_BackupsEnabled}"
-                              IsChecked="{Binding BackupsEnabled}"/>
-
-                    <StackPanel Spacing="4" IsEnabled="{Binding BackupsEnabled}">
-                        <TextBlock Text="{DynamicResource Settings_BackupsWhen}" Classes="faint"/>
-                        <CheckBox Content="{DynamicResource Settings_BackupsDaily}"
-                                  IsChecked="{Binding BackupsDaily}"/>
-                        <CheckBox Content="{DynamicResource Settings_BackupsBeforeMods}"
-                                  IsChecked="{Binding BackupsBeforeModChanges}"/>
-                        <CheckBox Content="{DynamicResource Settings_BackupsBeforeLaunch}"
-                                  IsChecked="{Binding BackupsBeforeLaunch}"/>
-                    </StackPanel>
-
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12" IsEnabled="{Binding BackupsEnabled}">
-                        <StackPanel Spacing="6">
-                            <TextBlock Text="{DynamicResource Settings_BackupsMax}" Classes="faint"/>
-                            <NumericUpDown Value="{Binding BackupsMaxCount}" Minimum="1" Maximum="200"
-                                           Increment="1" FormatString="0" ShowButtonSpinner="False"/>
+                            <StackPanel Spacing="4">
+                                <CheckBox Content="{DynamicResource Settings_DevConsole}"
+                                          IsChecked="{Binding ShowDeveloperConsole}"/>
+                                <TextBlock Text="{DynamicResource Settings_DevConsoleHint}" Classes="faint"
+                                           TextWrapping="Wrap" Margin="28,0,0,0"/>
+                            </StackPanel>
                         </StackPanel>
-                        <StackPanel Grid.Column="1" Spacing="6">
-                            <TextBlock Text="{DynamicResource Settings_BackupsSize}" Classes="faint"/>
-                            <NumericUpDown Value="{Binding BackupsMaxTotalMb}" Minimum="64"
-                                           Maximum="102400" Increment="256" FormatString="0"
-                                           ShowButtonSpinner="False"/>
-                        </StackPanel>
-                    </Grid>
-
-                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-                        <TextBox Text="{Binding BackupsDirectory, Mode=OneWay}" IsReadOnly="True"/>
-                        <Button Grid.Column="1" Classes="ghost"
-                                Content="{DynamicResource Settings_OpenFolder}"
-                                Command="{Binding OpenBackupsFolderCommand}"/>
-                        <Button Grid.Column="2" Classes="primary"
-                                Content="{DynamicResource Settings_BackupNow}"
-                                Command="{Binding CreateBackupNowCommand}"/>
-                    </Grid>
-
-                    <TextBlock Text="{Binding BackupStatus}" Classes="faint" TextWrapping="Wrap"/>
+                    </Border>
                 </StackPanel>
-            </Border>
 
-            <!-- Advanced: hidden unless the developer console is enabled -->
+                <!-- ======== Backups ======== -->
+                <Border Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="2" Classes="card">
+                    <StackPanel Spacing="14">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="{DynamicResource Settings_Backups}" Classes="h3"/>
+                                <TextBlock Text="{Binding BackupStatus}" Classes="faint" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
+                                <Button Classes="ghost" ToolTip.Tip="{DynamicResource Settings_OpenFolder}"
+                                        Command="{Binding OpenBackupsFolderCommand}">
+                                    <PathIcon Data="{StaticResource IconFolder}"/>
+                                </Button>
+                                <Button Classes="primary"
+                                        Content="{DynamicResource Settings_BackupNow}"
+                                        Command="{Binding CreateBackupNowCommand}"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <ToggleSwitch IsChecked="{Binding BackupsEnabled}"
+                                      OnContent="{DynamicResource Settings_BackupsEnabled}"
+                                      OffContent="{DynamicResource Settings_BackupsEnabled}"/>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="24" IsEnabled="{Binding BackupsEnabled}">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="{DynamicResource Settings_BackupsWhen}" Classes="muted"/>
+                                <CheckBox Content="{DynamicResource Settings_BackupsDaily}"
+                                          IsChecked="{Binding BackupsDaily}"/>
+                                <CheckBox Content="{DynamicResource Settings_BackupsBeforeMods}"
+                                          IsChecked="{Binding BackupsBeforeModChanges}"/>
+                                <CheckBox Content="{DynamicResource Settings_BackupsBeforeLaunch}"
+                                          IsChecked="{Binding BackupsBeforeLaunch}"/>
+                            </StackPanel>
+
+                            <Grid Grid.Column="1" ColumnDefinitions="*,*" ColumnSpacing="12" VerticalAlignment="Top">
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="{DynamicResource Settings_BackupsMax}" Classes="muted"/>
+                                    <NumericUpDown Value="{Binding BackupsMaxCount}" Minimum="1" Maximum="200"
+                                                   Increment="1" FormatString="0" ShowButtonSpinner="False"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Spacing="6">
+                                    <TextBlock Text="{DynamicResource Settings_BackupsSize}" Classes="muted"/>
+                                    <NumericUpDown Value="{Binding BackupsMaxTotalMb}" Minimum="64"
+                                                   Maximum="102400" Increment="256" FormatString="0"
+                                                   ShowButtonSpinner="False"/>
+                                </StackPanel>
+                            </Grid>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- ======== Developers: hidden unless the console is enabled ======== -->
             <Border Classes="card" IsVisible="{Binding ShowDeveloperConsole}">
-                <StackPanel Spacing="12">
-                    <TextBlock Text="{DynamicResource Settings_Advanced}" Classes="label"/>
-                    <TextBlock Text="{DynamicResource Settings_AdvancedHint}" Classes="faint"
-                               TextWrapping="Wrap"/>
-
-                    <StackPanel Spacing="6">
-                        <TextBlock Text="{DynamicResource Settings_TabJava}" Classes="faint"/>
-                        <ComboBox ItemsSource="{Binding JavaChoices}"
-                                  SelectedItem="{Binding SelectedJavaChoice}"
-                                  HorizontalAlignment="Stretch">
-                            <ComboBox.ItemTemplate>
-                                <DataTemplate x:DataType="vm:JavaChoice">
-                                    <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis"/>
-                                </DataTemplate>
-                            </ComboBox.ItemTemplate>
-                        </ComboBox>
+                <StackPanel Spacing="14">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="{DynamicResource Settings_Advanced}" Classes="h3"/>
+                        <TextBlock Text="{DynamicResource Settings_AdvancedHint}" Classes="faint" TextWrapping="Wrap"/>
                     </StackPanel>
 
-                    <Border Classes="hairline"/>
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="{DynamicResource Settings_TabJava}" Classes="muted"/>
+                            <ComboBox ItemsSource="{Binding JavaChoices}"
+                                      SelectedItem="{Binding SelectedJavaChoice}"
+                                      HorizontalAlignment="Stretch">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:JavaChoice">
+                                        <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis"/>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
+                    </Grid>
 
-                    <TextBlock Text="{DynamicResource Settings_Catalog}" Classes="faint"/>
-                    <TextBox Text="{Binding CatalogUrl}"
-                             Watermark="https://example.com/catalog.json  or  C:\path\catalog.json"/>
-                    <TextBlock Text="{DynamicResource Settings_CatalogHint}" Classes="faint"
-                               TextWrapping="Wrap"/>
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="{DynamicResource Settings_Catalog}" Classes="muted"/>
+                        <TextBox Text="{Binding CatalogUrl}"
+                                 Watermark="https://example.com/catalog.json  or  C:\path\catalog.json"/>
+                        <TextBlock Text="{DynamicResource Settings_CatalogHint}" Classes="faint" TextWrapping="Wrap"/>
+                    </StackPanel>
 
-                    <Border Classes="hairline"/>
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="{DynamicResource Settings_StatsUrl}" Classes="muted"/>
+                        <TextBox Text="{Binding ServerStatsUrl}" Watermark="https://name.workers.dev/"/>
+                        <TextBlock Text="{DynamicResource Settings_StatsUrlHint}" Classes="faint" TextWrapping="Wrap"/>
+                    </StackPanel>
 
-                    <TextBlock Text="{DynamicResource Settings_StatsUrl}" Classes="faint"/>
-                    <TextBox Text="{Binding ServerStatsUrl}"
-                             Watermark="https://name.workers.dev/"/>
-                    <TextBlock Text="{DynamicResource Settings_StatsUrlHint}" Classes="faint"
-                               TextWrapping="Wrap"/>
-                </StackPanel>
-            </Border>
-
-            <!-- Updates: always visible, not hidden behind the developer console -->
-            <Border Classes="card">
-                <StackPanel Spacing="12">
-                    <TextBlock Text="{DynamicResource Settings_Updates}" Classes="label"/>
-                    <TextBlock Text="{Binding UpdateStatus}" Classes="faint" TextWrapping="Wrap"/>
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <!-- A launcher that cannot update itself must not be a dead end. -->
-                        <Button Classes="ghost" IsVisible="{Binding CanDownloadManually}"
-                                Content="{DynamicResource Update_DownloadManually}"
-                                Command="{Binding OpenReleasesPageCommand}"/>
-                        <Button Classes="primary" Content="{DynamicResource Settings_CheckUpdates}"
-                                Command="{Binding CheckForUpdatesCommand}" IsEnabled="{Binding !IsUpdateBusy}"/>
-                        <Button Classes="ghost" Content="{DynamicResource Settings_RestartUpdate}"
-                                Command="{Binding InstallUpdateCommand}"
-                                IsEnabled="{Binding CanRestartToUpdate}"/>
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="{DynamicResource Settings_Updates}" Classes="muted"/>
+                        <TextBlock Text="{Binding UpdateStatus}" Classes="faint" TextWrapping="Wrap"/>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Classes="ghost small" Content="{DynamicResource Settings_CheckUpdates}"
+                                    Command="{Binding CheckForUpdatesCommand}" IsEnabled="{Binding !IsUpdateBusy}"/>
+                            <Button Classes="ghost small" Content="{DynamicResource Settings_RestartUpdate}"
+                                    Command="{Binding InstallUpdateCommand}"
+                                    IsEnabled="{Binding CanRestartToUpdate}"/>
+                        </StackPanel>
                     </StackPanel>
                 </StackPanel>
             </Border>

@@ -719,7 +719,11 @@ public partial class MainWindowViewModel : ViewModelBase
 
     partial void OnSelectedLoaderVersionChanged(LoaderVersion? value) => SyncInstance();
 
-    partial void OnMaxMemoryMbChanged(decimal value) => SyncInstance();
+    partial void OnMaxMemoryMbChanged(decimal value)
+    {
+        SyncInstance();
+        OnPropertyChanged(nameof(MemoryHint));
+    }
 
     partial void OnMinMemoryMbChanged(decimal value) => SyncInstance();
 

@@ -7,174 +7,223 @@
              x:Class="STlauncher.App.Views.Pages.GamePage"
              x:DataType="vm:MainWindowViewModel">
 
-    <!-- The composition is centred rather than anchored to the top: maximised, the old
-         layout left roughly four fifths of the window empty and stretched the Play button
-         across a thousand pixels. -->
-    <ScrollViewer>
-        <Grid Margin="22" ColumnDefinitions="*,300" ColumnSpacing="18"
-              MaxWidth="980" HorizontalAlignment="Center" VerticalAlignment="Center">
+    <!-- The main screen is a stage, not a form: one big button, the name of what it
+         starts, and the player in the corner. Everything adjustable lives elsewhere. -->
+    <Panel>
 
-            <StackPanel Grid.Column="0" Spacing="16">
+        <!-- A soft warm glow behind the play area, so the screen has a centre. -->
+        <Border IsHitTestVisible="False">
+            <Border.Background>
+                <RadialGradientBrush Center="45%,35%" GradientOrigin="45%,35%" RadiusX="55%" RadiusY="55%">
+                    <GradientStop Offset="0" Color="#2E1A22"/>
+                    <GradientStop Offset="1" Color="#000C0A0D"/>
+                </RadialGradientBrush>
+            </Border.Background>
+        </Border>
 
-                <!-- What will start. One line, not a card of repeated facts: the version
-                     and loader used to appear here, under the picker and in the sidebar. -->
-                <StackPanel Spacing="10">
-                    <TextBlock Text="{DynamicResource Game_Instance}" Classes="label"/>
+        <ScrollViewer>
+            <Grid Margin="32" ColumnDefinitions="*,280" ColumnSpacing="24"
+                  MaxWidth="1000" VerticalAlignment="Center">
 
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                        <ComboBox ItemsSource="{Binding Instances}"
-                                  SelectedItem="{Binding SelectedInstance}"
-                                  HorizontalAlignment="Stretch">
-                            <ComboBox.ItemTemplate>
-                                <DataTemplate x:DataType="inst:Instance">
-                                    <StackPanel Spacing="2">
-                                        <TextBlock Text="{Binding Name}"/>
-                                        <TextBlock Classes="faint">
-                                            <TextBlock.Text>
-                                                <MultiBinding StringFormat="{}{0} · {1}">
-                                                    <Binding Path="VersionId" TargetNullValue="—"/>
-                                                    <Binding Path="Loader"/>
-                                                </MultiBinding>
-                                            </TextBlock.Text>
-                                        </TextBlock>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ComboBox.ItemTemplate>
-                        </ComboBox>
+                <!-- ======== Stage ======== -->
+                <StackPanel Grid.Column="0" Spacing="28" VerticalAlignment="Center">
 
-                        <Button Grid.Column="1" Classes="ghost"
-                                Content="{DynamicResource Game_SetupBuild}"
-                                Command="{Binding SelectSectionCommand}"
-                                CommandParameter="Builds"/>
-                    </Grid>
+                    <!-- What will start -->
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="{DynamicResource Game_Instance}" Classes="label"/>
 
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <TextBlock Text="{Binding SelectedInstance.VersionId, TargetNullValue=—}"
-                                   Classes="faint"/>
-                        <TextBlock Text="·" Classes="faint"/>
-                        <TextBlock Text="{Binding SelectedInstance.Loader}" Classes="faint"/>
-                        <TextBlock Text="·" Classes="faint"/>
-                        <TextBlock Classes="faint"
-                                   Text="{Binding BuildModCount, Converter={x:Static conv:ModCountConverter.Instance}}"/>
-                    </StackPanel>
-                </StackPanel>
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" MaxWidth="520" HorizontalAlignment="Left">
+                            <ComboBox ItemsSource="{Binding Instances}"
+                                      SelectedItem="{Binding SelectedInstance}"
+                                      HorizontalAlignment="Stretch" MinHeight="42" FontSize="15">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="inst:Instance">
+                                        <StackPanel Spacing="2">
+                                            <TextBlock Text="{Binding Name}"/>
+                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <TextBlock Classes="faint" Text="{Binding VersionId, TargetNullValue=—}"/>
+                                                <TextBlock Classes="faint" Text="·"/>
+                                                <TextBlock Classes="faint" Text="{Binding Loader}"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
 
-                <!-- Launch. One primary action; joining the server is an extra, not the
-                     headline - the launcher is not a billboard for one server. -->
-                <StackPanel Spacing="10">
-                    <Button Classes="primary" Content="{DynamicResource Game_Play}"
-                            Command="{Binding PlayCommand}" IsEnabled="{Binding !IsBusy}"
-                            HorizontalAlignment="Left" MinWidth="240"
-                            HorizontalContentAlignment="Center"
-                            Height="52" FontSize="17"/>
+                            <Button Grid.Column="1" Classes="ghost" MinHeight="42"
+                                    ToolTip.Tip="{DynamicResource Game_SetupBuild}"
+                                    Command="{Binding SelectSectionCommand}"
+                                    CommandParameter="Builds">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <PathIcon Data="{StaticResource IconSettings}" Classes="small"/>
+                                    <TextBlock Text="{DynamicResource Game_SetupBuild}"/>
+                                </StackPanel>
+                            </Button>
+                        </Grid>
 
-                    <StackPanel Orientation="Horizontal" Spacing="10">
-                        <Button Classes="ghost small"
-                                Content="{DynamicResource Game_PlayOnServer}"
-                                Command="{Binding PlayOnServerCommand}"
-                                IsEnabled="{Binding !IsBusy}"/>
-                        <TextBlock Text="{Binding ServerJoinHint}" Classes="faint"
-                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                    </StackPanel>
-
-                    <TextBlock Classes="gold" TextWrapping="Wrap"
-                               IsVisible="{Binding IsBuildSyncBusy}"
-                               Text="{DynamicResource Builds_SyncBusy}"/>
-                </StackPanel>
-
-                <!-- The last run crashed: say so where the player is looking, with the log
-                     one click away. -->
-                <Border Classes="panel" Padding="14" IsVisible="{Binding HasGameCrashed}"
-                        BorderBrush="{DynamicResource DangerBrush}">
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                        <TextBlock Text="{Binding GameCrashNotice}" TextWrapping="Wrap"
-                                   VerticalAlignment="Center"/>
-                        <Button Grid.Column="1" Classes="ghost small"
-                                Content="{DynamicResource Game_OpenLog}"
-                                Command="{Binding OpenLastGameLogCommand}"/>
-                    </Grid>
-                </Border>
-
-                <!-- Launch progress. Reserved space, so appearing does not shove the
-                     buttons down under the cursor. -->
-                <Border Classes="panel" Padding="14" IsVisible="{Binding ShowLaunchProgress}">
-                    <StackPanel Spacing="10">
-                        <TextBlock Text="{Binding Status}" TextWrapping="Wrap"/>
-                        <ProgressBar Value="{Binding Progress}" Minimum="0" Maximum="100" Height="6"/>
-                    </StackPanel>
-                </Border>
-
-                <Button Classes="ghost small" HorizontalAlignment="Left"
-                        Content="{DynamicResource Game_OpenConsole}"
-                        IsVisible="{Binding ShowDeveloperConsole}"
-                        Command="{Binding SelectSectionCommand}" CommandParameter="Console"/>
-            </StackPanel>
-
-            <!-- Profile -->
-            <Border Grid.Column="1" Classes="card" VerticalAlignment="Top">
-                <StackPanel Spacing="12">
-                    <TextBlock Text="{DynamicResource Game_Nickname}" Classes="label"/>
-
-                    <StackPanel Orientation="Horizontal" Spacing="12">
-                        <Border Width="56" Height="56" CornerRadius="8" Background="#2A2028"
-                                ClipToBounds="True">
-                            <Image Source="{Binding Avatar}" Stretch="Uniform" Width="56" Height="56"/>
-                        </Border>
-                        <StackPanel VerticalAlignment="Center" Spacing="2">
-                            <TextBlock Text="{Binding Username}" FontWeight="SemiBold" FontSize="15"
-                                       TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Text="{DynamicResource Game_OfflineMode}" Classes="faint"/>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="{Binding SelectedInstance.VersionId, TargetNullValue=—}" Classes="muted"/>
+                            <TextBlock Text="·" Classes="muted"/>
+                            <TextBlock Text="{Binding SelectedInstance.Loader}" Classes="muted"/>
+                            <TextBlock Text="·" Classes="muted"/>
+                            <TextBlock Classes="muted"
+                                       Text="{Binding BuildModCount, Converter={x:Static conv:ModCountConverter.Instance}}"/>
                         </StackPanel>
                     </StackPanel>
 
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
-                        <TextBox Text="{Binding Username}"
-                                 Watermark="{DynamicResource Game_NicknameOwn}"/>
+                    <!-- Launch. One primary action; joining the server is an extra, not the
+                         headline - the launcher is not a billboard for one server. -->
+                    <StackPanel Spacing="14">
+                        <Button Classes="primary hero" HorizontalAlignment="Left"
+                                Command="{Binding PlayCommand}" IsEnabled="{Binding !IsBusy}">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <PathIcon Data="{StaticResource IconPlay}" Classes="large"/>
+                                <TextBlock Text="{DynamicResource Game_Play}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
 
-                        <!-- One click for a different name, so the default is never
-                             something the player is stuck with. -->
-                        <Button Grid.Column="1" Classes="ghost small"
-                                Content="&#x21BB;"
-                                Command="{Binding RerollNicknameCommand}"
-                                ToolTip.Tip="{DynamicResource Game_NicknameReroll}"/>
-                    </Grid>
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Button Classes="ghost"
+                                    Command="{Binding PlayOnServerCommand}"
+                                    IsEnabled="{Binding !IsBusy}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <PathIcon Data="{StaticResource IconServer}" Classes="small"/>
+                                    <TextBlock Text="{DynamicResource Game_PlayOnServer}"/>
+                                </StackPanel>
+                            </Button>
+                            <TextBlock Text="{Binding ServerJoinHint}" Classes="faint"
+                                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
 
-                    <TextBlock Text="{DynamicResource Game_NicknameRule}" Classes="faint"
-                               TextWrapping="Wrap"/>
-
-                    <Border Classes="hairline"/>
-
-                    <StackPanel Spacing="8">
-                        <TextBlock Text="{DynamicResource Game_Nicknames}" Classes="faint"/>
-                        <ItemsControl ItemsSource="{Binding Nicknames}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <WrapPanel/>
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="sys:String">
-                                    <Button Classes="ghost small" Margin="0,0,6,6" Content="{Binding}"
-                                            Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).ApplyNicknameCommand}"
-                                            CommandParameter="{Binding}"/>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-
-                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
-                            <TextBox Text="{Binding NewNickname}"
-                                     Watermark="{DynamicResource Game_NicknameHint}"/>
-                            <Button Grid.Column="1" Classes="ghost small"
-                                    Content="{DynamicResource Game_SaveNickname}"
-                                    Command="{Binding SaveNicknameCommand}"/>
-                            <Button Grid.Column="2" Classes="danger small"
-                                    Content="{DynamicResource Game_RemoveNickname}"
-                                    Command="{Binding RemoveNicknameCommand}"
-                                    CommandParameter="{Binding Username}"/>
-                        </Grid>
+                        <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsBuildSyncBusy}">
+                            <PathIcon Data="{StaticResource IconDownload}" Classes="small gold"/>
+                            <TextBlock Classes="gold" TextWrapping="Wrap" VerticalAlignment="Center"
+                                       Text="{DynamicResource Builds_SyncBusy}"/>
+                        </StackPanel>
                     </StackPanel>
+
+                    <!-- The last run crashed: say so where the player is looking, with the log
+                         one click away. -->
+                    <Border Classes="panel" Padding="16" IsVisible="{Binding HasGameCrashed}" MaxWidth="560"
+                            HorizontalAlignment="Left">
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                            <PathIcon Data="{StaticResource IconWarning}" Foreground="{DynamicResource DangerBrush}"
+                                      VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="{Binding GameCrashNotice}" TextWrapping="Wrap"
+                                       VerticalAlignment="Center"/>
+                            <Button Grid.Column="2" Classes="ghost small"
+                                    Content="{DynamicResource Game_OpenLog}"
+                                    Command="{Binding OpenLastGameLogCommand}"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Launch progress. -->
+                    <Border Classes="panel" Padding="16" IsVisible="{Binding ShowLaunchProgress}" MaxWidth="560"
+                            HorizontalAlignment="Left">
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="{Binding Status}" TextWrapping="Wrap"/>
+                            <ProgressBar Value="{Binding Progress}" Minimum="0" Maximum="100" Height="6"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Button Classes="plain small" HorizontalAlignment="Left"
+                            IsVisible="{Binding ShowDeveloperConsole}"
+                            Command="{Binding SelectSectionCommand}" CommandParameter="Console">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <PathIcon Data="{StaticResource IconConsole}" Classes="small"/>
+                            <TextBlock Text="{DynamicResource Game_OpenConsole}"/>
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
-            </Border>
-        </Grid>
-    </ScrollViewer>
+
+                <!-- ======== Player ======== -->
+                <Border Grid.Column="1" Classes="card" VerticalAlignment="Center">
+                    <StackPanel Spacing="14">
+                        <StackPanel Orientation="Horizontal" Spacing="14">
+                            <Border Width="56" Height="56" CornerRadius="12" Background="{DynamicResource ElevatedBrush}"
+                                    ClipToBounds="True">
+                                <Image Source="{Binding Avatar}" Stretch="Uniform" Width="56" Height="56"/>
+                            </Border>
+                            <StackPanel VerticalAlignment="Center" Spacing="3">
+                                <TextBlock Text="{Binding Username}" Classes="h3"
+                                           TextTrimming="CharacterEllipsis" MaxWidth="150"/>
+                                <TextBlock Text="{DynamicResource Game_OfflineMode}" Classes="faint"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- Shown as text; a field only on request. -->
+                        <StackPanel Spacing="8" IsVisible="{Binding !IsEditingNickname}">
+                            <Button Classes="ghost small" HorizontalAlignment="Stretch"
+                                    Command="{Binding EditNicknameCommand}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <PathIcon Data="{StaticResource IconEdit}" Classes="small"/>
+                                    <TextBlock Text="{DynamicResource Game_EditNickname}"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+
+                        <StackPanel Spacing="8" IsVisible="{Binding IsEditingNickname}">
+                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                                <TextBox Text="{Binding Username}"
+                                         Watermark="{DynamicResource Game_NicknameOwn}"/>
+                                <Button Grid.Column="1" Classes="plain small"
+                                        Command="{Binding RerollNicknameCommand}"
+                                        ToolTip.Tip="{DynamicResource Game_NicknameReroll}">
+                                    <PathIcon Data="{StaticResource IconDice}" Classes="small"/>
+                                </Button>
+                                <Button Grid.Column="2" Classes="primary small"
+                                        Command="{Binding FinishEditingNicknameCommand}"
+                                        ToolTip.Tip="{DynamicResource Game_NicknameDone}">
+                                    <PathIcon Data="{StaticResource IconCheck}" Classes="small"/>
+                                </Button>
+                            </Grid>
+                            <TextBlock Text="{DynamicResource Game_NicknameRule}" Classes="faint" TextWrapping="Wrap"/>
+                        </StackPanel>
+
+                        <!-- Saved names, out of the way until asked for. -->
+                        <Button Classes="plain small" HorizontalAlignment="Left">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <PathIcon Data="{StaticResource IconAccount}" Classes="small"/>
+                                <TextBlock Text="{DynamicResource Game_Nicknames}"/>
+                                <PathIcon Data="{StaticResource IconChevronDown}" Classes="small"/>
+                            </StackPanel>
+                            <Button.Flyout>
+                                <Flyout Placement="Bottom">
+                                    <StackPanel Spacing="10" Width="260">
+                                        <ItemsControl ItemsSource="{Binding Nicknames}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <WrapPanel/>
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="sys:String">
+                                                    <Button Classes="ghost small" Margin="0,0,6,6" Content="{Binding}"
+                                                            Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).ApplyNicknameCommand}"
+                                                            CommandParameter="{Binding}"/>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                            <TextBox Text="{Binding NewNickname}"
+                                                     Watermark="{DynamicResource Game_NicknameHint}"/>
+                                            <Button Grid.Column="1" Classes="ghost small"
+                                                    Content="{DynamicResource Game_SaveNickname}"
+                                                    Command="{Binding SaveNicknameCommand}"/>
+                                        </Grid>
+
+                                        <Button Classes="plain small" HorizontalAlignment="Left"
+                                                Content="{DynamicResource Game_RemoveCurrentNickname}"
+                                                Command="{Binding RemoveNicknameCommand}"
+                                                CommandParameter="{Binding Username}"/>
+                                    </StackPanel>
+                                </Flyout>
+                            </Button.Flyout>
+                        </Button>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </ScrollViewer>
+    </Panel>
 </UserControl>

@@ -1,7 +1,10 @@
-﻿<Styles xmlns="https://github.com/avaloniaui"
+<Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- ===================== Typography ===================== -->
+    <!-- ===================== Typography =====================
+         One scale, used everywhere: 26 / 18 / 15 for headings, 13 for text, 12 for the
+         quiet parts. Before this, almost every caption was 11px grey and nothing on a page
+         read as its title. -->
 
     <Style Selector="Window">
         <Setter Property="Background" Value="{DynamicResource AppBgBrush}"/>
@@ -18,10 +21,33 @@
         <Setter Property="TextWrapping" Value="Wrap"/>
     </Style>
 
-    <!-- Small uppercase label: the "technical" accent -->
+    <Style Selector="TextBlock.h1">
+        <Setter Property="FontSize" Value="26"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="LetterSpacing" Value="-0.3"/>
+    </Style>
+
+    <Style Selector="TextBlock.h2">
+        <Setter Property="FontSize" Value="18"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <Style Selector="TextBlock.h3">
+        <Setter Property="FontSize" Value="15"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <!-- The one large number of a metric tile. -->
+    <Style Selector="TextBlock.value">
+        <Setter Property="FontSize" Value="24"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="LetterSpacing" Value="-0.5"/>
+    </Style>
+
+    <!-- Small uppercase eyebrow above a block. Not a heading: it labels, it does not title. -->
     <Style Selector="TextBlock.label">
         <Setter Property="FontSize" Value="11"/>
-        <Setter Property="LetterSpacing" Value="1.1"/>
+        <Setter Property="LetterSpacing" Value="1.2"/>
         <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
     </Style>
 
@@ -32,7 +58,7 @@
 
     <Style Selector="TextBlock.faint">
         <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
-        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="FontSize" Value="12"/>
     </Style>
 
     <Style Selector="TextBlock.title">
@@ -53,21 +79,58 @@
         <Setter Property="Foreground" Value="{DynamicResource GoldBrush}"/>
     </Style>
 
-    <!-- ===================== Surfaces ===================== -->
+    <!-- ===================== Icons ===================== -->
+
+    <Style Selector="PathIcon">
+        <Setter Property="Width" Value="16"/>
+        <Setter Property="Height" Value="16"/>
+    </Style>
+
+    <Style Selector="PathIcon.small">
+        <Setter Property="Width" Value="13"/>
+        <Setter Property="Height" Value="13"/>
+    </Style>
+
+    <Style Selector="PathIcon.large">
+        <Setter Property="Width" Value="22"/>
+        <Setter Property="Height" Value="22"/>
+    </Style>
+
+    <Style Selector="PathIcon.muted">
+        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+    </Style>
+
+    <Style Selector="PathIcon.accent">
+        <Setter Property="Foreground" Value="{DynamicResource AccentHoverBrush}"/>
+    </Style>
+
+    <Style Selector="PathIcon.gold">
+        <Setter Property="Foreground" Value="{DynamicResource GoldBrush}"/>
+    </Style>
+
+    <!-- ===================== Surfaces =====================
+         Depth comes from tone, not from lines: a card is a lighter slab on the background,
+         a panel a lighter slab on the card. Borders were on everything and made the whole
+         window read as a grid of identical grey boxes. -->
 
     <Style Selector="Border.card">
         <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
-        <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="CornerRadius" Value="10"/>
-        <Setter Property="Padding" Value="16"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="CornerRadius" Value="12"/>
+        <Setter Property="Padding" Value="20"/>
     </Style>
 
     <Style Selector="Border.panel">
         <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
-        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="CornerRadius" Value="8"/>
+    </Style>
+
+    <!-- One figure with its caption; several of them make a row of metrics. -->
+    <Style Selector="Border.tile">
+        <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
+        <Setter Property="CornerRadius" Value="10"/>
+        <Setter Property="Padding" Value="14,12"/>
     </Style>
 
     <!-- Small pill that says what something is: "From the catalog", "Installed". -->
@@ -94,21 +157,6 @@
         <Setter Property="Opacity" Value="0.55"/>
     </Style>
 
-    <!-- A quiet remove button that only turns red when aimed at. -->
-    <Style Selector="Button.icon-danger">
-        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
-        <Setter Property="MinWidth" Value="30"/>
-        <Setter Property="Padding" Value="8,4"/>
-    </Style>
-    <Style Selector="Button.icon-danger:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
-    </Style>
-
-    <Style Selector="MenuFlyoutPresenter">
-        <Setter Property="Background" Value="{DynamicResource ElevatedBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
-        <Setter Property="CornerRadius" Value="8"/>
-    </Style>
     <Style Selector="Border.hairline">
         <Setter Property="Height" Value="1"/>
         <Setter Property="Background" Value="{DynamicResource AccentHairlineBrush}"/>
@@ -119,13 +167,25 @@
         <Setter Property="Height" Value="1"/>
     </Style>
 
+    <Style Selector="MenuFlyoutPresenter">
+        <Setter Property="Background" Value="{DynamicResource ElevatedBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
+        <Setter Property="CornerRadius" Value="8"/>
+    </Style>
+
+    <Style Selector="FlyoutPresenter">
+        <Setter Property="Background" Value="{DynamicResource ElevatedBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
+        <Setter Property="CornerRadius" Value="10"/>
+        <Setter Property="Padding" Value="14"/>
+    </Style>
+
     <!-- ===================== Buttons ===================== -->
 
     <Style Selector="Button">
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
-        <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushSubtle}"/>
-        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="CornerRadius" Value="8"/>
         <Setter Property="Padding" Value="14,8"/>
         <Setter Property="FontSize" Value="13"/>
         <Setter Property="HorizontalContentAlignment" Value="Center"/>
@@ -136,7 +196,6 @@
 
     <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushSubtle}"/>
     </Style>
 
     <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter">
@@ -144,7 +203,7 @@
     </Style>
 
     <Style Selector="Button:disabled /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
         <Setter Property="Opacity" Value="0.5"/>
     </Style>
 
@@ -156,22 +215,30 @@
 
     <Style Selector="Button.primary /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
     </Style>
 
     <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}"/>
     </Style>
 
     <Style Selector="Button.primary:pressed /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Background" Value="{DynamicResource AccentPressedBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource AccentPressedBrush}"/>
     </Style>
 
-    <!-- Secondary: transparent with a gold hairline -->
+    <!-- The one big button of the main screen. -->
+    <Style Selector="Button.hero">
+        <Setter Property="Height" Value="60"/>
+        <Setter Property="MinWidth" Value="320"/>
+        <Setter Property="FontSize" Value="18"/>
+        <Setter Property="CornerRadius" Value="14"/>
+        <Setter Property="Padding" Value="36,0"/>
+    </Style>
+
+    <!-- Secondary: no fill, a quiet outline that warms on hover -->
     <Style Selector="Button.ghost">
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
     </Style>
 
     <Style Selector="Button.ghost /template/ ContentPresenter#PART_ContentPresenter">
@@ -184,18 +251,58 @@
         <Setter Property="BorderBrush" Value="{DynamicResource GoldMutedBrush}"/>
     </Style>
 
+    <!-- Bare: only text or an icon, a background appears on hover. -->
+    <Style Selector="Button.plain">
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+        <Setter Property="Padding" Value="8,6"/>
+    </Style>
+
+    <Style Selector="Button.plain /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent"/>
+    </Style>
+
+    <Style Selector="Button.plain:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
+    </Style>
+
+    <Style Selector="Button.danger">
+        <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}"/>
+    </Style>
+
     <Style Selector="Button.danger /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}"/>
     </Style>
 
-    <Style Selector="Button.danger">
-        <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
-    </Style>
-
     <Style Selector="Button.small">
         <Setter Property="Padding" Value="10,5"/>
         <Setter Property="FontSize" Value="12"/>
+    </Style>
+
+    <!-- A quiet remove button that only turns red when aimed at. -->
+    <Style Selector="Button.icon-danger">
+        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+        <Setter Property="MinWidth" Value="30"/>
+        <Setter Property="Padding" Value="8,4"/>
+    </Style>
+    <Style Selector="Button.icon-danger:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
+    </Style>
+
+    <!-- A tile that is a link: icon, title, address. -->
+    <Style Selector="Button.link-tile">
+        <Setter Property="Padding" Value="14,12"/>
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+        <Setter Property="CornerRadius" Value="10"/>
+    </Style>
+    <Style Selector="Button.link-tile /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
+    </Style>
+    <Style Selector="Button.link-tile:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource ElevatedBrush}"/>
     </Style>
 
     <!-- ===================== Sidebar navigation ===================== -->
@@ -204,8 +311,8 @@
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
-        <Setter Property="CornerRadius" Value="7"/>
-        <Setter Property="Padding" Value="12,10"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="Padding" Value="12,9"/>
         <Setter Property="Margin" Value="0,1"/>
         <Setter Property="FontSize" Value="13"/>
         <Setter Property="HorizontalAlignment" Value="Stretch"/>
@@ -218,12 +325,21 @@
         <Setter Property="BorderThickness" Value="0"/>
     </Style>
 
+    <Style Selector="Button.nav PathIcon">
+        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+    </Style>
+
     <Style Selector="Button.nav:pointerover /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
     </Style>
 
     <Style Selector="Button.nav.active">
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <Style Selector="Button.nav.active PathIcon">
+        <Setter Property="Foreground" Value="{DynamicResource AccentHoverBrush}"/>
     </Style>
 
     <Style Selector="Button.nav.active /template/ ContentPresenter#PART_ContentPresenter">
@@ -273,13 +389,14 @@
     <Style Selector="Button.update-row">
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
         <Setter Property="FontSize" Value="12"/>
-        <Setter Property="Padding" Value="8,7"/>
+        <Setter Property="Padding" Value="10,7"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
     </Style>
 
     <Style Selector="Button.update-row /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
     </Style>
 
     <Style Selector="Button.update-row:pointerover /template/ ContentPresenter#PART_ContentPresenter">
@@ -294,16 +411,16 @@
 
     <Style Selector="Button.update-row.available /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
     </Style>
 
     <Style Selector="Button.update-row.available:pointerover /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}"/>
     </Style>
 
-    <!-- Disabled inputs have to read as disabled: the backup sub-options stayed fully
-         legible with the feature switched off, so they looked available. Targeted at leaf
-         controls rather than ":disabled" alone - a blanket rule dims a disabled container
-         and then dims its children again on top. -->
+    <!-- Disabled inputs have to read as disabled. Targeted at leaf controls rather than
+         ":disabled" alone - a blanket rule dims a disabled container and then dims its
+         children again on top. -->
     <Style Selector="CheckBox:disabled">
         <Setter Property="Opacity" Value="0.45"/>
     </Style>
@@ -323,14 +440,14 @@
     <!-- ===================== Inputs ===================== -->
 
     <Style Selector="TextBox">
-        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="CornerRadius" Value="8"/>
         <Setter Property="Padding" Value="10,7"/>
-        <Setter Property="MinHeight" Value="34"/>
+        <Setter Property="MinHeight" Value="36"/>
     </Style>
 
     <Style Selector="ComboBox">
-        <Setter Property="CornerRadius" Value="6"/>
-        <Setter Property="MinHeight" Value="34"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="MinHeight" Value="36"/>
         <Setter Property="Padding" Value="10,5"/>
     </Style>
 
@@ -340,8 +457,12 @@
     </Style>
 
     <Style Selector="NumericUpDown">
-        <Setter Property="CornerRadius" Value="6"/>
-        <Setter Property="MinHeight" Value="34"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="MinHeight" Value="36"/>
+    </Style>
+
+    <Style Selector="Slider">
+        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
     </Style>
 
     <!-- ===================== Lists ===================== -->
@@ -353,24 +474,24 @@
     </Style>
 
     <Style Selector="ListBoxItem">
-        <Setter Property="Padding" Value="10,7"/>
+        <Setter Property="Padding" Value="10,8"/>
         <Setter Property="Margin" Value="0,1"/>
-        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="CornerRadius" Value="8"/>
     </Style>
 
     <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
-        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="CornerRadius" Value="8"/>
     </Style>
 
     <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Background" Value="{DynamicResource ElevatedBrush}"/>
-        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="CornerRadius" Value="8"/>
     </Style>
 
     <Style Selector="ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
-        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="CornerRadius" Value="8"/>
     </Style>
 
     <!-- ===================== Progress ===================== -->
@@ -386,13 +507,21 @@
 
     <Style Selector="Button.chrome">
         <Setter Property="Width" Value="44"/>
-        <Setter Property="Height" Value="32"/>
+        <Setter Property="Height" Value="34"/>
         <Setter Property="Padding" Value="0"/>
         <Setter Property="CornerRadius" Value="0"/>
-        <Setter Property="FontSize" Value="12"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+    </Style>
+
+    <Style Selector="Button.chrome /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent"/>
+    </Style>
+
+    <Style Selector="Button.chrome PathIcon">
+        <Setter Property="Width" Value="12"/>
+        <Setter Property="Height" Value="12"/>
     </Style>
 
     <Style Selector="Button.chrome:pointerover /template/ ContentPresenter#PART_ContentPresenter">
@@ -401,17 +530,6 @@
 
     <Style Selector="Button.chrome-close:pointerover /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Background" Value="{DynamicResource DangerBrush}"/>
-    </Style>
-
-    <Style Selector="Button.chrome-close">
-        <Setter Property="Width" Value="44"/>
-        <Setter Property="Height" Value="32"/>
-        <Setter Property="Padding" Value="0"/>
-        <Setter Property="CornerRadius" Value="0"/>
-        <Setter Property="FontSize" Value="12"/>
-        <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
     </Style>
 
 </Styles>
