@@ -599,10 +599,6 @@
     <x:String x:Key="Content_Mods">Mods</x:String>
     <x:String x:Key="Content_ResourcePacks">Resource packs</x:String>
     <x:String x:Key="Content_Shaders">Shaders</x:String>
-    <x:String x:Key="Content_ResourcePack">resource pack</x:String>
-    <x:String x:Key="Content_Shader">shader</x:String>
-    <x:String x:Key="Mods_SummaryPacks">resource packs: {0}</x:String>
-    <x:String x:Key="Mods_SummaryShaders">shaders: {0}</x:String>
     <x:String x:Key="Category_16x">16x</x:String>
     <x:String x:Key="Category_32x">32x</x:String>
     <x:String x:Key="Category_48x">48x</x:String>
@@ -690,4 +686,48 @@
     <!-- Update diagnostics -->
     <x:String x:Key="Settings_UpdateOutcomes">Update checks over 7 days:</x:String>
 
+    <!-- Resource packs and shaders on their own tabs -->
+    <x:String x:Key="Builds_TabPacks">Resource packs</x:String>
+    <x:String x:Key="Builds_TabShaders">Shaders</x:String>
+    <x:String x:Key="Packs_Hint">Enabled packs apply top to bottom: the top one overrides the rest. Order and state are written to options.txt, and the game reads them at start.</x:String>
+    <x:String x:Key="Packs_OpenFolder">Resource packs folder</x:String>
+    <x:String x:Key="Packs_FromCatalog">From the catalog</x:String>
+    <x:String x:Key="Packs_EnabledHeader">Enabled · {0}</x:String>
+    <x:String x:Key="Packs_DisabledHeader">Disabled · {0}</x:String>
+    <x:String x:Key="Packs_Empty">No resource packs yet. Add some from the Modrinth catalog, or drop a .zip into the resource packs folder.</x:String>
+    <x:String x:Key="Packs_Pick">Pick a pack to see its description, format and where it came from.</x:String>
+    <x:String x:Key="Packs_StateOn">enabled · #{0}</x:String>
+    <x:String x:Key="Packs_StateOff">disabled</x:String>
+    <x:String x:Key="Packs_DescriptionFrom">description from pack.mcmeta</x:String>
+    <x:String x:Key="Packs_NoDescription">The author left no description.</x:String>
+    <x:String x:Key="Packs_Format">Pack format</x:String>
+    <x:String x:Key="Packs_FormatUnknown">not declared</x:String>
+    <x:String x:Key="Packs_Fits">fits {0}</x:String>
+    <x:String x:Key="Packs_Mismatch">made for another version — may look off</x:String>
+    <x:String x:Key="Packs_Size">Size</x:String>
+    <x:String x:Key="Packs_Source">Source</x:String>
+    <x:String x:Key="Packs_SourceCatalog">server catalog</x:String>
+    <x:String x:Key="Packs_SourceModrinth">Modrinth</x:String>
+    <x:String x:Key="Packs_SourceModpack">from a modpack</x:String>
+    <x:String x:Key="Packs_SourceManual">added by hand</x:String>
+    <x:String x:Key="Packs_OnModrinth">On Modrinth</x:String>
+    <x:String x:Key="Packs_Delete">Delete</x:String>
+    <x:String x:Key="Packs_MoveUp">Move up</x:String>
+    <x:String x:Key="Packs_MoveDown">Move down</x:String>
+    <x:String x:Key="Packs_Enable">Enable</x:String>
+    <x:String x:Key="Packs_Disable">Disable</x:String>
+    <x:String x:Key="Packs_Locked">Packs stay as they are while the game runs — it overwrites the settings on exit</x:String>
+    <x:String x:Key="Shaders_Hint">Iris loads the active shader when the game starts. One shader at a time; "No shaders" turns them off entirely.</x:String>
+    <x:String x:Key="Shaders_OpenFolder">Shaders folder</x:String>
+    <x:String x:Key="Shaders_FromCatalog">From the catalog</x:String>
+    <x:String x:Key="Shaders_None">No shaders</x:String>
+    <x:String x:Key="Shaders_NoneHint">The game starts without shaders</x:String>
+    <x:String x:Key="Shaders_Active">active</x:String>
+    <x:String x:Key="Shaders_Activate">Make active</x:String>
+    <x:String x:Key="Shaders_Empty">No shaders yet. Add some from the Modrinth catalog, or drop a .zip into the shaders folder.</x:String>
+    <x:String x:Key="Shaders_NeedIris">Shaders need the Iris mod — this build has none, or it is switched off.</x:String>
+    <x:String x:Key="Shaders_FindIris">Find Iris in the catalog</x:String>
+    <x:String x:Key="Shaders_Delete">Delete</x:String>
+    <x:String x:Key="Error_Packs">Failed to change the resource packs: {0}</x:String>
+    <x:String x:Key="Error_Shaders">Failed to change the shaders: {0}</x:String>
 </ResourceDictionary>

@@ -599,10 +599,6 @@
     <x:String x:Key="Content_Mods">Моды</x:String>
     <x:String x:Key="Content_ResourcePacks">Ресурспаки</x:String>
     <x:String x:Key="Content_Shaders">Шейдеры</x:String>
-    <x:String x:Key="Content_ResourcePack">ресурспак</x:String>
-    <x:String x:Key="Content_Shader">шейдер</x:String>
-    <x:String x:Key="Mods_SummaryPacks">ресурспаков: {0}</x:String>
-    <x:String x:Key="Mods_SummaryShaders">шейдеров: {0}</x:String>
     <x:String x:Key="Category_16x">16x</x:String>
     <x:String x:Key="Category_32x">32x</x:String>
     <x:String x:Key="Category_48x">48x</x:String>
@@ -690,4 +686,48 @@
     <!-- Update diagnostics -->
     <x:String x:Key="Settings_UpdateOutcomes">Проверки обновлений за 7 дней:</x:String>
 
+    <!-- Resource packs and shaders on their own tabs -->
+    <x:String x:Key="Builds_TabPacks">Ресурспаки</x:String>
+    <x:String x:Key="Builds_TabShaders">Шейдеры</x:String>
+    <x:String x:Key="Packs_Hint">Включённые паки применяются сверху вниз: верхний перекрывает остальные. Порядок и включение пишутся в options.txt — игра прочитает их при запуске.</x:String>
+    <x:String x:Key="Packs_OpenFolder">Папка ресурспаков</x:String>
+    <x:String x:Key="Packs_FromCatalog">Из каталога</x:String>
+    <x:String x:Key="Packs_EnabledHeader">Включены · {0}</x:String>
+    <x:String x:Key="Packs_DisabledHeader">Выключены · {0}</x:String>
+    <x:String x:Key="Packs_Empty">Ресурспаков пока нет. Их можно добавить из каталога Modrinth или положить .zip в папку ресурспаков.</x:String>
+    <x:String x:Key="Packs_Pick">Выберите пак — здесь появится его описание, формат и откуда он взялся.</x:String>
+    <x:String x:Key="Packs_StateOn">включён · {0}-й</x:String>
+    <x:String x:Key="Packs_StateOff">выключен</x:String>
+    <x:String x:Key="Packs_DescriptionFrom">описание из pack.mcmeta</x:String>
+    <x:String x:Key="Packs_NoDescription">Автор не оставил описания.</x:String>
+    <x:String x:Key="Packs_Format">Формат пака</x:String>
+    <x:String x:Key="Packs_FormatUnknown">не указан</x:String>
+    <x:String x:Key="Packs_Fits">подходит для {0}</x:String>
+    <x:String x:Key="Packs_Mismatch">сделан для другой версии — может выглядеть не так</x:String>
+    <x:String x:Key="Packs_Size">Размер</x:String>
+    <x:String x:Key="Packs_Source">Откуда</x:String>
+    <x:String x:Key="Packs_SourceCatalog">каталог сервера</x:String>
+    <x:String x:Key="Packs_SourceModrinth">Modrinth</x:String>
+    <x:String x:Key="Packs_SourceModpack">из модпака</x:String>
+    <x:String x:Key="Packs_SourceManual">добавлен вручную</x:String>
+    <x:String x:Key="Packs_OnModrinth">На Modrinth</x:String>
+    <x:String x:Key="Packs_Delete">Удалить</x:String>
+    <x:String x:Key="Packs_MoveUp">Выше</x:String>
+    <x:String x:Key="Packs_MoveDown">Ниже</x:String>
+    <x:String x:Key="Packs_Enable">Включить</x:String>
+    <x:String x:Key="Packs_Disable">Выключить</x:String>
+    <x:String x:Key="Packs_Locked">Пока игра запущена, паки не меняются — она перезапишет настройки при выходе</x:String>
+    <x:String x:Key="Shaders_Hint">Активный шейдер загружает Iris при старте игры. Один шейдер за раз; «Без шейдеров» выключает их совсем.</x:String>
+    <x:String x:Key="Shaders_OpenFolder">Папка шейдеров</x:String>
+    <x:String x:Key="Shaders_FromCatalog">Из каталога</x:String>
+    <x:String x:Key="Shaders_None">Без шейдеров</x:String>
+    <x:String x:Key="Shaders_NoneHint">Игра запустится без шейдеров</x:String>
+    <x:String x:Key="Shaders_Active">активен</x:String>
+    <x:String x:Key="Shaders_Activate">Сделать активным</x:String>
+    <x:String x:Key="Shaders_Empty">Шейдеров пока нет. Их можно добавить из каталога Modrinth или положить .zip в папку шейдеров.</x:String>
+    <x:String x:Key="Shaders_NeedIris">Для шейдеров нужен мод Iris — в этой сборке его нет или он выключен.</x:String>
+    <x:String x:Key="Shaders_FindIris">Найти Iris в каталоге</x:String>
+    <x:String x:Key="Shaders_Delete">Удалить</x:String>
+    <x:String x:Key="Error_Packs">Не удалось изменить ресурспаки: {0}</x:String>
+    <x:String x:Key="Error_Shaders">Не удалось изменить шейдеры: {0}</x:String>
 </ResourceDictionary>

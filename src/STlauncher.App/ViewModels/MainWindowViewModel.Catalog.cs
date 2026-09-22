@@ -206,11 +206,8 @@ public partial class MainWindowViewModel
 
             InstalledMods.Clear();
 
-            var files = _mods.ListMods(InstanceDirectory)
-                .Concat(_mods.ListPacks(InstanceDirectory, CatalogPlacement.ResourcePacksFolder))
-                .Concat(_mods.ListPacks(InstanceDirectory, CatalogPlacement.ShaderPacksFolder));
-
-            foreach (var mod in files)
+            // Packs and shaders live on their own tabs now; this list is jars only.
+            foreach (var mod in _mods.ListMods(InstanceDirectory))
             {
                 var record = SelectedInstance?.InstalledMods.FirstOrDefault(m =>
                     string.Equals(m.FileName, mod.FileName, StringComparison.OrdinalIgnoreCase) &&
@@ -228,23 +225,11 @@ public partial class MainWindowViewModel
                 : Localize("Mods_SummaryDisabled", "Mods in the build: {0}, switched off: {1}",
                     enabled, mods.Count - enabled);
 
-            var packs = InstalledMods.Count(m => m.Mod.Folder == CatalogPlacement.ResourcePacksFolder);
-            var shaders = InstalledMods.Count(m => m.Mod.Folder == CatalogPlacement.ShaderPacksFolder);
-
-            if (packs > 0)
-            {
-                summary += " · " + Localize("Mods_SummaryPacks", "resource packs: {0}", packs);
-            }
-
-            if (shaders > 0)
-            {
-                summary += " · " + Localize("Mods_SummaryShaders", "shaders: {0}", shaders);
-            }
-
             InstalledModsSummary = summary;
 
             OnPropertyChanged(nameof(HasNoInstalledMods));
 
+            RefreshPacks();
             RefreshBrowserInstallState();
         }
         catch (Exception ex)

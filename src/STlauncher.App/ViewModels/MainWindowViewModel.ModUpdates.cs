@@ -21,21 +21,10 @@ public partial class InstalledModItem : ObservableObject
         Record = record;
         IsCatalog = record?.Source == ModSource.Catalog;
         IsMod = string.Equals(mod.Folder, ModManager.ModsFolderName, StringComparison.OrdinalIgnoreCase);
-        KindLabel = mod.Folder switch
-        {
-            "resourcepacks" => MainWindowViewModel.Localize("Content_ResourcePack", "resource pack"),
-            "shaderpacks" => MainWindowViewModel.Localize("Content_Shader", "shader"),
-            _ => string.Empty
-        };
     }
 
-    /// <summary>A jar in mods/. Packs have no switch: the game turns them on itself.</summary>
+    /// <summary>A jar in mods/, as opposed to a pack listed elsewhere.</summary>
     public bool IsMod { get; }
-
-    /// <summary>"resource pack" / "shader" for the row; empty for a mod.</summary>
-    public string KindLabel { get; }
-
-    public bool HasKindLabel => KindLabel.Length > 0;
 
     public InstalledMod Mod { get; }
 

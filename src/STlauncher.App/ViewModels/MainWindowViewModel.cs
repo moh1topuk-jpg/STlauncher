@@ -237,7 +237,11 @@ public partial class MainWindowViewModel : ViewModelBase
 
     partial void OnIsBusyChanged(bool value) => OnPropertyChanged(nameof(ShowLaunchProgress));
 
-    partial void OnIsGameRunningChanged(bool value) => OnPropertyChanged(nameof(ShowLaunchProgress));
+    partial void OnIsGameRunningChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ShowLaunchProgress));
+        OnPropertyChanged(nameof(CanEditPacks));
+    }
 
     [ObservableProperty]
     private string _status = string.Empty;

@@ -191,8 +191,14 @@
                 <Border Grid.Row="1" Classes="panel" Padding="4" HorizontalAlignment="Left">
                     <StackPanel Orientation="Horizontal" Spacing="2">
                         <Button Classes="segment" Classes.active="{Binding IsBuildMods}"
-                                Content="{DynamicResource Builds_TabMods}"
+                                Content="{Binding ModsTabLabel}"
                                 Command="{Binding SelectBuildTabCommand}" CommandParameter="Mods"/>
+                        <Button Classes="segment" Classes.active="{Binding IsBuildResourcePacks}"
+                                Content="{Binding ResourcePacksTabLabel}"
+                                Command="{Binding SelectBuildTabCommand}" CommandParameter="ResourcePacks"/>
+                        <Button Classes="segment" Classes.active="{Binding IsBuildShaders}"
+                                Content="{Binding ShadersTabLabel}"
+                                Command="{Binding SelectBuildTabCommand}" CommandParameter="Shaders"/>
                         <Button Classes="segment" Classes.active="{Binding IsBuildCatalog}"
                                 Content="{DynamicResource Builds_TabAddMods}"
                                 Command="{Binding SelectBuildTabCommand}" CommandParameter="Catalog"/>
@@ -272,19 +278,13 @@
                                                     <!-- The switch shows the state and changes it:
                                                          one button labelled "On/Off" did neither. -->
                                                     <ToggleSwitch IsChecked="{Binding Enabled, Mode=OneWay}"
-                                                                  OnContent="" OffContent="" IsVisible="{Binding IsMod}"
+                                                                  OnContent="" OffContent=""
                                                                   MinWidth="0" VerticalAlignment="Center"
                                                                   Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).ToggleModCommand}"
                                                                   CommandParameter="{Binding}"/>
-                                                    <!-- Packs are switched on inside the game; here they are only listed. -->
-                                                    <PathIcon Data="{StaticResource IconPalette}" Classes="small muted" IsVisible="{Binding !IsMod}"
-                                                              VerticalAlignment="Center" Margin="8,0"/>
                                                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                                         <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center"
                                                                    TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding FileName}"/>
-                                                        <Border Classes="tag" IsVisible="{Binding HasKindLabel}" VerticalAlignment="Center">
-                                                            <TextBlock Text="{Binding KindLabel}"/>
-                                                        </Border>
                                                         <Border Classes="tag" IsVisible="{Binding IsCatalog}" VerticalAlignment="Center"
                                                                 ToolTip.Tip="{DynamicResource Mods_CatalogPinnedHint}">
                                                             <TextBlock Text="{DynamicResource Builds_TagCatalog}"/>
@@ -318,6 +318,340 @@
                     </Grid>
 
                     <!-- ======== Modrinth catalog: chips, cards, details on the right ======== -->
+
+                    <!-- ======== Resource packs of the build ======== -->
+                    <Grid IsVisible="{Binding IsBuildResourcePacks}" RowDefinitions="Auto,*" RowSpacing="10">
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                            <TextBlock Text="{DynamicResource Packs_Hint}" Classes="faint" TextWrapping="Wrap"
+                                       VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Classes="ghost small" VerticalAlignment="Top"
+                                    Content="{DynamicResource Packs_OpenFolder}"
+                                    Command="{Binding OpenResourcePacksFolderCommand}"/>
+                            <Button Grid.Column="2" Classes="ghost small" VerticalAlignment="Top"
+                                    Command="{Binding AddResourcePacksCommand}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <PathIcon Data="{StaticResource IconPlus}" Classes="small"/>
+                                    <TextBlock Text="{DynamicResource Packs_FromCatalog}"/>
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+
+                        <Border Grid.Row="1" Classes="panel" Padding="18" VerticalAlignment="Top"
+                                IsVisible="{Binding HasNoResourcePacks}">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="{DynamicResource Packs_Empty}" Classes="faint" TextWrapping="Wrap"/>
+                                <Button Classes="ghost small" HorizontalAlignment="Left"
+                                        Content="{DynamicResource Packs_FromCatalog}"
+                                        Command="{Binding AddResourcePacksCommand}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Grid Grid.Row="1" ColumnDefinitions="*,320" ColumnSpacing="12" IsVisible="{Binding !HasNoResourcePacks}">
+                            <ScrollViewer>
+                                <StackPanel Spacing="8">
+                                    <TextBlock Text="{Binding EnabledPacksHeader}" Classes="faint" FontSize="12" FontWeight="SemiBold"/>
+                                    <ItemsControl ItemsSource="{Binding EnabledResourcePacks}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <StackPanel Spacing="6"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:ResourcePackItem">
+                                                <Border Classes="mod-card" Classes.selected="{Binding IsSelected}" Classes.off="{Binding !IsEnabled}"
+                                                        Padding="10,8" Cursor="Hand" PointerPressed="OnPackRowPressed">
+                                                    <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
+                                                        <Border Width="40" Height="40" CornerRadius="8" ClipToBounds="True"
+                                                                Background="{DynamicResource ElevatedBrush}" VerticalAlignment="Center">
+                                                            <Panel>
+                                                                <PathIcon Data="{StaticResource IconPalette}" Classes="small muted"
+                                                                          IsVisible="{Binding !HasPreview}"/>
+                                                                <Image Source="{Binding Preview}" Stretch="UniformToFill" Width="40" Height="40"
+                                                                       IsVisible="{Binding HasPreview}"/>
+                                                            </Panel>
+                                                        </Border>
+                                                        <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                                            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis"
+                                                                       ToolTip.Tip="{Binding FileName}"/>
+                                                            <TextBlock Text="{Binding Description}" Classes="faint" FontSize="12"
+                                                                       TextTrimming="CharacterEllipsis" IsVisible="{Binding HasDescription}"/>
+                                                            <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="2">
+                                                                <TextBlock Classes="faint" FontSize="12" Text="{Binding CompatibilityLabel}"
+                                                                           IsVisible="{Binding IsFit}"/>
+                                                                <TextBlock Classes="gold" FontSize="12" Text="{Binding CompatibilityLabel}"
+                                                                           IsVisible="{Binding Mismatch}"/>
+                                                                <TextBlock Classes="faint" FontSize="12"
+                                                                           Text="{Binding Size, Converter={x:Static conv:FileSizeConverter.Instance}}"/>
+                                                                <Border Classes="tag" IsVisible="{Binding IsCatalog}"
+                                                                        ToolTip.Tip="{DynamicResource Mods_CatalogPinnedHint}">
+                                                                    <TextBlock Text="{DynamicResource Builds_TagCatalog}"/>
+                                                                </Border>
+                                                            </WrapPanel>
+                                                        </StackPanel>
+                                                        <!-- Order arrows exist only on enabled packs: order is meaningless when off. -->
+                                                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="0" VerticalAlignment="Center"
+                                                                    IsVisible="{Binding IsEnabled}">
+                                                            <Button Classes="plain small" ToolTip.Tip="{DynamicResource Packs_MoveUp}"
+                                                                    IsEnabled="{Binding !IsFirst}"
+                                                                    Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).MoveResourcePackUpCommand}"
+                                                                    CommandParameter="{Binding}">
+                                                                <PathIcon Data="{StaticResource IconArrowUp}" Classes="small"/>
+                                                            </Button>
+                                                            <Button Classes="plain small" ToolTip.Tip="{DynamicResource Packs_MoveDown}"
+                                                                    IsEnabled="{Binding !IsLast}"
+                                                                    Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).MoveResourcePackDownCommand}"
+                                                                    CommandParameter="{Binding}">
+                                                                <PathIcon Data="{StaticResource IconArrowDown}" Classes="small"/>
+                                                            </Button>
+                                                        </StackPanel>
+                                                        <ToggleSwitch Grid.Column="3" IsChecked="{Binding IsEnabled, Mode=OneWay}"
+                                                                      OnContent="" OffContent="" MinWidth="0" VerticalAlignment="Center"
+                                                                      IsEnabled="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).CanEditPacks}"
+                                                                      Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).ToggleResourcePackCommand}"
+                                                                      CommandParameter="{Binding}"/>
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <TextBlock Text="{Binding DisabledPacksHeader}" Classes="faint" FontSize="12" FontWeight="SemiBold"
+                                               Margin="0,8,0,0" IsVisible="{Binding HasDisabledResourcePacks}"/>
+                                    <ItemsControl ItemsSource="{Binding DisabledResourcePacks}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <StackPanel Spacing="6"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:ResourcePackItem">
+                                                <Border Classes="mod-card" Classes.selected="{Binding IsSelected}" Classes.off="{Binding !IsEnabled}"
+                                                        Padding="10,8" Cursor="Hand" PointerPressed="OnPackRowPressed">
+                                                    <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
+                                                        <Border Width="40" Height="40" CornerRadius="8" ClipToBounds="True"
+                                                                Background="{DynamicResource ElevatedBrush}" VerticalAlignment="Center">
+                                                            <Panel>
+                                                                <PathIcon Data="{StaticResource IconPalette}" Classes="small muted"
+                                                                          IsVisible="{Binding !HasPreview}"/>
+                                                                <Image Source="{Binding Preview}" Stretch="UniformToFill" Width="40" Height="40"
+                                                                       IsVisible="{Binding HasPreview}"/>
+                                                            </Panel>
+                                                        </Border>
+                                                        <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                                            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis"
+                                                                       ToolTip.Tip="{Binding FileName}"/>
+                                                            <TextBlock Text="{Binding Description}" Classes="faint" FontSize="12"
+                                                                       TextTrimming="CharacterEllipsis" IsVisible="{Binding HasDescription}"/>
+                                                            <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="2">
+                                                                <TextBlock Classes="faint" FontSize="12" Text="{Binding CompatibilityLabel}"
+                                                                           IsVisible="{Binding IsFit}"/>
+                                                                <TextBlock Classes="gold" FontSize="12" Text="{Binding CompatibilityLabel}"
+                                                                           IsVisible="{Binding Mismatch}"/>
+                                                                <TextBlock Classes="faint" FontSize="12"
+                                                                           Text="{Binding Size, Converter={x:Static conv:FileSizeConverter.Instance}}"/>
+                                                                <Border Classes="tag" IsVisible="{Binding IsCatalog}"
+                                                                        ToolTip.Tip="{DynamicResource Mods_CatalogPinnedHint}">
+                                                                    <TextBlock Text="{DynamicResource Builds_TagCatalog}"/>
+                                                                </Border>
+                                                            </WrapPanel>
+                                                        </StackPanel>
+                                                        <!-- Order arrows exist only on enabled packs: order is meaningless when off. -->
+                                                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="0" VerticalAlignment="Center"
+                                                                    IsVisible="{Binding IsEnabled}">
+                                                            <Button Classes="plain small" ToolTip.Tip="{DynamicResource Packs_MoveUp}"
+                                                                    IsEnabled="{Binding !IsFirst}"
+                                                                    Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).MoveResourcePackUpCommand}"
+                                                                    CommandParameter="{Binding}">
+                                                                <PathIcon Data="{StaticResource IconArrowUp}" Classes="small"/>
+                                                            </Button>
+                                                            <Button Classes="plain small" ToolTip.Tip="{DynamicResource Packs_MoveDown}"
+                                                                    IsEnabled="{Binding !IsLast}"
+                                                                    Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).MoveResourcePackDownCommand}"
+                                                                    CommandParameter="{Binding}">
+                                                                <PathIcon Data="{StaticResource IconArrowDown}" Classes="small"/>
+                                                            </Button>
+                                                        </StackPanel>
+                                                        <ToggleSwitch Grid.Column="3" IsChecked="{Binding IsEnabled, Mode=OneWay}"
+                                                                      OnContent="" OffContent="" MinWidth="0" VerticalAlignment="Center"
+                                                                      IsEnabled="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).CanEditPacks}"
+                                                                      Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).ToggleResourcePackCommand}"
+                                                                      CommandParameter="{Binding}"/>
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </ScrollViewer>
+
+                            <!-- Details of the selected pack: what the pack says about itself. -->
+                            <Border Grid.Column="1" Classes="card" Padding="16" VerticalAlignment="Top">
+                                <Panel>
+                                    <TextBlock Text="{DynamicResource Packs_Pick}" Classes="faint" TextWrapping="Wrap"
+                                               IsVisible="{Binding HasNoSelectedResourcePack}"/>
+                                    <StackPanel Spacing="12" DataContext="{Binding SelectedResourcePack}"
+                                                IsVisible="{Binding Converter={x:Static ObjectConverters.IsNotNull}}"
+                                                x:DataType="vm:ResourcePackItem">
+                                        <Border Height="150" CornerRadius="10" ClipToBounds="True"
+                                                Background="{DynamicResource ElevatedBrush}">
+                                            <Panel>
+                                                <PathIcon Data="{StaticResource IconPalette}" Classes="muted" Width="36" Height="36"
+                                                          IsVisible="{Binding !HasPreview}"/>
+                                                <Image Source="{Binding Preview}" Stretch="UniformToFill" IsVisible="{Binding HasPreview}"/>
+                                            </Panel>
+                                        </Border>
+                                        <StackPanel Spacing="2">
+                                            <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                            <TextBlock Text="{Binding StateLabel}" Classes="faint" FontSize="12"/>
+                                        </StackPanel>
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="{DynamicResource Packs_DescriptionFrom}" Classes="faint" FontSize="11"/>
+                                            <TextBlock Text="{Binding Description}" TextWrapping="Wrap" IsVisible="{Binding HasDescription}"/>
+                                            <TextBlock Text="{DynamicResource Packs_NoDescription}" Classes="faint" TextWrapping="Wrap"
+                                                       IsVisible="{Binding !HasDescription}"/>
+                                        </StackPanel>
+                                        <Border Classes="hairline"/>
+                                        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="6">
+                                            <TextBlock Text="{DynamicResource Packs_Format}" Classes="faint"/>
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                                                <TextBlock Text="{Binding FormatLabel}"/>
+                                                <TextBlock Text="{Binding CompatibilityLabel}" Classes="faint" IsVisible="{Binding IsFit}" TextWrapping="Wrap"/>
+                                                <TextBlock Text="{Binding CompatibilityLabel}" Classes="gold" IsVisible="{Binding Mismatch}" TextWrapping="Wrap"/>
+                                            </StackPanel>
+                                            <TextBlock Grid.Row="1" Text="{DynamicResource Packs_Size}" Classes="faint"/>
+                                            <TextBlock Grid.Row="1" Grid.Column="1"
+                                                       Text="{Binding Size, Converter={x:Static conv:FileSizeConverter.Instance}}"/>
+                                            <TextBlock Grid.Row="2" Text="{DynamicResource Packs_Source}" Classes="faint"/>
+                                            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SourceLabel}" TextWrapping="Wrap"/>
+                                        </Grid>
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <Button Classes="ghost small" Content="{DynamicResource Packs_OnModrinth}"
+                                                    IsVisible="{Binding HasModrinthPage}"
+                                                    Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).OpenResourcePackOnModrinthCommand}"
+                                                    CommandParameter="{Binding}"/>
+                                            <Button Classes="ghost small" Content="{DynamicResource Packs_Delete}"
+                                                    Foreground="{DynamicResource DangerBrush}"
+                                                    IsEnabled="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).CanEditPacks}"
+                                                    Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).DeleteResourcePackCommand}"
+                                                    CommandParameter="{Binding}"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Panel>
+                            </Border>
+                        </Grid>
+                    </Grid>
+
+                    <!-- ======== Shaders of the build ======== -->
+                    <Grid IsVisible="{Binding IsBuildShaders}" RowDefinitions="Auto,Auto,*" RowSpacing="10">
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                            <TextBlock Text="{DynamicResource Shaders_Hint}" Classes="faint" TextWrapping="Wrap"
+                                       VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Classes="ghost small" VerticalAlignment="Top"
+                                    Content="{DynamicResource Shaders_OpenFolder}"
+                                    Command="{Binding OpenShaderPacksFolderCommand}"/>
+                            <Button Grid.Column="2" Classes="ghost small" VerticalAlignment="Top"
+                                    Command="{Binding AddShadersCommand}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <PathIcon Data="{StaticResource IconPlus}" Classes="small"/>
+                                    <TextBlock Text="{DynamicResource Shaders_FromCatalog}"/>
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+
+                        <!-- Shaders without Iris are files in a folder; say so once, up top. -->
+                        <Border Grid.Row="1" Classes="panel" Padding="12" IsVisible="{Binding !HasIris}">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                <PathIcon Data="{StaticResource IconWarning}" Classes="small" Foreground="{DynamicResource GoldBrush}"
+                                          VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="{DynamicResource Shaders_NeedIris}" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                                <Button Grid.Column="2" Classes="ghost small" Content="{DynamicResource Shaders_FindIris}"
+                                        Command="{Binding FindIrisCommand}"/>
+                            </Grid>
+                        </Border>
+
+                        <Border Grid.Row="2" Classes="panel" Padding="18" VerticalAlignment="Top"
+                                IsVisible="{Binding HasNoShaderPacks}">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="{DynamicResource Shaders_Empty}" Classes="faint" TextWrapping="Wrap"/>
+                                <Button Classes="ghost small" HorizontalAlignment="Left"
+                                        Content="{DynamicResource Shaders_FromCatalog}"
+                                        Command="{Binding AddShadersCommand}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <ScrollViewer Grid.Row="2" IsVisible="{Binding !HasNoShaderPacks}">
+                            <StackPanel Spacing="6">
+                                <!-- "No shaders" is a row like the others, so the choice reads as one list. -->
+                                <Border Classes="mod-card" Classes.selected="{Binding NoShaderActive}" Padding="12,10">
+                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                        <Border Width="36" Height="36" CornerRadius="8" Background="{DynamicResource ElevatedBrush}">
+                                            <PathIcon Data="{StaticResource IconClose}" Classes="small muted"/>
+                                        </Border>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                                            <TextBlock Text="{DynamicResource Shaders_None}"/>
+                                            <TextBlock Text="{DynamicResource Shaders_NoneHint}" Classes="faint" FontSize="12"/>
+                                        </StackPanel>
+                                        <Border Grid.Column="2" Classes="tag accent" VerticalAlignment="Center" IsVisible="{Binding NoShaderActive}">
+                                            <TextBlock Text="{DynamicResource Shaders_Active}"/>
+                                        </Border>
+                                        <Button Grid.Column="2" Classes="ghost small" Content="{DynamicResource Shaders_Activate}"
+                                                IsVisible="{Binding !NoShaderActive}" IsEnabled="{Binding CanEditPacks}"
+                                                Command="{Binding DisableShadersCommand}"/>
+                                    </Grid>
+                                </Border>
+                                <ItemsControl ItemsSource="{Binding ShaderPacks}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Spacing="6"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:ShaderPackItem">
+                                            <Border Classes="mod-card" Classes.selected="{Binding IsActive}" Padding="12,10">
+                                                <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="10">
+                                                    <Border Width="36" Height="36" CornerRadius="8" Background="{DynamicResource ElevatedBrush}">
+                                                        <PathIcon Data="{StaticResource IconStar}" Classes="small muted"/>
+                                                    </Border>
+                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                                                        <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding FileName}"/>
+                                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                                            <TextBlock Classes="faint" FontSize="12"
+                                                                       Text="{Binding Size, Converter={x:Static conv:FileSizeConverter.Instance}}"/>
+                                                            <Border Classes="tag" IsVisible="{Binding IsCatalog}"
+                                                                    ToolTip.Tip="{DynamicResource Mods_CatalogPinnedHint}">
+                                                                <TextBlock Text="{DynamicResource Builds_TagCatalog}"/>
+                                                            </Border>
+                                                        </StackPanel>
+                                                    </StackPanel>
+                                                    <Border Grid.Column="2" Classes="tag accent" VerticalAlignment="Center" IsVisible="{Binding IsActive}">
+                                                        <TextBlock Text="{DynamicResource Shaders_Active}"/>
+                                                    </Border>
+                                                    <Button Grid.Column="2" Classes="ghost small" Content="{DynamicResource Shaders_Activate}"
+                                                            IsVisible="{Binding IsNotActive}"
+                                                            IsEnabled="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).CanEditPacks}"
+                                                            Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).ActivateShaderCommand}"
+                                                            CommandParameter="{Binding}"/>
+                                                    <Button Grid.Column="3" Classes="plain small" IsVisible="{Binding HasModrinthPage}"
+                                                            ToolTip.Tip="{DynamicResource Packs_OnModrinth}"
+                                                            Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).OpenShaderOnModrinthCommand}"
+                                                            CommandParameter="{Binding}">
+                                                        <PathIcon Data="{StaticResource IconOpenExternal}" Classes="small"/>
+                                                    </Button>
+                                                    <Button Grid.Column="4" Classes="plain small icon-danger"
+                                                            ToolTip.Tip="{DynamicResource Shaders_Delete}"
+                                                            IsEnabled="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).CanEditPacks}"
+                                                            Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).DeleteShaderCommand}"
+                                                            CommandParameter="{Binding}">
+                                                        <PathIcon Data="{StaticResource IconClose}" Classes="small"/>
+                                                    </Button>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
+
                     <Grid IsVisible="{Binding IsBuildCatalog}" RowDefinitions="Auto,Auto,*" RowSpacing="10">
 
                         <Border Classes="panel" Padding="12" IsVisible="{Binding !IsBuildConfigured}">

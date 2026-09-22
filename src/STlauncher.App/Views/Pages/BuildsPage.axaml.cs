@@ -6,6 +6,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Platform.Storage;
+using Avalonia.VisualTree;
 using STlauncher.App.ViewModels;
 
 namespace STlauncher.App.Views.Pages;
@@ -33,6 +34,25 @@ public partial class BuildsPage : UserControl
         }
 
         viewModel.OpenProjectCommand.Execute(item);
+    }
+
+    private void OnPackRowPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (sender is not Control { DataContext: ResourcePackItem item } ||
+            DataContext is not MainWindowViewModel viewModel)
+        {
+            return;
+        }
+
+        // The switch and the arrows on the row do their own thing.
+        if (e.Source is Button or ToggleSwitch ||
+            e.Source is Visual visual && visual.FindAncestorOfType<Button>() is not null ||
+            e.Source is Visual visual2 && visual2.FindAncestorOfType<ToggleSwitch>() is not null)
+        {
+            return;
+        }
+
+        viewModel.SelectResourcePackCommand.Execute(item);
     }
 
     /// <summary>

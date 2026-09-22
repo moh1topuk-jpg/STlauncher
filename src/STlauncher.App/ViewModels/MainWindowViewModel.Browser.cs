@@ -21,6 +21,12 @@ public enum BuildTab
     /// <summary>What is in the build: its mods, to switch off or remove.</summary>
     Mods,
 
+    /// <summary>Resource packs, with the order the game will apply them in.</summary>
+    ResourcePacks,
+
+    /// <summary>Shader packs, one of which Iris loads.</summary>
+    Shaders,
+
     /// <summary>Modrinth, to add more.</summary>
     Catalog,
 
@@ -134,12 +140,16 @@ public partial class MainWindowViewModel
     private BuildTab _buildTab = BuildTab.Mods;
 
     public bool IsBuildMods => BuildTab == BuildTab.Mods;
+    public bool IsBuildResourcePacks => BuildTab == BuildTab.ResourcePacks;
+    public bool IsBuildShaders => BuildTab == BuildTab.Shaders;
     public bool IsBuildCatalog => BuildTab == BuildTab.Catalog;
     public bool IsBuildSettings => BuildTab == BuildTab.Settings;
 
     partial void OnBuildTabChanged(BuildTab value)
     {
         OnPropertyChanged(nameof(IsBuildMods));
+        OnPropertyChanged(nameof(IsBuildResourcePacks));
+        OnPropertyChanged(nameof(IsBuildShaders));
         OnPropertyChanged(nameof(IsBuildCatalog));
         OnPropertyChanged(nameof(IsBuildSettings));
     }
