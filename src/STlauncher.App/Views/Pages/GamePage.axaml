@@ -242,6 +242,42 @@
                         </StackPanel>
                     </Border>
 
+                    <!-- What this version changed, once after an update. -->
+                    <Border Classes="card" Padding="16" Background="#CC141014" IsVisible="{Binding ShowWhatsNew}">
+                        <StackPanel Spacing="10">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                <PathIcon Data="{StaticResource IconStar}" Classes="gold" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="{Binding WhatsNewTitle}" Classes="h3" VerticalAlignment="Center"/>
+                                <Button Grid.Column="2" Classes="plain small" Command="{Binding DismissWhatsNewCommand}"
+                                        ToolTip.Tip="{DynamicResource WhatsNew_Close}">
+                                    <PathIcon Data="{StaticResource IconClose}" Classes="small"/>
+                                </Button>
+                            </Grid>
+                            <ScrollViewer MaxHeight="260">
+                                <ItemsControl ItemsSource="{Binding WhatsNewLines}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:WhatsNewLine">
+                                            <Panel>
+                                                <TextBlock Text="{Binding Text}" Classes="label" Margin="0,8,0,4"
+                                                           IsVisible="{Binding IsHeading}"/>
+                                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" Margin="0,0,0,6"
+                                                      IsVisible="{Binding !IsHeading}">
+                                                    <Border Width="5" Height="5" CornerRadius="3" Margin="2,7,0,0"
+                                                            Background="{DynamicResource AccentHoverBrush}" VerticalAlignment="Top"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding Text}" TextWrapping="Wrap"
+                                                               FontSize="12" LineHeight="17"
+                                                               Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                </Grid>
+                                            </Panel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                            <Button Classes="ghost small" HorizontalAlignment="Left"
+                                    Content="{DynamicResource WhatsNew_Ok}" Command="{Binding DismissWhatsNewCommand}"/>
+                        </StackPanel>
+                    </Border>
+
                     <!-- Builds found in other launchers: offered once, right where the
                          player looks first. -->
                     <Border Classes="card" Padding="16" Background="#CC1F1218" IsVisible="{Binding HasImportSuggestion}">

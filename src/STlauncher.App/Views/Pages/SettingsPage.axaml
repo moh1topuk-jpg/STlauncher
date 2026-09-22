@@ -19,8 +19,11 @@
                             IsVisible="{Binding ShowDeveloperConsole}"/>
                 </StackPanel>
 
-                <TextBlock Grid.Row="3" Text="{Binding UpdateStateLabel}" Classes="faint" Margin="10,0,0,0"
-                           TextWrapping="Wrap"/>
+                <StackPanel Grid.Row="3" Spacing="6">
+                    <Button Classes="index" Content="{DynamicResource WhatsNew_Open}"
+                            Command="{Binding OpenWhatsNewCommand}" IsVisible="{Binding HasWhatsNew}"/>
+                    <TextBlock Text="{Binding UpdateStateLabel}" Classes="faint" Margin="10,0,0,0" TextWrapping="Wrap"/>
+                </StackPanel>
             </Grid>
         </Border>
 

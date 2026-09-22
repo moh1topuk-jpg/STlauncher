@@ -331,6 +331,10 @@
 
     <x:String x:Key="Server_RangeDay">24 часа</x:String>
     <x:String x:Key="Server_RangeWeek">7 дней</x:String>
+    <x:String x:Key="WhatsNew_Title">Что нового в {0}</x:String>
+    <x:String x:Key="WhatsNew_Ok">Понятно</x:String>
+    <x:String x:Key="WhatsNew_Close">Закрыть</x:String>
+    <x:String x:Key="WhatsNew_Open">Что нового в этой версии</x:String>
     <x:String x:Key="Mods_SearchPlaceholder">Что ищем? Например: миникарта, шейдеры, оптимизация</x:String>
     <x:String x:Key="Mods_HideInstalled">Скрыть уже установленные</x:String>
     <x:String x:Key="Mods_Add">Добавить</x:String>

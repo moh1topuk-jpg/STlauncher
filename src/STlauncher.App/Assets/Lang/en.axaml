@@ -331,6 +331,10 @@
 
     <x:String x:Key="Server_RangeDay">24 hours</x:String>
     <x:String x:Key="Server_RangeWeek">7 days</x:String>
+    <x:String x:Key="WhatsNew_Title">What&apos;s new in {0}</x:String>
+    <x:String x:Key="WhatsNew_Ok">Got it</x:String>
+    <x:String x:Key="WhatsNew_Close">Close</x:String>
+    <x:String x:Key="WhatsNew_Open">What&apos;s new in this version</x:String>
     <x:String x:Key="Mods_SearchPlaceholder">Looking for? Try: minimap, shaders, optimization</x:String>
     <x:String x:Key="Mods_HideInstalled">Hide the ones already installed</x:String>
     <x:String x:Key="Mods_Add">Add</x:String>

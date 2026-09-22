@@ -292,6 +292,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         ImportSuggestionDismissed = settings.ImportSuggestionDismissed;
         AnimatedBackground = settings.AnimatedBackground;
+        LoadWhatsNew(settings.LastSeenVersion);
 
         _dismissedBuildIds.Clear();
         foreach (var dismissed in settings.DismissedBuildIds)
@@ -1058,6 +1059,7 @@ public partial class MainWindowViewModel : ViewModelBase
             DismissedBuildIds = _dismissedBuildIds.ToList(),
             ImportSuggestionDismissed = ImportSuggestionDismissed,
             AnimatedBackground = AnimatedBackground,
+            LastSeenVersion = _lastSeenVersion,
             ShowOldReleases = ShowOldReleases,
             ShowBeta = ShowBeta,
             ShowAlpha = ShowAlpha,

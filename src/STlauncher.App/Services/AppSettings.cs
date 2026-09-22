@@ -43,6 +43,9 @@ public sealed class AppSettings
     /// <summary>The drifting embers behind the main screen.</summary>
     public bool AnimatedBackground { get; set; } = true;
 
+    /// <summary>The version whose "what's new" the player has already closed.</summary>
+    public string? LastSeenVersion { get; set; }
+
     public LoaderKind Loader { get; set; } = LoaderKind.Vanilla;
 
     public string? LoaderVersion { get; set; }
