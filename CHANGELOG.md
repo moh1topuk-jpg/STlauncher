@@ -8,6 +8,8 @@
 
 ## [Не выпущено]
 
+## [0.3.4] — 2026-09-22
+
 ### Изменено
 - Анонимный пинг статистики теперь уходит после первой проверки обновлений и сообщает,
   чем она закончилась (например, «через зеркало» или «GitHub заблокирован, зеркало не
@@ -281,7 +283,8 @@
 - Бэкапы миров по событиям: раз в сутки, перед изменением модов, перед запуском.
 - Автообновление с уведомлением и установкой одной кнопкой.
 
-[Не выпущено]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.3.3...HEAD
+[Не выпущено]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.3.4...HEAD
+[0.3.4]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.3.0...v0.3.1
