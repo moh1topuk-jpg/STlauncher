@@ -42,6 +42,10 @@ public sealed class ServerStatsSnapshot
     [JsonPropertyName("ranges")]
     public Dictionary<string, ServerStatsRange> Ranges { get; set; } = new();
 
+    /// <summary>How many people use the launcher, when the collector counts the pings.</summary>
+    [JsonPropertyName("launcher")]
+    public ServerStatsLauncher? Launcher { get; set; }
+
     /// <summary>
     /// True when the payload is recent enough to show. A collector that stopped days ago
     /// would otherwise keep a frozen chart on screen forever.
@@ -66,6 +70,22 @@ public sealed class ServerStatsSnapshot
 
         return snapshot;
     }
+}
+
+/// <summary>Launcher usage the collector derives from anonymous pings. All optional.</summary>
+public sealed class ServerStatsLauncher
+{
+    /// <summary>Distinct installations that started the launcher in the last 24 hours.</summary>
+    [JsonPropertyName("usersToday")]
+    public int? UsersToday { get; set; }
+
+    [JsonPropertyName("usersWeek")]
+    public int? UsersWeek { get; set; }
+
+    [JsonPropertyName("launchesToday")]
+    public int? LaunchesToday { get; set; }
+
+    public bool HasAnything => UsersToday is not null || UsersWeek is not null;
 }
 
 public sealed class ServerStatsServer

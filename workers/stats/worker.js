@@ -16,6 +16,11 @@
  *   Secret        TOPMC_KEY       Top-Minecrafter API key
  *   Variable      SERVER_ID       server id on Top-Minecrafter (e.g. "6689")
  *   Variable      SERVER_ADDRESS  optional, used when the API reports no address
+ *
+ * Optional, for counting launcher users (see docs/monitoring.md):
+ *   Analytics Engine  USAGE           dataset "stlauncher_usage" - where launch pings land
+ *   Variable          CF_ACCOUNT_ID   the Cloudflare account id
+ *   Secret            CF_API_TOKEN    a token with "Account Analytics: Read", to query the dataset
  */
 
 const API_BASE = 'https://public-api.top-minecrafter.com/v1';
@@ -47,6 +52,13 @@ export default {
   async fetch(request, env, ctx) {
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: corsHeaders() });
+    }
+
+    // One anonymous "I started" per launch. Analytics Engine writes are free and
+    // unlimited on the Workers plan; a KV counter here would burn a write per player.
+    if (request.method === 'POST' && new URL(request.url).pathname === '/ping') {
+      ctx.waitUntil(recordPing(request, env));
+      return new Response(null, { status: 204, headers: corsHeaders() });
     }
 
     if (request.method !== 'GET' && request.method !== 'HEAD') {
@@ -112,10 +124,90 @@ async function collect(env, known) {
   state.updatedAt = now;
   state.info = info;
 
+  // Launcher usage rides along on the same schedule, so it costs no extra KV writes.
+  // A failed query keeps yesterday's numbers rather than blanking them.
+  const usage = await queryUsage(env);
+
+  if (usage) {
+    state.usage = usage;
+  }
+
   await Promise.all([
     env.STATS.put(STATE_KEY, JSON.stringify(state)),
     env.STATS.put(PAYLOAD_KEY, JSON.stringify(render(state, env, now), null, 2)),
   ]);
+}
+
+/** Stores one launch: the installation id is the only identity, and it is random. */
+async function recordPing(request, env) {
+  if (!env.USAGE) {
+    return;
+  }
+
+  try {
+    const body = await request.json();
+    const id = String(body?.id ?? '').slice(0, 64);
+
+    if (!id) {
+      return;
+    }
+
+    env.USAGE.writeDataPoint({
+      indexes: [id],
+      blobs: [id, String(body?.v ?? '').slice(0, 32), String(body?.os ?? '').slice(0, 16), String(body?.lang ?? '').slice(0, 8)],
+      doubles: [1],
+    });
+  } catch (error) {
+    console.log(`ping ignored: ${error}`);
+  }
+}
+
+/**
+ * Distinct installations and launches over a day and a week, from the pings. Needs an
+ * API token; without one the payload simply carries no launcher block.
+ */
+async function queryUsage(env) {
+  if (!env.CF_ACCOUNT_ID || !env.CF_API_TOKEN) {
+    return null;
+  }
+
+  const sql = `
+    SELECT
+      count(DISTINCT blob1) AS usersWeek,
+      countIf(timestamp > NOW() - INTERVAL '1' DAY) AS launchesToday,
+      uniqIf(blob1, timestamp > NOW() - INTERVAL '1' DAY) AS usersToday
+    FROM stlauncher_usage
+    WHERE timestamp > NOW() - INTERVAL '7' DAY`;
+
+  try {
+    const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/analytics_engine/sql`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${env.CF_API_TOKEN}` },
+      body: sql,
+    });
+
+    if (!response.ok) {
+      console.log(`usage query failed: HTTP ${response.status}`);
+      return null;
+    }
+
+    const body = await response.json();
+    const row = body?.data?.[0];
+
+    if (!row) {
+      return { usersToday: 0, usersWeek: 0, launchesToday: 0, updatedAt: Date.now() };
+    }
+
+    return {
+      usersToday: Number(row.usersToday ?? 0),
+      usersWeek: Number(row.usersWeek ?? 0),
+      launchesToday: Number(row.launchesToday ?? 0),
+      updatedAt: Date.now(),
+    };
+  } catch (error) {
+    console.log(`usage query failed: ${error}`);
+    return null;
+  }
 }
 
 async function fetchInfo(env) {
@@ -199,6 +291,14 @@ function render(state, env, now) {
     ranges: Object.fromEntries(
       Object.entries(RANGES).map(([name, range]) => [name, buildRange(state.samples, range, now)]),
     ),
+    launcher: state.usage
+      ? {
+          usersToday: state.usage.usersToday,
+          usersWeek: state.usage.usersWeek,
+          launchesToday: state.usage.launchesToday,
+          updatedAt: new Date(state.usage.updatedAt).toISOString(),
+        }
+      : null,
   };
 }
 
@@ -257,7 +357,8 @@ function numberOrNull(value) {
 function corsHeaders() {
   return {
     'access-control-allow-origin': '*',
-    'access-control-allow-methods': 'GET, HEAD, OPTIONS',
+    'access-control-allow-methods': 'GET, HEAD, POST, OPTIONS',
+    'access-control-allow-headers': 'content-type',
   };
 }
 

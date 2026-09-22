@@ -669,4 +669,18 @@
     <x:String x:Key="DataFolder_Done">Перенесено файлов: {0}. Перезапускаю лаунчер…</x:String>
     <x:String x:Key="DataFolder_Failed">Не удалось перенести данные: {0}</x:String>
 
+    <!-- Build change notice and usage statistics -->
+    <x:String x:Key="BuildChange_Title">Сборка обновлена</x:String>
+    <x:String x:Key="BuildChange_TitleFor">«{0}»: обновление из каталога</x:String>
+    <x:String x:Key="BuildChange_Version">Minecraft {0} → {1}</x:String>
+    <x:String x:Key="BuildChange_Loader">{0} → {1}</x:String>
+    <x:String x:Key="BuildChange_Added">Добавлено: {0}</x:String>
+    <x:String x:Key="BuildChange_Removed">Убрано: {0}</x:String>
+    <x:String x:Key="BuildChange_Updated">Обновлено: {0}</x:String>
+    <x:String x:Key="BuildChange_Hint">Изменения внёс владелец сервера в каталог сборки. Файлы уже на месте.</x:String>
+    <x:String x:Key="Settings_UsageStats">Анонимная статистика запусков</x:String>
+    <x:String x:Key="Settings_UsageStatsHint">Раз за запуск лаунчер отправляет на сборщик статистики случайный идентификатор установки, версию, язык и ОС — чтобы владелец сервера видел, сколько людей пользуются лаунчером. Ник, файлы и адрес не передаются.</x:String>
+    <x:String x:Key="Settings_UsageNumbers">Пользователей лаунчера: {0} за сутки · {1} за 7 дней · запусков за сутки: {2}</x:String>
+    <x:String x:Key="Settings_UsageNumbersNone">Сборщик пока не публикует статистику лаунчера (см. docs/monitoring.md).</x:String>
+
 </ResourceDictionary>

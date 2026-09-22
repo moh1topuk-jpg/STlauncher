@@ -226,6 +226,16 @@ public partial class MainWindowViewModel
     [ObservableProperty]
     private string _serverStatsSource = string.Empty;
 
+    /// <summary>"Launcher users: 42 today, 180 this week", for the owner, in the developer section.</summary>
+    public string LauncherUsageLabel => _remoteStats?.Launcher is { HasAnything: true } usage
+        ? Localize(
+            "Settings_UsageNumbers",
+            "Launcher users: {0} today · {1} over 7 days · launches today: {2}",
+            usage.UsersToday?.ToString(CultureInfo.CurrentCulture) ?? "—",
+            usage.UsersWeek?.ToString(CultureInfo.CurrentCulture) ?? "—",
+            usage.LaunchesToday?.ToString(CultureInfo.CurrentCulture) ?? "—")
+        : Localize("Settings_UsageNumbersNone", "The collector does not publish launcher usage yet (see docs/monitoring.md).");
+
     /// <summary>
     /// Manual collector address from the developer section. The catalog normally supplies
     /// it; this is the escape hatch for testing a collector before publishing it.
@@ -329,6 +339,7 @@ public partial class MainWindowViewModel
             _remoteStats = result.Snapshot;
             _remoteStatsOrigin = result.Origin;
             RefreshServerHistory();
+            OnPropertyChanged(nameof(LauncherUsageLabel));
         }
         catch (Exception ex)
         {

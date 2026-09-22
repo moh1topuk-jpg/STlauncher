@@ -276,6 +276,34 @@
                         </StackPanel>
                     </Border>
 
+                    <!-- The server owner changed the build: what is different today. -->
+                    <Border Classes="card" Padding="16" Background="#CC141014" IsVisible="{Binding HasBuildChangeNotice}">
+                        <StackPanel Spacing="10">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                <PathIcon Data="{StaticResource IconRefresh}" Classes="gold" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="{Binding BuildChangeTitle}" FontWeight="SemiBold" TextWrapping="Wrap"
+                                           VerticalAlignment="Center"/>
+                                <Button Grid.Column="2" Classes="plain small" Command="{Binding DismissBuildChangeNoticeCommand}"
+                                        ToolTip.Tip="{DynamicResource WhatsNew_Close}">
+                                    <PathIcon Data="{StaticResource IconClose}" Classes="small"/>
+                                </Button>
+                            </Grid>
+                            <ItemsControl ItemsSource="{Binding BuildChangeLines}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="sys:String">
+                                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" Margin="0,0,0,5">
+                                            <Border Width="5" Height="5" CornerRadius="3" Margin="2,7,0,0"
+                                                    Background="{DynamicResource GoldBrush}" VerticalAlignment="Top"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding}" TextWrapping="Wrap" FontSize="12" LineHeight="17"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Text="{DynamicResource BuildChange_Hint}" Classes="faint" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+
                     <!-- What this version changed, once after an update. -->
                     <Border Classes="card" Padding="16" Background="#CC141014" IsVisible="{Binding ShowWhatsNew}">
                         <StackPanel Spacing="10">

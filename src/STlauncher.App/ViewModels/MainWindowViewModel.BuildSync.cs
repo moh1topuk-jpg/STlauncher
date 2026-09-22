@@ -97,6 +97,7 @@ public partial class MainWindowViewModel
             _allInstances.Add(instance);
         }
 
+        var before = BuildSnapshot.Of(instance!);
         var changes = CatalogBuildSync.Apply(instance!, build, isNew);
 
         if (isNew || changes.Any)
@@ -111,6 +112,10 @@ public partial class MainWindowViewModel
         else if (changes.Any)
         {
             AppendConsole($"[builds] '{instance!.Name}' updated from the catalog");
+
+            // Said on the main screen, not only in the console: the owner changed the
+            // build, and the player deserves to know what is different today.
+            AnnounceBuildChanges(instance!.Name, BuildChangeNotice.Between(before, BuildSnapshot.Of(instance), CatalogItemName));
         }
 
         return instance;
@@ -395,6 +400,7 @@ public partial class MainWindowViewModel
         }
 
         var pending = new List<CatalogItem>();
+        var bumped = new List<string>();
 
         foreach (var id in enabledIds)
         {
@@ -414,10 +420,24 @@ public partial class MainWindowViewModel
                                  ModManager.ModsDirectory(directory),
                                  record.FileName));
 
-            if (CatalogSyncDecision.Decide(item, record, fileExists).NeedsInstall())
+            var action = CatalogSyncDecision.Decide(item, record, fileExists);
+
+            if (action.NeedsInstall())
             {
                 pending.Add(item);
             }
+
+            if (action == CatalogSyncAction.Update)
+            {
+                bumped.Add(item.Name);
+            }
+        }
+
+        // A pinned version moved in the catalog: that is an update the player should
+        // hear about, unlike a plain re-download of a missing file.
+        if (bumped.Count > 0 && !string.IsNullOrWhiteSpace(instance.CatalogBuildId))
+        {
+            AnnounceBuildUpdates(instance.Name, bumped);
         }
 
         if (pending.Count == 0)

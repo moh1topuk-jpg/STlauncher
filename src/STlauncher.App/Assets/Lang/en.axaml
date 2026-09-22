@@ -669,4 +669,18 @@
     <x:String x:Key="DataFolder_Done">Moved {0} file(s). Restarting the launcher…</x:String>
     <x:String x:Key="DataFolder_Failed">Could not move the data: {0}</x:String>
 
+    <!-- Build change notice and usage statistics -->
+    <x:String x:Key="BuildChange_Title">Build updated</x:String>
+    <x:String x:Key="BuildChange_TitleFor">"{0}" updated from the catalog</x:String>
+    <x:String x:Key="BuildChange_Version">Minecraft {0} → {1}</x:String>
+    <x:String x:Key="BuildChange_Loader">{0} → {1}</x:String>
+    <x:String x:Key="BuildChange_Added">Added: {0}</x:String>
+    <x:String x:Key="BuildChange_Removed">Removed: {0}</x:String>
+    <x:String x:Key="BuildChange_Updated">Updated: {0}</x:String>
+    <x:String x:Key="BuildChange_Hint">The server owner changed the build in the catalog. The files are already in place.</x:String>
+    <x:String x:Key="Settings_UsageStats">Anonymous launch statistics</x:String>
+    <x:String x:Key="Settings_UsageStatsHint">Once per launch the launcher sends the statistics collector a random installation id, the version, the language and the OS, so the server owner can see how many people use the launcher. No nickname, files or address are sent.</x:String>
+    <x:String x:Key="Settings_UsageNumbers">Launcher users: {0} today · {1} over 7 days · launches today: {2}</x:String>
+    <x:String x:Key="Settings_UsageNumbersNone">The collector does not publish launcher usage yet (see docs/monitoring.md).</x:String>
+
 </ResourceDictionary>

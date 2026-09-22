@@ -210,6 +210,26 @@ public partial class MainWindowViewModel
 
     partial void OnAnimatedBackgroundChanged(bool value) => PersistSettings();
 
+    // ===================== Usage statistics =====================
+
+    /// <summary>One anonymous ping per launch. Off means not a single request.</summary>
+    [ObservableProperty]
+    private bool _usageStats = true;
+
+    private string _installId = string.Empty;
+
+    partial void OnUsageStatsChanged(bool value) => PersistSettings();
+
+    private void ReportUsage()
+    {
+        if (!UsageStats || !_stats.IsConfigured)
+        {
+            return;
+        }
+
+        _ = _usage.ReportAsync(_stats.StatsUrl, _installId, _updates.CurrentVersion ?? "dev", Language);
+    }
+
     // ===================== Discord =====================
 
     /// <summary>"Playing Showtime" under the player's name in Discord.</summary>

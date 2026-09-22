@@ -50,6 +50,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly LauncherPaths _paths;
     private readonly GameLauncher _gameLauncher;
     private readonly DiscordPresenceService _discord;
+    private readonly UsageReporter _usage;
 
     private List<VersionSummary> _allVersions = new();
     private bool _initialized;
@@ -84,7 +85,8 @@ public partial class MainWindowViewModel : ViewModelBase
         STlauncher.Core.Import.InstanceImporter importer,
         LauncherPaths paths,
         GameLauncher gameLauncher,
-        DiscordPresenceService discord)
+        DiscordPresenceService discord,
+        UsageReporter usage)
     {
         _versions = versions;
         _launch = launch;
@@ -108,6 +110,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _paths = paths;
         _gameLauncher = gameLauncher;
         _discord = discord;
+        _usage = usage;
     }
 
     public ObservableCollection<Instance> Instances { get; } = new();
@@ -358,6 +361,9 @@ public partial class MainWindowViewModel : ViewModelBase
         ImportSuggestionDismissed = settings.ImportSuggestionDismissed;
         AnimatedBackground = settings.AnimatedBackground;
         DiscordPresence = settings.DiscordPresence;
+        UsageStats = settings.UsageStats;
+        _installId = string.IsNullOrWhiteSpace(settings.InstallId) ? Guid.NewGuid().ToString("N") : settings.InstallId!;
+        LoadBuildChangeNotice(settings.BuildChangeLines, settings.BuildChangeTitle);
         LoadWhatsNew(settings.LastSeenVersion);
 
         _dismissedBuildIds.Clear();
@@ -412,6 +418,7 @@ public partial class MainWindowViewModel : ViewModelBase
         // Right after the catalog, which is what points the check at the mirror, and
         // before anything else that could fail and leave the check never started.
         StartUpdateWatcher();
+        ReportUsage();
 
         if (_allInstances.Count == 0 && _instances.HasAnyInstanceDirectory())
         {
@@ -1150,6 +1157,10 @@ public partial class MainWindowViewModel : ViewModelBase
             ImportSuggestionDismissed = ImportSuggestionDismissed,
             AnimatedBackground = AnimatedBackground,
             DiscordPresence = DiscordPresence,
+            UsageStats = UsageStats,
+            InstallId = _installId,
+            BuildChangeLines = BuildChangeLines.ToList(),
+            BuildChangeTitle = string.IsNullOrEmpty(BuildChangeTitle) ? null : BuildChangeTitle,
             LastSeenVersion = _lastSeenVersion,
             SkinSource = SelectedSkinSource.ToString(),
             ShowOldReleases = ShowOldReleases,

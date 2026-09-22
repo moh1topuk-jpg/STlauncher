@@ -164,6 +164,12 @@
                         <CheckBox Content="{DynamicResource Settings_AnimatedBackground}" IsChecked="{Binding AnimatedBackground}"/>
 
                         <StackPanel Spacing="4">
+                            <CheckBox Content="{DynamicResource Settings_UsageStats}" IsChecked="{Binding UsageStats}"/>
+                            <TextBlock Text="{DynamicResource Settings_UsageStatsHint}" Classes="faint"
+                                       TextWrapping="Wrap" Margin="28,0,0,0"/>
+                        </StackPanel>
+
+                        <StackPanel Spacing="4">
                             <CheckBox Content="{DynamicResource Settings_DiscordPresence}" IsChecked="{Binding DiscordPresence}"/>
                             <TextBlock Text="{DynamicResource Settings_DiscordPresenceHint}" Classes="faint"
                                        TextWrapping="Wrap" Margin="28,0,0,0"/>
@@ -323,6 +329,8 @@
                             <TextBlock Text="{DynamicResource Settings_StatsUrl}" FontWeight="SemiBold"/>
                             <TextBox Text="{Binding ServerStatsUrl}" Watermark="https://name.workers.dev/"/>
                             <TextBlock Text="{DynamicResource Settings_StatsUrlHint}" Classes="faint" TextWrapping="Wrap"/>
+                            <!-- For the owner: what the pings add up to. -->
+                            <TextBlock Text="{Binding LauncherUsageLabel}" Classes="gold" TextWrapping="Wrap"/>
                         </StackPanel>
 
                         <StackPanel Spacing="8">

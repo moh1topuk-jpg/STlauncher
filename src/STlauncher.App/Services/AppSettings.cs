@@ -43,6 +43,17 @@ public sealed class AppSettings
     /// <summary>The drifting embers behind the main screen.</summary>
     public bool AnimatedBackground { get; set; } = true;
 
+    /// <summary>Lines of the "build updated" card the player has not closed yet.</summary>
+    public List<string> BuildChangeLines { get; set; } = new();
+
+    public string? BuildChangeTitle { get; set; }
+
+    /// <summary>One anonymous ping per launch, so the owner can count launcher users.</summary>
+    public bool UsageStats { get; set; } = true;
+
+    /// <summary>Random id this installation made up for itself; the only thing the ping identifies.</summary>
+    public string? InstallId { get; set; }
+
     /// <summary>"Playing Showtime" in Discord while the game runs.</summary>
     public bool DiscordPresence { get; set; } = true;
 
