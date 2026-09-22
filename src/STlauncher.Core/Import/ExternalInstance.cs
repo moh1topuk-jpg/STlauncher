@@ -8,15 +8,19 @@ public enum ExternalLauncherKind
 {
     Unknown,
 
-    /// <summary>A plain .minecraft folder: the official launcher, TLauncher and friends.</summary>
+    /// <summary>A plain .minecraft folder: the official launcher, TLauncher, Legacy Launcher and friends.</summary>
     DotMinecraft,
 
     Prism,
+    PolyMc,
     MultiMc,
     CurseForge,
     Modrinth,
     GdLauncher,
-    AtLauncher
+    AtLauncher,
+    Ftb,
+    Technic,
+    Xmcl
 }
 
 /// <summary>Why a found folder cannot be imported as it stands.</summary>
@@ -44,6 +48,12 @@ public enum ExternalInstanceProblem
 /// Where saves, mods and configs live. Several builds of a .minecraft-style launcher
 /// share one, which is worth telling the player before they import all of them.
 /// </param>
+/// <param name="VersionId">
+/// The id the build launches by. For a .minecraft profile that is the profile's id (a
+/// free-form name); for every other launcher it is the Minecraft version itself. Empty
+/// when nothing on disk says which version the build is - the player picks one after
+/// importing.
+/// </param>
 /// <param name="VersionJsonPath">
 /// The profile the game is launched by. Importing copies this (a few hundred kilobytes)
 /// rather than the whole instance.
@@ -65,8 +75,22 @@ public sealed record ExternalInstance(
     /// </summary>
     public string? GameVersion { get; init; }
 
-    /// <summary>The loader build the profile pins, when it says so.</summary>
+    /// <summary>The loader build the launcher pins, when it says so.</summary>
     public string? LoaderVersion { get; init; }
+
+    /// <summary>
+    /// True when the version and loader were worked out from the mod files themselves,
+    /// because the launcher kept no readable description. Right in practice, but worth
+    /// a glance from the player.
+    /// </summary>
+    public bool VersionInferred { get; init; }
+
+    /// <summary>
+    /// True when this build's files live in a folder of its own even though it came from
+    /// a .minecraft-style launcher: TLauncher's per-version folders, the official
+    /// launcher's "game directory" profile setting.
+    /// </summary>
+    public bool HasOwnFolder { get; init; }
 
     /// <summary>
     /// True when the build is started by its own profile JSON rather than assembled by
@@ -78,9 +102,12 @@ public sealed record ExternalInstance(
     /// <summary>False when the build needs attention before it can be imported.</summary>
     public bool IsUsable => Problem == ExternalInstanceProblem.None;
 
+    /// <summary>False when the player will have to pick the version by hand after importing.</summary>
+    public bool HasKnownVersion => !string.IsNullOrWhiteSpace(VersionId) || !string.IsNullOrWhiteSpace(GameVersion);
+
     /// <summary>
     /// True when other builds of the same launcher write into this very folder. Importing
     /// in place then means the two launchers share saves and mods.
     /// </summary>
-    public bool SharesGameDirectory => Source is ExternalLauncherKind.DotMinecraft;
+    public bool SharesGameDirectory => Source is ExternalLauncherKind.DotMinecraft && !HasOwnFolder;
 }

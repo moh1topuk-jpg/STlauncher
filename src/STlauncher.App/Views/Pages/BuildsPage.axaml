@@ -478,6 +478,9 @@
                                                 <TextBlock Text="{Binding ProblemLabel}" Classes="gold"
                                                            TextWrapping="Wrap"
                                                            IsVisible="{Binding !IsUsable}"/>
+                                                <TextBlock Text="{Binding Note}" Classes="gold"
+                                                           TextWrapping="Wrap"
+                                                           IsVisible="{Binding HasNote}"/>
                                             </StackPanel>
 
                                             <TextBlock Grid.Column="2" Text="{Binding SourceLabel}"

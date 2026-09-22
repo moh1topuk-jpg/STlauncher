@@ -107,6 +107,8 @@ public class ExternalInstanceScannerTests : IDisposable
     [InlineData("""{ "libraries": [] }""", "Optifine 1.16.5 HD", "1.16.5")]
     [InlineData("""{ "libraries": [] }""", "1.21", "1.21")]
     [InlineData("""{ "libraries": [] }""", "my build", null)]
+    [InlineData("""{ "libraries": [] }""", "Fabric 26.2", "26.2")]
+    [InlineData("""{ "downloads": { "client": { "url": "https://x/client.jar" } }, "mainClass": "net.minecraft.client.main.Main" }""", "26.3-snapshot-1", "26.3-snapshot-1")]
     public void DetectGameVersion_ReadsWhatTheProfileIsBuiltOn(string json, string id, string? expected)
     {
         var profile = JsonSerializer.Deserialize<VersionJson>(json, MetadataJson.Options)!;

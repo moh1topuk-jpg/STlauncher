@@ -374,7 +374,7 @@
 
     <x:String x:Key="Import_Title">Import builds</x:String>
     <x:String x:Key="Import_Open">Find builds from other launchers</x:String>
-    <x:String x:Key="Import_OpenHint">Picks up builds from TLauncher, the official launcher, Prism, CurseForge and others - mods and worlds included.</x:String>
+    <x:String x:Key="Import_OpenHint">Picks up builds from TLauncher, the official launcher, Prism, MultiMC, CurseForge, Modrinth, GDLauncher, ATLauncher, FTB and others - mods and worlds included.</x:String>
     <x:String x:Key="Import_Scanning">Looking for builds…</x:String>
     <x:String x:Key="Import_Rescan">Search again</x:String>
     <x:String x:Key="Import_Folder">Choose a folder</x:String>
@@ -398,6 +398,9 @@
     <x:String x:Key="Import_ProblemIncomplete">the profile describes no way to start the game</x:String>
     <x:String x:Key="Import_ProblemAlready">already imported</x:String>
     <x:String x:Key="Import_Shared">shared folder</x:String>
+    <x:String x:Key="Import_VersionUnknown">version not known</x:String>
+    <x:String x:Key="Import_VersionInferred">worked out from the mods</x:String>
+    <x:String x:Key="Import_PickVersionLater">pick the version and loader in the build settings after importing</x:String>
     <x:String x:Key="Size_Gb">{0:F1} GB</x:String>
     <x:String x:Key="Size_Mb">{0:F0} MB</x:String>
     <x:String x:Key="Size_Kb">{0} KB</x:String>

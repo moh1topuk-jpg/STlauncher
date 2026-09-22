@@ -373,7 +373,7 @@
 
     <x:String x:Key="Import_Title">Импорт сборок</x:String>
     <x:String x:Key="Import_Open">Найти сборки других лаунчеров</x:String>
-    <x:String x:Key="Import_OpenHint">Подхватит сборки из TLauncher, официального лаунчера, Prism, CurseForge и других — вместе с модами и мирами.</x:String>
+    <x:String x:Key="Import_OpenHint">Подхватит сборки из TLauncher, официального лаунчера, Prism, MultiMC, CurseForge, Modrinth, GDLauncher, ATLauncher, FTB и других — вместе с модами и мирами.</x:String>
     <x:String x:Key="Import_Scanning">Ищу сборки…</x:String>
     <x:String x:Key="Import_Rescan">Искать заново</x:String>
     <x:String x:Key="Import_Folder">Указать папку вручную</x:String>
@@ -397,6 +397,9 @@
     <x:String x:Key="Import_ProblemIncomplete">в описании не сказано, как запускать игру</x:String>
     <x:String x:Key="Import_ProblemAlready">уже импортирована</x:String>
     <x:String x:Key="Import_Shared">общая папка</x:String>
+    <x:String x:Key="Import_VersionUnknown">версия не определена</x:String>
+    <x:String x:Key="Import_VersionInferred">определено по модам</x:String>
+    <x:String x:Key="Import_PickVersionLater">после импорта выберите версию и загрузчик в настройках сборки</x:String>
     <x:String x:Key="Size_Gb">{0:F1} ГБ</x:String>
     <x:String x:Key="Size_Mb">{0:F0} МБ</x:String>
     <x:String x:Key="Size_Kb">{0} КБ</x:String>

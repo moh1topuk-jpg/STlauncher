@@ -29,9 +29,40 @@ public partial class ImportCandidate : ObservableObject
 
     public string Name => Instance.Name;
 
-    public string Summary => Instance.Loader == Core.Loaders.LoaderKind.Vanilla
-        ? Instance.VersionId
-        : $"{Instance.VersionId} · {Instance.Loader}";
+    public string Summary
+    {
+        get
+        {
+            // A .minecraft profile is named freely; the real version sits next to it.
+            var version = Instance.HasOwnProfile && !string.IsNullOrWhiteSpace(Instance.GameVersion) &&
+                          !string.Equals(Instance.GameVersion, Instance.VersionId, StringComparison.Ordinal)
+                ? $"{Instance.VersionId} ({Instance.GameVersion})"
+                : Instance.VersionId;
+
+            if (string.IsNullOrWhiteSpace(version))
+            {
+                version = MainWindowViewModel.Localize("Import_VersionUnknown", "version not known");
+            }
+
+            var text = Instance.Loader == Core.Loaders.LoaderKind.Vanilla
+                ? version
+                : $"{version} · {Instance.Loader}";
+
+            return Instance.VersionInferred
+                ? $"{text} · {MainWindowViewModel.Localize("Import_VersionInferred", "worked out from the mods")}"
+                : text;
+        }
+    }
+
+    /// <summary>
+    /// What the player has to do after importing, when anything. A build whose version
+    /// nobody wrote down still imports fine - it just needs one picked in its settings.
+    /// </summary>
+    public string Note => Instance.IsUsable && !Instance.HasKnownVersion
+        ? MainWindowViewModel.Localize("Import_PickVersionLater", "pick the version and loader in the build settings after importing")
+        : string.Empty;
+
+    public bool HasNote => Note.Length > 0;
 
     public bool IsUsable => Instance.IsUsable;
 
@@ -307,11 +338,15 @@ public partial class MainWindowViewModel
     {
         ExternalLauncherKind.DotMinecraft => ".minecraft",
         ExternalLauncherKind.Prism => "Prism Launcher",
+        ExternalLauncherKind.PolyMc => "PolyMC",
         ExternalLauncherKind.MultiMc => "MultiMC",
         ExternalLauncherKind.CurseForge => "CurseForge",
         ExternalLauncherKind.Modrinth => "Modrinth App",
         ExternalLauncherKind.GdLauncher => "GDLauncher",
         ExternalLauncherKind.AtLauncher => "ATLauncher",
+        ExternalLauncherKind.Ftb => "FTB App",
+        ExternalLauncherKind.Technic => "Technic",
+        ExternalLauncherKind.Xmcl => "XMCL",
         _ => string.Empty
     };
 
