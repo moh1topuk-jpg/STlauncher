@@ -8,6 +8,8 @@
 
 ## [Не выпущено]
 
+## [0.3.1] — 2026-09-22
+
 ### Добавлено
 - Каталог модов переделан в витрину: категории — кнопками-чипами, моды — карточками с автором,
   числом загрузок и метками, у установленных — «в сборке». Справа постоянная панель
@@ -183,7 +185,8 @@
 - Бэкапы миров по событиям: раз в сутки, перед изменением модов, перед запуском.
 - Автообновление с уведомлением и установкой одной кнопкой.
 
-[Не выпущено]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.3.0...HEAD
+[Не выпущено]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.2.9...v0.3.0
 [0.2.9]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.2.8...v0.2.9
 [0.2.8]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.2.7...v0.2.8
