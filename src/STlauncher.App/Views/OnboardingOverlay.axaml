@@ -1,0 +1,267 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:STlauncher.App.ViewModels"
+             xmlns:controls="using:STlauncher.App.Controls"
+             x:Class="STlauncher.App.Views.OnboardingOverlay"
+             x:DataType="vm:MainWindowViewModel">
+
+    <!-- The first run: a dark stage over the whole window, embers behind, one card with
+         one question at a time. Every screen can be skipped; nothing here is required. -->
+
+    <UserControl.Styles>
+        <!-- The logo breathes on the welcome screen. -->
+        <Style Selector="Border.pulse">
+            <Setter Property="RenderTransformOrigin" Value="50%,50%"/>
+            <Style.Animations>
+                <Animation Duration="0:0:2.6" IterationCount="Infinite" Easing="SineEaseInOut">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0.45"/>
+                        <Setter Property="ScaleTransform.ScaleX" Value="1"/>
+                        <Setter Property="ScaleTransform.ScaleY" Value="1"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="50%">
+                        <Setter Property="Opacity" Value="1"/>
+                        <Setter Property="ScaleTransform.ScaleX" Value="1.12"/>
+                        <Setter Property="ScaleTransform.ScaleY" Value="1.12"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="0.45"/>
+                        <Setter Property="ScaleTransform.ScaleX" Value="1"/>
+                        <Setter Property="ScaleTransform.ScaleY" Value="1"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+
+        <!-- Each screen rises into place as it appears. -->
+        <Style Selector="StackPanel.page">
+            <Setter Property="RenderTransformOrigin" Value="50%,50%"/>
+            <Style.Animations>
+                <Animation Duration="0:0:0.45" Easing="CubicEaseOut">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0"/>
+                        <Setter Property="TranslateTransform.Y" Value="18"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1"/>
+                        <Setter Property="TranslateTransform.Y" Value="0"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+
+        <Style Selector="Border.dot">
+            <Setter Property="Width" Value="8"/>
+            <Setter Property="Height" Value="8"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Background" Value="{DynamicResource DividerBrush}"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Width" Duration="0:0:0.25" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.dot.on">
+            <Setter Property="Width" Value="24"/>
+            <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
+        </Style>
+    </UserControl.Styles>
+
+    <UserControl.DataTemplates>
+
+        <!-- 1. Welcome -->
+        <DataTemplate x:DataType="vm:OnboardingWelcomePage">
+            <StackPanel Classes="page" Spacing="22" HorizontalAlignment="Center" MaxWidth="440">
+                <Panel Width="132" Height="132" HorizontalAlignment="Center">
+                    <Border Classes="pulse" Width="132" Height="132" CornerRadius="66">
+                        <Border.RenderTransform>
+                            <ScaleTransform/>
+                        </Border.RenderTransform>
+                        <Border.Background>
+                            <RadialGradientBrush Center="50%,50%" GradientOrigin="50%,50%" RadiusX="50%" RadiusY="50%">
+                                <GradientStop Offset="0" Color="#66C02E4C"/>
+                                <GradientStop Offset="1" Color="#00C02E4C"/>
+                            </RadialGradientBrush>
+                        </Border.Background>
+                    </Border>
+                    <Border Width="84" Height="84" CornerRadius="24" ClipToBounds="True"
+                            BorderBrush="#33FFFFFF" BorderThickness="1">
+                        <Image Source="/Assets/server-logo.png" Stretch="UniformToFill"/>
+                    </Border>
+                </Panel>
+                <StackPanel Spacing="8">
+                    <TextBlock Text="{DynamicResource Onboarding_WelcomeTitle}" Classes="display" FontSize="30"
+                               TextAlignment="Center" TextWrapping="Wrap"/>
+                    <TextBlock Text="{DynamicResource Onboarding_WelcomeText}" Classes="muted" FontSize="14"
+                               TextAlignment="Center" TextWrapping="Wrap" LineHeight="21"/>
+                </StackPanel>
+                <TextBlock Text="{DynamicResource Onboarding_WelcomeHint}" Classes="faint" TextAlignment="Center" TextWrapping="Wrap"/>
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- 2. Nickname: the model on the right shows the skin the name brings. -->
+        <DataTemplate x:DataType="vm:OnboardingNicknamePage">
+            <StackPanel Classes="page" Spacing="18">
+                <StackPanel Spacing="6">
+                    <TextBlock Text="{DynamicResource Onboarding_NicknameTitle}" Classes="h1"/>
+                    <TextBlock Text="{DynamicResource Onboarding_NicknameText}" Classes="muted" TextWrapping="Wrap" LineHeight="20"/>
+                </StackPanel>
+                <Grid ColumnDefinitions="*,190" ColumnSpacing="24">
+                    <StackPanel Spacing="10" VerticalAlignment="Center">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                            <TextBox Text="{Binding Owner.Username}" MinHeight="44" FontSize="16"
+                                     Watermark="{DynamicResource Game_NicknameOwn}"/>
+                            <Button Grid.Column="1" Classes="ghost" Height="44" Width="44" Padding="0"
+                                    Command="{Binding Owner.RerollNicknameCommand}"
+                                    ToolTip.Tip="{DynamicResource Game_NicknameReroll}">
+                                <PathIcon Data="{StaticResource IconDice}"/>
+                            </Button>
+                        </Grid>
+                        <TextBlock Text="{DynamicResource Game_NicknameRule}" Classes="faint" TextWrapping="Wrap"/>
+                        <TextBlock Text="{Binding Owner.SkinSourceLabel}" Classes="faint" TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <Border Grid.Column="1" Classes="panel" Padding="8" Height="230">
+                        <controls:SkinViewer Skin="{Binding Owner.PlayerSkin}"/>
+                    </Border>
+                </Grid>
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- 3. Memory -->
+        <DataTemplate x:DataType="vm:OnboardingMemoryPage">
+            <StackPanel Classes="page" Spacing="18">
+                <StackPanel Spacing="6">
+                    <TextBlock Text="{DynamicResource Onboarding_MemoryTitle}" Classes="h1"/>
+                    <TextBlock Text="{DynamicResource Onboarding_MemoryText}" Classes="muted" TextWrapping="Wrap" LineHeight="20"/>
+                </StackPanel>
+                <Border Classes="panel" Padding="18,16">
+                    <StackPanel Spacing="10">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Classes="value" FontSize="30" VerticalAlignment="Center">
+                                <Run Text="{Binding Owner.MaxMemoryMb, StringFormat={}{0:0}}"/><Run Text=" MB" FontSize="16"/>
+                            </TextBlock>
+                            <Button Grid.Column="1" Classes="plain small" Foreground="{DynamicResource GoldBrush}"
+                                    Content="{Binding Owner.RecommendedMemoryLabel}"
+                                    Command="{Binding Owner.UseRecommendedMemoryCommand}"/>
+                        </Grid>
+                        <Slider Minimum="1024" Maximum="{Binding Owner.MemorySliderMax}" TickFrequency="512" IsSnapToTickEnabled="True"
+                                Value="{Binding Owner.MaxMemoryMb}"/>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="{Binding Owner.MemoryHint}" Classes="faint"/>
+                            <TextBlock Grid.Column="1" Text="{DynamicResource Settings_MemoryCeiling}" Classes="faint"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+                <TextBlock Text="{DynamicResource Onboarding_MemoryHint}" Classes="faint" TextWrapping="Wrap"/>
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- 4. Other launchers -->
+        <DataTemplate x:DataType="vm:OnboardingImportPage">
+            <StackPanel Classes="page" Spacing="18">
+                <StackPanel Spacing="6">
+                    <TextBlock Text="{DynamicResource Onboarding_ImportTitle}" Classes="h1"/>
+                    <TextBlock Text="{DynamicResource Onboarding_ImportText}" Classes="muted" TextWrapping="Wrap" LineHeight="20"/>
+                </StackPanel>
+                <Border Classes="panel" Padding="18,16">
+                    <StackPanel Spacing="12">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                            <ProgressBar IsIndeterminate="True" Width="60" Height="3" VerticalAlignment="Center"
+                                         IsVisible="{Binding Owner.OnboardingImportScanning}"/>
+                            <PathIcon Data="{StaticResource IconBuilds}" Classes="gold" VerticalAlignment="Top"
+                                      IsVisible="{Binding !Owner.OnboardingImportScanning}"/>
+                            <TextBlock Grid.Column="1" Text="{Binding Owner.OnboardingImportText}" TextWrapping="Wrap" LineHeight="20"/>
+                        </Grid>
+                        <StackPanel Spacing="8" IsVisible="{Binding Owner.OnboardingHasImports}">
+                            <RadioButton GroupName="OnboardingImportMode" IsChecked="{Binding !Owner.OnboardingImportByCopying}"
+                                         Content="{DynamicResource Import_ModeLink}"/>
+                            <TextBlock Text="{DynamicResource Import_ModeLinkHint}" Classes="faint" TextWrapping="Wrap" Margin="26,-4,0,0"/>
+                            <RadioButton GroupName="OnboardingImportMode" IsChecked="{Binding Owner.OnboardingImportByCopying}"
+                                         Content="{DynamicResource Import_ModeCopy}"/>
+                            <TextBlock Text="{DynamicResource Import_ModeCopyHint}" Classes="faint" TextWrapping="Wrap" Margin="26,-4,0,0"/>
+                            <Button Classes="primary" HorizontalAlignment="Left" Margin="0,6,0,0"
+                                    Content="{DynamicResource Import_SuggestAccept}"
+                                    Command="{Binding Owner.OnboardingImportCommand}"
+                                    IsEnabled="{Binding !Owner.IsImportBusy}"/>
+                            <TextBlock Text="{Binding Owner.ImportStatus}" Classes="gold" TextWrapping="Wrap"
+                                       IsVisible="{Binding Owner.IsImportBusy}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- 5. Done -->
+        <DataTemplate x:DataType="vm:OnboardingDonePage">
+            <StackPanel Classes="page" Spacing="22" HorizontalAlignment="Center" MaxWidth="440">
+                <Border Width="72" Height="72" CornerRadius="36" HorizontalAlignment="Center"
+                        Background="{DynamicResource SuccessBrush}" Opacity="0.9">
+                    <PathIcon Data="{StaticResource IconCheck}" Classes="large" Foreground="#0C0A0D"/>
+                </Border>
+                <StackPanel Spacing="8">
+                    <TextBlock Text="{DynamicResource Onboarding_DoneTitle}" Classes="display" FontSize="30"
+                               TextAlignment="Center" TextWrapping="Wrap"/>
+                    <TextBlock Text="{DynamicResource Onboarding_DoneText}" Classes="muted" FontSize="14"
+                               TextAlignment="Center" TextWrapping="Wrap" LineHeight="21"/>
+                </StackPanel>
+                <Border Classes="panel" Padding="16,12">
+                    <StackPanel Spacing="6">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                            <TextBlock Text="{DynamicResource Game_Nickname}" Classes="faint"/>
+                            <TextBlock Grid.Column="1" Text="{Binding Owner.Username}" FontWeight="SemiBold" HorizontalAlignment="Right"/>
+                        </Grid>
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                            <TextBlock Text="{DynamicResource Settings_MemoryTitle}" Classes="faint"/>
+                            <TextBlock Grid.Column="1" FontWeight="SemiBold" HorizontalAlignment="Right"
+                                       Text="{Binding Owner.MaxMemoryMb, StringFormat={}{0:0} MB}"/>
+                        </Grid>
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                            <TextBlock Text="{DynamicResource Game_Instance}" Classes="faint"/>
+                            <TextBlock Grid.Column="1" Text="{Binding Owner.SelectedInstance.Name}" FontWeight="SemiBold"
+                                       HorizontalAlignment="Right" TextTrimming="CharacterEllipsis"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </DataTemplate>
+    </UserControl.DataTemplates>
+
+    <Panel Background="#F20C0A0D">
+        <controls:EmberField IsActive="{Binding IsOnboardingOpen}"/>
+
+        <Border Classes="card" Width="620" MinHeight="460" Padding="36,32" HorizontalAlignment="Center"
+                VerticalAlignment="Center" Background="#F5151015" BorderBrush="#22FFFFFF" BorderThickness="1">
+            <Grid RowDefinitions="*,Auto" RowSpacing="24">
+
+                <TransitioningContentControl Content="{Binding OnboardingPage}"
+                                             IsTransitionReversed="{Binding OnboardingGoingBack}"
+                                             VerticalContentAlignment="Center">
+                    <TransitioningContentControl.PageTransition>
+                        <CompositePageTransition>
+                            <PageSlide Duration="0:0:0.35" Orientation="Horizontal" SlideInEasing="CubicEaseOut" SlideOutEasing="CubicEaseIn"/>
+                            <CrossFade Duration="0:0:0.3"/>
+                        </CompositePageTransition>
+                    </TransitioningContentControl.PageTransition>
+                </TransitioningContentControl>
+
+                <!-- Footer: where you are, and the way forward, back or out. -->
+                <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center"
+                                IsVisible="{Binding OnboardingShowsProgress}">
+                        <Border Classes="dot" Classes.on="{Binding IsOnboardingNickname}"/>
+                        <Border Classes="dot" Classes.on="{Binding IsOnboardingMemory}"/>
+                        <Border Classes="dot" Classes.on="{Binding IsOnboardingImport}"/>
+                    </StackPanel>
+
+                    <Button Grid.Column="1" Classes="plain small" HorizontalAlignment="Right" VerticalAlignment="Center"
+                            Content="{DynamicResource Onboarding_Skip}" Command="{Binding SkipOnboardingCommand}"
+                            IsVisible="{Binding !IsOnboardingDone}"/>
+                    <Button Grid.Column="2" Classes="ghost" Content="{DynamicResource Onboarding_Back}"
+                            Command="{Binding OnboardingBackCommand}" IsVisible="{Binding OnboardingShowsProgress}"/>
+                    <Button Grid.Column="3" Classes="primary" MinWidth="130" Height="42" CornerRadius="12"
+                            Content="{Binding OnboardingNextLabel}" Command="{Binding OnboardingNextCommand}"/>
+                </Grid>
+            </Grid>
+        </Border>
+    </Panel>
+</UserControl>

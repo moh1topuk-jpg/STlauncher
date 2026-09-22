@@ -319,6 +319,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
         _initialized = true;
 
+        // Read before anything below saves: the first save is what ends "first run".
+        var isFirstRun = !_settings.Exists;
         var settings = _settings.Load();
 
         // A shared "Player" default means several people on the server end up with one
@@ -449,6 +451,10 @@ public partial class MainWindowViewModel : ViewModelBase
         // A nickname generated a moment ago only becomes this installation's identity
         // once it is on disk; without this it would be regenerated on the next start.
         PersistSettings();
+
+        // The tour, for a brand-new installation only. It sits over the window while the
+        // build syncs and the versions load underneath, so nothing waits for it.
+        StartOnboardingIfFirstRun(!isFirstRun);
 
         // Deliberately not awaited: the window is already usable, and the missing mods
         // download in the background while the player reads the page.

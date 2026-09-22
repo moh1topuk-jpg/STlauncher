@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:STlauncher.App.ViewModels"
         xmlns:pages="using:STlauncher.App.Views.Pages"
+        xmlns:views="using:STlauncher.App.Views"
         xmlns:controls="using:STlauncher.App.Controls"
         xmlns:sys="using:System"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -18,6 +19,7 @@
         Icon="/Assets/app.ico"
         Title="STlauncher">
 
+    <Panel>
     <Grid RowDefinitions="36,Auto,*">
 
         <!-- ============ Title bar ============ -->
@@ -184,4 +186,9 @@
             </Grid>
         </Grid>
     </Grid>
+
+    <!-- First run only. Above everything, including the title bar, so it reads as a
+         stage rather than a dialog. -->
+    <views:OnboardingOverlay IsVisible="{Binding IsOnboardingOpen}"/>
+    </Panel>
 </Window>

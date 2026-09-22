@@ -563,4 +563,27 @@
     <x:String x:Key="Backup_Deleted">Backup from {0} deleted</x:String>
     <x:String x:Key="Backup_DeleteFailed">Could not delete the backup - it may be in use</x:String>
 
+    <!-- First run -->
+    <x:String x:Key="Onboarding_WelcomeTitle">Welcome to STlauncher</x:String>
+    <x:String x:Key="Onboarding_WelcomeText">The launcher for the Showtime server. The modded build is already setting itself up - all that is left is to say who you are and settle a couple of things.</x:String>
+    <x:String x:Key="Onboarding_WelcomeHint">This takes half a minute. Everything can be changed later in the settings.</x:String>
+    <x:String x:Key="Onboarding_Start">Let's go</x:String>
+    <x:String x:Key="Onboarding_Next">Next</x:String>
+    <x:String x:Key="Onboarding_Back">Back</x:String>
+    <x:String x:Key="Onboarding_Skip">Skip</x:String>
+    <x:String x:Key="Onboarding_Finish">Get started</x:String>
+    <x:String x:Key="Onboarding_NicknameTitle">What should we call you?</x:String>
+    <x:String x:Key="Onboarding_NicknameText">This is the name the server will see. If the name has a skin at Mojang, TLauncher or ely.by, it comes along by itself.</x:String>
+    <x:String x:Key="Onboarding_MemoryTitle">How much memory the game gets</x:String>
+    <x:String x:Key="Onboarding_MemoryText">Modded Minecraft likes memory, but more than 8 GB does not make it faster. The recommended value is picked for this computer.</x:String>
+    <x:String x:Key="Onboarding_MemoryHint">If the game stutters or dies with "out of memory", this is the first thing to change.</x:String>
+    <x:String x:Key="Onboarding_ImportTitle">Builds from other launchers</x:String>
+    <x:String x:Key="Onboarding_ImportText">Worlds, mods and settings from TLauncher, Prism, CurseForge, Modrinth and other launchers can be brought here - nothing is lost.</x:String>
+    <x:String x:Key="Onboarding_ImportScanning">Looking through other launchers…</x:String>
+    <x:String x:Key="Onboarding_ImportNone">Nothing found - you are starting fresh. Builds can be imported later from the Builds page.</x:String>
+    <x:String x:Key="Onboarding_ImportFound">Found {0} build(s): {1}{2}. Bring them over with worlds, mods and settings?</x:String>
+    <x:String x:Key="Onboarding_ImportMore"> and {0} more</x:String>
+    <x:String x:Key="Onboarding_DoneTitle">All set</x:String>
+    <x:String x:Key="Onboarding_DoneText">The recommended server build is finishing its download in the background. When the status line says it is ready, press Play.</x:String>
+
 </ResourceDictionary>

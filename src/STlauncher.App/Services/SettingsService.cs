@@ -16,6 +16,9 @@ public sealed class SettingsService
         _path = Path.Combine(paths.Root, "settings.json");
     }
 
+    /// <summary>True once the launcher has saved settings at least once: not a first run.</summary>
+    public bool Exists => File.Exists(_path);
+
     public AppSettings Load()
     {
         if (!File.Exists(_path))

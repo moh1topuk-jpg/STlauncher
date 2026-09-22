@@ -563,4 +563,27 @@
     <x:String x:Key="Backup_Deleted">Бэкап от {0} удалён</x:String>
     <x:String x:Key="Backup_DeleteFailed">Не удалось удалить бэкап — возможно, файл занят</x:String>
 
+    <!-- First run -->
+    <x:String x:Key="Onboarding_WelcomeTitle">Добро пожаловать в STlauncher</x:String>
+    <x:String x:Key="Onboarding_WelcomeText">Лаунчер сервера Showtime. Сборка с модами уже настраивается сама — осталось только представиться и решить пару мелочей.</x:String>
+    <x:String x:Key="Onboarding_WelcomeHint">Это займёт полминуты. Всё можно поменять потом в настройках.</x:String>
+    <x:String x:Key="Onboarding_Start">Поехали</x:String>
+    <x:String x:Key="Onboarding_Next">Дальше</x:String>
+    <x:String x:Key="Onboarding_Back">Назад</x:String>
+    <x:String x:Key="Onboarding_Skip">Пропустить</x:String>
+    <x:String x:Key="Onboarding_Finish">Начать</x:String>
+    <x:String x:Key="Onboarding_NicknameTitle">Как вас звать?</x:String>
+    <x:String x:Key="Onboarding_NicknameText">Под этим ником вас увидят на сервере. Если у ника есть скин в Mojang, TLauncher или ely.by — он подтянется сам.</x:String>
+    <x:String x:Key="Onboarding_MemoryTitle">Сколько памяти отдать игре</x:String>
+    <x:String x:Key="Onboarding_MemoryText">Modded Minecraft любит память, но больше 8 ГБ не ускорит игру. Рекомендуемое значение подобрано под этот компьютер.</x:String>
+    <x:String x:Key="Onboarding_MemoryHint">Если игра будет подтормаживать или падать с «не хватило памяти», это первое, что стоит поменять.</x:String>
+    <x:String x:Key="Onboarding_ImportTitle">Сборки из других лаунчеров</x:String>
+    <x:String x:Key="Onboarding_ImportText">Миры, моды и настройки из TLauncher, Prism, CurseForge, Modrinth и других лаунчеров можно перенести сюда — ничего не пропадёт.</x:String>
+    <x:String x:Key="Onboarding_ImportScanning">Ищу сборки в других лаунчерах…</x:String>
+    <x:String x:Key="Onboarding_ImportNone">Ничего не нашлось — начинаете с чистого листа. Сборки можно перенести и позже, в разделе «Сборки».</x:String>
+    <x:String x:Key="Onboarding_ImportFound">Нашлось сборок: {0} — {1}{2}. Перенести их вместе с мирами, модами и настройками?</x:String>
+    <x:String x:Key="Onboarding_ImportMore"> и ещё {0}</x:String>
+    <x:String x:Key="Onboarding_DoneTitle">Всё готово</x:String>
+    <x:String x:Key="Onboarding_DoneText">Рекомендуемая сборка сервера докачивается в фоне. Как только строка состояния скажет «можно играть» — жмите «Играть».</x:String>
+
 </ResourceDictionary>
