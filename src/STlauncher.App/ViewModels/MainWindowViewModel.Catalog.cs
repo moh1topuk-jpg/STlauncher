@@ -36,7 +36,7 @@ public partial class MainWindowViewModel
     private bool _isModsBusy;
 
 
-    public ObservableCollection<InstalledMod> InstalledMods { get; } = new();
+    public ObservableCollection<InstalledModItem> InstalledMods { get; } = new();
 
     /// <summary>The line above the mod list: how many there are, and how many are off.</summary>
     [ObservableProperty]
@@ -202,7 +202,12 @@ public partial class MainWindowViewModel
             InstalledMods.Clear();
             foreach (var mod in _mods.ListMods(InstanceDirectory))
             {
-                InstalledMods.Add(mod);
+                var record = SelectedInstance?.InstalledMods.FirstOrDefault(m =>
+                    string.Equals(m.FileName, mod.FileName, StringComparison.OrdinalIgnoreCase));
+
+                var item = new InstalledModItem(mod, record);
+                RestoreKnownUpdate(item);
+                InstalledMods.Add(item);
             }
 
             var enabled = InstalledMods.Count(m => m.Enabled);
@@ -293,7 +298,7 @@ public partial class MainWindowViewModel
     }
 
     [RelayCommand]
-    private void ToggleMod(InstalledMod? mod)
+    private void ToggleMod(InstalledModItem? mod)
     {
         if (mod is null)
         {
@@ -332,7 +337,7 @@ public partial class MainWindowViewModel
     }
 
     [RelayCommand]
-    private async Task UninstallModAsync(InstalledMod? mod)
+    private async Task UninstallModAsync(InstalledModItem? mod)
     {
         if (mod is null)
         {

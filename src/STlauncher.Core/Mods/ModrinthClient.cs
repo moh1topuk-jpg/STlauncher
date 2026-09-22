@@ -81,6 +81,9 @@ public sealed record ModVersion(
     /// <summary>What this version depends on, as Modrinth lists it.</summary>
     public IReadOnlyList<ModDependency> Dependencies { get; init; } = Array.Empty<ModDependency>();
 
+    /// <summary>The project this version belongs to. Filled in by the hash lookups.</summary>
+    public string? ProjectId { get; init; }
+
     public ModFile? PrimaryFile => Files.FirstOrDefault(f => f.Primary) ?? Files.FirstOrDefault();
 
     /// <summary>
@@ -231,29 +234,98 @@ public sealed class ModrinthClient
         var json = await _http.GetStringAsync(url, cancellationToken).ConfigureAwait(false);
         var versions = JsonSerializer.Deserialize<List<VersionDto>>(json, Json.Options) ?? new List<VersionDto>();
 
-        return versions.Select(v => new ModVersion(
-                v.Id ?? string.Empty,
-                v.Name ?? string.Empty,
-                v.VersionNumber ?? string.Empty,
-                v.GameVersions ?? new List<string>(),
-                v.Loaders ?? new List<string>(),
-                (v.Files ?? new List<FileDto>())
-                .Select(f => new ModFile(
-                    f.Url ?? string.Empty,
-                    f.Filename ?? string.Empty,
-                    f.Hashes?.Sha1,
-                    f.Hashes?.Sha512,
-                    f.Size,
-                    f.Primary))
-                .ToList(),
-                v.VersionType ?? "release")
-            {
-                Dependencies = (v.Dependencies ?? new List<DependencyDto>())
-                    .Select(d => new ModDependency(d.ProjectId, d.VersionId, d.DependencyType ?? "optional"))
-                    .ToList()
-            })
-            .ToList();
+        return versions.Select(ToModVersion).ToList();
     }
+
+    /// <summary>
+    /// The versions that installed files are, looked up by their SHA-1. One request for
+    /// the whole folder; files Modrinth does not know are simply absent from the result.
+    /// </summary>
+    public async Task<IReadOnlyDictionary<string, ModVersion>> GetVersionsByHashesAsync(
+        IEnumerable<string> sha1Hashes,
+        CancellationToken cancellationToken = default)
+    {
+        var hashes = sha1Hashes.Where(h => !string.IsNullOrWhiteSpace(h)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+
+        if (hashes.Count == 0)
+        {
+            return new Dictionary<string, ModVersion>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        var body = JsonSerializer.Serialize(new { hashes, algorithm = "sha1" });
+        var json = await PostJsonAsync($"{BaseUrl}/version_files", body, cancellationToken).ConfigureAwait(false);
+        var map = JsonSerializer.Deserialize<Dictionary<string, VersionDto>>(json, Json.Options) ?? new Dictionary<string, VersionDto>();
+
+        return map.ToDictionary(p => p.Key, p => ToModVersion(p.Value), StringComparer.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// The newest version of each file's project for a game version and loader, by the
+    /// file's SHA-1. This is how "is there an update" is asked without knowing what the
+    /// file is: a jar dropped into the folder by hand has no record.
+    /// </summary>
+    public async Task<IReadOnlyDictionary<string, ModVersion>> GetLatestVersionsAsync(
+        IEnumerable<string> sha1Hashes,
+        string? gameVersion,
+        LoaderKind loader,
+        CancellationToken cancellationToken = default)
+    {
+        var hashes = sha1Hashes.Where(h => !string.IsNullOrWhiteSpace(h)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+
+        if (hashes.Count == 0)
+        {
+            return new Dictionary<string, ModVersion>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        var loaders = ToModrinthLoader(loader) is { } name ? new[] { name } : Array.Empty<string>();
+        var gameVersions = string.IsNullOrWhiteSpace(gameVersion) ? Array.Empty<string>() : new[] { gameVersion! };
+
+        var body = JsonSerializer.Serialize(new
+        {
+            hashes,
+            algorithm = "sha1",
+            loaders,
+            game_versions = gameVersions
+        });
+
+        var json = await PostJsonAsync($"{BaseUrl}/version_files/update", body, cancellationToken).ConfigureAwait(false);
+        var map = JsonSerializer.Deserialize<Dictionary<string, VersionDto>>(json, Json.Options) ?? new Dictionary<string, VersionDto>();
+
+        return map.ToDictionary(p => p.Key, p => ToModVersion(p.Value), StringComparer.OrdinalIgnoreCase);
+    }
+
+    private async Task<string> PostJsonAsync(string url, string body, CancellationToken cancellationToken)
+    {
+        using var content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
+        using var response = await _http.PostAsync(url, content, cancellationToken).ConfigureAwait(false);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    private static ModVersion ToModVersion(VersionDto v)
+        => new(
+            v.Id ?? string.Empty,
+            v.Name ?? string.Empty,
+            v.VersionNumber ?? string.Empty,
+            v.GameVersions ?? new List<string>(),
+            v.Loaders ?? new List<string>(),
+            (v.Files ?? new List<FileDto>())
+            .Select(f => new ModFile(
+                f.Url ?? string.Empty,
+                f.Filename ?? string.Empty,
+                f.Hashes?.Sha1,
+                f.Hashes?.Sha512,
+                f.Size,
+                f.Primary))
+            .ToList(),
+            v.VersionType ?? "release")
+        {
+            Dependencies = (v.Dependencies ?? new List<DependencyDto>())
+                .Select(d => new ModDependency(d.ProjectId, d.VersionId, d.DependencyType ?? "optional"))
+                .ToList(),
+            ProjectId = v.ProjectId
+        };
 
     /// <summary>
     /// Picks the version a build should install. Releases win over betas and alphas, and
@@ -428,6 +500,9 @@ public sealed class ModrinthClient
 
         [JsonPropertyName("id")]
         public string? Id { get; set; }
+
+        [JsonPropertyName("project_id")]
+        public string? ProjectId { get; set; }
 
         [JsonPropertyName("name")]
         public string? Name { get; set; }

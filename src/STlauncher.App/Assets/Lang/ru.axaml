@@ -518,4 +518,20 @@
     <x:String x:Key="Crash_ReportCopied">Отчёт скопирован — вставьте его в чат</x:String>
     <x:String x:Key="Crash_OpenReport">Отчёт игры</x:String>
 
+    <!-- Mod updates -->
+    <x:String x:Key="Mods_CheckUpdates">Проверить обновления</x:String>
+    <x:String x:Key="Mods_CheckUpdatesHint">Сверит моды с Modrinth и покажет, у каких есть новая версия. Само ничего не обновляет.</x:String>
+    <x:String x:Key="Mods_UpdateAll">Обновить все ({0})</x:String>
+    <x:String x:Key="Mods_UpdateOne">Поставить эту версию</x:String>
+    <x:String x:Key="Mods_UpdatesNeedBuild">Сначала выберите версию игры и загрузчик</x:String>
+    <x:String x:Key="Mods_UpdatesNothing">Проверять нечего — модов нет</x:String>
+    <x:String x:Key="Mods_UpdatesOnlyCatalog">Все моды здесь из каталога сервера — их обновляет сервер</x:String>
+    <x:String x:Key="Mods_UpdatesChecking">Сверяю с Modrinth: модов — {0}…</x:String>
+    <x:String x:Key="Mods_UpdatesNone">Все моды актуальны</x:String>
+    <x:String x:Key="Mods_UpdatesFound">Есть обновления: {0}. Ничего не ставится, пока вы не нажмёте.</x:String>
+    <x:String x:Key="Mods_UpdatesFailed">Не удалось проверить обновления: {0}</x:String>
+    <x:String x:Key="Mods_Updating">Обновляю {0} до {1}…</x:String>
+    <x:String x:Key="Mods_Updated">{0} обновлён до {1}</x:String>
+    <x:String x:Key="Mods_CatalogPinnedHint">Версию этого мода задаёт каталог сервера — обновления приходят вместе со сборкой.</x:String>
+
 </ResourceDictionary>

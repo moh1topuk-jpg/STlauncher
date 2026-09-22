@@ -205,23 +205,45 @@
                 <Panel Grid.Row="2">
 
                     <!-- ======== Mods of the build ======== -->
-                    <Grid IsVisible="{Binding IsBuildMods}" RowDefinitions="Auto,*" RowSpacing="10">
-                        <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="6">
+                    <Grid IsVisible="{Binding IsBuildMods}" RowDefinitions="Auto,Auto,*" RowSpacing="10">
+                        <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="6">
                             <TextBlock Text="{Binding InstalledModsSummary}" Classes="faint"
                                        VerticalAlignment="Center"/>
+                            <!-- Updates are shown, never applied on their own: the player
+                                 decides, mod by mod or all at once. -->
                             <Button Grid.Column="1" Classes="ghost small"
+                                    Command="{Binding CheckModUpdatesCommand}"
+                                    IsEnabled="{Binding !IsCheckingModUpdates}"
+                                    ToolTip.Tip="{DynamicResource Mods_CheckUpdatesHint}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <PathIcon Data="{StaticResource IconUpdate}" Classes="small"/>
+                                    <TextBlock Text="{DynamicResource Mods_CheckUpdates}"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Grid.Column="2" Classes="primary small" IsVisible="{Binding HasModUpdates}"
+                                    Content="{Binding UpdateAllLabel}" Command="{Binding UpdateAllModsCommand}"/>
+                            <Button Grid.Column="3" Classes="ghost small"
                                     Content="{DynamicResource Mods_Refresh}"
                                     Command="{Binding RefreshModsCommand}"/>
-                            <Button Grid.Column="2" Classes="ghost small"
+                            <Button Grid.Column="4" Classes="ghost small"
                                     Content="{DynamicResource Mods_OpenFolder}"
                                     Command="{Binding OpenModsFolderCommand}"/>
-                            <Button Grid.Column="3" Classes="ghost small"
+                            <Button Grid.Column="5" Classes="ghost small"
                                     Content="{DynamicResource Mods_Import}"
                                     Click="OnImportModpackClick"
                                     IsEnabled="{Binding !IsModsBusy}"/>
                         </Grid>
 
-                        <Panel Grid.Row="1">
+                        <!-- The verdict of the last check. -->
+                        <Grid Grid.Row="1" ColumnDefinitions="Auto,*" ColumnSpacing="8"
+                              IsVisible="{Binding ModUpdatesSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                            <ProgressBar IsIndeterminate="True" Width="60" Height="3" VerticalAlignment="Center"
+                                         IsVisible="{Binding IsCheckingModUpdates}"/>
+                            <TextBlock Grid.Column="1" Text="{Binding ModUpdatesSummary}" Classes="gold" TextWrapping="Wrap"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
+
+                        <Panel Grid.Row="2">
                             <Border Classes="panel" Padding="18" VerticalAlignment="Top"
                                     IsVisible="{Binding HasNoInstalledMods}">
                                 <StackPanel Spacing="10">
@@ -243,10 +265,10 @@
                                         </ItemsPanelTemplate>
                                     </ItemsControl.ItemsPanel>
                                     <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="mods:InstalledMod">
+                                        <DataTemplate x:DataType="vm:InstalledModItem">
                                             <Border Classes="panel mod-row" Classes.off="{Binding !Enabled}"
                                                     Padding="12,8" VerticalAlignment="Stretch">
-                                                <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
+                                                <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="10">
                                                     <!-- The switch shows the state and changes it:
                                                          one button labelled "On/Off" did neither. -->
                                                     <ToggleSwitch IsChecked="{Binding Enabled, Mode=OneWay}"
@@ -254,13 +276,27 @@
                                                                   MinWidth="0" VerticalAlignment="Center"
                                                                   Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).ToggleModCommand}"
                                                                   CommandParameter="{Binding}"/>
-                                                    <TextBlock Grid.Column="1" Text="{Binding DisplayName}"
-                                                               VerticalAlignment="Center"
-                                                               TextTrimming="CharacterEllipsis"
-                                                               ToolTip.Tip="{Binding FileName}"/>
-                                                    <TextBlock Grid.Column="2" Classes="faint" VerticalAlignment="Center"
+                                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center"
+                                                                   TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding FileName}"/>
+                                                        <Border Classes="tag" IsVisible="{Binding IsCatalog}" VerticalAlignment="Center"
+                                                                ToolTip.Tip="{DynamicResource Mods_CatalogPinnedHint}">
+                                                            <TextBlock Text="{DynamicResource Builds_TagCatalog}"/>
+                                                        </Border>
+                                                    </StackPanel>
+                                                    <!-- A newer version exists; the button is the whole offer. -->
+                                                    <Button Grid.Column="2" Classes="small" IsVisible="{Binding HasUpdate}"
+                                                            Foreground="{DynamicResource GoldBrush}"
+                                                            ToolTip.Tip="{DynamicResource Mods_UpdateOne}"
+                                                            Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).UpdateModCommand}"
+                                                            CommandParameter="{Binding}">
+                                                        <TextBlock Text="{Binding UpdateLabel}" FontWeight="SemiBold"/>
+                                                    </Button>
+                                                    <ProgressBar Grid.Column="2" IsIndeterminate="True" Width="40" Height="3"
+                                                                 VerticalAlignment="Center" IsVisible="{Binding IsUpdating}"/>
+                                                    <TextBlock Grid.Column="3" Classes="faint" VerticalAlignment="Center"
                                                                Text="{Binding Size, Converter={x:Static conv:FileSizeConverter.Instance}}"/>
-                                                    <Button Grid.Column="3" Classes="plain small icon-danger"
+                                                    <Button Grid.Column="4" Classes="plain small icon-danger"
                                                             ToolTip.Tip="{DynamicResource Mods_Delete}"
                                                             Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).UninstallModCommand}"
                                                             CommandParameter="{Binding}">

@@ -354,13 +354,6 @@ public partial class MainWindowViewModel : ViewModelBase
         AnimatedBackground = settings.AnimatedBackground;
         LoadWhatsNew(settings.LastSeenVersion);
 
-        if (Enum.TryParse<Services.SkinSource>(settings.SkinSource, ignoreCase: true, out var skinSource))
-        {
-            // Through the property: its change handler refreshes the buttons. The avatar
-            // request it also starts is superseded by the one the username triggers.
-            SelectedSkinSource = skinSource;
-        }
-
         _dismissedBuildIds.Clear();
         foreach (var dismissed in settings.DismissedBuildIds)
         {
@@ -377,6 +370,13 @@ public partial class MainWindowViewModel : ViewModelBase
             {
                 Nicknames.Add(nickname);
             }
+        }
+
+        if (Enum.TryParse<Services.SkinSource>(settings.SkinSource, ignoreCase: true, out var skinSource))
+        {
+            // Through the property: its change handler refreshes the buttons. The avatar
+            // request it also starts is superseded by the one the username triggers.
+            SelectedSkinSource = skinSource;
         }
 
         LoadJavaChoices();
@@ -872,6 +872,7 @@ public partial class MainWindowViewModel : ViewModelBase
         ApplyServerFromInstance();
 
         _ = LoadLoaderVersionsAsync();
+        ForgetModUpdates();
         RefreshMods();
         RefreshBrowserInstallState();
         OnPropertyChanged(nameof(IsBuildConfigured));

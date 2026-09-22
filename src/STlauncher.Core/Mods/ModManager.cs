@@ -102,6 +102,21 @@ public sealed class ModManager
         return destination;
     }
 
+    /// <summary>SHA-1 of a file as Modrinth stores it, or null when the file cannot be read.</summary>
+    public static string? TryComputeSha1(string path)
+    {
+        try
+        {
+            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 1 << 16);
+            var hash = System.Security.Cryptography.SHA1.HashData(stream);
+            return Convert.ToHexString(hash).ToLowerInvariant();
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
     public static bool IsModFile(string path)
     {
         var fileName = Path.GetFileName(path);

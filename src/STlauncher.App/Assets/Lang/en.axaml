@@ -518,4 +518,20 @@
     <x:String x:Key="Crash_ReportCopied">Report copied - paste it into the chat</x:String>
     <x:String x:Key="Crash_OpenReport">Game crash report</x:String>
 
+    <!-- Mod updates -->
+    <x:String x:Key="Mods_CheckUpdates">Check for updates</x:String>
+    <x:String x:Key="Mods_CheckUpdatesHint">Compares the mods with Modrinth and shows which have a newer version. Installs nothing by itself.</x:String>
+    <x:String x:Key="Mods_UpdateAll">Update all ({0})</x:String>
+    <x:String x:Key="Mods_UpdateOne">Install this version</x:String>
+    <x:String x:Key="Mods_UpdatesNeedBuild">Pick the game version and loader first</x:String>
+    <x:String x:Key="Mods_UpdatesNothing">No mods to check</x:String>
+    <x:String x:Key="Mods_UpdatesOnlyCatalog">All mods here come from the server catalog - the server updates them</x:String>
+    <x:String x:Key="Mods_UpdatesChecking">Checking {0} mod(s) on Modrinth…</x:String>
+    <x:String x:Key="Mods_UpdatesNone">All mods are up to date</x:String>
+    <x:String x:Key="Mods_UpdatesFound">Updates available: {0}. Nothing is installed until you say so.</x:String>
+    <x:String x:Key="Mods_UpdatesFailed">Could not check for updates: {0}</x:String>
+    <x:String x:Key="Mods_Updating">Updating {0} to {1}…</x:String>
+    <x:String x:Key="Mods_Updated">{0} updated to {1}</x:String>
+    <x:String x:Key="Mods_CatalogPinnedHint">The server catalog sets this mod's version - updates arrive with the build.</x:String>
+
 </ResourceDictionary>
