@@ -62,6 +62,7 @@ public static class LauncherHost
         });
 
         services.AddSingleton<MetadataClient>();
+        services.AddSingleton<VerifiedFileCache>();
         services.AddSingleton<DownloadClient>();
         services.AddSingleton<VersionService>();
         services.AddSingleton<AssetService>();

@@ -56,6 +56,9 @@ public sealed class LaunchService
 
         if (settings.ForceUpdate)
         {
+            // "Re-download the game files" means every file is hashed again, not only
+            // the two that are deleted here.
+            _downloader.Cache.Clear();
             ForceClean(versionId);
         }
 

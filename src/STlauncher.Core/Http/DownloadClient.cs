@@ -16,13 +16,18 @@ public sealed class DownloadClient
     private readonly HttpClient _http;
     private readonly ILogger<DownloadClient>? _logger;
     private readonly int _maxAttempts;
+    private readonly VerifiedFileCache _cache;
 
-    public DownloadClient(HttpClient http, ILogger<DownloadClient>? logger = null, int maxAttempts = 3)
+    public DownloadClient(HttpClient http, ILogger<DownloadClient>? logger = null, int maxAttempts = 3, VerifiedFileCache? cache = null)
     {
         _http = http ?? throw new ArgumentNullException(nameof(http));
         _logger = logger;
         _maxAttempts = Math.Max(1, maxAttempts);
+        _cache = cache ?? new VerifiedFileCache();
     }
+
+    /// <summary>Files verified so far, so a forced re-check can forget them all.</summary>
+    public VerifiedFileCache Cache => _cache;
 
     public int MaxConcurrency { get; init; } = 8;
 
@@ -70,7 +75,15 @@ public sealed class DownloadClient
             }
         }).ToArray();
 
-        await Task.WhenAll(tasks).ConfigureAwait(false);
+        try
+        {
+            await Task.WhenAll(tasks).ConfigureAwait(false);
+        }
+        finally
+        {
+            // One write per batch: the verdicts of a whole launch, not a file write per asset.
+            _cache.Save();
+        }
 
         return new DownloadSummary(total, total - failed, failed, errors.ToArray());
     }
@@ -106,6 +119,7 @@ public sealed class DownloadClient
                 }
 
                 File.Move(tempPath, item.DestinationPath, overwrite: true);
+                RememberVerified(item);
                 return true;
             }
             catch (OperationCanceledException)
@@ -141,24 +155,59 @@ public sealed class DownloadClient
 
     private bool IsValid(DownloadItem item)
     {
-        if (!File.Exists(item.DestinationPath))
+        var info = new FileInfo(item.DestinationPath);
+
+        if (!info.Exists)
         {
+            _cache.Forget(item.DestinationPath);
             return false;
         }
 
-        if (item.Size > 0 && new FileInfo(item.DestinationPath).Length != item.Size)
+        if (item.Size > 0 && info.Length != item.Size)
         {
+            _cache.Forget(item.DestinationPath);
             return false;
         }
 
-        if (!string.IsNullOrEmpty(item.Sha1) || !string.IsNullOrEmpty(item.Sha256) ||
-            !string.IsNullOrEmpty(item.Sha512))
+        var expected = ExpectedHash(item);
+
+        if (expected is null)
         {
-            return VerifyHash(item.DestinationPath, item);
+            return true;
         }
 
+        // Verified before, untouched since: the hash is known to match.
+        if (_cache.IsVerified(item.DestinationPath, expected, info))
+        {
+            return true;
+        }
+
+        if (!VerifyHash(item.DestinationPath, item))
+        {
+            _cache.Forget(item.DestinationPath);
+            return false;
+        }
+
+        _cache.Remember(item.DestinationPath, expected, info);
         return true;
     }
+
+    private void RememberVerified(DownloadItem item)
+    {
+        var expected = ExpectedHash(item);
+
+        if (expected is not null)
+        {
+            _cache.Remember(item.DestinationPath, expected, new FileInfo(item.DestinationPath));
+        }
+    }
+
+    /// <summary>The strongest hash the manifest gives, which is the one VerifyHash checks.</summary>
+    private static string? ExpectedHash(DownloadItem item)
+        => !string.IsNullOrEmpty(item.Sha512) ? item.Sha512
+            : !string.IsNullOrEmpty(item.Sha256) ? item.Sha256
+            : !string.IsNullOrEmpty(item.Sha1) ? item.Sha1
+            : null;
 
     private static bool VerifyHash(string path, DownloadItem item)
     {
