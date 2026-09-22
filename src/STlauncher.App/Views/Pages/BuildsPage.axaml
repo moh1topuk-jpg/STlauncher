@@ -12,7 +12,7 @@
              x:DataType="vm:MainWindowViewModel">
 
     <Grid>
-        <Grid Margin="24" ColumnDefinitions="290,*" ColumnSpacing="20">
+        <Grid Margin="24" ColumnDefinitions="260,*" ColumnSpacing="20">
 
             <!-- ============ Build list ============ -->
             <!-- Only the list and one way to add to it. Everything that acts on one build
@@ -167,11 +167,12 @@
 
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                         <!-- Only a catalog build has something to check against. -->
-                        <Button Classes="ghost small" Content="{DynamicResource Builds_SyncWithCatalog}"
-                                ToolTip.Tip="{DynamicResource Builds_UseRecommendedHint}"
+                        <Button Classes="ghost small" ToolTip.Tip="{DynamicResource Builds_SyncWithCatalog}"
                                 IsVisible="{Binding IsCatalogInstance}"
                                 IsEnabled="{Binding !IsBuildImportBusy}"
-                                Command="{Binding SyncSelectedBuildCommand}"/>
+                                Command="{Binding SyncSelectedBuildCommand}">
+                            <PathIcon Data="{StaticResource IconRefresh}" Classes="small"/>
+                        </Button>
                         <Button Classes="ghost small" ToolTip.Tip="{DynamicResource Builds_OpenFolder}"
                                 Command="{Binding OpenGameFolderCommand}">
                             <PathIcon Data="{StaticResource IconFolder}" Classes="small"/>
@@ -311,36 +312,42 @@
                                         Command="{Binding SearchModsCommand}" IsEnabled="{Binding !IsBrowserBusy}"/>
                             </Grid>
 
+                            <!-- One row of chips that scrolls sideways: wrapped, nineteen of them
+                                 took a third of a small window. -->
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                                <ItemsControl ItemsSource="{Binding ModCategories}">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <WrapPanel/>
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:ModCategoryOption">
-                                            <Button Classes="chip" Classes.active="{Binding IsSelected}" Margin="0,0,6,6"
-                                                    Content="{Binding Display}"
-                                                    Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).SelectCategoryCommand}"
-                                                    CommandParameter="{Binding}"/>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
+                                <ScrollViewer HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled"
+                                              Name="ChipScroll" PointerWheelChanged="OnChipWheel">
+                                    <ItemsControl ItemsSource="{Binding ModCategories}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <StackPanel Orientation="Horizontal" Spacing="6"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:ModCategoryOption">
+                                                <Button Classes="chip" Classes.active="{Binding IsSelected}"
+                                                        Content="{Binding Display}"
+                                                        Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).SelectCategoryCommand}"
+                                                        CommandParameter="{Binding}"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
                                 <CheckBox Grid.Column="1" Content="{DynamicResource Mods_HideInstalled}"
-                                          IsChecked="{Binding HideInstalledMods}" VerticalAlignment="Top"/>
+                                          IsChecked="{Binding HideInstalledMods}" VerticalAlignment="Center"/>
                             </Grid>
                         </StackPanel>
 
-                        <Grid Grid.Row="2" ColumnDefinitions="*,340" ColumnSpacing="14">
+                        <Grid Grid.Row="2" ColumnDefinitions="*,Auto" ColumnSpacing="14">
 
                             <!-- Cards -->
                             <Grid RowDefinitions="*,Auto" RowSpacing="8">
-                                <ScrollViewer Name="BrowserScroll">
-                                    <ItemsControl ItemsSource="{Binding ModBrowserItems}">
+                                <ScrollViewer Name="BrowserScroll" SizeChanged="OnBrowserSizeChanged">
+                                    <ItemsControl Name="BrowserItems" ItemsSource="{Binding ModBrowserItems}">
+                                        <!-- Columns are set from the code-behind by the width available. -->
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
-                                                <UniformGrid Columns="2" ColumnSpacing="10" RowSpacing="10"/>
+                                                <UniformGrid Columns="1" ColumnSpacing="10" RowSpacing="10"/>
                                             </ItemsPanelTemplate>
                                         </ItemsControl.ItemsPanel>
                                         <ItemsControl.ItemTemplate>
@@ -349,7 +356,7 @@
                                                         IsVisible="{Binding !IsHidden}" Padding="14"
                                                         PointerPressed="OnModRowPressed" Cursor="Hand">
                                                     <StackPanel Spacing="10">
-                                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                                                             <Border Width="44" Height="44" CornerRadius="10"
                                                                     Background="{DynamicResource ElevatedBrush}" ClipToBounds="True">
                                                                 <Image Source="{Binding Icon}" Stretch="Uniform" Width="44" Height="44"/>
@@ -359,7 +366,23 @@
                                                                            TextTrimming="CharacterEllipsis"/>
                                                                 <TextBlock Text="{Binding Byline}" Classes="faint" TextTrimming="CharacterEllipsis"/>
                                                             </StackPanel>
-                                                            <Panel Grid.Column="2" VerticalAlignment="Center">
+                                                        </Grid>
+                                                        <TextBlock Text="{Binding DisplayDescription}" Classes="muted" MaxLines="2"
+                                                                   TextWrapping="Wrap" TextTrimming="CharacterEllipsis" LineHeight="17"/>
+                                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                                            <ItemsControl ItemsSource="{Binding CategoryLabels}" VerticalAlignment="Center">
+                                                                <ItemsControl.ItemsPanel>
+                                                                    <ItemsPanelTemplate>
+                                                                        <StackPanel Orientation="Horizontal" Spacing="6"/>
+                                                                    </ItemsPanelTemplate>
+                                                                </ItemsControl.ItemsPanel>
+                                                                <ItemsControl.ItemTemplate>
+                                                                    <DataTemplate x:DataType="sys:String">
+                                                                        <Border Classes="tag"><TextBlock Text="{Binding}"/></Border>
+                                                                    </DataTemplate>
+                                                                </ItemsControl.ItemTemplate>
+                                                            </ItemsControl>
+                                                            <Panel Grid.Column="1" VerticalAlignment="Center">
                                                                 <Button Classes="small" IsVisible="{Binding NotInstalled}"
                                                                         Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).InstallBrowserItemCommand}"
                                                                         CommandParameter="{Binding}">
@@ -377,20 +400,6 @@
                                                                 </Border>
                                                             </Panel>
                                                         </Grid>
-                                                        <TextBlock Text="{Binding DisplayDescription}" Classes="muted" MaxLines="2"
-                                                                   TextWrapping="Wrap" TextTrimming="CharacterEllipsis" LineHeight="17"/>
-                                                        <ItemsControl ItemsSource="{Binding CategoryLabels}">
-                                                            <ItemsControl.ItemsPanel>
-                                                                <ItemsPanelTemplate>
-                                                                    <StackPanel Orientation="Horizontal" Spacing="6"/>
-                                                                </ItemsPanelTemplate>
-                                                            </ItemsControl.ItemsPanel>
-                                                            <ItemsControl.ItemTemplate>
-                                                                <DataTemplate x:DataType="sys:String">
-                                                                    <Border Classes="tag"><TextBlock Text="{Binding}"/></Border>
-                                                                </DataTemplate>
-                                                            </ItemsControl.ItemTemplate>
-                                                        </ItemsControl>
                                                     </StackPanel>
                                                 </Border>
                                             </DataTemplate>
@@ -409,15 +418,12 @@
                             </Grid>
 
                             <!-- Details of the selected card -->
-                            <Border Grid.Column="1" Classes="card" Padding="0" ClipToBounds="True">
+                            <!-- Only while a card is open: an empty panel took a third of a small
+                                 window for a hint nobody needed twice. -->
+                            <Border Grid.Column="1" Classes="card" Padding="0" ClipToBounds="True" Width="320"
+                                    IsVisible="{Binding IsProjectOpen}">
                                 <Panel>
-                                    <StackPanel Spacing="10" VerticalAlignment="Center" Margin="24" IsVisible="{Binding !IsProjectOpen}">
-                                        <PathIcon Data="{StaticResource IconSearch}" Classes="large muted" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="{DynamicResource Mods_DetailsPick}" Classes="muted" TextWrapping="Wrap"
-                                                   TextAlignment="Center"/>
-                                    </StackPanel>
-
-                                    <Grid RowDefinitions="Auto,*,Auto" IsVisible="{Binding IsProjectOpen}">
+                                    <Grid RowDefinitions="Auto,*,Auto">
                                         <Panel Height="120">
                                             <Border>
                                                 <Border.Background>

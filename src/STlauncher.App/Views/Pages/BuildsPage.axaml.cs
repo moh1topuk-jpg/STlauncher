@@ -35,6 +35,29 @@ public partial class BuildsPage : UserControl
         viewModel.OpenProjectCommand.Execute(item);
     }
 
+    /// <summary>
+    /// Cards per row from the width there is: one below 560px, two to 840, three above.
+    /// XAML has no width queries, so the count is set here whenever the area resizes.
+    /// </summary>
+    private void OnBrowserSizeChanged(object? sender, SizeChangedEventArgs e)
+    {
+        if (this.FindControl<ItemsControl>("BrowserItems")?.ItemsPanelRoot is Avalonia.Controls.Primitives.UniformGrid grid)
+        {
+            var width = e.NewSize.Width;
+            grid.Columns = width >= 840 ? 3 : width >= 560 ? 2 : 1;
+        }
+    }
+
+    /// <summary>The chip row scrolls sideways with the wheel, since it has no vertical extent.</summary>
+    private void OnChipWheel(object? sender, PointerWheelEventArgs e)
+    {
+        if (sender is ScrollViewer scroll)
+        {
+            scroll.Offset = new Vector(scroll.Offset.X - e.Delta.Y * 60, scroll.Offset.Y);
+            e.Handled = true;
+        }
+    }
+
     /// <summary>A build picked from the "From the catalog" submenu.</summary>
     private void OnCatalogBuildClick(object? sender, RoutedEventArgs e)
     {

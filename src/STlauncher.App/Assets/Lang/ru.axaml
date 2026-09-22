@@ -88,7 +88,7 @@
     <x:String x:Key="Mods_LoadMore">Показать ещё</x:String>
     <x:String x:Key="Mods_PrevPage">Назад</x:String>
     <x:String x:Key="Mods_NextPage">Далее</x:String>
-    <x:String x:Key="Mods_ShownOfTotal">Показано {0}–{1} из {2}</x:String>
+    <x:String x:Key="Mods_ShownOfTotal">{0}–{1} из {2}</x:String>
     <x:String x:Key="Server_Site">Сайт</x:String>
     <x:String x:Key="Server_OpenSite">Открыть showtime.su</x:String>
     <x:String x:Key="Server_PortHint">Порт по умолчанию — 25565, указывать его не обязательно.</x:String>

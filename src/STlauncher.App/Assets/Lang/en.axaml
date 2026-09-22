@@ -88,7 +88,7 @@
     <x:String x:Key="Mods_LoadMore">Show more</x:String>
     <x:String x:Key="Mods_PrevPage">Previous</x:String>
     <x:String x:Key="Mods_NextPage">Next</x:String>
-    <x:String x:Key="Mods_ShownOfTotal">Shown {0}-{1} of {2}</x:String>
+    <x:String x:Key="Mods_ShownOfTotal">{0}–{1} of {2}</x:String>
     <x:String x:Key="Server_Site">Website</x:String>
     <x:String x:Key="Server_OpenSite">Open showtime.su</x:String>
     <x:String x:Key="Server_PortHint">The default port is 25565; you do not have to specify it.</x:String>
