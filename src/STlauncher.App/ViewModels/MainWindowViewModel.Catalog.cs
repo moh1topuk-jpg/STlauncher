@@ -96,11 +96,14 @@ public partial class MainWindowViewModel
 
                 // Same reasoning, and more urgent: a player who cannot reach GitHub can
                 // never receive a build that fixes it.
-                _updates.UseFeed(result.Catalog.UpdateFeedUrl);
+                _updates.UseFeeds(result.Catalog.AllUpdateFeeds().Concat(Services.AppSettings.BuiltInUpdateFeeds));
             }
             else
             {
                 _loadedCatalog = null;
+
+                // No catalog at all - which is exactly when the built-in mirror matters.
+                _updates.UseFeeds(Services.AppSettings.BuiltInUpdateFeeds);
             }
 
             ConfigureDiscord();

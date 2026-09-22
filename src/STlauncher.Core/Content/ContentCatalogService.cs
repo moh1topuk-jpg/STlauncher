@@ -69,37 +69,32 @@ public sealed class ContentCatalogService
     /// </summary>
     public IReadOnlyList<string> FallbackUrls { get; set; } = Array.Empty<string>();
 
+    /// <summary>
+    /// How long one address may take. A blocked host often answers nothing at all, and
+    /// the shared client's five minutes would keep the whole start waiting on it.
+    /// </summary>
+    public TimeSpan RequestTimeout { get; set; } = TimeSpan.FromSeconds(15);
+
+    /// <summary>Head start the main address gets before the mirrors are asked as well.</summary>
+    public TimeSpan MirrorDelay { get; set; } = TimeSpan.FromSeconds(3);
+
     public async Task<CatalogLoadResult> LoadAsync(CancellationToken cancellationToken = default)
     {
         var error = default(string);
 
         if (IsHttpUrl(CatalogUrl))
         {
-            try
+            // The main address and the mirrors race; the first live copy wins. Trying
+            // them one after another meant a player behind a block sat through every
+            // timeout in turn before seeing the launcher at all.
+            var (catalog, failure) = await RaceAsync(cancellationToken).ConfigureAwait(false);
+
+            if (catalog is not null)
             {
-                var json = await _http.GetStringAsync(CatalogUrl!, cancellationToken).ConfigureAwait(false);
-                var catalog = Parse(json);
-
-                Directory.CreateDirectory(_paths.Meta);
-                AtomicFile.WriteAllText(CachePath, json);
-
-                _logger?.LogInformation("Loaded catalog '{Name}' with {Count} items.", catalog.Name, catalog.ItemCount);
                 return new CatalogLoadResult(catalog, CatalogOrigin.Remote, null);
             }
-            catch (Exception ex)
-            {
-                _logger?.LogWarning(ex, "Failed to load the catalog from {Url}.", CatalogUrl);
-                error = ex.Message;
-            }
 
-            // Before settling for yesterday's copy, try the same catalog elsewhere: a
-            // live catalog through a mirror beats a stale one from the cache.
-            var mirrored = await TryFallbacksAsync(cancellationToken).ConfigureAwait(false);
-
-            if (mirrored is not null)
-            {
-                return new CatalogLoadResult(mirrored, CatalogOrigin.Remote, null);
-            }
+            error = failure;
         }
         else if (IsLocalPath(CatalogUrl))
         {
@@ -132,33 +127,79 @@ public sealed class ContentCatalogService
 
     public ContentCatalog? LoadCached() => TryReadFile(CachePath);
 
-    private async Task<ContentCatalog?> TryFallbacksAsync(CancellationToken cancellationToken)
+    private async Task<(ContentCatalog? Catalog, string? Error)> RaceAsync(CancellationToken cancellationToken)
     {
-        foreach (var url in FallbackUrls)
+        using var race = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
+        var attempts = new List<Task<(string Url, ContentCatalog? Catalog, Exception? Error)>>
         {
-            if (!IsHttpUrl(url))
+            FetchOneAsync(CatalogUrl!, TimeSpan.Zero, race.Token)
+        };
+
+        foreach (var url in FallbackUrls.Where(IsHttpUrl))
+        {
+            attempts.Add(FetchOneAsync(url, MirrorDelay, race.Token));
+        }
+
+        var errors = new List<string>();
+
+        while (attempts.Count > 0)
+        {
+            var finished = await Task.WhenAny(attempts).ConfigureAwait(false);
+            attempts.Remove(finished);
+
+            var (url, catalog, exception) = await finished.ConfigureAwait(false);
+
+            if (catalog is not null)
             {
-                continue;
+                // The others are still in flight; nobody needs their answer now.
+                race.Cancel();
+                return (catalog, null);
             }
 
-            try
+            if (exception is not null)
             {
-                var json = await _http.GetStringAsync(url, cancellationToken).ConfigureAwait(false);
-                var catalog = Parse(json);
-
-                Directory.CreateDirectory(_paths.Meta);
-                AtomicFile.WriteAllText(CachePath, json);
-
-                _logger?.LogInformation("Loaded catalog '{Name}' through the mirror {Url}.", catalog.Name, url);
-                return catalog;
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogWarning(ex, "Catalog mirror {Url} failed as well.", url);
+                _logger?.LogWarning(exception, "Failed to load the catalog from {Url}.", url);
+                errors.Add($"{new Uri(url).Host}: {Http.NetworkFailures.InnermostMessage(exception)}");
             }
         }
 
-        return null;
+        return (null, string.Join("; ", errors));
+    }
+
+    private async Task<(string Url, ContentCatalog? Catalog, Exception? Error)> FetchOneAsync(
+        string url,
+        TimeSpan delay,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (delay > TimeSpan.Zero)
+            {
+                await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+            }
+
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeout.CancelAfter(RequestTimeout);
+
+            var json = await _http.GetStringAsync(url, timeout.Token).ConfigureAwait(false);
+            var catalog = Parse(json);
+
+            Directory.CreateDirectory(_paths.Meta);
+            AtomicFile.WriteAllText(CachePath, json);
+
+            _logger?.LogInformation("Loaded catalog '{Name}' from {Url}.", catalog.Name, url);
+            return (url, catalog, null);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Another address won, or the caller gave up: not a failure of this one.
+            return (url, null, null);
+        }
+        catch (Exception ex)
+        {
+            return (url, null, ex);
+        }
     }
 
     public ContentCatalog? TryReadFile(string path)

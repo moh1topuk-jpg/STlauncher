@@ -336,12 +336,18 @@
                         <StackPanel Spacing="8">
                             <TextBlock Text="{DynamicResource Settings_Updates}" FontWeight="SemiBold"/>
                             <TextBlock Text="{Binding UpdateStatus}" Classes="faint" TextWrapping="Wrap"/>
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <Button Classes="ghost small" Content="{DynamicResource Settings_CheckUpdates}"
+                            <WrapPanel>
+                                <Button Classes="ghost small" Margin="0,0,8,6" Content="{DynamicResource Settings_CheckUpdates}"
                                         Command="{Binding CheckForUpdatesCommand}" IsEnabled="{Binding !IsUpdateBusy}"/>
-                                <Button Classes="ghost small" Content="{DynamicResource Settings_RestartUpdate}"
+                                <Button Classes="ghost small" Margin="0,0,8,6" Content="{DynamicResource Settings_RestartUpdate}"
                                         Command="{Binding InstallUpdateCommand}" IsEnabled="{Binding CanRestartToUpdate}"/>
-                            </StackPanel>
+                                <Button Classes="ghost small" Margin="0,0,8,6" Content="{DynamicResource Update_DownloadManually}"
+                                        Command="{Binding OpenReleasesPageCommand}"/>
+                                <Button Classes="plain small" Margin="0,0,8,6" Content="{DynamicResource Update_OpenGithub}"
+                                        Command="{Binding OpenGithubReleasesCommand}"/>
+                                <Button Classes="plain small" Margin="0,0,8,6" Content="{DynamicResource Console_OpenLog}"
+                                        Command="{Binding OpenLauncherLogCommand}"/>
+                            </WrapPanel>
                         </StackPanel>
                     </StackPanel>
                 </Border>

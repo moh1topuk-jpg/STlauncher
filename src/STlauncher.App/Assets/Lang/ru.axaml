@@ -683,4 +683,8 @@
     <x:String x:Key="Settings_UsageNumbers">Пользователей лаунчера: {0} за сутки · {1} за 7 дней · запусков за сутки: {2}</x:String>
     <x:String x:Key="Settings_UsageNumbersNone">Сборщик пока не публикует статистику лаунчера (см. docs/monitoring.md).</x:String>
 
+    <!-- Update sources -->
+    <x:String x:Key="Update_OpenGithub">Страница релизов на GitHub</x:String>
+    <x:String x:Key="Console_NoLogYet">Лог-файл ещё не записан</x:String>
+
 </ResourceDictionary>

@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -13,11 +15,13 @@ namespace STlauncher.App.Services;
 /// False for a portable or development build: those have no Velopack metadata and
 /// therefore cannot update themselves in place.
 /// </param>
+/// <param name="Source">Where the answer came from: a mirror address, or "GitHub".</param>
 public sealed record UpdateStatus(
     bool IsSupported,
     bool IsUpdateAvailable,
     string? CurrentVersion,
-    string? AvailableVersion)
+    string? AvailableVersion,
+    string? Source = null)
 {
     public static UpdateStatus Unsupported(string? currentVersion) =>
         new(false, false, currentVersion, null);
@@ -25,9 +29,9 @@ public sealed record UpdateStatus(
 
 /// <summary>
 /// Wraps Velopack so the rest of the app never has to care whether it is running as an
-/// installed build. Releases are published to GitHub by the tag-driven CI workflow, and
-/// the manager reads that same release feed - unless a mirror is configured, for players
-/// who cannot reach GitHub at all.
+/// installed build. Releases are published to GitHub by the tag-driven CI workflow; the
+/// check asks the mirrors first and GitHub last, each with a short deadline, and keeps
+/// whichever answered for the download. One blocked host used to be the end of it.
 /// </summary>
 public sealed class UpdateService
 {
@@ -36,6 +40,12 @@ public sealed class UpdateService
     /// <summary>Where a player is sent when the launcher cannot update itself.</summary>
     public const string ReleasesUrl = RepositoryUrl + "/releases/latest";
 
+    /// <summary>The label for the GitHub source in logs and status lines.</summary>
+    public const string GithubLabel = "GitHub";
+
+    /// <summary>How long one source may take to answer before the next is asked.</summary>
+    public static readonly TimeSpan SourceTimeout = TimeSpan.FromSeconds(20);
+
     private readonly ILogger<UpdateService>? _logger;
 
     // Guards the pending-update fields. The automatic background check and the manual
@@ -43,8 +53,12 @@ public sealed class UpdateService
     // each other's state - which is how you end up applying an update you never downloaded.
     private readonly SemaphoreSlim _gate = new(1, 1);
 
+    /// <summary>Mirror addresses in the order they are tried. GitHub always comes after them.</summary>
+    private IReadOnlyList<string> _mirrors = Array.Empty<string>();
+
+    /// <summary>The manager that answered last time; downloads go through it.</summary>
     private UpdateManager? _manager;
-    private string? _feedUrl;
+    private string? _managerSource;
     private UpdateInfo? _pending;
     private bool _isDownloaded;
 
@@ -52,6 +66,7 @@ public sealed class UpdateService
     {
         _logger = logger;
         _manager = CreateManager(null);
+        _managerSource = GithubLabel;
     }
 
     /// <summary>True only for a build installed through the Velopack installer.</summary>
@@ -62,6 +77,10 @@ public sealed class UpdateService
     /// <summary>What went wrong last time, so the UI can say something useful.</summary>
     public NetworkFailure? LastError { get; private set; }
 
+    /// <summary>Every source that failed in the last check, for the log.</summary>
+    public IReadOnlyList<(string Source, NetworkFailure Failure)> LastFailures { get; private set; }
+        = Array.Empty<(string, NetworkFailure)>();
+
     /// <summary>
     /// An update is already unpacked on disk and needs nothing but a restart. This can be
     /// true straight after startup when the download happened in an earlier session.
@@ -70,24 +89,30 @@ public sealed class UpdateService
         _isDownloaded || _manager?.UpdatePendingRestart is not null;
 
     /// <summary>
-    /// Points the updater at a mirror instead of GitHub. Published through the catalog, so
-    /// a player whose provider blocks GitHub can be routed around it without shipping a
-    /// new build - which would be impossible anyway, since the new build lives on GitHub.
+    /// The mirrors to try before GitHub, in order. The catalog publishes them, and the
+    /// launcher ships with one built in, so a player whose provider blocks GitHub is
+    /// routed around it even when the catalog itself could not be fetched.
     /// </summary>
-    public void UseFeed(string? feedUrl)
+    public void UseFeeds(IEnumerable<string?> feedUrls)
     {
-        var normalized = string.IsNullOrWhiteSpace(feedUrl) ? null : feedUrl.Trim();
+        var mirrors = feedUrls
+            .Where(u => !string.IsNullOrWhiteSpace(u))
+            .Select(u => u!.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
 
-        if (string.Equals(normalized, _feedUrl, StringComparison.OrdinalIgnoreCase))
+        if (mirrors.SequenceEqual(_mirrors, StringComparer.OrdinalIgnoreCase))
         {
             return;
         }
 
-        _feedUrl = normalized;
-        _manager = CreateManager(normalized);
+        _mirrors = mirrors;
         _pending = null;
         _isDownloaded = false;
     }
+
+    /// <summary>One mirror, kept for callers that have a single address.</summary>
+    public void UseFeed(string? feedUrl) => UseFeeds(new[] { feedUrl });
 
     private UpdateManager? CreateManager(string? feedUrl)
     {
@@ -119,6 +144,7 @@ public sealed class UpdateService
         try
         {
             LastError = null;
+            LastFailures = Array.Empty<(string, NetworkFailure)>();
 
             // An update downloaded in a previous session is already waiting - offering the
             // restart straight away is both faster and avoids downloading it twice.
@@ -127,34 +153,82 @@ public sealed class UpdateService
             if (prepared is not null)
             {
                 _isDownloaded = true;
-                return new UpdateStatus(true, true, CurrentVersion, prepared.Version?.ToString());
+                return new UpdateStatus(true, true, CurrentVersion, prepared.Version?.ToString(), _managerSource);
             }
 
-            // Velopack 1.2 has no cancellable overload of CheckForUpdatesAsync, so the token
-            // only stops us waiting - the request itself runs to completion in the background.
-            var update = await _manager.CheckForUpdatesAsync()
-                .WaitAsync(cancellationToken)
-                .ConfigureAwait(false);
+            var failures = new List<(string, NetworkFailure)>();
+            Exception? last = null;
 
-            _pending = update;
-            _isDownloaded = false;
+            foreach (var (source, feedUrl) in Candidates())
+            {
+                cancellationToken.ThrowIfCancellationRequested();
 
-            return new UpdateStatus(
-                true,
-                update is not null,
-                CurrentVersion,
-                update?.TargetFullRelease?.Version?.ToString());
-        }
-        catch (Exception ex)
-        {
-            LastError = NetworkFailures.Classify(ex);
-            _logger?.LogWarning(ex, "Update check failed ({Kind}).", LastError.Kind);
-            throw;
+                var manager = feedUrl is null && _managerSource == GithubLabel ? _manager : CreateManager(feedUrl);
+
+                if (manager is null)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    // Velopack 1.2 has no cancellable overload of CheckForUpdatesAsync, so the
+                    // deadline only stops the wait; a hung request finishes on its own later.
+                    var update = await manager.CheckForUpdatesAsync()
+                        .WaitAsync(SourceTimeout, cancellationToken)
+                        .ConfigureAwait(false);
+
+                    _manager = manager;
+                    _managerSource = source;
+                    _pending = update;
+                    _isDownloaded = false;
+
+                    if (failures.Count > 0)
+                    {
+                        _logger?.LogInformation("Update check answered by {Source} after {Failed} source(s) failed.", source, failures.Count);
+                    }
+
+                    LastFailures = failures;
+
+                    return new UpdateStatus(
+                        true,
+                        update is not null,
+                        CurrentVersion,
+                        update?.TargetFullRelease?.Version?.ToString(),
+                        source);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    last = ex;
+                    var failure = NetworkFailures.Classify(ex);
+                    failures.Add((source, failure));
+                    _logger?.LogWarning(ex, "Update check through {Source} failed ({Kind}).", source, failure.Kind);
+                }
+            }
+
+            LastFailures = failures;
+            LastError = last is null ? new NetworkFailure(NetworkFailureKind.Unknown, "no update source") : NetworkFailures.Classify(last);
+            throw last ?? new InvalidOperationException("No update source is configured.");
         }
         finally
         {
             _gate.Release();
         }
+    }
+
+    /// <summary>Mirrors first - they are what a blocked player can reach - and GitHub last.</summary>
+    private IEnumerable<(string Source, string? FeedUrl)> Candidates()
+    {
+        foreach (var mirror in _mirrors)
+        {
+            yield return (mirror, mirror);
+        }
+
+        yield return (GithubLabel, null);
     }
 
     public async Task DownloadAsync(
@@ -185,7 +259,7 @@ public sealed class UpdateService
         catch (Exception ex)
         {
             LastError = NetworkFailures.Classify(ex);
-            _logger?.LogWarning(ex, "Update download failed ({Kind}).", LastError.Kind);
+            _logger?.LogWarning(ex, "Update download through {Source} failed ({Kind}).", _managerSource, LastError.Kind);
             throw;
         }
         finally
@@ -216,5 +290,4 @@ public sealed class UpdateService
         _manager.ApplyUpdatesAndRestart(asset);
         return true;
     }
-
 }

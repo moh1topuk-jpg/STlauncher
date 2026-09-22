@@ -83,9 +83,15 @@ public partial class MainWindowViewModel
     [ObservableProperty]
     private bool _canDownloadManually;
 
-    /// <summary>Opens the releases page so a blocked launcher is not a dead end.</summary>
+    /// <summary>
+    /// The installer by hand, through the mirror: the one address that works when
+    /// GitHub does not. The GitHub page is for everyone else.
+    /// </summary>
     [RelayCommand]
-    private void OpenReleasesPage() => OpenUrl(Services.UpdateService.ReleasesUrl);
+    private void OpenReleasesPage() => OpenUrl(Services.AppSettings.InstallerMirrorUrl);
+
+    [RelayCommand]
+    private void OpenGithubReleases() => OpenUrl(Services.UpdateService.ReleasesUrl);
 
     partial void OnHasUpdateChanged(bool value)
     {
@@ -176,6 +182,16 @@ public partial class MainWindowViewModel
 
             var status = await _updates.CheckAsync();
 
+            foreach (var (source, failure) in _updates.LastFailures)
+            {
+                AppendConsole($"[update] {source}: {failure.Kind}: {failure.Detail}");
+            }
+
+            if (status.Source is { Length: > 0 } via)
+            {
+                AppendConsole($"[update] checked through {via}: {(status.IsUpdateAvailable ? status.AvailableVersion : "up to date")}");
+            }
+
             if (!status.IsSupported)
             {
                 if (announce)
@@ -264,7 +280,12 @@ public partial class MainWindowViewModel
 
         // The detail goes to the log regardless: the next report should arrive with a
         // cause rather than with the wrapper message.
-        AppendConsole($"[update] {error.Kind}: {error.Detail}");
+        foreach (var (source, failure) in _updates.LastFailures)
+        {
+            AppendConsole($"[update] {source}: {failure.Kind}: {failure.Detail}");
+        }
+
+        AppendConsole($"[update] all sources failed - {error.Kind}: {error.Detail}");
 
         if (announce || error.Kind != STlauncher.Core.Http.NetworkFailureKind.Unknown)
         {

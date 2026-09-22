@@ -16,6 +16,18 @@ public sealed class AppSettings
     /// </summary>
     public const string CatalogMirrorUrl = "https://showtime-updates.moh1topuk.workers.dev/catalog.json";
 
+    /// <summary>
+    /// Update mirrors the launcher knows without a catalog. The catalog can add more; this
+    /// is the floor, so a player who cannot fetch the catalog still skips GitHub.
+    /// </summary>
+    public static readonly string[] BuiltInUpdateFeeds =
+    {
+        "https://showtime-updates.moh1topuk.workers.dev/"
+    };
+
+    /// <summary>The installer through the mirror - the "download by hand" link that works when GitHub does not.</summary>
+    public const string InstallerMirrorUrl = "https://showtime-updates.moh1topuk.workers.dev/STlauncher-win-Setup.exe";
+
     /// <summary>Previously shipped default. Treated as "not customised" and upgraded.</summary>
     public const string LegacyCatalogUrl = "https://mc.showtime.su/launcher/catalog.json";
 

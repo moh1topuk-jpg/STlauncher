@@ -8,8 +8,12 @@
 
         <Grid ColumnDefinitions="*,Auto">
             <TextBlock Text="{DynamicResource Nav_Console}" Classes="h2" VerticalAlignment="Center"/>
-            <Button Grid.Column="1" Classes="ghost small" Content="{DynamicResource Console_Clear}"
-                    Command="{Binding ClearConsoleCommand}"/>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                <Button Classes="ghost small" Content="{DynamicResource Console_OpenLog}"
+                        Command="{Binding OpenLauncherLogCommand}"/>
+                <Button Classes="ghost small" Content="{DynamicResource Console_Clear}"
+                        Command="{Binding ClearConsoleCommand}"/>
+            </StackPanel>
         </Grid>
 
         <Border Grid.Row="1" Classes="panel" Padding="0">

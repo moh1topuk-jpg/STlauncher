@@ -683,4 +683,8 @@
     <x:String x:Key="Settings_UsageNumbers">Launcher users: {0} today · {1} over 7 days · launches today: {2}</x:String>
     <x:String x:Key="Settings_UsageNumbersNone">The collector does not publish launcher usage yet (see docs/monitoring.md).</x:String>
 
+    <!-- Update sources -->
+    <x:String x:Key="Update_OpenGithub">Releases page on GitHub</x:String>
+    <x:String x:Key="Console_NoLogYet">The log file has not been written yet</x:String>
+
 </ResourceDictionary>

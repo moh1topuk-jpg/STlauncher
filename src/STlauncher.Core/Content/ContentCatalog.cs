@@ -60,6 +60,30 @@ public sealed class ContentCatalog
     public string? UpdateFeedUrl { get; set; }
 
     /// <summary>
+    /// More mirrors, tried in order before GitHub. A second one on a different network
+    /// covers the day the first is blocked too.
+    /// </summary>
+    [JsonPropertyName("updateFeedUrls")]
+    public List<string> UpdateFeedUrls { get; set; } = new();
+
+    /// <summary>Every update mirror the catalog names, single field first.</summary>
+    public IEnumerable<string> AllUpdateFeeds()
+    {
+        if (!string.IsNullOrWhiteSpace(UpdateFeedUrl))
+        {
+            yield return UpdateFeedUrl!;
+        }
+
+        foreach (var url in UpdateFeedUrls)
+        {
+            if (!string.IsNullOrWhiteSpace(url))
+            {
+                yield return url;
+            }
+        }
+    }
+
+    /// <summary>
     /// Discord application id for "Playing Showtime" under the player's name. Empty
     /// means no presence. Created once at discord.com/developers; see docs/catalog.md.
     /// </summary>

@@ -47,7 +47,11 @@ public static class LauncherHost
             {
                 // Pick up DNS changes during a long-running session instead of pinning the
                 // first resolved address for the process lifetime.
-                PooledConnectionLifetime = TimeSpan.FromMinutes(5)
+                PooledConnectionLifetime = TimeSpan.FromMinutes(5),
+
+                // A host that drops packets instead of refusing must not hold a request
+                // for the full five minutes before the launcher tries the next address.
+                ConnectTimeout = TimeSpan.FromSeconds(15)
             };
 
             // Long enough for a large asset download, short enough that a stalled API
