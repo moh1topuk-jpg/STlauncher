@@ -2,13 +2,15 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:STlauncher.App.ViewModels"
         xmlns:pages="using:STlauncher.App.Views.Pages"
+        xmlns:controls="using:STlauncher.App.Controls"
+        xmlns:sys="using:System"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="720"
         x:Class="STlauncher.App.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        Width="1100" Height="720"
-        MinWidth="920" MinHeight="600"
+        Width="1180" Height="760"
+        MinWidth="960" MinHeight="620"
         Background="{DynamicResource AppBgBrush}"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaChromeHints="NoChrome"
@@ -16,18 +18,12 @@
         Icon="/Assets/app.ico"
         Title="STlauncher">
 
-    <Grid RowDefinitions="40,Auto,*,28">
+    <Grid RowDefinitions="36,Auto,*">
 
         <!-- ============ Title bar ============ -->
         <Border Grid.Row="0" Background="#0F0C11" PointerPressed="OnTitleBarPressed">
             <Grid ColumnDefinitions="*,Auto">
-                <StackPanel Orientation="Horizontal" Spacing="10" Margin="16,0" VerticalAlignment="Center">
-                    <Border Width="20" Height="20" CornerRadius="5" ClipToBounds="True">
-                        <Image Source="/Assets/server-logo.png" Stretch="UniformToFill"/>
-                    </Border>
-                    <TextBlock Text="STlauncher" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                </StackPanel>
-
+                <TextBlock Text="STlauncher" Classes="faint" Margin="18,0" VerticalAlignment="Center"/>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
                     <Button Classes="chrome" Click="OnMinimizeClick" ToolTip.Tip="{DynamicResource Common_Minimize}">
                         <PathIcon Data="{StaticResource IconMinimize}"/>
@@ -43,21 +39,16 @@
         </Border>
 
         <!-- ============ Update notification ============ -->
-        <!-- Appears only when a release was actually found. One button does the whole
-             job: download if needed, then apply and relaunch. -->
         <Border Grid.Row="1" IsVisible="{Binding IsUpdateBannerVisible}"
                 Background="#1C1420" Padding="16,10">
             <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
                 <PathIcon Data="{StaticResource IconDownload}" Classes="accent" VerticalAlignment="Center"/>
-
                 <TextBlock Grid.Column="1" VerticalAlignment="Center"
                            Text="{Binding UpdateBannerText}" TextWrapping="Wrap"/>
-
                 <Button Grid.Column="2" Classes="primary small"
                         Content="{Binding UpdateBannerAction}"
                         Command="{Binding InstallUpdateCommand}"
                         IsEnabled="{Binding !IsUpdateBusy}"/>
-
                 <Button Grid.Column="3" Classes="plain small"
                         Command="{Binding DismissUpdateBannerCommand}"
                         IsEnabled="{Binding !IsUpdateBusy}"
@@ -68,118 +59,115 @@
         </Border>
 
         <!-- ============ Body ============ -->
-        <Grid Grid.Row="2" ColumnDefinitions="224,*">
+        <Grid Grid.Row="2" ColumnDefinitions="88,*">
 
-            <!-- Sidebar -->
-            <Border Grid.Column="0" Background="{DynamicResource SidebarBrush}">
-                <Grid RowDefinitions="*,Auto">
+            <!-- Rail -->
+            <Border Grid.Column="0" Background="#0F0C11">
+                <Grid RowDefinitions="Auto,*,Auto" Margin="10,14,10,14">
 
-                    <StackPanel Grid.Row="0" Margin="12,14" Spacing="2">
-                        <Button Classes="nav" Classes.active="{Binding IsGameSection}"
+                    <Border Grid.Row="0" Width="40" Height="40" CornerRadius="12" ClipToBounds="True"
+                            Margin="0,0,0,14" HorizontalAlignment="Center">
+                        <Image Source="/Assets/server-logo.png" Stretch="UniformToFill"/>
+                    </Border>
+
+                    <StackPanel Grid.Row="1" Spacing="4" HorizontalAlignment="Center">
+                        <Button Classes="rail" Classes.active="{Binding IsGameSection}"
                                 Command="{Binding SelectSectionCommand}" CommandParameter="Game">
-                            <StackPanel Orientation="Horizontal" Spacing="12">
+                            <StackPanel Spacing="5" HorizontalAlignment="Center">
                                 <PathIcon Data="{StaticResource IconPlay}"/>
-                                <TextBlock Text="{DynamicResource Nav_Game}" VerticalAlignment="Center"/>
+                                <TextBlock Text="{DynamicResource Nav_Game}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
-
-                        <Button Classes="nav" Classes.active="{Binding IsBuildsSection}"
+                        <Button Classes="rail" Classes.active="{Binding IsBuildsSection}"
                                 Command="{Binding SelectSectionCommand}" CommandParameter="Builds">
-                            <StackPanel Orientation="Horizontal" Spacing="12">
+                            <StackPanel Spacing="5" HorizontalAlignment="Center">
                                 <PathIcon Data="{StaticResource IconBuilds}"/>
-                                <TextBlock Text="{DynamicResource Nav_Builds}" VerticalAlignment="Center"/>
+                                <TextBlock Text="{DynamicResource Nav_Builds}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
-
-                        <Button Classes="nav" Classes.active="{Binding IsServerSection}"
+                        <Button Classes="rail" Classes.active="{Binding IsServerSection}"
                                 Command="{Binding SelectSectionCommand}" CommandParameter="Server">
-                            <StackPanel Orientation="Horizontal" Spacing="12">
+                            <StackPanel Spacing="5" HorizontalAlignment="Center">
                                 <PathIcon Data="{StaticResource IconServer}"/>
-                                <TextBlock Text="{DynamicResource Nav_Server}" VerticalAlignment="Center"/>
+                                <TextBlock Text="{DynamicResource Nav_Server}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
-
-                        <Button Classes="nav" Classes.active="{Binding IsConsoleSection}"
+                        <Button Classes="rail" Classes.active="{Binding IsSettingsSection}"
+                                Command="{Binding SelectSectionCommand}" CommandParameter="Settings">
+                            <StackPanel Spacing="5" HorizontalAlignment="Center">
+                                <PathIcon Data="{StaticResource IconSettings}"/>
+                                <TextBlock Text="{DynamicResource Nav_Settings}" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Classes="rail" Classes.active="{Binding IsConsoleSection}"
                                 IsVisible="{Binding ShowDeveloperConsole}"
                                 Command="{Binding SelectSectionCommand}" CommandParameter="Console">
-                            <StackPanel Orientation="Horizontal" Spacing="12">
+                            <StackPanel Spacing="5" HorizontalAlignment="Center">
                                 <PathIcon Data="{StaticResource IconConsole}"/>
-                                <TextBlock Text="{DynamicResource Nav_Console}" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
-
-                        <Button Classes="nav" Classes.active="{Binding IsSettingsSection}"
-                                Command="{Binding SelectSectionCommand}" CommandParameter="Settings">
-                            <StackPanel Orientation="Horizontal" Spacing="12">
-                                <PathIcon Data="{StaticResource IconSettings}"/>
-                                <TextBlock Text="{DynamicResource Nav_Settings}" VerticalAlignment="Center"/>
+                                <TextBlock Text="{DynamicResource Nav_Console}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
                     </StackPanel>
 
-                    <!-- Update + profile footer -->
-                    <StackPanel Grid.Row="1" Margin="12,0,12,12" Spacing="10">
+                    <StackPanel Grid.Row="2" Spacing="10" HorizontalAlignment="Center">
+                        <!-- Always visible, never in the way: the version, or the update waiting. -->
+                        <Button Classes="version-pill" Classes.available="{Binding HasUpdate}"
+                                Command="{Binding UpdateActionCommand}"
+                                IsEnabled="{Binding !IsUpdateBusy}"
+                                ToolTip.Tip="{Binding UpdateStatus}">
+                            <StackPanel Spacing="3" HorizontalAlignment="Center">
+                                <PathIcon Data="{StaticResource IconDownload}" Width="13" Height="13"
+                                          IsVisible="{Binding HasUpdate}"/>
+                                <TextBlock Text="{Binding RailVersionLabel}" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
 
-                        <!-- Always visible, never in the way: one row that either offers
-                             a check or the update it already found. -->
-                        <StackPanel Spacing="4">
-                            <Button Classes="update-row" Classes.available="{Binding HasUpdate}"
-                                    HorizontalAlignment="Stretch"
-                                    HorizontalContentAlignment="Left"
-                                    Command="{Binding UpdateActionCommand}"
-                                    IsEnabled="{Binding !IsUpdateBusy}"
-                                    Content="{Binding UpdateActionLabel}"/>
+                        <Button Classes="plain small" IsVisible="{Binding CanDownloadManually}"
+                                Command="{Binding OpenReleasesPageCommand}"
+                                ToolTip.Tip="{DynamicResource Update_DownloadManually}">
+                            <PathIcon Data="{StaticResource IconOpenExternal}" Classes="small"/>
+                        </Button>
 
-                            <!-- A launcher that cannot update itself must not be a dead end. -->
-                            <Button Classes="plain small" HorizontalAlignment="Stretch"
-                                    HorizontalContentAlignment="Left"
-                                    IsVisible="{Binding CanDownloadManually}"
-                                    Content="{DynamicResource Update_DownloadManually}"
-                                    Command="{Binding OpenReleasesPageCommand}"/>
-
-                            <TextBlock Text="{Binding UpdateStateLabel}" Classes="faint"
-                                       ToolTip.Tip="{Binding UpdateStatus}"
-                                       TextTrimming="CharacterEllipsis" Margin="4,0,0,0"/>
-                        </StackPanel>
-
-                        <Border Classes="panel" Padding="10">
-                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
-                                <Border Width="34" Height="34" CornerRadius="8" Background="{DynamicResource ElevatedBrush}"
-                                        ClipToBounds="True">
-                                    <Image Source="{Binding Avatar}" Stretch="Uniform" Width="34" Height="34"/>
-                                </Border>
-                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
-                                    <TextBlock Text="{Binding Username}" FontWeight="SemiBold"
-                                               TextTrimming="CharacterEllipsis"/>
-                                    <TextBlock Text="{Binding SelectedInstance.Name}" Classes="faint"
-                                               TextTrimming="CharacterEllipsis"/>
-                                </StackPanel>
-                            </Grid>
-                        </Border>
+                        <!-- The player: the face opens the model, the name and saved names. -->
+                        <Button Classes="avatar" Width="44" Height="44" ToolTip.Tip="{Binding Username}">
+                            <controls:SkinFace Skin="{Binding PlayerSkin}" Width="28" Height="28" CornerRadius="6"/>
+                            <Button.Flyout>
+                                <Flyout Placement="RightEdgeAlignedBottom">
+                                    <StackPanel Spacing="12" Width="240">
+                                        <controls:SkinViewer Skin="{Binding PlayerSkin}" Height="260"/>
+                                        <StackPanel Spacing="2" HorizontalAlignment="Center">
+                                            <TextBlock Text="{Binding Username}" Classes="h3" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="{DynamicResource Game_OfflineMode}" Classes="faint" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                        <TextBlock Text="{DynamicResource Game_ViewerHint}" Classes="faint" HorizontalAlignment="Center"/>
+                                    </StackPanel>
+                                </Flyout>
+                            </Button.Flyout>
+                        </Button>
                     </StackPanel>
                 </Grid>
             </Border>
 
             <!-- Content -->
-            <Panel Grid.Column="1">
-                <pages:GamePage IsVisible="{Binding IsGameSection}"/>
-                <pages:BuildsPage IsVisible="{Binding IsBuildsSection}"/>
-                <pages:ServerPage IsVisible="{Binding IsServerSection}"/>
-                <pages:ConsolePage IsVisible="{Binding IsConsoleSection}"/>
-                <pages:SettingsPage IsVisible="{Binding IsSettingsSection}"/>
-            </Panel>
-        </Grid>
+            <Grid Grid.Column="1" RowDefinitions="*,Auto">
+                <Panel>
+                    <pages:GamePage IsVisible="{Binding IsGameSection}"/>
+                    <pages:BuildsPage IsVisible="{Binding IsBuildsSection}"/>
+                    <pages:ServerPage IsVisible="{Binding IsServerSection}"/>
+                    <pages:ConsolePage IsVisible="{Binding IsConsoleSection}"/>
+                    <pages:SettingsPage IsVisible="{Binding IsSettingsSection}"/>
+                </Panel>
 
-        <!-- ============ Status bar ============ -->
-        <!-- Quiet by default: the progress bar only exists while something is loading. -->
-        <Border Grid.Row="3" Background="#0F0C11" Padding="16,0">
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                <TextBlock Text="{Binding Status}" VerticalAlignment="Center"
-                           Classes="faint" TextTrimming="CharacterEllipsis"/>
-                <ProgressBar Grid.Column="1" Value="{Binding Progress}" Minimum="0" Maximum="100" Width="160"
-                             VerticalAlignment="Center" IsVisible="{Binding ShowLaunchProgress}"/>
+                <!-- Status line: quiet by default, a progress bar only while loading. -->
+                <Border Grid.Row="1" Background="#0F0C11" Padding="20,0" Height="28">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <TextBlock Text="{Binding Status}" VerticalAlignment="Center"
+                                   Classes="faint" TextTrimming="CharacterEllipsis"/>
+                        <ProgressBar Grid.Column="1" Value="{Binding Progress}" Minimum="0" Maximum="100" Width="160"
+                                     VerticalAlignment="Center" IsVisible="{Binding ShowLaunchProgress}"/>
+                    </Grid>
+                </Border>
             </Grid>
-        </Border>
-
+        </Grid>
     </Grid>
 </Window>

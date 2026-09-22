@@ -30,6 +30,9 @@
     <Color x:Key="WarningColor">#C98A27</Color>
     <Color x:Key="DangerColor">#C0392B</Color>
 
+    <!-- Type: Manrope (OFL) for headings and figures, Inter for everything else -->
+    <FontFamily x:Key="DisplayFont">avares://STlauncher.App/Assets/Fonts#Manrope</FontFamily>
+
     <!-- Brushes -->
     <SolidColorBrush x:Key="AppBgBrush" Color="{StaticResource AppBgColor}"/>
     <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}"/>

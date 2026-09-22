@@ -81,6 +81,7 @@ public class UiResourceTests
                  {
                      Path.Combine(appDir, "Styles", "Colors.axaml"),
                      Path.Combine(appDir, "Styles", "Fluent.axaml"),
+                Path.Combine(appDir, "Styles", "Icons.axaml"),
                      Path.Combine(appDir, "Assets", "Lang", "ru.axaml"),
                      Path.Combine(appDir, "Assets", "Lang", "en.axaml")
                  })

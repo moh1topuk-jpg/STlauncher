@@ -63,6 +63,20 @@ public partial class MainWindowViewModel
         => UpdateStateLabel = $"{CurrentVersionLabel} · {Localize(key, fallback)}";
 
     /// <summary>
+    /// The pill at the foot of the rail has room for one short word: the version while
+    /// there is nothing to do, the new version when there is.
+    /// </summary>
+    public string RailVersionLabel => IsUpdateBusy
+        ? "…"
+        : HasUpdate && !string.IsNullOrEmpty(AvailableUpdateVersion)
+            ? AvailableUpdateVersion
+            : CurrentVersionLabel;
+
+    partial void OnCurrentVersionLabelChanged(string value) => OnPropertyChanged(nameof(RailVersionLabel));
+
+    partial void OnAvailableUpdateVersionChanged(string value) => OnPropertyChanged(nameof(RailVersionLabel));
+
+    /// <summary>
     /// The check failed in a way the player can do something about: offer the download
     /// page, since the launcher cannot fetch the build itself.
     /// </summary>
@@ -73,9 +87,17 @@ public partial class MainWindowViewModel
     [RelayCommand]
     private void OpenReleasesPage() => OpenUrl(Services.UpdateService.ReleasesUrl);
 
-    partial void OnHasUpdateChanged(bool value) => RefreshUpdateActionLabel();
+    partial void OnHasUpdateChanged(bool value)
+    {
+        RefreshUpdateActionLabel();
+        OnPropertyChanged(nameof(RailVersionLabel));
+    }
 
-    partial void OnIsUpdateBusyChanged(bool value) => RefreshUpdateActionLabel();
+    partial void OnIsUpdateBusyChanged(bool value)
+    {
+        RefreshUpdateActionLabel();
+        OnPropertyChanged(nameof(RailVersionLabel));
+    }
 
     /// <summary>
     /// One button, three states. Separate "check" and "update" buttons would mean one of

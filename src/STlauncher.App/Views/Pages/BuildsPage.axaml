@@ -57,11 +57,13 @@
                     <TextBox Grid.Row="1" Text="{Binding BuildFilter}"
                              Watermark="{DynamicResource Builds_SearchHint}"/>
 
-                    <ListBox Grid.Row="2" ItemsSource="{Binding Instances}"
+                    <ListBox Grid.Row="2" Classes="builds" ItemsSource="{Binding Instances}"
                              SelectedItem="{Binding SelectedInstance}">
                         <ListBox.ItemTemplate>
                             <DataTemplate x:DataType="inst:Instance">
-                                <StackPanel Spacing="4" Margin="0,2">
+                                <Grid ColumnDefinitions="3,*" ColumnSpacing="9" Margin="0,0,0,0">
+                                <Border Classes="selection-bar" CornerRadius="2" VerticalAlignment="Stretch"/>
+                                <StackPanel Grid.Column="1" Spacing="4" Margin="0,8,10,8">
                                     <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
                                                TextTrimming="CharacterEllipsis"/>
 
@@ -94,6 +96,7 @@
                                         </Border>
                                     </WrapPanel>
                                 </StackPanel>
+                                </Grid>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
@@ -107,30 +110,52 @@
             <Grid Grid.Column="1" RowDefinitions="Auto,Auto,*" RowSpacing="14" MaxWidth="1100"
                   HorizontalAlignment="Stretch">
 
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                    <StackPanel Spacing="4">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16">
+                    <Border Width="56" Height="56" CornerRadius="14" VerticalAlignment="Center">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                <GradientStop Offset="0" Color="#2A1A22"/>
+                                <GradientStop Offset="1" Color="#1A1119"/>
+                            </LinearGradientBrush>
+                        </Border.Background>
+                        <PathIcon Data="{StaticResource IconBuilds}" Classes="large accent"/>
+                    </Border>
+
+                    <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
                         <TextBlock Text="{Binding SelectedInstance.Name}" Classes="h1"
                                    TextTrimming="CharacterEllipsis"/>
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <TextBlock Text="{Binding SelectedInstance.VersionId, TargetNullValue=—}"
                                        Classes="muted"/>
-                            <TextBlock Text="·" Classes="muted"/>
+                            <TextBlock Text="•" Classes="faint"/>
                             <TextBlock Text="{Binding SelectedInstance.Loader}" Classes="muted"/>
-                            <TextBlock Text="·" Classes="muted"/>
-                            <TextBlock Classes="gold"
+                            <TextBlock Text="•" Classes="faint"/>
+                            <TextBlock Classes="gold" FontSize="12"
                                        Text="{Binding BuildModCount, Converter={x:Static conv:ModCountConverter.Instance}}"/>
+                            <TextBlock Text="•" Classes="faint"/>
+                            <TextBlock Text="{Binding BuildStateLabel}" Classes="muted"/>
                         </StackPanel>
                     </StackPanel>
 
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                         <!-- Only a catalog build has something to check against. -->
                         <Button Classes="ghost small" Content="{DynamicResource Builds_SyncWithCatalog}"
                                 ToolTip.Tip="{DynamicResource Builds_UseRecommendedHint}"
                                 IsVisible="{Binding IsCatalogInstance}"
                                 IsEnabled="{Binding !IsBuildImportBusy}"
                                 Command="{Binding SyncSelectedBuildCommand}"/>
-                        <Button Classes="ghost small" Content="{DynamicResource Builds_OpenFolder}"
-                                Command="{Binding OpenGameFolderCommand}"/>
+                        <Button Classes="ghost small" ToolTip.Tip="{DynamicResource Builds_OpenFolder}"
+                                Command="{Binding OpenGameFolderCommand}">
+                            <PathIcon Data="{StaticResource IconFolder}" Classes="small"/>
+                        </Button>
+                        <!-- Starting from here saves the trip back to the main screen. -->
+                        <Button Classes="primary" Height="40" Padding="18,0" CornerRadius="11"
+                                Command="{Binding PlayCommand}" IsEnabled="{Binding !IsBusy}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <PathIcon Data="{StaticResource IconPlay}" Classes="small"/>
+                                <TextBlock Text="{DynamicResource Game_Play}" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Button>
                     </StackPanel>
                 </Grid>
 
@@ -140,7 +165,7 @@
                                 Content="{DynamicResource Builds_TabMods}"
                                 Command="{Binding SelectBuildTabCommand}" CommandParameter="Mods"/>
                         <Button Classes="segment" Classes.active="{Binding IsBuildCatalog}"
-                                Content="{DynamicResource Builds_TabCatalog}"
+                                Content="{DynamicResource Builds_TabAddMods}"
                                 Command="{Binding SelectBuildTabCommand}" CommandParameter="Catalog"/>
                         <Button Classes="segment" Classes.active="{Binding IsBuildSettings}"
                                 Content="{DynamicResource Builds_TabSettings}"
@@ -182,10 +207,16 @@
 
                             <ScrollViewer>
                                 <ItemsControl ItemsSource="{Binding InstalledMods}">
+                                    <!-- Two columns: a 30-mod build fits on one screen. -->
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <UniformGrid Columns="2" ColumnSpacing="8" RowSpacing="6"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="mods:InstalledMod">
                                             <Border Classes="panel mod-row" Classes.off="{Binding !Enabled}"
-                                                    Padding="12,8" Margin="0,0,0,4">
+                                                    Padding="12,8" VerticalAlignment="Stretch">
                                                 <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
                                                     <!-- The switch shows the state and changes it:
                                                          one button labelled "On/Off" did neither. -->

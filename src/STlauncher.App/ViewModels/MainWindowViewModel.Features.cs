@@ -223,6 +223,8 @@ public partial class MainWindowViewModel
         TotalMemoryMb,
         RecommendedMemoryMb);
 
+    public string RecommendedMemoryLabel => Localize("Settings_MemoryRecommendedValue", "Recommended · {0} MB", RecommendedMemoryMb);
+
     [RelayCommand]
     private void UseRecommendedMemory() => MaxMemoryMb = RecommendedMemoryMb;
 

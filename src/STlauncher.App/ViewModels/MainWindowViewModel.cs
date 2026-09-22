@@ -127,8 +127,9 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isLoaderBusy;
 
+    /// <summary>The player's skin texture; the face and the 3D model are both drawn from it.</summary>
     [ObservableProperty]
-    private Bitmap? _avatar;
+    private Services.PlayerSkin? _playerSkin;
 
 
     [ObservableProperty]
@@ -758,6 +759,8 @@ public partial class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsNotProfileBuild));
         OnPropertyChanged(nameof(ProfileBuildHint));
         OnPropertyChanged(nameof(IsCatalogInstance));
+        OnPropertyChanged(nameof(BuildStateLabel));
+        OnPropertyChanged(nameof(LastPlayedLabel));
 
         ApplyServerFromInstance();
 
@@ -873,18 +876,25 @@ public partial class MainWindowViewModel : ViewModelBase
         previous?.Cancel();
         previous?.Dispose();
 
+        // Something is on screen at once; the real skin replaces it when it arrives.
+        PlayerSkin ??= _skins.Default;
+
         try
         {
             await Task.Delay(400, cts.Token);
-            var bitmap = await _skins.GetAvatarAsync(Username, cts.Token);
+            var skin = await _skins.GetSkinAsync(Username, cts.Token);
 
             if (!cts.IsCancellationRequested)
             {
-                Avatar = bitmap;
+                PlayerSkin = skin;
             }
         }
         catch (OperationCanceledException)
         {
+        }
+        catch (Exception ex)
+        {
+            AppendConsole($"[skin] {ex.Message}");
         }
     }
 

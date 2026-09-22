@@ -24,12 +24,84 @@ public enum MonitoringRange
 /// One column of the chart. <see cref="HasData"/> separates "nobody was online" from
 /// "the launcher was not running", which are drawn differently on purpose.
 /// </summary>
-public sealed record ServerChartBar(double Height, bool HasData, string Tooltip);
+public sealed record ServerChartBar(double Height, bool HasData, string Tooltip)
+{
+    /// <summary>The reading as a share of the tallest one in the window, for a chart of any size.</summary>
+    public double Fraction => Math.Clamp(Height / MainWindowViewModel.ChartHeight, 0, 1);
+}
 
 public partial class MainWindowViewModel
 {
     /// <summary>Pixel height of the plot area. Bars are scaled into it.</summary>
-    private const double ChartHeight = 150;
+    internal const double ChartHeight = 150;
+
+    /// <summary>The build's last run, for the main screen.</summary>
+    public string LastPlayedLabel => SelectedInstance?.LastPlayedAt is { } at
+        ? Localize("Game_LastPlayed", "Last played {0}", FriendlyTime(at))
+        : Localize("Game_NeverPlayed", "Not started yet");
+
+    /// <summary>Whether the build is kept in step with the catalog, in one line.</summary>
+    public string BuildStateLabel => IsBuildSyncBusy
+        ? Localize("Game_StateSyncing", "Checking mods against the catalog…")
+        : IsCatalogInstance
+            ? Localize("Game_StateSynced", "Mods match the catalog")
+            : Localize("Game_StateOwn", "Your own build - the catalog leaves it alone");
+
+    /// <summary>"33 online on Showtime" for the small card on the main screen.</summary>
+    public string OnlineNowLabel => IsServerOnline
+        ? Localize("Game_OnlineNow", "{0} online on {1}", ServerOnlineValue, ServerName)
+        : Localize("Game_ServerQuiet", "{0} is not responding", ServerName);
+
+    partial void OnIsServerOnlineChanged(bool value) => OnPropertyChanged(nameof(OnlineNowLabel));
+
+    /// <summary>"Online over 24 hours" / "over 7 days", above the chart.</summary>
+    public string ChartTitle => MonitoringRange == MonitoringRange.Week
+        ? Localize("Server_ChartWeek", "Online over 7 days")
+        : Localize("Server_ChartDay", "Online over 24 hours");
+
+    /// <summary>Puts the address on the clipboard, for a friend or another launcher.</summary>
+    [RelayCommand]
+    private async Task CopyServerAddressAsync()
+    {
+        try
+        {
+            var clipboard = Avalonia.Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime { MainWindow: { } window }
+                ? window.Clipboard
+                : null;
+
+            if (clipboard is not null)
+            {
+                await clipboard.SetTextAsync(ServerAddress);
+                Status = Localize("Server_AddressCopied", "Address copied: {0}", ServerAddress);
+            }
+        }
+        catch (Exception ex)
+        {
+            Status = Localize("Error_Ui", "Something went wrong: {0}", ex.Message);
+        }
+    }
+
+    partial void OnServerOnlineValueChanged(string value) => OnPropertyChanged(nameof(OnlineNowLabel));
+
+    partial void OnIsBuildSyncBusyChanged(bool value) => OnPropertyChanged(nameof(BuildStateLabel));
+
+    private static string FriendlyTime(DateTimeOffset at)
+    {
+        var local = at.ToLocalTime();
+        var today = DateTimeOffset.Now.Date;
+
+        if (local.Date == today)
+        {
+            return Localize("Time_Today", "today at {0:HH:mm}", local);
+        }
+
+        if (local.Date == today.AddDays(-1))
+        {
+            return Localize("Time_Yesterday", "yesterday at {0:HH:mm}", local);
+        }
+
+        return local.ToString("dd.MM.yyyy HH:mm", CultureInfo.CurrentCulture);
+    }
 
     /// <summary>Visible even when it is the lowest bar of the window.</summary>
     private const double MinimumBarHeight = 3;
@@ -178,6 +250,7 @@ public partial class MainWindowViewModel
     {
         OnPropertyChanged(nameof(IsDayRange));
         OnPropertyChanged(nameof(IsWeekRange));
+        OnPropertyChanged(nameof(ChartTitle));
         RefreshServerHistory();
     }
 

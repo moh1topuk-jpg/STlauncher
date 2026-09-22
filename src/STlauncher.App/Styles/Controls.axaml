@@ -22,25 +22,37 @@
     </Style>
 
     <Style Selector="TextBlock.h1">
-        <Setter Property="FontSize" Value="26"/>
-        <Setter Property="FontWeight" Value="SemiBold"/>
-        <Setter Property="LetterSpacing" Value="-0.3"/>
+        <Setter Property="FontFamily" Value="{StaticResource DisplayFont}"/>
+        <Setter Property="FontSize" Value="28"/>
+        <Setter Property="FontWeight" Value="ExtraBold"/>
+        <Setter Property="LetterSpacing" Value="-0.5"/>
+    </Style>
+
+    <!-- The main screen's one big title. -->
+    <Style Selector="TextBlock.display">
+        <Setter Property="FontFamily" Value="{StaticResource DisplayFont}"/>
+        <Setter Property="FontSize" Value="42"/>
+        <Setter Property="FontWeight" Value="ExtraBold"/>
+        <Setter Property="LetterSpacing" Value="-0.8"/>
     </Style>
 
     <Style Selector="TextBlock.h2">
+        <Setter Property="FontFamily" Value="{StaticResource DisplayFont}"/>
         <Setter Property="FontSize" Value="18"/>
-        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="FontWeight" Value="Bold"/>
     </Style>
 
     <Style Selector="TextBlock.h3">
-        <Setter Property="FontSize" Value="15"/>
-        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="FontFamily" Value="{StaticResource DisplayFont}"/>
+        <Setter Property="FontSize" Value="16"/>
+        <Setter Property="FontWeight" Value="Bold"/>
     </Style>
 
     <!-- The one large number of a metric tile. -->
     <Style Selector="TextBlock.value">
-        <Setter Property="FontSize" Value="24"/>
-        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="FontFamily" Value="{StaticResource DisplayFont}"/>
+        <Setter Property="FontSize" Value="30"/>
+        <Setter Property="FontWeight" Value="ExtraBold"/>
         <Setter Property="LetterSpacing" Value="-0.5"/>
     </Style>
 
@@ -227,11 +239,163 @@
 
     <!-- The one big button of the main screen. -->
     <Style Selector="Button.hero">
+        <Setter Property="Height" Value="64"/>
+        <Setter Property="FontFamily" Value="{StaticResource DisplayFont}"/>
+        <Setter Property="FontSize" Value="19"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="CornerRadius" Value="16"/>
+        <Setter Property="Padding" Value="44,0"/>
+    </Style>
+
+    <Style Selector="Button.hero /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background">
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                <GradientStop Offset="0" Color="#C02E4C"/>
+                <GradientStop Offset="1" Color="#A3243F"/>
+            </LinearGradientBrush>
+        </Setter>
+    </Style>
+
+    <!-- A square companion to the hero button: same height, one icon. -->
+    <Style Selector="Button.hero-side">
+        <Setter Property="Height" Value="64"/>
+        <Setter Property="Width" Value="56"/>
+        <Setter Property="CornerRadius" Value="16"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+    </Style>
+
+    <Style Selector="Button.hero-side /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="#66141014"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
+    </Style>
+
+    <!-- ===================== Navigation rail =====================
+         Icon over label, so the rail stays 88px wide and the content gets the rest. -->
+
+    <Style Selector="Button.rail">
+        <Setter Property="Width" Value="68"/>
         <Setter Property="Height" Value="60"/>
-        <Setter Property="MinWidth" Value="320"/>
-        <Setter Property="FontSize" Value="18"/>
-        <Setter Property="CornerRadius" Value="14"/>
-        <Setter Property="Padding" Value="36,0"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="CornerRadius" Value="12"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="Cursor" Value="Hand"/>
+    </Style>
+
+    <Style Selector="Button.rail /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent"/>
+    </Style>
+
+    <Style Selector="Button.rail PathIcon">
+        <Setter Property="Width" Value="20"/>
+        <Setter Property="Height" Value="20"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+    </Style>
+
+    <Style Selector="Button.rail:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
+    </Style>
+
+    <Style Selector="Button.rail.active">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <Style Selector="Button.rail.active PathIcon">
+        <Setter Property="Foreground" Value="{DynamicResource AccentHoverBrush}"/>
+    </Style>
+
+    <Style Selector="Button.rail.active /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource ElevatedBrush}"/>
+    </Style>
+
+    <!-- Version pill at the foot of the rail: grey while current, accent when an update waits. -->
+    <Style Selector="Button.version-pill">
+        <Setter Property="Width" Value="68"/>
+        <Setter Property="Padding" Value="6,7"/>
+        <Setter Property="CornerRadius" Value="10"/>
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
+    </Style>
+
+    <Style Selector="Button.version-pill /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
+    </Style>
+
+    <Style Selector="Button.version-pill:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
+    </Style>
+
+    <Style Selector="Button.version-pill.available">
+        <Setter Property="Foreground" Value="{DynamicResource TextOnAccentBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+    </Style>
+
+    <Style Selector="Button.version-pill.available /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+    </Style>
+
+    <Style Selector="Button.version-pill.available:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}"/>
+    </Style>
+
+    <!-- The avatar at the foot of the rail, and the one on the main screen. -->
+    <Style Selector="Button.avatar">
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="CornerRadius" Value="12"/>
+        <Setter Property="Background" Value="{DynamicResource ElevatedBrush}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+
+    <Style Selector="Button.avatar /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource ElevatedBrush}"/>
+    </Style>
+
+    <Style Selector="Button.avatar:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
+    </Style>
+
+    <!-- Section index on the settings page. -->
+    <Style Selector="Button.index">
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+        <Setter Property="Padding" Value="12,9"/>
+        <Setter Property="CornerRadius" Value="9"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+    </Style>
+
+    <Style Selector="Button.index /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent"/>
+    </Style>
+
+    <Style Selector="Button.index:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
+    </Style>
+
+    <!-- The selected build in the list carries an accent bar on its left edge. -->
+    <Style Selector="ListBox.builds ListBoxItem">
+        <Setter Property="Padding" Value="0"/>
+    </Style>
+
+    <Style Selector="ListBox.builds ListBoxItem Border.selection-bar">
+        <Setter Property="Background" Value="Transparent"/>
+    </Style>
+
+    <Style Selector="ListBox.builds ListBoxItem:selected Border.selection-bar">
+        <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}"/>
     </Style>
 
     <!-- Secondary: no fill, a quiet outline that warms on hover -->
