@@ -360,8 +360,8 @@ public sealed class SkinViewer : Control
             yield return new Part(new Box(-4, 12, -2, 8, 12, 4, 16, 16), null);          // body
             yield return new Part(new Box(-8, 12, -2, 4, 12, 4, 40, 16), null);          // right arm
             yield return new Part(new Box(4, 12, -2, 4, 12, 4, 40, 16, Mirror: true), null); // left arm
-            yield return new Part(new Box(-2, 0, -2, 4, 12, 4, 0, 16), null);            // right leg
-            yield return new Part(new Box(2, 0, -2, 4, 12, 4, 0, 16, Mirror: true), null); // left leg
+            yield return new Part(new Box(-4, 0, -2, 4, 12, 4, 0, 16), null);            // right leg
+            yield return new Part(new Box(0, 0, -2, 4, 12, 4, 0, 16, Mirror: true), null); // left leg
             yield break;
         }
 
@@ -375,10 +375,10 @@ public sealed class SkinViewer : Control
             new Box(4, 12, -2, arm, 12, 4, 32, 48),
             new Box(4, 12, -2, arm, 12, 4, 48, 48, Inflate: 0.25));                    // left arm + sleeve
         yield return new Part(
-            new Box(-2, 0, -2, 4, 12, 4, 0, 16),
-            new Box(-2, 0, -2, 4, 12, 4, 0, 32, Inflate: 0.25));                       // right leg + trouser
+            new Box(-4, 0, -2, 4, 12, 4, 0, 16),
+            new Box(-4, 0, -2, 4, 12, 4, 0, 32, Inflate: 0.25));                       // right leg + trouser
         yield return new Part(
-            new Box(2, 0, -2, 4, 12, 4, 16, 48),
-            new Box(2, 0, -2, 4, 12, 4, 0, 48, Inflate: 0.25));                        // left leg + trouser
+            new Box(0, 0, -2, 4, 12, 4, 16, 48),
+            new Box(0, 0, -2, 4, 12, 4, 0, 48, Inflate: 0.25));                        // left leg + trouser
     }
 }
