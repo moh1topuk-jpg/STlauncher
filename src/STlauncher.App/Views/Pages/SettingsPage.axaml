@@ -319,13 +319,15 @@
                             </ComboBox>
                         </StackPanel>
 
-                        <StackPanel Spacing="8">
+                        <!-- The server owner's fields. Players have no use for them and no way
+                             to tell what they do; they appear only with OwnerTools in settings.json. -->
+                        <StackPanel Spacing="8" IsVisible="{Binding ShowOwnerTools}">
                             <TextBlock Text="{DynamicResource Settings_Catalog}" FontWeight="SemiBold"/>
                             <TextBox Text="{Binding CatalogUrl}" Watermark="https://example.com/catalog.json  or  C:\path\catalog.json"/>
                             <TextBlock Text="{DynamicResource Settings_CatalogHint}" Classes="faint" TextWrapping="Wrap"/>
                         </StackPanel>
 
-                        <StackPanel Spacing="8">
+                        <StackPanel Spacing="8" IsVisible="{Binding ShowOwnerTools}">
                             <TextBlock Text="{DynamicResource Settings_StatsUrl}" FontWeight="SemiBold"/>
                             <TextBox Text="{Binding ServerStatsUrl}" Watermark="https://name.workers.dev/"/>
                             <TextBlock Text="{DynamicResource Settings_StatsUrlHint}" Classes="faint" TextWrapping="Wrap"/>

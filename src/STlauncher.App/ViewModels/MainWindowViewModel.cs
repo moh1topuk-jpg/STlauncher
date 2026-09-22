@@ -219,6 +219,10 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private bool _showDeveloperConsole;
 
+    /// <summary>Server-owner fields in the developer section. Set in settings.json only.</summary>
+    [ObservableProperty]
+    private bool _showOwnerTools;
+
     public bool IsGameSection => Section == ShellSection.Game;
     public bool IsBuildsSection => Section == ShellSection.Builds;
     public bool IsServerSection => Section == ShellSection.Server;
@@ -341,6 +345,7 @@ public partial class MainWindowViewModel : ViewModelBase
         ServerStatsUrl = settings.ServerStatsUrl ?? string.Empty;
         Language = LocalizationService.Normalize(settings.Language);
         ShowDeveloperConsole = settings.ShowDeveloperConsole;
+        ShowOwnerTools = settings.OwnerTools;
 
         ShowOldReleases = settings.ShowOldReleases;
         ShowBeta = settings.ShowBeta;
@@ -1150,6 +1155,7 @@ public partial class MainWindowViewModel : ViewModelBase
             ServerStatsUrl = string.IsNullOrWhiteSpace(ServerStatsUrl) ? null : ServerStatsUrl,
             Language = Language,
             ShowDeveloperConsole = ShowDeveloperConsole,
+            OwnerTools = ShowOwnerTools,
             SelectedInstanceId = SelectedInstance?.Id,
 
             Nicknames = Nicknames.ToList(),

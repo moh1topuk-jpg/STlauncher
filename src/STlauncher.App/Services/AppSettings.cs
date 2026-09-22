@@ -132,6 +132,13 @@ public sealed class AppSettings
     public bool ShowDeveloperConsole { get; set; }
 
     /// <summary>
+    /// Fields that belong to whoever runs the server, not to players: the catalog and
+    /// collector addresses, launcher usage figures. No switch in the interface; set by
+    /// hand in this file.
+    /// </summary>
+    public bool OwnerTools { get; set; }
+
+    /// <summary>
     /// Content catalog address. Defaults to the catalog shipped in the repository, so
     /// builds and mods can be updated without releasing a new launcher.
     /// </summary>

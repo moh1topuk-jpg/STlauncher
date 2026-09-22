@@ -84,8 +84,11 @@ public sealed class SkinService
 
         var cachePath = Path.Combine(_cacheDirectory, SafeFileName(key) + ".png");
 
-        // Fresh enough on disk: no request at all.
-        if (LoadCached(cachePath, CacheLifetime) is { } fresh)
+        // Fresh enough on disk, and from a system that actually knows the name: no
+        // request at all. A cached copy from a mirror is not trusted here - mirrors
+        // answer any name with a Steve, and an older launcher saved those as if they
+        // were the player's skin. That is how a name TLauncher knows kept showing Steve.
+        if (LoadCached(cachePath, CacheLifetime) is { } fresh && IsTrustedSource(fresh.Source))
         {
             return Remember(key, fresh);
         }
@@ -94,20 +97,29 @@ public sealed class SkinService
 
         if (fetched is { } found && TryDecode(found.Bytes, found.Slim, found.Source) is { } skin)
         {
-            SaveCached(cachePath, found.Bytes, found.Slim, found.Source);
+            if (IsTrustedSource(found.Source))
+            {
+                SaveCached(cachePath, found.Bytes, found.Slim, found.Source);
+            }
+
             return Remember(key, skin);
         }
 
         // Nothing reachable: the last skin we saw for this name beats a stranger's face.
-        if (LoadCached(cachePath, TimeSpan.MaxValue) is { } stale)
+        // Not remembered for the session, so the next look retries the network.
+        if (LoadCached(cachePath, TimeSpan.MaxValue) is { } stale && IsTrustedSource(stale.Source))
         {
-            return Remember(key, stale);
+            return stale;
         }
 
         // Deliberately not remembered under the real name: a network blip must not pin
         // Steve to a player until the launcher restarts.
         return Default;
     }
+
+    /// <summary>Systems that answer only for names they know. Mirrors invent a Steve for the rest.</summary>
+    private static bool IsTrustedSource(string? source)
+        => source is "Mojang" or "TLauncher" or "ely.by";
 
     private PlayerSkin Remember(string key, PlayerSkin skin)
     {
