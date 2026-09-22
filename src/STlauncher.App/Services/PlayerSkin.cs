@@ -27,6 +27,29 @@ public sealed class PlayerSkin
 
     public Bitmap Texture { get; }
 
+    /// <summary>How much larger <see cref="Enlarged"/> is than the texture.</summary>
+    public const int EnlargeFactor = 8;
+
+    private Bitmap? _enlarged;
+
+    /// <summary>
+    /// The texture blown up eight times with no smoothing, for the 3D viewer. Drawing the
+    /// 64-pixel texture straight onto a turned face left every pixel a jagged staircase;
+    /// drawing this copy with smoothing keeps the pixels crisp (they are eight wide
+    /// already) and gives the face clean edges.
+    /// </summary>
+    public Bitmap Enlarged
+    {
+        get
+        {
+            _enlarged ??= Texture.CreateScaledBitmap(
+                new PixelSize(Texture.PixelSize.Width * EnlargeFactor, Texture.PixelSize.Height * EnlargeFactor),
+                BitmapInterpolationMode.None);
+
+            return _enlarged;
+        }
+    }
+
     /// <summary>True for the built-in Steve shown when nothing else could be found.</summary>
     public bool IsDefault { get; }
 

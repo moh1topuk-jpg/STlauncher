@@ -46,7 +46,10 @@ public sealed class SkinViewer : Control
 
     public SkinViewer()
     {
-        RenderOptions.SetBitmapInterpolationMode(this, BitmapInterpolationMode.None);
+        // Smoothing on, deliberately: the texture drawn is the pre-enlarged one, whose
+        // pixels are already eight wide, so smoothing only softens the edges of each
+        // face by a hair - which is exactly what removes the staircase along them.
+        RenderOptions.SetBitmapInterpolationMode(this, BitmapInterpolationMode.HighQuality);
         Cursor = new Cursor(StandardCursorType.Hand);
 
         _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) };
@@ -178,7 +181,7 @@ public sealed class SkinViewer : Control
 
                     using (context.PushTransform(projected.Matrix))
                     {
-                        context.DrawImage(skin.Texture, projected.Texture, projected.Texture);
+                        context.DrawImage(skin.Enlarged, projected.Texture, projected.Texture);
                     }
 
                     if (projected.Shade > 0.01)
@@ -215,9 +218,29 @@ public sealed class SkinViewer : Control
             return null;
         }
 
+        // Each face is pushed a third of a pixel outwards from its centre. Neighbouring
+        // faces drawn with smoothing would otherwise meet in a hairline seam where both
+        // edges are half-covered.
+        var cx = s.Average(v => v.X);
+        var cy = s.Average(v => v.Y);
+
+        for (var i = 0; i < s.Length; i++)
+        {
+            var dx = s[i].X - cx;
+            var dy = s[i].Y - cy;
+            var length = Math.Sqrt(dx * dx + dy * dy);
+
+            if (length > 0.001)
+            {
+                s[i] = new Point(s[i].X + dx / length * 0.35, s[i].Y + dy / length * 0.35);
+            }
+        }
+
         // Map the texture rectangle onto the parallelogram: the rect's top-left, top-right
-        // and bottom-left corners land on s[0], s[1], s[3].
-        var t = face.Texture;
+        // and bottom-left corners land on s[0], s[1], s[3]. The rectangle is in the
+        // enlarged texture's pixels.
+        var f = PlayerSkin.EnlargeFactor;
+        var t = new Rect(face.Texture.X * f, face.Texture.Y * f, face.Texture.Width * f, face.Texture.Height * f);
         var ax = (s[1].X - s[0].X) / t.Width;
         var ay = (s[1].Y - s[0].Y) / t.Width;
         var bx = (s[3].X - s[0].X) / t.Height;
