@@ -769,7 +769,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     partial void OnSelectedInstanceChanged(Instance? value)
     {
-        if (value is null)
+        if (value is null || _refreshingListItem)
         {
             return;
         }

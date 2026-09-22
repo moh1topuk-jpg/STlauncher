@@ -74,18 +74,50 @@ public partial class MainWindowViewModel
     }
 
     /// <summary>Replaces the list item so bound text (rename, last played) refreshes.</summary>
+    /// <summary>
+    /// True while a list row is being swapped for itself. The ListBox drops its selection
+    /// on the swap and the binding writes null into SelectedInstance; the selection is put
+    /// back straight after, and that write must not restart everything a real selection
+    /// change does - which mid-launch reset the loader version underneath the launch.
+    /// </summary>
+    private bool _refreshingListItem;
+
     private void RefreshBuildListItem(Instance instance)
     {
         var index = Instances.IndexOf(instance);
 
-        if (index >= 0)
+        if (index < 0)
+        {
+            return;
+        }
+
+        // Decided before the swap: after it the selection may already be gone. That was
+        // the bug - the check came second, found null, and the main screen went blank
+        // the moment the game started.
+        var wasSelected = ReferenceEquals(SelectedInstance, instance);
+
+        _refreshingListItem = true;
+
+        try
         {
             Instances[index] = instance;
 
-            if (ReferenceEquals(SelectedInstance, instance))
+            if (wasSelected && !ReferenceEquals(SelectedInstance, instance))
             {
                 SelectedInstance = instance;
             }
+        }
+        finally
+        {
+            _refreshingListItem = false;
+        }
+
+        // The header binds to SelectedInstance.Name and friends; the instance is not
+        // observable, so tell the bindings to read it again.
+        if (wasSelected)
+        {
+            OnPropertyChanged(nameof(SelectedInstance));
+            OnPropertyChanged(nameof(LastPlayedLabel));
         }
     }
 
