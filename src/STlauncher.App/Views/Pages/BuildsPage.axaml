@@ -257,7 +257,7 @@
                             </Border>
 
                             <ScrollViewer>
-                                <ItemsControl ItemsSource="{Binding InstalledMods}">
+                                <ItemsControl ItemsSource="{Binding InstalledMods}" VerticalAlignment="Top">
                                     <!-- Two columns: a 30-mod build fits on one screen. -->
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate>

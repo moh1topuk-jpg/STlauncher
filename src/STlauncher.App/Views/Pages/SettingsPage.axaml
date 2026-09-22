@@ -47,10 +47,10 @@
                                 </Grid>
                                 <Slider Minimum="1024" Maximum="{Binding MemorySliderMax}" TickFrequency="512" IsSnapToTickEnabled="True"
                                         Value="{Binding MaxMemoryMb}"/>
-                                <Grid ColumnDefinitions="*,Auto">
-                                    <TextBlock Text="{Binding MemoryHint}" Classes="faint"/>
-                                    <TextBlock Grid.Column="1" Text="{DynamicResource Settings_MemoryCeiling}" Classes="faint"/>
-                                </Grid>
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="{Binding MemoryHint}" Classes="faint" TextWrapping="Wrap"/>
+                                    <TextBlock Text="{DynamicResource Settings_MemoryCeiling}" Classes="faint"/>
+                                </StackPanel>
                             </StackPanel>
 
                             <StackPanel Grid.Column="1" Spacing="10">
