@@ -8,6 +8,8 @@
 
 ## [Не выпущено]
 
+## [0.3.3] — 2026-09-22
+
 ### Исправлено
 - Запуск стал заметно быстрее: лаунчер больше не пересчитывает хэши всех файлов игры
   перед каждым стартом (тысячи ассетов и библиотек). Файл проверяется один раз, дальше
@@ -273,7 +275,8 @@
 - Бэкапы миров по событиям: раз в сутки, перед изменением модов, перед запуском.
 - Автообновление с уведомлением и установкой одной кнопкой.
 
-[Не выпущено]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.3.2...HEAD
+[Не выпущено]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.3.3...HEAD
+[0.3.3]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.2.9...v0.3.0
