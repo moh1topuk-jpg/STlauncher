@@ -140,6 +140,12 @@
                         <CheckBox Content="{DynamicResource Settings_AnimatedBackground}" IsChecked="{Binding AnimatedBackground}"/>
 
                         <StackPanel Spacing="4">
+                            <CheckBox Content="{DynamicResource Settings_DiscordPresence}" IsChecked="{Binding DiscordPresence}"/>
+                            <TextBlock Text="{DynamicResource Settings_DiscordPresenceHint}" Classes="faint"
+                                       TextWrapping="Wrap" Margin="28,0,0,0"/>
+                        </StackPanel>
+
+                        <StackPanel Spacing="4">
                             <CheckBox Content="{DynamicResource Settings_DevConsole}" IsChecked="{Binding ShowDeveloperConsole}"/>
                             <TextBlock Text="{DynamicResource Settings_DevConsoleHint}" Classes="faint"
                                        TextWrapping="Wrap" Margin="28,0,0,0"/>

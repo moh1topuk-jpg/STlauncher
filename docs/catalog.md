@@ -62,6 +62,8 @@ https://raw.githubusercontent.com/moh1topuk-jpg/STlauncher/main/catalog.json
 | --- | --- |
 | `serverStatsUrl` | Адрес сборщика статистики онлайна ([monitoring.md](monitoring.md)). Нет поля — лаунчер строит график по своим замерам. |
 | `updateFeedUrl` | Адрес зеркала обновлений ([updates.md](updates.md)). Нет поля — обновления идут напрямую с GitHub. |
+| `discordAppId` | Id приложения Discord для статуса «Играет на Showtime» у игроков. Нет поля — статус не показывается. Создаётся один раз на [discord.com/developers](https://discord.com/developers/applications): *New Application*, имя — как должно выглядеть в Discord (например, «Showtime»), затем *Rich Presence → Art Assets* — загрузить картинку с именем `logo`. Id — *General Information → Application ID*. |
+| `discordImageUrl` | Картинка рядом со статусом, https-ссылка. Нет поля — берётся ассет `logo` приложения. |
 
 ### Элементы (`sections[].items[]`)
 

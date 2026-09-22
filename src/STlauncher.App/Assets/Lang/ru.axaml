@@ -586,4 +586,13 @@
     <x:String x:Key="Onboarding_DoneTitle">Всё готово</x:String>
     <x:String x:Key="Onboarding_DoneText">Рекомендуемая сборка сервера докачивается в фоне. Как только строка состояния скажет «можно играть» — жмите «Играть».</x:String>
 
+    <!-- Discord -->
+    <x:String x:Key="Settings_DiscordPresence">Показывать в Discord, что я играю на сервере</x:String>
+    <x:String x:Key="Settings_DiscordPresenceHint">Статус «Играет на Showtime» с названием сборки и версией, пока игра запущена. Работает, если Discord открыт.</x:String>
+    <x:String x:Key="Discord_Idle">В лаунчере</x:String>
+    <x:String x:Key="Discord_Server">Сервер {0}</x:String>
+    <x:String x:Key="Discord_Playing">Играет: {0}</x:String>
+    <x:String x:Key="Discord_PlayingOn">Играет на {0}</x:String>
+    <x:String x:Key="Discord_Button">Сайт сервера</x:String>
+
 </ResourceDictionary>

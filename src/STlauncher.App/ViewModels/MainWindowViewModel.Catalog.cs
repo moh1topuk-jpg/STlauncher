@@ -103,6 +103,8 @@ public partial class MainWindowViewModel
                 _loadedCatalog = null;
             }
 
+            ConfigureDiscord();
+
             var summary = Localize(
                 "Catalog_Summary",
                 "{0}: {1} build(s)",

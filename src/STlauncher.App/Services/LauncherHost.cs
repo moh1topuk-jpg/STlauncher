@@ -83,6 +83,7 @@ public static class LauncherHost
         services.AddSingleton<InstanceBackupService>();
         services.AddSingleton<STlauncher.Core.Import.InstanceImporter>();
         services.AddSingleton<UpdateService>();
+        services.AddSingleton<DiscordPresenceService>();
 
         services.AddTransient<MainWindowViewModel>();
 

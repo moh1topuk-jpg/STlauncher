@@ -207,6 +207,46 @@ public partial class MainWindowViewModel
 
     partial void OnAnimatedBackgroundChanged(bool value) => PersistSettings();
 
+    // ===================== Discord =====================
+
+    /// <summary>"Playing Showtime" under the player's name in Discord.</summary>
+    [ObservableProperty]
+    private bool _discordPresence = true;
+
+    partial void OnDiscordPresenceChanged(bool value)
+    {
+        PersistSettings();
+        ConfigureDiscord();
+    }
+
+    /// <summary>The app id lives in the catalog; without one there is nothing to show.</summary>
+    private void ConfigureDiscord()
+    {
+        _discord.Configure(_loadedCatalog?.DiscordAppId, DiscordPresence);
+        ApplyDiscordPresence(playing: IsGameRunning, joinServer: false);
+    }
+
+    private void ApplyDiscordPresence(bool playing, bool joinServer)
+    {
+        var image = _loadedCatalog?.DiscordImageUrl;
+
+        if (playing)
+        {
+            _discord.SetPlaying(
+                SelectedInstance?.Name ?? string.Empty,
+                SelectedInstance?.VersionId,
+                SelectedInstance?.Loader.ToString() ?? "Vanilla",
+                ServerName,
+                ServerDefaults.Website,
+                image,
+                joinServer);
+        }
+        else
+        {
+            _discord.SetIdle(ServerName, ServerDefaults.Website, image);
+        }
+    }
+
     // ===================== Memory =====================
 
     /// <summary>Physical memory of this machine, so the slider ends where the RAM does.</summary>

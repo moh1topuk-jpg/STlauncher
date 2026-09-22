@@ -59,6 +59,17 @@ public sealed class ContentCatalog
     [JsonPropertyName("updateFeedUrl")]
     public string? UpdateFeedUrl { get; set; }
 
+    /// <summary>
+    /// Discord application id for "Playing Showtime" under the player's name. Empty
+    /// means no presence. Created once at discord.com/developers; see docs/catalog.md.
+    /// </summary>
+    [JsonPropertyName("discordAppId")]
+    public string? DiscordAppId { get; set; }
+
+    /// <summary>Image shown next to the presence, as an https URL. Empty uses the "logo" asset of the app.</summary>
+    [JsonPropertyName("discordImageUrl")]
+    public string? DiscordImageUrl { get; set; }
+
     /// <summary>Recommended ready-made builds the launcher can apply in one click.</summary>
     [JsonPropertyName("builds")]
     public List<CatalogBuild> Builds { get; set; } = new();

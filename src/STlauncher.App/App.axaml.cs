@@ -74,6 +74,9 @@ public partial class App : Application
 
             window.Opened += (_, _) => SafeInitialize(viewModel);
 
+            // Discord shows the last presence until the client says goodbye.
+            desktop.Exit += (_, _) => _services.GetRequiredService<DiscordPresenceService>().Dispose();
+
             desktop.MainWindow = window;
         }
 

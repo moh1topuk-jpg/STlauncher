@@ -43,6 +43,9 @@ public sealed class AppSettings
     /// <summary>The drifting embers behind the main screen.</summary>
     public bool AnimatedBackground { get; set; } = true;
 
+    /// <summary>"Playing Showtime" in Discord while the game runs.</summary>
+    public bool DiscordPresence { get; set; } = true;
+
     /// <summary>Which skin system the player chose to be shown from: Auto, Mojang, TLauncher, ElyBy.</summary>
     public string? SkinSource { get; set; }
 

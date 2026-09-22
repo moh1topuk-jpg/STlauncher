@@ -586,4 +586,13 @@
     <x:String x:Key="Onboarding_DoneTitle">All set</x:String>
     <x:String x:Key="Onboarding_DoneText">The recommended server build is finishing its download in the background. When the status line says it is ready, press Play.</x:String>
 
+    <!-- Discord -->
+    <x:String x:Key="Settings_DiscordPresence">Show in Discord that I am playing on the server</x:String>
+    <x:String x:Key="Settings_DiscordPresenceHint">A "Playing on Showtime" status with the build name and version while the game runs. Works when Discord is open.</x:String>
+    <x:String x:Key="Discord_Idle">In the launcher</x:String>
+    <x:String x:Key="Discord_Server">{0} server</x:String>
+    <x:String x:Key="Discord_Playing">Playing {0}</x:String>
+    <x:String x:Key="Discord_PlayingOn">Playing on {0}</x:String>
+    <x:String x:Key="Discord_Button">Server website</x:String>
+
 </ResourceDictionary>

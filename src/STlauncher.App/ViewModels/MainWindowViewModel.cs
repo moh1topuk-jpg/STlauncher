@@ -49,6 +49,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly STlauncher.Core.Import.InstanceImporter _importer;
     private readonly LauncherPaths _paths;
     private readonly GameLauncher _gameLauncher;
+    private readonly DiscordPresenceService _discord;
 
     private List<VersionSummary> _allVersions = new();
     private bool _initialized;
@@ -82,7 +83,8 @@ public partial class MainWindowViewModel : ViewModelBase
         InstanceBackupService backups,
         STlauncher.Core.Import.InstanceImporter importer,
         LauncherPaths paths,
-        GameLauncher gameLauncher)
+        GameLauncher gameLauncher,
+        DiscordPresenceService discord)
     {
         _versions = versions;
         _launch = launch;
@@ -105,6 +107,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _importer = importer;
         _paths = paths;
         _gameLauncher = gameLauncher;
+        _discord = discord;
     }
 
     public ObservableCollection<Instance> Instances { get; } = new();
@@ -354,6 +357,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         ImportSuggestionDismissed = settings.ImportSuggestionDismissed;
         AnimatedBackground = settings.AnimatedBackground;
+        DiscordPresence = settings.DiscordPresence;
         LoadWhatsNew(settings.LastSeenVersion);
 
         _dismissedBuildIds.Clear();
@@ -736,7 +740,9 @@ public partial class MainWindowViewModel : ViewModelBase
             }
 
             GameCrashNotice = string.Empty;
+            ApplyDiscordPresence(playing: true, joinServer);
             var exitCode = await LaunchAndReactAsync(command, settings);
+            ApplyDiscordPresence(playing: false, joinServer: false);
 
             Status = exitCode == 0
                 ? Localize("Status_GameClosed", "Minecraft closed")
@@ -1136,6 +1142,7 @@ public partial class MainWindowViewModel : ViewModelBase
             DismissedBuildIds = _dismissedBuildIds.ToList(),
             ImportSuggestionDismissed = ImportSuggestionDismissed,
             AnimatedBackground = AnimatedBackground,
+            DiscordPresence = DiscordPresence,
             LastSeenVersion = _lastSeenVersion,
             SkinSource = SelectedSkinSource.ToString(),
             ShowOldReleases = ShowOldReleases,
