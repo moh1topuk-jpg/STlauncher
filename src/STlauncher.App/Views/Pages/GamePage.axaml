@@ -234,6 +234,28 @@
                         </StackPanel>
                     </Border>
 
+                    <!-- Builds found in other launchers: offered once, right where the
+                         player looks first. -->
+                    <Border Classes="card" Padding="16" Background="#CC1F1218" IsVisible="{Binding HasImportSuggestion}">
+                        <StackPanel Spacing="10">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                <PathIcon Data="{StaticResource IconBuilds}" Classes="gold" VerticalAlignment="Top"/>
+                                <StackPanel Grid.Column="1" Spacing="2">
+                                    <TextBlock Text="{Binding ImportSuggestionText}" TextWrapping="Wrap" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{DynamicResource Import_SuggestHint}" Classes="faint" TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <Button Grid.Column="2" Classes="plain small" VerticalAlignment="Top"
+                                        Command="{Binding DismissImportSuggestionCommand}"
+                                        ToolTip.Tip="{DynamicResource Import_SuggestDismiss}">
+                                    <PathIcon Data="{StaticResource IconClose}" Classes="small"/>
+                                </Button>
+                            </Grid>
+                            <Button Classes="primary small" HorizontalAlignment="Left"
+                                    Content="{DynamicResource Import_SuggestAccept}"
+                                    Command="{Binding AcceptImportSuggestionCommand}"/>
+                        </StackPanel>
+                    </Border>
+
                     <!-- A pulse from the server, not a billboard for it. -->
                     <Button Classes="link-tile" Command="{Binding SelectSectionCommand}" CommandParameter="Server">
                         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">

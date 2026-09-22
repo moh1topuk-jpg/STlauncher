@@ -34,6 +34,12 @@ public sealed class AppSettings
     /// </summary>
     public List<string> DismissedBuildIds { get; set; } = new();
 
+    /// <summary>
+    /// The player has seen the offer to bring builds over from other launchers and closed
+    /// it. Asked once; a card that keeps coming back is nagging.
+    /// </summary>
+    public bool ImportSuggestionDismissed { get; set; }
+
     public LoaderKind Loader { get; set; } = LoaderKind.Vanilla;
 
     public string? LoaderVersion { get; set; }

@@ -438,6 +438,11 @@
     <x:String x:Key="Import_ProblemIncomplete">the profile describes no way to start the game</x:String>
     <x:String x:Key="Import_ProblemAlready">already imported</x:String>
     <x:String x:Key="Import_Shared">shared folder</x:String>
+    <x:String x:Key="Import_Suggest">Found {0} build(s) in {1}</x:String>
+    <x:String x:Key="Import_SuggestPlain">Found {0} build(s) from other launchers</x:String>
+    <x:String x:Key="Import_SuggestHint">Worlds, mods and settings come along. Link them in place or copy them over.</x:String>
+    <x:String x:Key="Import_SuggestAccept">Bring them over</x:String>
+    <x:String x:Key="Import_SuggestDismiss">Do not offer again</x:String>
     <x:String x:Key="Import_VersionUnknown">version not known</x:String>
     <x:String x:Key="Import_VersionInferred">worked out from the mods</x:String>
     <x:String x:Key="Import_PickVersionLater">pick the version and loader in the build settings after importing</x:String>

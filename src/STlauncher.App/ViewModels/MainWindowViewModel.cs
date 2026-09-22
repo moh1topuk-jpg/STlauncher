@@ -257,6 +257,8 @@ public partial class MainWindowViewModel : ViewModelBase
         BackupsMaxTotalMb = settings.BackupsMaxTotalMb;
         _backupDirectoryOverride = settings.BackupsDirectory ?? string.Empty;
 
+        ImportSuggestionDismissed = settings.ImportSuggestionDismissed;
+
         _dismissedBuildIds.Clear();
         foreach (var dismissed in settings.DismissedBuildIds)
         {
@@ -349,6 +351,9 @@ public partial class MainWindowViewModel : ViewModelBase
         // Deliberately not awaited: the window is already usable, and the missing mods
         // download in the background while the player reads the page.
         _ = StartBuildSyncAsync(recommended);
+
+        // Also in the background: is there anything to bring over from another launcher?
+        _ = LookForImportableBuildsAsync();
     }
 
     /// <summary>The settings the build sync needs, captured before anything edits them.</summary>
@@ -1017,6 +1022,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
             Nicknames = Nicknames.ToList(),
             DismissedBuildIds = _dismissedBuildIds.ToList(),
+            ImportSuggestionDismissed = ImportSuggestionDismissed,
             ShowOldReleases = ShowOldReleases,
             ShowBeta = ShowBeta,
             ShowAlpha = ShowAlpha,

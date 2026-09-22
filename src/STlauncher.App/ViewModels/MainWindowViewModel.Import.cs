@@ -113,6 +113,82 @@ public partial class MainWindowViewModel
     /// <summary>Set by the view: the folder picker needs a window, which a view model has no business holding.</summary>
     public Func<Task<string?>>? PickFolderAsync { get; set; }
 
+    // ===================== The offer =====================
+    // Nobody reads a menu to find out that their old builds can be brought over. So the
+    // launcher looks for them itself at startup and, when it finds some, says so on the
+    // main screen with one button - until the player imports them or closes the card.
+
+    /// <summary>What the startup scan found, kept so the dialog opens with it at once.</summary>
+    private IReadOnlyList<ExternalInstance> _importableBuilds = Array.Empty<ExternalInstance>();
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasImportSuggestion))]
+    private string _importSuggestionText = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasImportSuggestion))]
+    private bool _importSuggestionDismissed;
+
+    public bool HasImportSuggestion => !ImportSuggestionDismissed && ImportSuggestionText.Length > 0;
+
+    private async Task LookForImportableBuildsAsync()
+    {
+        if (ImportSuggestionDismissed)
+        {
+            return;
+        }
+
+        try
+        {
+            var found = await Task.Run(() => ExternalInstanceScanner.ScanAll());
+
+            // Only builds that would actually import, and are not here already.
+            var usable = found.Where(i => i.IsUsable && !IsAlreadyLinked(i)).ToList();
+
+            if (usable.Count == 0)
+            {
+                return;
+            }
+
+            _importableBuilds = found;
+
+            var launchers = usable
+                .Select(i => SourceLabel(i.Source))
+                .Where(l => l.Length > 0)
+                .Distinct()
+                .Take(3)
+                .ToList();
+
+            ImportSuggestionText = launchers.Count == 0
+                ? Localize("Import_SuggestPlain", "Found {0} build(s) from other launchers", usable.Count)
+                : Localize("Import_Suggest", "Found {0} build(s) in {1}", usable.Count, string.Join(", ", launchers));
+        }
+        catch (Exception ex)
+        {
+            AppendConsole($"[import] scan failed: {ex.Message}");
+        }
+    }
+
+    /// <summary>Opens the import dialog with what the startup scan found, no second scan.</summary>
+    [RelayCommand]
+    private void AcceptImportSuggestion()
+    {
+        Section = ShellSection.Builds;
+        IsImportOpen = true;
+
+        if (_importableBuilds.Count > 0)
+        {
+            ShowCandidates(_importableBuilds);
+        }
+    }
+
+    [RelayCommand]
+    private void DismissImportSuggestion()
+    {
+        ImportSuggestionDismissed = true;
+        PersistSettings();
+    }
+
     [RelayCommand]
     private async Task OpenImport()
     {
@@ -307,6 +383,9 @@ public partial class MainWindowViewModel
             ApplyBuildFilter();
             ImportStatus = Localize("Import_Done", "Imported: {0}", imported);
             IsImportOpen = false;
+
+            // The offer has served its purpose.
+            ImportSuggestionText = string.Empty;
 
             Status = ImportStatus;
         }

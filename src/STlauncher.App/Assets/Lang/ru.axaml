@@ -437,6 +437,11 @@
     <x:String x:Key="Import_ProblemIncomplete">в описании не сказано, как запускать игру</x:String>
     <x:String x:Key="Import_ProblemAlready">уже импортирована</x:String>
     <x:String x:Key="Import_Shared">общая папка</x:String>
+    <x:String x:Key="Import_Suggest">Нашли сборок: {0} — в {1}</x:String>
+    <x:String x:Key="Import_SuggestPlain">Нашли сборок из других лаунчеров: {0}</x:String>
+    <x:String x:Key="Import_SuggestHint">Миры, моды и настройки переедут вместе с ними. Можно подключить на месте или скопировать.</x:String>
+    <x:String x:Key="Import_SuggestAccept">Перенести</x:String>
+    <x:String x:Key="Import_SuggestDismiss">Больше не предлагать</x:String>
     <x:String x:Key="Import_VersionUnknown">версия не определена</x:String>
     <x:String x:Key="Import_VersionInferred">определено по модам</x:String>
     <x:String x:Key="Import_PickVersionLater">после импорта выберите версию и загрузчик в настройках сборки</x:String>

@@ -101,8 +101,35 @@
                         </ListBox.ItemTemplate>
                     </ListBox>
 
-                    <ProgressBar Grid.Row="3" IsIndeterminate="True" Height="3"
-                                 IsVisible="{Binding IsBuildImportBusy}"/>
+                    <StackPanel Grid.Row="3" Spacing="8">
+                        <ProgressBar IsIndeterminate="True" Height="3" IsVisible="{Binding IsBuildImportBusy}"/>
+
+                        <!-- The offer, when the startup scan found something to bring over. -->
+                        <Border Classes="panel" Padding="12" IsVisible="{Binding HasImportSuggestion}">
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="{Binding ImportSuggestionText}" TextWrapping="Wrap" FontWeight="SemiBold"/>
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                    <Button Classes="primary small" HorizontalAlignment="Stretch"
+                                            Content="{DynamicResource Import_SuggestAccept}"
+                                            Command="{Binding AcceptImportSuggestionCommand}"/>
+                                    <Button Grid.Column="1" Classes="plain small"
+                                            Command="{Binding DismissImportSuggestionCommand}"
+                                            ToolTip.Tip="{DynamicResource Import_SuggestDismiss}">
+                                        <PathIcon Data="{StaticResource IconClose}" Classes="small"/>
+                                    </Button>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Always here, quietly: the menu alone was not found by everyone. -->
+                        <Button Classes="ghost small" HorizontalAlignment="Stretch"
+                                Command="{Binding OpenImportCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <PathIcon Data="{StaticResource IconDownload}" Classes="small"/>
+                                <TextBlock Text="{DynamicResource Import_Open}"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
                 </Grid>
             </Border>
 
