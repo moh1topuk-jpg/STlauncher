@@ -77,9 +77,9 @@ public sealed class SkinService
 
         var fetched = await FetchAsync(username, cancellationToken).ConfigureAwait(false);
 
-        if (fetched is { } found && TryDecode(found.Bytes, found.Slim) is { } skin)
+        if (fetched is { } found && TryDecode(found.Bytes, found.Slim, found.Source) is { } skin)
         {
-            SaveCached(cachePath, found.Bytes, found.Slim);
+            SaveCached(cachePath, found.Bytes, found.Slim, found.Source);
             return Remember(username, skin);
         }
 
@@ -100,70 +100,110 @@ public sealed class SkinService
         return skin;
     }
 
-    /// <summary>A texture as fetched, with the model type when the source stated it.</summary>
-    private readonly record struct Fetched(byte[] Bytes, bool? Slim);
+    /// <summary>A texture as fetched, with the model type when the source stated it, and who served it.</summary>
+    private readonly record struct Fetched(byte[] Bytes, bool? Slim, string Source);
 
     /// <summary>
-    /// The sources in order. Mojang first: it takes three requests, but it is the one the
-    /// others copy from, and it is the only one that says whether the model is slim -
-    /// the texture alone can be read wrong. The mirrors follow for names Mojang does not
-    /// know or when it cannot be reached.
+    /// The sources in order, and why in that order.
+    ///
+    /// Most players of an offline server have no Mojang account; their skin lives where
+    /// they set it - TLauncher's or ely.by's skin system - and both answer by nickname.
+    /// Mojang goes first because it states the model type and is what the mirrors copy.
+    /// The mirrors (minotar, mc-heads) only ever have Mojang skins, so they are asked
+    /// only when Mojang could not be reached, never when Mojang said the name does not
+    /// exist. That last case is what used to go wrong: mc-heads answers any unknown name
+    /// with a 200 and a Steve, which the launcher took for the player's skin and cached.
     /// </summary>
     private async Task<Fetched?> FetchAsync(string username, CancellationToken cancellationToken)
     {
         var name = Uri.EscapeDataString(username);
 
-        if (await FetchFromMojangAsync(name, cancellationToken).ConfigureAwait(false) is { } mojang)
+        var (mojang, mojangKnowsTheName) = await FetchFromMojangAsync(name, cancellationToken).ConfigureAwait(false);
+
+        if (mojang is not null)
         {
             return mojang;
         }
 
-        var mirror = await GetBytesAsync($"https://mc-heads.net/skin/{name}", cancellationToken).ConfigureAwait(false)
-                     ?? await GetBytesAsync($"https://minotar.net/skin/{name}", cancellationToken).ConfigureAwait(false);
+        var tlauncher = await FetchFromTextureJsonAsync(
+            $"https://auth.tlauncher.org/skin/profile/texture/login/{name}", "TLauncher", cancellationToken).ConfigureAwait(false);
 
-        return mirror is null ? null : new Fetched(mirror, null);
+        if (tlauncher is not null)
+        {
+            return tlauncher;
+        }
+
+        var ely = await FetchFromTextureJsonAsync(
+            $"http://skinsystem.ely.by/textures/{name}", "ely.by", cancellationToken).ConfigureAwait(false);
+
+        if (ely is not null)
+        {
+            return ely;
+        }
+
+        if (mojangKnowsTheName == false)
+        {
+            return null;
+        }
+
+        var mirror = await GetBytesAsync($"https://minotar.net/skin/{name}", cancellationToken).ConfigureAwait(false);
+
+        if (mirror is not null)
+        {
+            return new Fetched(mirror, null, "minotar");
+        }
+
+        mirror = await GetBytesAsync($"https://mc-heads.net/skin/{name}", cancellationToken).ConfigureAwait(false);
+        return mirror is null ? null : new Fetched(mirror, null, "mc-heads");
     }
 
-    private async Task<Fetched?> FetchFromMojangAsync(string name, CancellationToken cancellationToken)
+    /// <summary>
+    /// Mojang's own answer. The second value says whether Mojang recognised the name:
+    /// true, false, or null when it could not be asked at all.
+    /// </summary>
+    private async Task<(Fetched? Skin, bool? Known)> FetchFromMojangAsync(string name, CancellationToken cancellationToken)
     {
         try
         {
-            using var profile = await GetJsonAsync($"https://api.mojang.com/users/profiles/minecraft/{name}", cancellationToken).ConfigureAwait(false);
+            var (profile, status) = await GetJsonWithStatusAsync($"https://api.mojang.com/users/profiles/minecraft/{name}", cancellationToken).ConfigureAwait(false);
 
-            if (profile is null || !profile.RootElement.TryGetProperty("id", out var idNode))
+            using (profile)
             {
-                return null;
-            }
-
-            using var session = await GetJsonAsync(
-                $"https://sessionserver.mojang.com/session/minecraft/profile/{idNode.GetString()}",
-                cancellationToken).ConfigureAwait(false);
-
-            if (session is null || !session.RootElement.TryGetProperty("properties", out var properties))
-            {
-                return null;
-            }
-
-            foreach (var property in properties.EnumerateArray())
-            {
-                if (property.TryGetProperty("name", out var n) && n.GetString() == "textures" &&
-                    property.TryGetProperty("value", out var v) && v.GetString() is { } encoded)
+                if (status is 204 or 404)
                 {
-                    using var textures = System.Text.Json.JsonDocument.Parse(Convert.FromBase64String(encoded));
+                    return (null, false);
+                }
 
-                    if (textures.RootElement.TryGetProperty("textures", out var t) &&
-                        t.TryGetProperty("SKIN", out var skin) &&
-                        skin.TryGetProperty("url", out var url) && url.GetString() is { } skinUrl)
+                if (profile is null || !profile.RootElement.TryGetProperty("id", out var idNode))
+                {
+                    return (null, null);
+                }
+
+                using var session = await GetJsonAsync(
+                    $"https://sessionserver.mojang.com/session/minecraft/profile/{idNode.GetString()}",
+                    cancellationToken).ConfigureAwait(false);
+
+                if (session is null || !session.RootElement.TryGetProperty("properties", out var properties))
+                {
+                    return (null, true);
+                }
+
+                foreach (var property in properties.EnumerateArray())
+                {
+                    if (property.TryGetProperty("name", out var n) && n.GetString() == "textures" &&
+                        property.TryGetProperty("value", out var v) && v.GetString() is { } encoded)
                     {
-                        // {"metadata":{"model":"slim"}} marks the slim model; absent means classic.
-                        var slim = skin.TryGetProperty("metadata", out var metadata) &&
-                                   metadata.TryGetProperty("model", out var model) &&
-                                   string.Equals(model.GetString(), "slim", StringComparison.OrdinalIgnoreCase);
+                        using var textures = System.Text.Json.JsonDocument.Parse(Convert.FromBase64String(encoded));
 
-                        var bytes = await GetBytesAsync(skinUrl, cancellationToken).ConfigureAwait(false);
-                        return bytes is null ? null : new Fetched(bytes, slim);
+                        if (textures.RootElement.TryGetProperty("textures", out var t) && SkinFromJson(t, out var url, out var slim))
+                        {
+                            var bytes = await GetBytesAsync(url, cancellationToken).ConfigureAwait(false);
+                            return (bytes is null ? null : new Fetched(bytes, slim, "Mojang"), true);
+                        }
                     }
                 }
+
+                return (null, true);
             }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -172,19 +212,87 @@ public sealed class SkinService
         }
         catch (Exception)
         {
+            return (null, null);
+        }
+    }
+
+    /// <summary>
+    /// TLauncher and ely.by publish the same shape: {"SKIN":{"url":…,"metadata":{"model":"slim"}}}.
+    /// An unknown name is an empty object or a 404.
+    /// </summary>
+    private async Task<Fetched?> FetchFromTextureJsonAsync(string endpoint, string source, CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var document = await GetJsonAsync(endpoint, cancellationToken).ConfigureAwait(false);
+
+            if (document is null || !SkinFromJson(document.RootElement, out var url, out var slim))
+            {
+                return null;
+            }
+
+            var bytes = await GetBytesAsync(url, cancellationToken).ConfigureAwait(false);
+            return bytes is null ? null : new Fetched(bytes, slim, source);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>Reads SKIN.url and SKIN.metadata.model from a textures object.</summary>
+    private static bool SkinFromJson(System.Text.Json.JsonElement textures, out string url, out bool? slim)
+    {
+        url = string.Empty;
+        slim = null;
+
+        if (textures.ValueKind != System.Text.Json.JsonValueKind.Object ||
+            !textures.TryGetProperty("SKIN", out var skin) ||
+            skin.ValueKind != System.Text.Json.JsonValueKind.Object ||
+            !skin.TryGetProperty("url", out var urlNode) ||
+            urlNode.GetString() is not { Length: > 0 } skinUrl)
+        {
+            return false;
         }
 
-        return null;
+        url = skinUrl;
+
+        // {"metadata":{"model":"slim"}} marks the slim model; absent means classic.
+        slim = skin.TryGetProperty("metadata", out var metadata) &&
+               metadata.ValueKind == System.Text.Json.JsonValueKind.Object &&
+               metadata.TryGetProperty("model", out var model) &&
+               string.Equals(model.GetString(), "slim", StringComparison.OrdinalIgnoreCase);
+
+        return true;
     }
 
     private async Task<System.Text.Json.JsonDocument?> GetJsonAsync(string url, CancellationToken cancellationToken)
+        => (await GetJsonWithStatusAsync(url, cancellationToken).ConfigureAwait(false)).Document;
+
+    private async Task<(System.Text.Json.JsonDocument? Document, int? Status)> GetJsonWithStatusAsync(string url, CancellationToken cancellationToken)
     {
-        var bytes = await GetBytesAsync(url, cancellationToken).ConfigureAwait(false);
-        return bytes is null ? null : System.Text.Json.JsonDocument.Parse(bytes);
+        var (bytes, status) = await GetBytesWithStatusAsync(url, cancellationToken).ConfigureAwait(false);
+
+        try
+        {
+            return (bytes is null ? null : System.Text.Json.JsonDocument.Parse(bytes), status);
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return (null, status);
+        }
     }
 
     /// <summary>One request with its own short timeout; any failure is simply "not here".</summary>
     private async Task<byte[]?> GetBytesAsync(string url, CancellationToken cancellationToken)
+        => (await GetBytesWithStatusAsync(url, cancellationToken).ConfigureAwait(false)).Bytes;
+
+    /// <summary>The same, keeping the status: a 404 and a dropped connection mean different things.</summary>
+    private async Task<(byte[]? Bytes, int? Status)> GetBytesWithStatusAsync(string url, CancellationToken cancellationToken)
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(RequestTimeout);
@@ -192,14 +300,15 @@ public sealed class SkinService
         try
         {
             using var response = await _http.GetAsync(url, timeout.Token).ConfigureAwait(false);
+            var status = (int)response.StatusCode;
 
             if (!response.IsSuccessStatusCode)
             {
-                return null;
+                return (null, status);
             }
 
             var bytes = await response.Content.ReadAsByteArrayAsync(timeout.Token).ConfigureAwait(false);
-            return bytes.Length > 0 ? bytes : null;
+            return (bytes.Length > 0 ? bytes : null, status);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -208,11 +317,11 @@ public sealed class SkinService
         }
         catch (Exception)
         {
-            return null;
+            return (null, null);
         }
     }
 
-    private static PlayerSkin? TryDecode(byte[] bytes, bool? slim)
+    private static PlayerSkin? TryDecode(byte[] bytes, bool? slim, string source)
     {
         try
         {
@@ -221,7 +330,7 @@ public sealed class SkinService
 
             // A skin is 64 wide; anything else is an error page or a placeholder image.
             return bitmap.PixelSize.Width == 64 && bitmap.PixelSize.Height is 32 or 64
-                ? new PlayerSkin(bitmap, isDefault: false, slim)
+                ? new PlayerSkin(bitmap, isDefault: false, slim) { Source = source }
                 : null;
         }
         catch (Exception)
@@ -230,7 +339,10 @@ public sealed class SkinService
         }
     }
 
-    /// <summary>The model type is kept beside the texture: "slim" or "classic" in a small text file.</summary>
+    /// <summary>
+    /// The model type and the source are kept beside the texture in a small text file:
+    /// "slim Mojang", "classic TLauncher", "? ely.by".
+    /// </summary>
     private static string ModelPath(string texturePath) => Path.ChangeExtension(texturePath, ".model");
 
     private static PlayerSkin? LoadCached(string path, TimeSpan maxAge)
@@ -243,13 +355,16 @@ public sealed class SkinService
             }
 
             bool? slim = null;
+            var source = "cache";
 
             if (File.Exists(ModelPath(path)))
             {
-                slim = string.Equals(File.ReadAllText(ModelPath(path)).Trim(), "slim", StringComparison.OrdinalIgnoreCase);
+                var parts = File.ReadAllText(ModelPath(path)).Trim().Split(' ', 2);
+                slim = parts[0] switch { "slim" => true, "classic" => false, _ => null };
+                source = parts.Length > 1 ? parts[1] : source;
             }
 
-            return TryDecode(File.ReadAllBytes(path), slim);
+            return TryDecode(File.ReadAllBytes(path), slim, source);
         }
         catch (Exception)
         {
@@ -257,21 +372,13 @@ public sealed class SkinService
         }
     }
 
-    private void SaveCached(string path, byte[] bytes, bool? slim)
+    private void SaveCached(string path, byte[] bytes, bool? slim, string source)
     {
         try
         {
             Directory.CreateDirectory(_cacheDirectory);
             File.WriteAllBytes(path, bytes);
-
-            if (slim is { } known)
-            {
-                File.WriteAllText(ModelPath(path), known ? "slim" : "classic");
-            }
-            else if (File.Exists(ModelPath(path)))
-            {
-                File.Delete(ModelPath(path));
-            }
+            File.WriteAllText(ModelPath(path), $"{(slim is { } known ? (known ? "slim" : "classic") : "?")} {source}");
         }
         catch (Exception)
         {

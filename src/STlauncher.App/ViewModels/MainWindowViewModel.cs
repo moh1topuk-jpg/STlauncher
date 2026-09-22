@@ -129,7 +129,21 @@ public partial class MainWindowViewModel : ViewModelBase
 
     /// <summary>The player's skin texture; the face and the 3D model are both drawn from it.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SkinSourceLabel))]
     private Services.PlayerSkin? _playerSkin;
+
+    /// <summary>
+    /// Where the skin came from, under the model. A player whose skin does not show
+    /// deserves to know why: the name is not at Mojang, TLauncher or ely.by.
+    /// </summary>
+    public string SkinSourceLabel => PlayerSkin switch
+    {
+        null => string.Empty,
+        { IsDefault: true } => Localize("Skin_NotFound", "No skin found for this name at Mojang, TLauncher or ely.by"),
+        { Source: "cache" } => Localize("Skin_FromCache", "Skin from the last successful check"),
+        { Source: { Length: > 0 } source } => Localize("Skin_From", "Skin from {0}", source),
+        _ => string.Empty
+    };
 
 
     [ObservableProperty]
@@ -927,6 +941,9 @@ public partial class MainWindowViewModel : ViewModelBase
             if (!cts.IsCancellationRequested)
             {
                 PlayerSkin = skin;
+                AppendConsole(skin.IsDefault
+                    ? $"[skin] {Username}: not found at Mojang, TLauncher or ely.by - showing Steve"
+                    : $"[skin] {Username}: {skin.Source}, {(skin.IsSlim ? "slim" : "classic")}");
             }
         }
         catch (OperationCanceledException)

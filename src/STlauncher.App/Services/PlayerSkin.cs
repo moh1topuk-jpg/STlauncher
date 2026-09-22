@@ -53,6 +53,9 @@ public sealed class PlayerSkin
     /// <summary>True for the built-in Steve shown when nothing else could be found.</summary>
     public bool IsDefault { get; }
 
+    /// <summary>Who served the texture: "Mojang", "TLauncher", "ely.by", a mirror, or the cache.</summary>
+    public string Source { get; init; } = string.Empty;
+
     public bool IsLegacy { get; }
 
     public bool IsSlim { get; }

@@ -151,6 +151,7 @@
                                             <StackPanel Spacing="10" Width="240">
                                                 <controls:SkinViewer Skin="{Binding PlayerSkin}" Height="280"/>
                                                 <TextBlock Text="{DynamicResource Game_ViewerHint}" Classes="faint" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="{Binding SkinSourceLabel}" Classes="faint" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="220"/>
                                             </StackPanel>
                                         </Flyout>
                                     </Button.Flyout>
