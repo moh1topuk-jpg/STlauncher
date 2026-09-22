@@ -135,6 +135,7 @@ public partial class MainWindowViewModel
 
         if (!_updates.IsSupported)
         {
+            ReportUpdateOutcome(Services.UpdateStatus.Unsupported(_updates.CurrentVersion));
             return;
         }
 
@@ -164,6 +165,20 @@ public partial class MainWindowViewModel
     /// </summary>
     private Task CheckForUpdatesQuietlyAsync() => RunUpdateCheckAsync(announce: false);
 
+    /// <summary>Only the first check of the session is reported; later ones are the timer.</summary>
+    private bool _updateOutcomeReported;
+
+    private void ReportUpdateOutcome(Services.UpdateStatus? status)
+    {
+        if (_updateOutcomeReported)
+        {
+            return;
+        }
+
+        _updateOutcomeReported = true;
+        ReportUsage(DescribeUpdateOutcome(status));
+    }
+
     private async Task RunUpdateCheckAsync(bool announce)
     {
         if (IsUpdateBusy)
@@ -181,6 +196,7 @@ public partial class MainWindowViewModel
             }
 
             var status = await _updates.CheckAsync();
+            ReportUpdateOutcome(status);
 
             foreach (var (source, failure) in _updates.LastFailures)
             {
@@ -243,6 +259,7 @@ public partial class MainWindowViewModel
         }
         catch (Exception ex)
         {
+            ReportUpdateOutcome(null);
             ReportFailure(ex, announce);
         }
         finally

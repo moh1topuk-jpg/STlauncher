@@ -220,14 +220,42 @@ public partial class MainWindowViewModel
 
     partial void OnUsageStatsChanged(bool value) => PersistSettings();
 
-    private void ReportUsage()
+    /// <summary>
+    /// Sent once, after the first update check, so the ping can say how that went. The
+    /// owner cannot get a log from every player behind a block; this is the log.
+    /// </summary>
+    private void ReportUsage(string updateOutcome)
     {
         if (!UsageStats || !_stats.IsConfigured)
         {
             return;
         }
 
-        _ = _usage.ReportAsync(_stats.StatsUrl, _installId, _updates.CurrentVersion ?? "dev", Language);
+        _ = _usage.ReportAsync(_stats.StatsUrl, _installId, _updates.CurrentVersion ?? "dev", Language, updateOutcome);
+    }
+
+    /// <summary>"ok:mirror" / "fail:GitHub=Blocked;mirror=Timeout", short enough for a blob.</summary>
+    private string DescribeUpdateOutcome(Services.UpdateStatus? status)
+    {
+        static string Label(string source)
+            => source == Services.UpdateService.GithubLabel ? "github"
+                : source.Contains("workers.dev", StringComparison.OrdinalIgnoreCase) ? "mirror"
+                : new Uri(source, UriKind.RelativeOrAbsolute).IsAbsoluteUri ? new Uri(source).Host : source;
+
+        if (status is { IsSupported: false })
+        {
+            return "unsupported";
+        }
+
+        var failed = string.Join(";", _updates.LastFailures.Select(f => $"{Label(f.Source)}={f.Failure.Kind}"));
+
+        if (status is not null)
+        {
+            var via = status.Source is { Length: > 0 } source ? Label(source) : "?";
+            return failed.Length == 0 ? $"ok:{via}" : $"ok:{via}|{failed}";
+        }
+
+        return failed.Length == 0 ? "fail:?" : $"fail:{failed}";
     }
 
     // ===================== Discord =====================

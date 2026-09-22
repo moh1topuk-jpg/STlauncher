@@ -164,7 +164,14 @@ async function recordPing(body, env) {
 
     env.USAGE.writeDataPoint({
       indexes: [id],
-      blobs: [id, String(body?.v ?? '').slice(0, 32), String(body?.os ?? '').slice(0, 16), String(body?.lang ?? '').slice(0, 8)],
+      // blob5: how the update check went ("ok:mirror", "fail:github=Blocked;mirror=Timeout").
+      blobs: [
+        id,
+        String(body?.v ?? '').slice(0, 32),
+        String(body?.os ?? '').slice(0, 16),
+        String(body?.lang ?? '').slice(0, 8),
+        String(body?.update ?? '').slice(0, 120),
+      ],
       doubles: [1],
     });
   } catch (error) {
@@ -186,7 +193,11 @@ async function queryUsage(env) {
   }
 
   try {
-    const [today, week] = await Promise.all([queryWindow(env, "INTERVAL '1' DAY"), queryWindow(env, "INTERVAL '7' DAY")]);
+    const [today, week, updates] = await Promise.all([
+      queryWindow(env, "INTERVAL '1' DAY"),
+      queryWindow(env, "INTERVAL '7' DAY"),
+      queryUpdateOutcomes(env),
+    ]);
 
     if (!today || !week) {
       return null;
@@ -196,12 +207,39 @@ async function queryUsage(env) {
       usersToday: today.users,
       usersWeek: week.users,
       launchesToday: today.launches,
+      updates: updates ?? [],
       updatedAt: Date.now(),
     };
   } catch (error) {
     console.log(`usage query failed: ${error}`);
     return null;
   }
+}
+
+/** How update checks went over the week, most common outcome first. */
+async function queryUpdateOutcomes(env) {
+  const sql = `SELECT blob5 AS outcome, SUM(_sample_interval) AS n
+    FROM stlauncher_usage
+    WHERE timestamp > NOW() - INTERVAL '7' DAY AND blob5 != ''
+    GROUP BY outcome
+    ORDER BY n DESC
+    LIMIT 20`;
+
+  const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/analytics_engine/sql`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${env.CF_API_TOKEN}` },
+    body: sql,
+  });
+
+  if (!response.ok) {
+    console.log(`update outcomes query failed: HTTP ${response.status}`);
+    return null;
+  }
+
+  const body = await response.json();
+  const rows = Array.isArray(body?.data) ? body.data : [];
+
+  return rows.map(row => ({ outcome: String(row.outcome ?? ''), n: Number(row.n ?? 0) }));
 }
 
 async function queryWindow(env, interval) {
@@ -318,6 +356,7 @@ function render(state, env, now) {
           usersToday: state.usage.usersToday,
           usersWeek: state.usage.usersWeek,
           launchesToday: state.usage.launchesToday,
+          updates: state.usage.updates ?? [],
           updatedAt: new Date(state.usage.updatedAt).toISOString(),
         }
       : null,

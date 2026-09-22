@@ -85,7 +85,20 @@ public sealed class ServerStatsLauncher
     [JsonPropertyName("launchesToday")]
     public int? LaunchesToday { get; set; }
 
+    /// <summary>How update checks went over the week, most common first: "ok:mirror" 120, "fail:github=Blocked" 7.</summary>
+    [JsonPropertyName("updates")]
+    public List<ServerStatsOutcome> Updates { get; set; } = new();
+
     public bool HasAnything => UsersToday is not null || UsersWeek is not null;
+}
+
+public sealed class ServerStatsOutcome
+{
+    [JsonPropertyName("outcome")]
+    public string? Outcome { get; set; }
+
+    [JsonPropertyName("n")]
+    public int Count { get; set; }
 }
 
 public sealed class ServerStatsServer

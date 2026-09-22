@@ -687,4 +687,7 @@
     <x:String x:Key="Update_OpenGithub">Releases page on GitHub</x:String>
     <x:String x:Key="Console_NoLogYet">The log file has not been written yet</x:String>
 
+    <!-- Update diagnostics -->
+    <x:String x:Key="Settings_UpdateOutcomes">Update checks over 7 days:</x:String>
+
 </ResourceDictionary>

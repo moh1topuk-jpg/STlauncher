@@ -423,7 +423,6 @@ public partial class MainWindowViewModel : ViewModelBase
         // Right after the catalog, which is what points the check at the mirror, and
         // before anything else that could fail and leave the check never started.
         StartUpdateWatcher();
-        ReportUsage();
 
         if (_allInstances.Count == 0 && _instances.HasAnyInstanceDirectory())
         {

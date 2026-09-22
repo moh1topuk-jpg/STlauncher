@@ -22,8 +22,13 @@ public sealed class UsageReporter
         _http = http ?? throw new ArgumentNullException(nameof(http));
     }
 
-    /// <summary>Sends the ping once per process. Failures are silent: this is bookkeeping, not a feature.</summary>
-    public async Task ReportAsync(string? statsUrl, string installId, string version, string language, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Sends the ping once per process. Failures are silent: this is bookkeeping, not a
+    /// feature. <paramref name="updateOutcome"/> is what the update check found -
+    /// "ok:mirror" or "fail:GitHub=Blocked;mirror=Timeout" - which is how the owner learns
+    /// what players behind a block actually hit, without asking anyone for a log.
+    /// </summary>
+    public async Task ReportAsync(string? statsUrl, string installId, string version, string language, string updateOutcome, CancellationToken cancellationToken = default)
     {
         if (_sent || string.IsNullOrWhiteSpace(statsUrl) || string.IsNullOrWhiteSpace(installId))
         {
@@ -44,7 +49,8 @@ public sealed class UsageReporter
                 id = installId,
                 v = version,
                 os = OperatingSystem.IsWindows() ? "windows" : OperatingSystem.IsLinux() ? "linux" : OperatingSystem.IsMacOS() ? "macos" : "other",
-                lang = language
+                lang = language,
+                update = updateOutcome
             }, timeout.Token).ConfigureAwait(false);
         }
         catch (Exception)

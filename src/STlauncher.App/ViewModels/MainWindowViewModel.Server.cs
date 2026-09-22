@@ -234,7 +234,27 @@ public partial class MainWindowViewModel
             usage.UsersToday?.ToString(CultureInfo.CurrentCulture) ?? "—",
             usage.UsersWeek?.ToString(CultureInfo.CurrentCulture) ?? "—",
             usage.LaunchesToday?.ToString(CultureInfo.CurrentCulture) ?? "—")
+          + UpdateOutcomesLabel(usage)
         : Localize("Settings_UsageNumbersNone", "The collector does not publish launcher usage yet (see docs/monitoring.md).");
+
+    /// <summary>
+    /// What update checks ran into over the week, one line per outcome. "fail:github=Blocked"
+    /// with a count next to it is the answer to "why do some players not get updates".
+    /// </summary>
+    private string UpdateOutcomesLabel(ServerStatsLauncher usage)
+    {
+        if (usage.Updates.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var lines = usage.Updates
+            .Where(o => !string.IsNullOrWhiteSpace(o.Outcome))
+            .Take(12)
+            .Select(o => $"  {o.Outcome}: {o.Count}");
+
+        return "\n" + Localize("Settings_UpdateOutcomes", "Update checks over 7 days:") + "\n" + string.Join("\n", lines);
+    }
 
     /// <summary>
     /// Manual collector address from the developer section. The catalog normally supplies

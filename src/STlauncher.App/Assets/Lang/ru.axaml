@@ -687,4 +687,7 @@
     <x:String x:Key="Update_OpenGithub">Страница релизов на GitHub</x:String>
     <x:String x:Key="Console_NoLogYet">Лог-файл ещё не записан</x:String>
 
+    <!-- Update diagnostics -->
+    <x:String x:Key="Settings_UpdateOutcomes">Проверки обновлений за 7 дней:</x:String>
+
 </ResourceDictionary>
