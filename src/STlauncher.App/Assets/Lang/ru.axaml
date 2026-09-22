@@ -331,6 +331,8 @@
 
     <x:String x:Key="Server_RangeDay">24 часа</x:String>
     <x:String x:Key="Server_RangeWeek">7 дней</x:String>
+    <x:String x:Key="Game_SkinTap">нажмите — 3D</x:String>
+    <x:String x:Key="Settings_AnimatedBackground">Живой фон на главном экране</x:String>
     <x:String x:Key="Game_PickBuild">Выбрать сборку</x:String>
     <x:String x:Key="Game_ViewSkin">Посмотреть скин</x:String>
     <x:String x:Key="Game_ViewerHint">Потяните, чтобы повернуть</x:String>

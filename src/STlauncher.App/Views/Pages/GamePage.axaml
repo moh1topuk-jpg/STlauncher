@@ -22,6 +22,9 @@
             </Border.Background>
         </Border>
 
+        <!-- Embers drifting behind the stage; off in the settings for those who want it still. -->
+        <controls:EmberField IsActive="{Binding AnimatedBackground}"/>
+
         <ScrollViewer>
             <Grid Margin="72,32" ColumnDefinitions="*,300" ColumnSpacing="56"
                   MaxWidth="1080" VerticalAlignment="Center">
@@ -140,17 +143,22 @@
                     <!-- The player. The face opens the model. -->
                     <Border Classes="card" Padding="16" Background="#CC141014">
                         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
-                            <Button Classes="avatar" Width="52" Height="52" ToolTip.Tip="{DynamicResource Game_ViewSkin}">
-                                <controls:SkinFace Skin="{Binding PlayerSkin}" Width="52" Height="52" CornerRadius="12"/>
-                                <Button.Flyout>
-                                    <Flyout Placement="Bottom">
-                                        <StackPanel Spacing="10" Width="240">
-                                            <controls:SkinViewer Skin="{Binding PlayerSkin}" Height="280"/>
-                                            <TextBlock Text="{DynamicResource Game_ViewerHint}" Classes="faint" HorizontalAlignment="Center"/>
-                                        </StackPanel>
-                                    </Flyout>
-                                </Button.Flyout>
-                            </Button>
+                            <StackPanel Spacing="3" VerticalAlignment="Center">
+                                <Button Classes="avatar" Width="52" Height="52" ToolTip.Tip="{DynamicResource Game_ViewSkin}">
+                                    <controls:SkinFace Skin="{Binding PlayerSkin}" Width="52" Height="52" CornerRadius="12"/>
+                                    <Button.Flyout>
+                                        <Flyout Placement="Bottom">
+                                            <StackPanel Spacing="10" Width="240">
+                                                <controls:SkinViewer Skin="{Binding PlayerSkin}" Height="280"/>
+                                                <TextBlock Text="{DynamicResource Game_ViewerHint}" Classes="faint" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Flyout>
+                                    </Button.Flyout>
+                                </Button>
+                                <!-- A face is not obviously a button; the smallest possible nudge. -->
+                                <TextBlock Text="{DynamicResource Game_SkinTap}" FontSize="10"
+                                           Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center"/>
+                            </StackPanel>
 
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2"
                                         IsVisible="{Binding !IsEditingNickname}">

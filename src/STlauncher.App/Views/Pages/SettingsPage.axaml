@@ -134,6 +134,8 @@
                             </WrapPanel>
                         </StackPanel>
 
+                        <CheckBox Content="{DynamicResource Settings_AnimatedBackground}" IsChecked="{Binding AnimatedBackground}"/>
+
                         <StackPanel Spacing="4">
                             <CheckBox Content="{DynamicResource Settings_DevConsole}" IsChecked="{Binding ShowDeveloperConsole}"/>
                             <TextBlock Text="{DynamicResource Settings_DevConsoleHint}" Classes="faint"

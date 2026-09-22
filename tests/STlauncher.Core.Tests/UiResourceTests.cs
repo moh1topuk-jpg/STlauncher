@@ -53,6 +53,24 @@ public class UiResourceTests
         return result;
     }
 
+    /// <summary>
+    /// A key defined twice makes Avalonia throw while loading the dictionary, so the whole
+    /// language fails: switching to English once showed a stack trace where the settings
+    /// should have been. The key count of each file has to match the distinct count.
+    /// </summary>
+    [Theory]
+    [InlineData("ru.axaml")]
+    [InlineData("en.axaml")]
+    public void LanguageDictionary_DefinesEachKeyOnce(string file)
+    {
+        var path = Path.Combine(RepoRoot(), "src", "STlauncher.App", "Assets", "Lang", file);
+
+        var keys = KeyRegex.Matches(File.ReadAllText(path)).Select(m => m.Groups[1].Value).ToList();
+        var duplicates = keys.GroupBy(k => k, StringComparer.Ordinal).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
+
+        Assert.True(duplicates.Count == 0, $"Defined more than once in {file}: " + string.Join(", ", duplicates));
+    }
+
     [Fact]
     public void LanguageDictionaries_DefineTheSameKeys()
     {

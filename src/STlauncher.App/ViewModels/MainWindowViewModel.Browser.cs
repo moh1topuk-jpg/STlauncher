@@ -264,7 +264,13 @@ public partial class MainWindowViewModel
                 result.TotalHits);
 
             // The summary belongs to the catalog footer only; writing it to Status made
-            // it show up in the always-visible status bar on every section.
+            // it show up in the always-visible status bar on every section. But the
+            // "searching" line it replaced has to go too, or it stays up for good.
+            if (Status == Localize("Status_SearchingMods", "Searching Modrinth…"))
+            {
+                Status = string.Empty;
+            }
+
             var pageItems = ModBrowserItems.ToList();
             _ = LoadIconsAsync(pageItems);
             _ = TranslateBrowserItemsAsync(pageItems);

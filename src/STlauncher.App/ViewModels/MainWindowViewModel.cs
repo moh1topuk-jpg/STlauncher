@@ -172,6 +172,39 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private string _status = string.Empty;
 
+    private DispatcherTimer? _statusExpiry;
+
+    /// <summary>
+    /// A status line is news, and news goes stale: whatever was said clears itself after
+    /// a while, unless something is still running. Before this, the last message of a
+    /// session - often "Searching Modrinth…" - sat in the status bar until the launcher
+    /// was closed.
+    /// </summary>
+    partial void OnStatusChanged(string value)
+    {
+        _statusExpiry?.Stop();
+
+        if (string.IsNullOrEmpty(value))
+        {
+            return;
+        }
+
+        _statusExpiry ??= new DispatcherTimer { Interval = TimeSpan.FromSeconds(12) };
+        _statusExpiry.Tick -= OnStatusExpired;
+        _statusExpiry.Tick += OnStatusExpired;
+        _statusExpiry.Start();
+    }
+
+    private void OnStatusExpired(object? sender, EventArgs e)
+    {
+        _statusExpiry?.Stop();
+
+        if (!IsBusy && !IsGameRunning && !IsModsBusy && !IsBrowserBusy && !IsBuildImportBusy)
+        {
+            Status = string.Empty;
+        }
+    }
+
     [ObservableProperty]
     private double _progress;
 
@@ -258,6 +291,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _backupDirectoryOverride = settings.BackupsDirectory ?? string.Empty;
 
         ImportSuggestionDismissed = settings.ImportSuggestionDismissed;
+        AnimatedBackground = settings.AnimatedBackground;
 
         _dismissedBuildIds.Clear();
         foreach (var dismissed in settings.DismissedBuildIds)
@@ -1023,6 +1057,7 @@ public partial class MainWindowViewModel : ViewModelBase
             Nicknames = Nicknames.ToList(),
             DismissedBuildIds = _dismissedBuildIds.ToList(),
             ImportSuggestionDismissed = ImportSuggestionDismissed,
+            AnimatedBackground = AnimatedBackground,
             ShowOldReleases = ShowOldReleases,
             ShowBeta = ShowBeta,
             ShowAlpha = ShowAlpha,

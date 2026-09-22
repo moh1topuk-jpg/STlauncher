@@ -274,7 +274,6 @@
     <!-- Backups -->
     <x:String x:Key="Backup_Created">Backup created: {0} ({1} KB)</x:String>
     <x:String x:Key="Backup_InProgress">Creating a backup…</x:String>
-    <x:String x:Key="Backup_InProgress">Creating a backup…</x:String>
     <x:String x:Key="Backup_Failed">Backup failed: {0}</x:String>
     <x:String x:Key="Backup_FailedFolder">Failed to open the backups folder: {0}</x:String>
 
@@ -332,6 +331,8 @@
 
     <x:String x:Key="Server_RangeDay">24 hours</x:String>
     <x:String x:Key="Server_RangeWeek">7 days</x:String>
+    <x:String x:Key="Game_SkinTap">tap for 3D</x:String>
+    <x:String x:Key="Settings_AnimatedBackground">Animated background on the main screen</x:String>
     <x:String x:Key="Game_PickBuild">Pick a build</x:String>
     <x:String x:Key="Game_ViewSkin">View skin</x:String>
     <x:String x:Key="Game_ViewerHint">Drag to turn</x:String>

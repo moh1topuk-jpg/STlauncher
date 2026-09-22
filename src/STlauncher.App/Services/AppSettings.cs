@@ -40,6 +40,9 @@ public sealed class AppSettings
     /// </summary>
     public bool ImportSuggestionDismissed { get; set; }
 
+    /// <summary>The drifting embers behind the main screen.</summary>
+    public bool AnimatedBackground { get; set; } = true;
+
     public LoaderKind Loader { get; set; } = LoaderKind.Vanilla;
 
     public string? LoaderVersion { get; set; }

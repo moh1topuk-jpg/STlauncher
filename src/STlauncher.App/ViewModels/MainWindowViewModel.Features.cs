@@ -201,6 +201,12 @@ public partial class MainWindowViewModel
         }
     }
 
+    /// <summary>The embers behind the main screen. Off for anyone who finds motion distracting.</summary>
+    [ObservableProperty]
+    private bool _animatedBackground = true;
+
+    partial void OnAnimatedBackgroundChanged(bool value) => PersistSettings();
+
     // ===================== Memory =====================
 
     /// <summary>Physical memory of this machine, so the slider ends where the RAM does.</summary>
