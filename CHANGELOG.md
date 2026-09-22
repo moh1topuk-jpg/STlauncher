@@ -8,6 +8,8 @@
 
 ## [Не выпущено]
 
+## [0.3.5] — 2026-09-23
+
 ### Изменено
 - Если игра упала, лаунчер анонимно сообщает сборщику причину падения, версию игры и
   загрузчик (без ников, файлов и путей) — вместе с тем же пингом статистики и под тем же
@@ -289,7 +291,8 @@
 - Бэкапы миров по событиям: раз в сутки, перед изменением модов, перед запуском.
 - Автообновление с уведомлением и установкой одной кнопкой.
 
-[Не выпущено]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.3.4...HEAD
+[Не выпущено]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.3.5...HEAD
+[0.3.5]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.3.4...v0.3.5
 [0.3.4]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.3.1...v0.3.2
