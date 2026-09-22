@@ -139,10 +139,56 @@ public partial class MainWindowViewModel : ViewModelBase
     public string SkinSourceLabel => PlayerSkin switch
     {
         null => string.Empty,
+        { IsDefault: true } when SelectedSkinSource != Services.SkinSource.Auto
+            => Localize("Skin_NoneAt", "{0} has no skin for this name", SkinSourceName(SelectedSkinSource)),
         { IsDefault: true } => Localize("Skin_NotFound", "No skin found for this name at Mojang, TLauncher or ely.by"),
         { Source: "cache" } => Localize("Skin_FromCache", "Skin from the last successful check"),
         { Source: { Length: > 0 } source } => Localize("Skin_From", "Skin from {0}", source),
         _ => string.Empty
+    };
+
+    // ===================== Skin system =====================
+    // A player may have a skin in several systems - one on TLauncher, another on
+    // ely.by. The row under the model lets them look at each and keep the one they mean.
+
+    [ObservableProperty]
+    private Services.SkinSource _selectedSkinSource = Services.SkinSource.Auto;
+
+    public bool IsSkinSourceAuto => SelectedSkinSource == Services.SkinSource.Auto;
+    public bool IsSkinSourceMojang => SelectedSkinSource == Services.SkinSource.Mojang;
+    public bool IsSkinSourceTLauncher => SelectedSkinSource == Services.SkinSource.TLauncher;
+    public bool IsSkinSourceElyBy => SelectedSkinSource == Services.SkinSource.ElyBy;
+
+    partial void OnSelectedSkinSourceChanged(Services.SkinSource value)
+    {
+        RefreshSkinSourceFlags();
+        PersistSettings();
+        _ = UpdateAvatarAsync();
+    }
+
+    private void RefreshSkinSourceFlags()
+    {
+        OnPropertyChanged(nameof(IsSkinSourceAuto));
+        OnPropertyChanged(nameof(IsSkinSourceMojang));
+        OnPropertyChanged(nameof(IsSkinSourceTLauncher));
+        OnPropertyChanged(nameof(IsSkinSourceElyBy));
+    }
+
+    [RelayCommand]
+    private void SelectSkinSource(string? source)
+    {
+        if (Enum.TryParse<Services.SkinSource>(source, ignoreCase: true, out var parsed))
+        {
+            SelectedSkinSource = parsed;
+        }
+    }
+
+    private static string SkinSourceName(Services.SkinSource source) => source switch
+    {
+        Services.SkinSource.Mojang => "Mojang",
+        Services.SkinSource.TLauncher => "TLauncher",
+        Services.SkinSource.ElyBy => "ely.by",
+        _ => "Auto"
     };
 
 
@@ -307,6 +353,12 @@ public partial class MainWindowViewModel : ViewModelBase
         ImportSuggestionDismissed = settings.ImportSuggestionDismissed;
         AnimatedBackground = settings.AnimatedBackground;
         LoadWhatsNew(settings.LastSeenVersion);
+
+        if (Enum.TryParse<Services.SkinSource>(settings.SkinSource, ignoreCase: true, out var skinSource))
+        {
+            _selectedSkinSource = skinSource;
+            RefreshSkinSourceFlags();
+        }
 
         _dismissedBuildIds.Clear();
         foreach (var dismissed in settings.DismissedBuildIds)
@@ -936,7 +988,7 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             await Task.Delay(400, cts.Token);
-            var skin = await _skins.GetSkinAsync(Username, cts.Token);
+            var skin = await _skins.GetSkinAsync(Username, SelectedSkinSource, cts.Token);
 
             if (!cts.IsCancellationRequested)
             {
@@ -1077,6 +1129,7 @@ public partial class MainWindowViewModel : ViewModelBase
             ImportSuggestionDismissed = ImportSuggestionDismissed,
             AnimatedBackground = AnimatedBackground,
             LastSeenVersion = _lastSeenVersion,
+            SkinSource = SelectedSkinSource.ToString(),
             ShowOldReleases = ShowOldReleases,
             ShowBeta = ShowBeta,
             ShowAlpha = ShowAlpha,

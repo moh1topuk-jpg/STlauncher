@@ -331,6 +331,8 @@
 
     <x:String x:Key="Server_RangeDay">24 hours</x:String>
     <x:String x:Key="Server_RangeWeek">7 days</x:String>
+    <x:String x:Key="Skin_SourceAuto">Auto</x:String>
+    <x:String x:Key="Skin_NoneAt">{0} has no skin for this name</x:String>
     <x:String x:Key="Skin_NotFound">No skin found for this name at Mojang, TLauncher or ely.by</x:String>
     <x:String x:Key="Skin_FromCache">Skin from the last successful check</x:String>
     <x:String x:Key="Skin_From">Skin: {0}</x:String>

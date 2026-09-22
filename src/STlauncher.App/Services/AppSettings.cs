@@ -43,6 +43,9 @@ public sealed class AppSettings
     /// <summary>The drifting embers behind the main screen.</summary>
     public bool AnimatedBackground { get; set; } = true;
 
+    /// <summary>Which skin system the player chose to be shown from: Auto, Mojang, TLauncher, ElyBy.</summary>
+    public string? SkinSource { get; set; }
+
     /// <summary>The version whose "what's new" the player has already closed.</summary>
     public string? LastSeenVersion { get; set; }
 

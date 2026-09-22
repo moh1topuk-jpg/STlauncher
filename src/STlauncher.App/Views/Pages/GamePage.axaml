@@ -148,10 +148,23 @@
                                     <controls:SkinFace Skin="{Binding PlayerSkin}" Width="52" Height="52" CornerRadius="12"/>
                                     <Button.Flyout>
                                         <Flyout Placement="Bottom">
-                                            <StackPanel Spacing="10" Width="240">
+                                            <StackPanel Spacing="10" Width="300">
                                                 <controls:SkinViewer Skin="{Binding PlayerSkin}" Height="280"/>
+                                                <!-- Which skin system to look in; a player can have one in several. -->
+                                                <Border Classes="panel" Padding="3" HorizontalAlignment="Center">
+                                                    <StackPanel Orientation="Horizontal" Spacing="2">
+                                                        <Button Classes="segment small" Classes.active="{Binding IsSkinSourceAuto}" Content="{DynamicResource Skin_SourceAuto}"
+                                                                Command="{Binding SelectSkinSourceCommand}" CommandParameter="Auto"/>
+                                                        <Button Classes="segment small" Classes.active="{Binding IsSkinSourceMojang}" Content="Mojang"
+                                                                Command="{Binding SelectSkinSourceCommand}" CommandParameter="Mojang"/>
+                                                        <Button Classes="segment small" Classes.active="{Binding IsSkinSourceTLauncher}" Content="TLauncher"
+                                                                Command="{Binding SelectSkinSourceCommand}" CommandParameter="TLauncher"/>
+                                                        <Button Classes="segment small" Classes.active="{Binding IsSkinSourceElyBy}" Content="ely.by"
+                                                                Command="{Binding SelectSkinSourceCommand}" CommandParameter="ElyBy"/>
+                                                    </StackPanel>
+                                                </Border>
                                                 <TextBlock Text="{DynamicResource Game_ViewerHint}" Classes="faint" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="{Binding SkinSourceLabel}" Classes="faint" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="220"/>
+                                                <TextBlock Text="{Binding SkinSourceLabel}" Classes="faint" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="280"/>
                                             </StackPanel>
                                         </Flyout>
                                     </Button.Flyout>

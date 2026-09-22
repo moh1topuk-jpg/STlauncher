@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Net.Http;
@@ -9,6 +9,15 @@ using Avalonia.Platform;
 using STlauncher.Core;
 
 namespace STlauncher.App.Services;
+
+/// <summary>Where to look for a skin. Auto tries them all in the launcher's order.</summary>
+public enum SkinSource
+{
+    Auto,
+    Mojang,
+    TLauncher,
+    ElyBy
+}
 
 /// <summary>
 /// Fetches player skins as full textures, which both the face avatar and the 3D viewer
@@ -55,38 +64,44 @@ public sealed class SkinService
         }
     }
 
-    public async Task<PlayerSkin> GetSkinAsync(string username, CancellationToken cancellationToken = default)
+    /// <param name="source">
+    /// One system to ask, or Auto for the launcher's own order. A player with a skin in
+    /// several systems picks which one the launcher shows.
+    /// </param>
+    public async Task<PlayerSkin> GetSkinAsync(string username, SkinSource source = SkinSource.Auto, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(username))
         {
             return Default;
         }
 
-        if (_memory.TryGetValue(username, out var cached))
+        var key = source == SkinSource.Auto ? username : $"{username}@{source}";
+
+        if (_memory.TryGetValue(key, out var cached))
         {
             return cached;
         }
 
-        var cachePath = Path.Combine(_cacheDirectory, SafeFileName(username) + ".png");
+        var cachePath = Path.Combine(_cacheDirectory, SafeFileName(key) + ".png");
 
         // Fresh enough on disk: no request at all.
         if (LoadCached(cachePath, CacheLifetime) is { } fresh)
         {
-            return Remember(username, fresh);
+            return Remember(key, fresh);
         }
 
-        var fetched = await FetchAsync(username, cancellationToken).ConfigureAwait(false);
+        var fetched = await FetchAsync(username, source, cancellationToken).ConfigureAwait(false);
 
         if (fetched is { } found && TryDecode(found.Bytes, found.Slim, found.Source) is { } skin)
         {
             SaveCached(cachePath, found.Bytes, found.Slim, found.Source);
-            return Remember(username, skin);
+            return Remember(key, skin);
         }
 
         // Nothing reachable: the last skin we saw for this name beats a stranger's face.
         if (LoadCached(cachePath, TimeSpan.MaxValue) is { } stale)
         {
-            return Remember(username, stale);
+            return Remember(key, stale);
         }
 
         // Deliberately not remembered under the real name: a network blip must not pin
@@ -94,9 +109,9 @@ public sealed class SkinService
         return Default;
     }
 
-    private PlayerSkin Remember(string username, PlayerSkin skin)
+    private PlayerSkin Remember(string key, PlayerSkin skin)
     {
-        _memory[username] = skin;
+        _memory[key] = skin;
         return skin;
     }
 
@@ -114,9 +129,21 @@ public sealed class SkinService
     /// exist. That last case is what used to go wrong: mc-heads answers any unknown name
     /// with a 200 and a Steve, which the launcher took for the player's skin and cached.
     /// </summary>
-    private async Task<Fetched?> FetchAsync(string username, CancellationToken cancellationToken)
+    private async Task<Fetched?> FetchAsync(string username, SkinSource source, CancellationToken cancellationToken)
     {
         var name = Uri.EscapeDataString(username);
+
+        switch (source)
+        {
+            case SkinSource.Mojang:
+                return (await FetchFromMojangAsync(name, cancellationToken).ConfigureAwait(false)).Skin;
+            case SkinSource.TLauncher:
+                return await FetchFromTextureJsonAsync(
+                    $"https://auth.tlauncher.org/skin/profile/texture/login/{name}", "TLauncher", cancellationToken).ConfigureAwait(false);
+            case SkinSource.ElyBy:
+                return await FetchFromTextureJsonAsync(
+                    $"http://skinsystem.ely.by/textures/{name}", "ely.by", cancellationToken).ConfigureAwait(false);
+        }
 
         var (mojang, mojangKnowsTheName) = await FetchFromMojangAsync(name, cancellationToken).ConfigureAwait(false);
 
