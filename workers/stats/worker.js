@@ -57,7 +57,10 @@ export default {
     // One anonymous "I started" per launch. Analytics Engine writes are free and
     // unlimited on the Workers plan; a KV counter here would burn a write per player.
     if (request.method === 'POST' && new URL(request.url).pathname === '/ping') {
-      ctx.waitUntil(recordPing(request, env));
+      // The body has to be read before the response goes out; afterwards the runtime
+      // closes the request stream and the ping is lost.
+      const body = await readJson(request);
+      ctx.waitUntil(recordPing(body, env));
       return new Response(null, { status: 204, headers: corsHeaders() });
     }
 
@@ -138,14 +141,21 @@ async function collect(env, known) {
   ]);
 }
 
+async function readJson(request) {
+  try {
+    return await request.json();
+  } catch (error) {
+    return null;
+  }
+}
+
 /** Stores one launch: the installation id is the only identity, and it is random. */
-async function recordPing(request, env) {
-  if (!env.USAGE) {
+async function recordPing(body, env) {
+  if (!env.USAGE || !body) {
     return;
   }
 
   try {
-    const body = await request.json();
     const id = String(body?.id ?? '').slice(0, 64);
 
     if (!id) {
@@ -165,49 +175,61 @@ async function recordPing(request, env) {
 /**
  * Distinct installations and launches over a day and a week, from the pings. Needs an
  * API token; without one the payload simply carries no launcher block.
+ *
+ * Analytics Engine SQL knows no DISTINCT or conditional aggregates, so each window is
+ * one query grouped by installation id: rows are users, their sum is launches. Sampled
+ * rows are weighted by _sample_interval, as the documentation asks.
  */
 async function queryUsage(env) {
   if (!env.CF_ACCOUNT_ID || !env.CF_API_TOKEN) {
     return null;
   }
 
-  const sql = `
-    SELECT
-      count(DISTINCT blob1) AS usersWeek,
-      countIf(timestamp > NOW() - INTERVAL '1' DAY) AS launchesToday,
-      uniqIf(blob1, timestamp > NOW() - INTERVAL '1' DAY) AS usersToday
-    FROM stlauncher_usage
-    WHERE timestamp > NOW() - INTERVAL '7' DAY`;
-
   try {
-    const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/analytics_engine/sql`, {
-      method: 'POST',
-      headers: { authorization: `Bearer ${env.CF_API_TOKEN}` },
-      body: sql,
-    });
+    const [today, week] = await Promise.all([queryWindow(env, "INTERVAL '1' DAY"), queryWindow(env, "INTERVAL '7' DAY")]);
 
-    if (!response.ok) {
-      console.log(`usage query failed: HTTP ${response.status}`);
+    if (!today || !week) {
       return null;
     }
 
-    const body = await response.json();
-    const row = body?.data?.[0];
-
-    if (!row) {
-      return { usersToday: 0, usersWeek: 0, launchesToday: 0, updatedAt: Date.now() };
-    }
-
     return {
-      usersToday: Number(row.usersToday ?? 0),
-      usersWeek: Number(row.usersWeek ?? 0),
-      launchesToday: Number(row.launchesToday ?? 0),
+      usersToday: today.users,
+      usersWeek: week.users,
+      launchesToday: today.launches,
       updatedAt: Date.now(),
     };
   } catch (error) {
     console.log(`usage query failed: ${error}`);
     return null;
   }
+}
+
+async function queryWindow(env, interval) {
+  const sql = `SELECT blob1 AS installation, SUM(_sample_interval) AS launches
+    FROM stlauncher_usage
+    WHERE timestamp > NOW() - ${interval}
+    GROUP BY installation
+    LIMIT 100000`;
+
+  const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/analytics_engine/sql`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${env.CF_API_TOKEN}` },
+    body: sql,
+  });
+
+  if (!response.ok) {
+    const text = (await response.text()).slice(0, 300);
+    console.log(`usage query failed: HTTP ${response.status} ${text}`);
+    return null;
+  }
+
+  const body = await response.json();
+  const rows = Array.isArray(body?.data) ? body.data : [];
+
+  return {
+    users: rows.length,
+    launches: rows.reduce((sum, row) => sum + Number(row.launches ?? 0), 0),
+  };
 }
 
 async function fetchInfo(env) {
