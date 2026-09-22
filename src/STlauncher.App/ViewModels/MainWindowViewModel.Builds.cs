@@ -219,6 +219,135 @@ public partial class MainWindowViewModel
 
     public ObservableCollection<Bitmap> OpenedProjectGallery { get; } = new();
 
+    /// <summary>What the opened mod needs, and whether the build has it.</summary>
+    public ObservableCollection<ModDependencyItem> OpenedProjectDependencies { get; } = new();
+
+    /// <summary>The version that "Add" would install: the newest release for this build.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(OpenedProjectFileLabel))]
+    [NotifyPropertyChangedFor(nameof(HasOpenedProjectVersion))]
+    private ModVersion? _openedProjectPreferred;
+
+    public bool HasOpenedProjectVersion => OpenedProjectPreferred is not null;
+
+    /// <summary>"0.8.12 · 1.4 MB" for the version above.</summary>
+    public string OpenedProjectFileLabel
+    {
+        get
+        {
+            if (OpenedProjectPreferred is null)
+            {
+                return Localize("Builds_DetailsNoVersions", "No version for this build");
+            }
+
+            var file = ModrinthClient.SelectFile(OpenedProjectPreferred, SelectedVersion?.Id, SelectedLoader);
+            var size = file is null ? string.Empty : " · " + FormatSize(file.Size);
+            return OpenedProjectPreferred.VersionNumber + size;
+        }
+    }
+
+    public string VersionForLabel => Localize("Mods_VersionFor", "Version for {0}", SelectedVersion?.Id ?? "?");
+
+    public bool OpenedProjectInstalled => OpenedProject is not null && IsProjectInstalled(OpenedProject.Slug);
+
+    public bool OpenedProjectNotInstalled => OpenedProject is not null && !OpenedProjectInstalled;
+
+    public string OpenedProjectByline => OpenedProject is null
+        ? string.Empty
+        : ModBrowserItem.CompactCount(OpenedProject.Downloads);
+
+    /// <summary>The list of every compatible version, shown on request.</summary>
+    [ObservableProperty]
+    private bool _showOtherVersions;
+
+    [RelayCommand]
+    private void ToggleOtherVersions() => ShowOtherVersions = !ShowOtherVersions;
+
+    [RelayCommand]
+    private void OpenProjectPage()
+    {
+        if (OpenedProject is not null)
+        {
+            OpenUrl($"https://modrinth.com/mod/{OpenedProject.Slug}");
+        }
+    }
+
+    /// <summary>"Add" on the details panel: the preferred version, dependencies included.</summary>
+    [RelayCommand]
+    private async Task InstallOpenedProjectAsync()
+    {
+        if (OpenedProject is null || OpenedProjectPreferred is null || IsProjectBusy)
+        {
+            return;
+        }
+
+        try
+        {
+            IsProjectBusy = true;
+            await InstallProjectWithDependenciesAsync(
+                OpenedProjectPreferred, OpenedProject.Slug, OpenedProject.Title, OpenedProject.IconUrl);
+            RefreshBrowserInstallState();
+            RefreshHiddenItems();
+            await RefreshOpenedProjectDependenciesAsync(OpenedProjectPreferred, OpenedProject.Title);
+        }
+        catch (Exception ex)
+        {
+            Status = Localize("Error_InstallMod", "Mod install failed: {0}", ex.Message);
+            AppendConsole(ex.ToString());
+        }
+        finally
+        {
+            IsProjectBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task UninstallOpenedProjectAsync()
+    {
+        if (OpenedProject is null || IsProjectBusy)
+        {
+            return;
+        }
+
+        try
+        {
+            IsProjectBusy = true;
+            await UninstallProjectAsync(OpenedProject.Slug);
+        }
+        finally
+        {
+            IsProjectBusy = false;
+        }
+    }
+
+    private async Task RefreshOpenedProjectDependenciesAsync(ModVersion? version, string title)
+    {
+        OpenedProjectDependencies.Clear();
+
+        if (version is null)
+        {
+            return;
+        }
+
+        foreach (var dependency in version.Dependencies.Where(d => !string.IsNullOrEmpty(d.ProjectId)).Take(5))
+        {
+            try
+            {
+                var project = await _modrinth.GetProjectAsync(dependency.ProjectId!).ConfigureAwait(true);
+
+                if (project is not null)
+                {
+                    OpenedProjectDependencies.Add(new ModDependencyItem(
+                        project.Title, IsProjectInstalled(project.Slug), dependency.IsRequired));
+                }
+            }
+            catch (Exception ex)
+            {
+                AppendConsole($"[modrinth] dependency of {title}: {ex.Message}");
+            }
+        }
+    }
+
     [RelayCommand]
     private async Task OpenProjectAsync(ModBrowserItem? item)
     {
@@ -227,14 +356,22 @@ public partial class MainWindowViewModel
             return;
         }
 
+        foreach (var other in ModBrowserItems)
+        {
+            other.IsSelected = ReferenceEquals(other, item);
+        }
+
         try
         {
             IsProjectBusy = true;
             IsProjectOpen = true;
+            ShowOtherVersions = false;
             OpenedProject = null;
             OpenedProjectIcon = null;
+            OpenedProjectPreferred = null;
             OpenedProjectVersions.Clear();
             OpenedProjectGallery.Clear();
+            OpenedProjectDependencies.Clear();
             OpenedProjectDescription = item.Result.Description;
 
             // The list already has the logo cached, so show it immediately.
@@ -265,9 +402,16 @@ public partial class MainWindowViewModel
                 OpenedProjectVersions.Add(version);
             }
 
+            OpenedProjectPreferred = ModrinthClient.SelectPreferred(versions);
+            OnPropertyChanged(nameof(OpenedProjectInstalled));
+            OnPropertyChanged(nameof(OpenedProjectNotInstalled));
+            OnPropertyChanged(nameof(OpenedProjectByline));
+
+            await RefreshOpenedProjectDependenciesAsync(OpenedProjectPreferred, item.Result.Title);
+
             if (project is not null)
             {
-                foreach (var url in project.Gallery.Take(6))
+                foreach (var url in project.Gallery.Take(4))
                 {
                     var image = await _images.GetAsync(url).ConfigureAwait(true);
 
@@ -294,8 +438,15 @@ public partial class MainWindowViewModel
         IsProjectOpen = false;
         OpenedProject = null;
         OpenedProjectIcon = null;
+        OpenedProjectPreferred = null;
         OpenedProjectVersions.Clear();
         OpenedProjectGallery.Clear();
+        OpenedProjectDependencies.Clear();
+
+        foreach (var item in ModBrowserItems)
+        {
+            item.IsSelected = false;
+        }
     }
 
     /// <summary>Translates the project description in place; a second click restores it.</summary>
@@ -352,23 +503,23 @@ public partial class MainWindowViewModel
         try
         {
             IsProjectBusy = true;
-            await MaybeBackupAsync(BackupTrigger.BeforeModChange);
-            Status = Localize("Status_InstallingFile", "Installing {0}…", file.FileName);
 
-            await _mods.InstallAsync(InstanceDirectory, file.FileName, file.Url, file.Sha1, file.Size);
-
-            RecordInstalledMod(new InstalledModRecord
+            // Another version of an installed mod replaces it rather than sits beside it.
+            if (OpenedProject is not null && IsProjectInstalled(OpenedProject.Slug))
             {
-                FileName = file.FileName,
-                Source = ModSource.Modrinth,
-                Id = OpenedProject?.Slug,
-                Name = OpenedProject?.Title ?? file.FileName,
-                IconUrl = OpenedProject?.IconUrl
-            });
+                await UninstallProjectAsync(OpenedProject.Slug);
+            }
 
-            RefreshMods();
-            Status = Localize("Status_InstalledFile", "Installed {0}", file.FileName);
-            CloseProject();
+            await InstallProjectWithDependenciesAsync(
+                version!,
+                OpenedProject?.Slug ?? string.Empty,
+                OpenedProject?.Title ?? file.FileName,
+                OpenedProject?.IconUrl);
+
+            OpenedProjectPreferred = version;
+            RefreshBrowserInstallState();
+            RefreshHiddenItems();
+            ShowOtherVersions = false;
         }
         catch (Exception ex)
         {

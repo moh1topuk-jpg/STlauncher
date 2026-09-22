@@ -49,7 +49,17 @@ public sealed record ModSearchResult(
     string Description,
     string? IconUrl,
     long Downloads,
-    string? Author);
+    string? Author)
+{
+    /// <summary>Modrinth category names ("optimization", "utility"); the loaders are filtered out.</summary>
+    public IReadOnlyList<string> Categories { get; init; } = Array.Empty<string>();
+}
+
+/// <summary>Another project a version needs, or works with. Only "required" is acted on.</summary>
+public sealed record ModDependency(string? ProjectId, string? VersionId, string Type)
+{
+    public bool IsRequired => string.Equals(Type, "required", StringComparison.OrdinalIgnoreCase);
+}
 
 public sealed record ModFile(
     string Url,
@@ -68,6 +78,9 @@ public sealed record ModVersion(
     IReadOnlyList<ModFile> Files,
     string VersionType = "release")
 {
+    /// <summary>What this version depends on, as Modrinth lists it.</summary>
+    public IReadOnlyList<ModDependency> Dependencies { get; init; } = Array.Empty<ModDependency>();
+
     public ModFile? PrimaryFile => Files.FirstOrDefault(f => f.Primary) ?? Files.FirstOrDefault();
 
     /// <summary>
@@ -117,7 +130,13 @@ public sealed class ModrinthClient
                             h.Description ?? string.Empty,
                             h.IconUrl,
                             h.Downloads,
-                            h.Author))
+                            h.Author)
+                        {
+                            // Modrinth puts the loaders into the same list as the categories.
+                            Categories = (h.Categories ?? new List<string>())
+                                .Where(c => c is not ("fabric" or "forge" or "neoforge" or "quilt" or "minecraft"))
+                                .ToList()
+                        })
                         .ToList()
                     ?? new List<ModSearchResult>();
 
@@ -227,7 +246,12 @@ public sealed class ModrinthClient
                     f.Size,
                     f.Primary))
                 .ToList(),
-                v.VersionType ?? "release"))
+                v.VersionType ?? "release")
+            {
+                Dependencies = (v.Dependencies ?? new List<DependencyDto>())
+                    .Select(d => new ModDependency(d.ProjectId, d.VersionId, d.DependencyType ?? "optional"))
+                    .ToList()
+            })
             .ToList();
     }
 
@@ -380,10 +404,28 @@ public sealed class ModrinthClient
 
         [JsonPropertyName("author")]
         public string? Author { get; set; }
+
+        [JsonPropertyName("categories")]
+        public List<string>? Categories { get; set; }
+    }
+
+    private sealed class DependencyDto
+    {
+        [JsonPropertyName("project_id")]
+        public string? ProjectId { get; set; }
+
+        [JsonPropertyName("version_id")]
+        public string? VersionId { get; set; }
+
+        [JsonPropertyName("dependency_type")]
+        public string? DependencyType { get; set; }
     }
 
     private sealed class VersionDto
     {
+        [JsonPropertyName("dependencies")]
+        public List<DependencyDto>? Dependencies { get; set; }
+
         [JsonPropertyName("id")]
         public string? Id { get; set; }
 

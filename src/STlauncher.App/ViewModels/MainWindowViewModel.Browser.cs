@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -27,8 +28,22 @@ public enum BuildTab
 
 public sealed record ModSortOption(string Value, string Display);
 
-/// <summary>A category ready for display: the machine name plus a translated label.</summary>
-public sealed record ModCategoryOption(string Name, string Display);
+/// <summary>A category chip: the machine name, a translated label, and whether it is the one pressed.</summary>
+public partial class ModCategoryOption : ObservableObject
+{
+    public ModCategoryOption(string name, string display)
+    {
+        Name = name;
+        Display = display;
+    }
+
+    public string Name { get; }
+
+    public string Display { get; }
+
+    [ObservableProperty]
+    private bool _isSelected;
+}
 
 /// <summary>A Modrinth search hit together with its lazily loaded logo and install state.</summary>
 public partial class ModBrowserItem : ObservableObject
@@ -38,19 +53,73 @@ public partial class ModBrowserItem : ObservableObject
         Result = result;
         _installed = installed;
         _displayDescription = result.Description;
+        DownloadsLabel = CompactCount(result.Downloads);
+        Byline = string.IsNullOrWhiteSpace(result.Author)
+            ? DownloadsLabel
+            : $"{result.Author} · {DownloadsLabel}";
+        CategoryLabels = result.Categories
+            .Take(2)
+            .Select(c => MainWindowViewModel.Localize($"Category_{c}", c))
+            .ToList();
     }
 
     public ModSearchResult Result { get; }
+
+    /// <summary>"CaffeineMC · 60 M downloads" under the title.</summary>
+    public string Byline { get; }
+
+    public string DownloadsLabel { get; }
+
+    public IReadOnlyList<string> CategoryLabels { get; }
 
     [ObservableProperty]
     private Bitmap? _icon;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(NotInstalled))]
     private bool _installed;
+
+    public bool NotInstalled => !Installed;
+
+    /// <summary>The card whose details are open on the right.</summary>
+    [ObservableProperty]
+    private bool _isSelected;
+
+    /// <summary>Hidden by the "hide installed" tick without leaving the page.</summary>
+    [ObservableProperty]
+    private bool _isHidden;
 
     /// <summary>Description in the interface language; falls back to the original.</summary>
     [ObservableProperty]
     private string _displayDescription;
+
+    /// <summary>60 000 000 → "60 M", 340 000 → "340 K", in the interface language.</summary>
+    public static string CompactCount(long count)
+    {
+        if (count >= 1_000_000)
+        {
+            var millions = count / 1_000_000d;
+            return MainWindowViewModel.Localize("Count_Millions", "{0} M downloads",
+                millions >= 10 ? millions.ToString("F0", CultureInfo.CurrentCulture) : millions.ToString("F1", CultureInfo.CurrentCulture));
+        }
+
+        if (count >= 1_000)
+        {
+            return MainWindowViewModel.Localize("Count_Thousands", "{0} K downloads", (count / 1_000).ToString(CultureInfo.CurrentCulture));
+        }
+
+        return MainWindowViewModel.Localize("Count_Plain", "{0} downloads", count);
+    }
+}
+
+/// <summary>One dependency of the opened mod, with whether the build already has it.</summary>
+public sealed record ModDependencyItem(string Title, bool Installed, bool Required)
+{
+    public string StateLabel => Installed
+        ? MainWindowViewModel.Localize("Mods_DepInstalled", "in the build")
+        : Required
+            ? MainWindowViewModel.Localize("Mods_DepWillInstall", "will be added too")
+            : MainWindowViewModel.Localize("Mods_DepOptional", "optional");
 }
 
 public partial class MainWindowViewModel
@@ -96,6 +165,44 @@ public partial class MainWindowViewModel
 
     [ObservableProperty]
     private ModSortOption? _selectedModSort;
+
+    /// <summary>Takes the mods already in the build off the page, for finding what is missing.</summary>
+    [ObservableProperty]
+    private bool _hideInstalledMods;
+
+    partial void OnHideInstalledModsChanged(bool value) => RefreshHiddenItems();
+
+    private void RefreshHiddenItems()
+    {
+        foreach (var item in ModBrowserItems)
+        {
+            item.IsHidden = HideInstalledMods && item.Installed;
+        }
+    }
+
+    /// <summary>A chip pressed; the same chip again goes back to all categories.</summary>
+    [RelayCommand]
+    private void SelectCategory(ModCategoryOption? category)
+    {
+        if (category is null)
+        {
+            return;
+        }
+
+        SelectedCategory = category.IsSelected && category.Name.Length > 0
+            ? ModCategories.FirstOrDefault(c => c.Name.Length == 0)
+            : category;
+    }
+
+    /// <summary>"into SHOWTIME 1.21.11 · Fabric · mods for 1.21.11 only", under the catalog title.</summary>
+    public string CatalogScopeLabel => SelectedInstance is null
+        ? string.Empty
+        : Localize(
+            "Mods_Scope",
+            "into {0} · {1} · only mods for {2}",
+            SelectedInstance.Name,
+            SelectedLoader,
+            SelectedVersion?.Id ?? "?");
 
     [ObservableProperty]
     private bool _isBrowserBusy;
@@ -250,8 +357,14 @@ public partial class MainWindowViewModel
 
             foreach (var item in result.Items)
             {
-                ModBrowserItems.Add(new ModBrowserItem(item, IsProjectInstalled(item.Slug)));
+                ModBrowserItems.Add(new ModBrowserItem(item, IsProjectInstalled(item.Slug))
+                {
+                    IsSelected = string.Equals(item.Slug, OpenedProject?.Slug, StringComparison.OrdinalIgnoreCase)
+                });
             }
+
+            RefreshHiddenItems();
+            OnPropertyChanged(nameof(CatalogScopeLabel));
 
             var from = result.Items.Count == 0 ? 0 : offset + 1;
             var to = offset + result.Items.Count;
@@ -330,7 +443,15 @@ public partial class MainWindowViewModel
         });
     }
 
-    partial void OnSelectedCategoryChanged(ModCategoryOption? value) => ScheduleBrowserReload();
+    partial void OnSelectedCategoryChanged(ModCategoryOption? value)
+    {
+        foreach (var category in ModCategories)
+        {
+            category.IsSelected = ReferenceEquals(category, value);
+        }
+
+        ScheduleBrowserReload();
+    }
 
     partial void OnSelectedModSortChanged(ModSortOption? value) => ScheduleBrowserReload();
 
@@ -349,31 +470,21 @@ public partial class MainWindowViewModel
 
             var versions = await _modrinth.GetVersionsAsync(item.Result.ProjectId, SelectedVersion?.Id, SelectedLoader);
             var preferred = ModrinthClient.SelectPreferred(versions);
-            var file = preferred is null ? null : ModrinthClient.SelectFile(preferred, SelectedVersion?.Id, SelectedLoader);
 
-            if (file is null || string.IsNullOrEmpty(file.Url))
+            if (preferred is null)
             {
                 Status = Localize("Status_NoCompatibleFile", "No compatible file for this version and loader");
                 return;
             }
 
-            await MaybeBackupAsync(BackupTrigger.BeforeModChange);
-            Status = Localize("Status_InstallingFile", "Installing {0}…", file.FileName);
-
-            await _mods.InstallAsync(InstanceDirectory, file.FileName, file.Url, file.Sha1, file.Size);
-
-            RecordInstalledMod(new InstalledModRecord
-            {
-                FileName = file.FileName,
-                Source = ModSource.Modrinth,
-                Id = item.Result.Slug,
-                Name = item.Result.Title,
-                IconUrl = item.Result.IconUrl
-            });
+            await InstallProjectWithDependenciesAsync(
+                preferred,
+                item.Result.Slug,
+                item.Result.Title,
+                item.Result.IconUrl);
 
             item.Installed = true;
-            RefreshMods();
-            Status = Localize("Status_InstalledFile", "Installed {0}", file.FileName);
+            RefreshHiddenItems();
         }
         catch (Exception ex)
         {
@@ -384,6 +495,101 @@ public partial class MainWindowViewModel
         {
             IsBrowserBusy = false;
         }
+    }
+
+    /// <summary>
+    /// Installs a version and everything it requires. A mod that needs Fabric API and is
+    /// installed without it crashes the game on the next start with a message the player
+    /// cannot act on - so the required dependencies come along, one level down each.
+    /// </summary>
+    private async Task InstallProjectWithDependenciesAsync(
+        ModVersion version,
+        string slug,
+        string title,
+        string? iconUrl,
+        int depth = 0)
+    {
+        var file = ModrinthClient.SelectFile(version, SelectedVersion?.Id, SelectedLoader);
+
+        if (file is null || string.IsNullOrEmpty(file.Url))
+        {
+            Status = Localize("Status_NoCompatibleFile", "No compatible file for this version and loader");
+            return;
+        }
+
+        if (depth == 0)
+        {
+            await MaybeBackupAsync(BackupTrigger.BeforeModChange);
+        }
+
+        // Dependencies first, so a failure there leaves the build without the mod rather
+        // than with a mod that cannot start.
+        if (depth < 2)
+        {
+            foreach (var dependency in version.Dependencies.Where(d => d.IsRequired && !string.IsNullOrEmpty(d.ProjectId)))
+            {
+                var project = await _modrinth.GetProjectAsync(dependency.ProjectId!);
+
+                if (project is null || IsProjectInstalled(project.Slug))
+                {
+                    continue;
+                }
+
+                Status = Localize("Status_ResolvingDependency", "Adding {0}, which {1} needs…", project.Title, title);
+
+                var candidates = await _modrinth.GetVersionsAsync(project.Id, SelectedVersion?.Id, SelectedLoader);
+                var pick = dependency.VersionId is { } wanted
+                    ? candidates.FirstOrDefault(v => v.Id == wanted) ?? ModrinthClient.SelectPreferred(candidates)
+                    : ModrinthClient.SelectPreferred(candidates);
+
+                if (pick is null)
+                {
+                    throw new InvalidOperationException(
+                        Localize("Error_DependencyMissing", "{0} needs {1}, which has no version for this build", title, project.Title));
+                }
+
+                await InstallProjectWithDependenciesAsync(pick, project.Slug, project.Title, project.IconUrl, depth + 1);
+            }
+        }
+
+        Status = Localize("Status_InstallingFile", "Installing {0}…", file.FileName);
+        await _mods.InstallAsync(InstanceDirectory, file.FileName, file.Url, file.Sha1, file.Size);
+
+        RecordInstalledMod(new InstalledModRecord
+        {
+            FileName = file.FileName,
+            Source = ModSource.Modrinth,
+            Id = slug,
+            Name = title,
+            IconUrl = iconUrl,
+            Version = version.VersionNumber
+        });
+
+        RefreshMods();
+        Status = Localize("Status_InstalledFile", "Installed {0}", file.FileName);
+    }
+
+    /// <summary>Takes a Modrinth project out of the build by its slug.</summary>
+    private async Task UninstallProjectAsync(string slug)
+    {
+        var record = SelectedInstance?.InstalledMods.FirstOrDefault(m =>
+            string.Equals(m.Id, slug, StringComparison.OrdinalIgnoreCase));
+
+        if (record is null)
+        {
+            return;
+        }
+
+        var mod = InstalledMods.FirstOrDefault(m =>
+            string.Equals(m.FileName, record.FileName, StringComparison.OrdinalIgnoreCase));
+
+        if (mod is not null)
+        {
+            await UninstallModAsync(mod);
+        }
+
+        RefreshBrowserInstallState();
+        RefreshHiddenItems();
     }
 
     // ===================== Installed mods bookkeeping =====================
@@ -424,6 +630,9 @@ public partial class MainWindowViewModel
         {
             item.Installed = IsProjectInstalled(item.Result.Slug);
         }
+
+        OnPropertyChanged(nameof(OpenedProjectInstalled));
+        OnPropertyChanged(nameof(OpenedProjectNotInstalled));
     }
 
     /// <summary>Drops records whose file is no longer on disk.</summary>

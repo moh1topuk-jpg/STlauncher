@@ -7,6 +7,7 @@
              xmlns:mods="using:STlauncher.Core.Mods"
              xmlns:content="using:STlauncher.Core.Content"
              xmlns:conv="using:STlauncher.App.Converters"
+             xmlns:sys="using:System"
              x:Class="STlauncher.App.Views.Pages.BuildsPage"
              x:DataType="vm:MainWindowViewModel">
 
@@ -273,111 +274,273 @@
                         </Panel>
                     </Grid>
 
-                    <!-- ======== Modrinth catalog ======== -->
-                    <Grid IsVisible="{Binding IsBuildCatalog}" RowDefinitions="Auto,*" RowSpacing="12">
+                    <!-- ======== Modrinth catalog: chips, cards, details on the right ======== -->
+                    <Grid IsVisible="{Binding IsBuildCatalog}" RowDefinitions="Auto,Auto,*" RowSpacing="10">
 
-                        <StackPanel Spacing="8">
-                            <Border Classes="panel" Padding="12" IsVisible="{Binding !IsBuildConfigured}">
-                                <StackPanel Spacing="8">
-                                    <TextBlock Text="{DynamicResource Builds_NotConfigured}" Classes="faint"
-                                               TextWrapping="Wrap"/>
-                                    <Button Classes="ghost small" HorizontalAlignment="Left"
-                                            Content="{DynamicResource Builds_GoSettings}"
-                                            Command="{Binding SelectBuildTabCommand}"
-                                            CommandParameter="Settings"/>
-                                </StackPanel>
-                            </Border>
+                        <Border Classes="panel" Padding="12" IsVisible="{Binding !IsBuildConfigured}">
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="{DynamicResource Builds_NotConfigured}" Classes="faint" TextWrapping="Wrap"/>
+                                <Button Classes="ghost small" HorizontalAlignment="Left"
+                                        Content="{DynamicResource Builds_GoSettings}"
+                                        Command="{Binding SelectBuildTabCommand}" CommandParameter="Settings"/>
+                            </StackPanel>
+                        </Border>
 
-                            <!-- One row: what to look for and how to narrow it. -->
-                            <Grid ColumnDefinitions="*,200,170,Auto" ColumnSpacing="8">
-                                <TextBox Text="{Binding ModSearchQuery}"
-                                         Watermark="{DynamicResource Mods_SearchHint}"/>
-                                <ComboBox Grid.Column="1" ItemsSource="{Binding ModCategories}"
-                                          SelectedItem="{Binding SelectedCategory}"
-                                          HorizontalAlignment="Stretch">
-                                    <ComboBox.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:ModCategoryOption">
-                                            <TextBlock Text="{Binding Display}"
-                                                       TextTrimming="CharacterEllipsis"/>
-                                        </DataTemplate>
-                                    </ComboBox.ItemTemplate>
-                                </ComboBox>
-                                <ComboBox Grid.Column="2" ItemsSource="{Binding ModSortOptions}"
-                                          SelectedItem="{Binding SelectedModSort}"
-                                          HorizontalAlignment="Stretch">
+                        <StackPanel Grid.Row="1" Spacing="10">
+                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                                <Border Classes="panel" Padding="12,0" Height="40">
+                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                        <PathIcon Data="{StaticResource IconSearch}" Classes="small muted" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" Text="{Binding ModSearchQuery}" Background="Transparent"
+                                                 BorderThickness="0" Padding="0" MinHeight="0" VerticalContentAlignment="Center"
+                                                 Watermark="{DynamicResource Mods_SearchPlaceholder}"/>
+                                        <TextBlock Grid.Column="2" Text="Modrinth" Classes="faint" VerticalAlignment="Center"
+                                                   Foreground="#4A3F46"/>
+                                    </Grid>
+                                </Border>
+                                <ComboBox Grid.Column="1" ItemsSource="{Binding ModSortOptions}" SelectedItem="{Binding SelectedModSort}"
+                                          MinWidth="170" Height="40">
                                     <ComboBox.ItemTemplate>
                                         <DataTemplate x:DataType="vm:ModSortOption">
-                                            <TextBlock Text="{Binding Display}"
-                                                       TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis"/>
                                         </DataTemplate>
                                     </ComboBox.ItemTemplate>
                                 </ComboBox>
-                                <Button Grid.Column="3" Classes="primary"
+                                <Button Grid.Column="2" Classes="primary" Height="40"
                                         Content="{DynamicResource Mods_Search}"
-                                        Command="{Binding SearchModsCommand}"
-                                        IsEnabled="{Binding !IsBrowserBusy}"/>
+                                        Command="{Binding SearchModsCommand}" IsEnabled="{Binding !IsBrowserBusy}"/>
                             </Grid>
-                        </StackPanel>
 
-                        <Grid Grid.Row="1" RowDefinitions="*,Auto" RowSpacing="8">
-                            <ScrollViewer Name="BrowserScroll">
-                                <ItemsControl ItemsSource="{Binding ModBrowserItems}">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <ItemsControl ItemsSource="{Binding ModCategories}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
                                     <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:ModBrowserItem">
-                                            <Border Classes="panel" Padding="12" Margin="0,0,0,6"
-                                                    PointerPressed="OnModRowPressed" Cursor="Hand">
-                                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                                                    <Border Width="42" Height="42" CornerRadius="6"
-                                                            Background="#2A2028" ClipToBounds="True">
-                                                        <Image Source="{Binding Icon}" Stretch="Uniform"
-                                                               Width="42" Height="42"/>
-                                                    </Border>
-
-                                                    <StackPanel Grid.Column="1" Spacing="2"
-                                                                VerticalAlignment="Center">
-                                                        <TextBlock Text="{Binding Result.Title}"
-                                                                   FontWeight="SemiBold"
-                                                                   TextTrimming="CharacterEllipsis"/>
-                                                        <TextBlock Text="{Binding DisplayDescription}"
-                                                                   Classes="faint" MaxLines="2"
-                                                                   TextWrapping="Wrap"
-                                                                   TextTrimming="CharacterEllipsis"/>
-                                                    </StackPanel>
-
-                                                    <Panel Grid.Column="2" VerticalAlignment="Center">
-                                                        <Button Classes="ghost small"
-                                                                Content="{DynamicResource Content_Install}"
-                                                                IsVisible="{Binding !Installed}"
-                                                                Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).InstallBrowserItemCommand}"
-                                                                CommandParameter="{Binding}"/>
-                                                        <Border Classes="tag success" IsVisible="{Binding Installed}">
-                                                            <TextBlock Text="{DynamicResource Mods_InstalledBadge}"/>
-                                                        </Border>
-                                                    </Panel>
-                                                </Grid>
-                                            </Border>
+                                        <DataTemplate x:DataType="vm:ModCategoryOption">
+                                            <Button Classes="chip" Classes.active="{Binding IsSelected}" Margin="0,0,6,6"
+                                                    Content="{Binding Display}"
+                                                    Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).SelectCategoryCommand}"
+                                                    CommandParameter="{Binding}"/>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
-                            </ScrollViewer>
-
-                            <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="10">
-                                <TextBlock Text="{Binding BrowserSummary}" Classes="faint"
-                                           VerticalAlignment="Center"/>
-                                <Button Grid.Column="1" Classes="ghost small"
-                                        Content="{DynamicResource Mods_PrevPage}"
-                                        Command="{Binding PreviousBrowserPageCommand}"
-                                        IsEnabled="{Binding CanGoToPreviousPage}"/>
-                                <TextBlock Grid.Column="2" Text="{Binding BrowserPageLabel}"
-                                           Classes="faint" VerticalAlignment="Center"/>
-                                <Button Grid.Column="3" Classes="ghost small"
-                                        Content="{DynamicResource Mods_NextPage}"
-                                        Command="{Binding NextBrowserPageCommand}"
-                                        IsEnabled="{Binding CanGoToNextPage}"/>
+                                <CheckBox Grid.Column="1" Content="{DynamicResource Mods_HideInstalled}"
+                                          IsChecked="{Binding HideInstalledMods}" VerticalAlignment="Top"/>
                             </Grid>
+                        </StackPanel>
+
+                        <Grid Grid.Row="2" ColumnDefinitions="*,340" ColumnSpacing="14">
+
+                            <!-- Cards -->
+                            <Grid RowDefinitions="*,Auto" RowSpacing="8">
+                                <ScrollViewer Name="BrowserScroll">
+                                    <ItemsControl ItemsSource="{Binding ModBrowserItems}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Columns="2" ColumnSpacing="10" RowSpacing="10"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:ModBrowserItem">
+                                                <Border Classes="mod-card" Classes.selected="{Binding IsSelected}"
+                                                        IsVisible="{Binding !IsHidden}" Padding="14"
+                                                        PointerPressed="OnModRowPressed" Cursor="Hand">
+                                                    <StackPanel Spacing="10">
+                                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                                            <Border Width="44" Height="44" CornerRadius="10"
+                                                                    Background="{DynamicResource ElevatedBrush}" ClipToBounds="True">
+                                                                <Image Source="{Binding Icon}" Stretch="Uniform" Width="44" Height="44"/>
+                                                            </Border>
+                                                            <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                                                <TextBlock Text="{Binding Result.Title}" FontWeight="SemiBold" FontSize="14"
+                                                                           TextTrimming="CharacterEllipsis"/>
+                                                                <TextBlock Text="{Binding Byline}" Classes="faint" TextTrimming="CharacterEllipsis"/>
+                                                            </StackPanel>
+                                                            <Panel Grid.Column="2" VerticalAlignment="Center">
+                                                                <Button Classes="small" IsVisible="{Binding NotInstalled}"
+                                                                        Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).InstallBrowserItemCommand}"
+                                                                        CommandParameter="{Binding}">
+                                                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                                                        <PathIcon Data="{StaticResource IconPlus}" Width="11" Height="11"/>
+                                                                        <TextBlock Text="{DynamicResource Mods_Add}"/>
+                                                                    </StackPanel>
+                                                                </Button>
+                                                                <Border Classes="tag installed" IsVisible="{Binding Installed}">
+                                                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                                                        <PathIcon Data="{StaticResource IconCheck}" Width="10" Height="10"
+                                                                                  Foreground="#7DD39A"/>
+                                                                        <TextBlock Text="{DynamicResource Mods_InBuild}"/>
+                                                                    </StackPanel>
+                                                                </Border>
+                                                            </Panel>
+                                                        </Grid>
+                                                        <TextBlock Text="{Binding DisplayDescription}" Classes="muted" MaxLines="2"
+                                                                   TextWrapping="Wrap" TextTrimming="CharacterEllipsis" LineHeight="17"/>
+                                                        <ItemsControl ItemsSource="{Binding CategoryLabels}">
+                                                            <ItemsControl.ItemsPanel>
+                                                                <ItemsPanelTemplate>
+                                                                    <StackPanel Orientation="Horizontal" Spacing="6"/>
+                                                                </ItemsPanelTemplate>
+                                                            </ItemsControl.ItemsPanel>
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate x:DataType="sys:String">
+                                                                    <Border Classes="tag"><TextBlock Text="{Binding}"/></Border>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                    </StackPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+
+                                <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="10">
+                                    <TextBlock Text="{Binding BrowserSummary}" Classes="faint" VerticalAlignment="Center"/>
+                                    <Button Grid.Column="1" Classes="ghost small" Content="{DynamicResource Mods_PrevPage}"
+                                            Command="{Binding PreviousBrowserPageCommand}" IsEnabled="{Binding CanGoToPreviousPage}"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding BrowserPageLabel}" Classes="faint" VerticalAlignment="Center"/>
+                                    <Button Grid.Column="3" Classes="ghost small" Content="{DynamicResource Mods_NextPage}"
+                                            Command="{Binding NextBrowserPageCommand}" IsEnabled="{Binding CanGoToNextPage}"/>
+                                </Grid>
+                            </Grid>
+
+                            <!-- Details of the selected card -->
+                            <Border Grid.Column="1" Classes="card" Padding="0" ClipToBounds="True">
+                                <Panel>
+                                    <StackPanel Spacing="10" VerticalAlignment="Center" Margin="24" IsVisible="{Binding !IsProjectOpen}">
+                                        <PathIcon Data="{StaticResource IconSearch}" Classes="large muted" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="{DynamicResource Mods_DetailsPick}" Classes="muted" TextWrapping="Wrap"
+                                                   TextAlignment="Center"/>
+                                    </StackPanel>
+
+                                    <Grid RowDefinitions="Auto,*,Auto" IsVisible="{Binding IsProjectOpen}">
+                                        <Panel Height="120">
+                                            <Border>
+                                                <Border.Background>
+                                                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                                        <GradientStop Offset="0" Color="#2A1A22"/>
+                                                        <GradientStop Offset="1" Color="#151015"/>
+                                                    </LinearGradientBrush>
+                                                </Border.Background>
+                                            </Border>
+                                            <Button Classes="plain small" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8"
+                                                    Command="{Binding CloseProjectCommand}">
+                                                <PathIcon Data="{StaticResource IconClose}" Classes="small"/>
+                                            </Button>
+                                            <Border Width="64" Height="64" CornerRadius="14" HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                                                    Margin="16,0,0,-24" Background="{DynamicResource ElevatedBrush}"
+                                                    BorderBrush="{DynamicResource SurfaceBrush}" BorderThickness="3" ClipToBounds="True">
+                                                <Image Source="{Binding OpenedProjectIcon}" Stretch="Uniform"/>
+                                            </Border>
+                                        </Panel>
+
+                                        <ScrollViewer Grid.Row="1" Margin="0,30,0,0">
+                                            <StackPanel Spacing="12" Margin="16,0,16,12">
+                                                <StackPanel Spacing="2">
+                                                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                                                        <TextBlock Text="{Binding OpenedProject.Title}" Classes="h3" FontSize="18"
+                                                                   TextTrimming="CharacterEllipsis"/>
+                                                        <Button Grid.Column="1" Classes="plain small" Command="{Binding TranslateProjectCommand}"
+                                                                ToolTip.Tip="{DynamicResource Builds_Translate}">
+                                                            <PathIcon Data="{StaticResource IconGlobe}" Classes="small"/>
+                                                        </Button>
+                                                        <Button Grid.Column="2" Classes="plain small" Command="{Binding OpenProjectPageCommand}"
+                                                                ToolTip.Tip="{DynamicResource Mods_OpenOnModrinth}">
+                                                            <PathIcon Data="{StaticResource IconOpenExternal}" Classes="small"/>
+                                                        </Button>
+                                                    </Grid>
+                                                    <TextBlock Text="{Binding OpenedProjectByline}" Classes="faint"/>
+                                                </StackPanel>
+
+                                                <TextBlock Text="{Binding OpenedProjectDescription}" Classes="muted" FontSize="13"
+                                                           TextWrapping="Wrap" LineHeight="19" MaxHeight="190" TextTrimming="CharacterEllipsis"/>
+
+                                                <ItemsControl ItemsSource="{Binding OpenedProjectGallery}" IsVisible="{Binding OpenedProjectGallery.Count}">
+                                                    <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate>
+                                                            <StackPanel Orientation="Horizontal" Spacing="6"/>
+                                                        </ItemsPanelTemplate>
+                                                    </ItemsControl.ItemsPanel>
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Border Width="98" Height="58" CornerRadius="8" Background="{DynamicResource ElevatedBrush}"
+                                                                    ClipToBounds="True">
+                                                                <Image Source="{Binding}" Stretch="UniformToFill"/>
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+
+                                                <Border Classes="panel" Padding="12,10">
+                                                    <StackPanel Spacing="6">
+                                                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                                            <TextBlock Text="{Binding VersionForLabel}" Classes="faint"/>
+                                                            <TextBlock Grid.Column="1" Text="{Binding OpenedProjectFileLabel}" HorizontalAlignment="Right"
+                                                                       FontSize="12" TextTrimming="CharacterEllipsis"/>
+                                                        </Grid>
+                                                        <ItemsControl ItemsSource="{Binding OpenedProjectDependencies}">
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate x:DataType="vm:ModDependencyItem">
+                                                                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                                                        <TextBlock Text="{DynamicResource Mods_Requires}" Classes="faint"
+                                                                                   IsVisible="{Binding Required}"/>
+                                                                        <TextBlock Text="{DynamicResource Mods_WorksWith}" Classes="faint"
+                                                                                   IsVisible="{Binding !Required}"/>
+                                                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right">
+                                                                            <TextBlock Text="{Binding Title}" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                                                                            <TextBlock Text="—" Classes="faint"/>
+                                                                            <TextBlock Text="{Binding StateLabel}" FontSize="12"
+                                                                                       Foreground="{DynamicResource GoldBrush}"/>
+                                                                        </StackPanel>
+                                                                    </Grid>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                    </StackPanel>
+                                                </Border>
+
+                                                <!-- Every compatible version, when asked for. -->
+                                                <ListBox ItemsSource="{Binding OpenedProjectVersions}" MaxHeight="200"
+                                                         IsVisible="{Binding ShowOtherVersions}">
+                                                    <ListBox.ItemTemplate>
+                                                        <DataTemplate x:DataType="mods:ModVersion">
+                                                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                                                <StackPanel>
+                                                                    <TextBlock Text="{Binding VersionNumber}" FontWeight="SemiBold" FontSize="12"/>
+                                                                    <TextBlock Text="{Binding Name}" Classes="faint" TextTrimming="CharacterEllipsis"/>
+                                                                </StackPanel>
+                                                                <Button Grid.Column="1" Classes="ghost small" Content="{DynamicResource Mods_UseVersion}"
+                                                                        Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).InstallVersionCommand}"
+                                                                        CommandParameter="{Binding}"/>
+                                                            </Grid>
+                                                        </DataTemplate>
+                                                    </ListBox.ItemTemplate>
+                                                </ListBox>
+                                            </StackPanel>
+                                        </ScrollViewer>
+
+                                        <StackPanel Grid.Row="2" Margin="16,0,16,16" Spacing="8">
+                                            <ProgressBar IsIndeterminate="True" Height="3" IsVisible="{Binding IsProjectBusy}"/>
+                                            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                                <Button Classes="ghost" HorizontalAlignment="Stretch" Content="{DynamicResource Mods_OtherVersions}"
+                                                        Command="{Binding ToggleOtherVersionsCommand}" IsEnabled="{Binding HasOpenedProjectVersion}"/>
+                                                <Button Grid.Column="1" Classes="primary" HorizontalAlignment="Stretch"
+                                                        IsVisible="{Binding OpenedProjectNotInstalled}" IsEnabled="{Binding HasOpenedProjectVersion}"
+                                                        Content="{DynamicResource Mods_AddToBuild}" Command="{Binding InstallOpenedProjectCommand}"/>
+                                                <Button Grid.Column="1" Classes="danger" HorizontalAlignment="Stretch"
+                                                        IsVisible="{Binding OpenedProjectInstalled}"
+                                                        Content="{DynamicResource Mods_RemoveFromBuild}" Command="{Binding UninstallOpenedProjectCommand}"/>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Grid>
+                                </Panel>
+                            </Border>
                         </Grid>
                     </Grid>
-
                     <!-- ======== Build settings ======== -->
                     <ScrollViewer IsVisible="{Binding IsBuildSettings}">
                         <StackPanel Spacing="14" MaxWidth="720" HorizontalAlignment="Left">
@@ -632,96 +795,5 @@
             </Border>
         </Border>
 
-        <!-- ============ Mod details ============ -->
-        <Border Background="#B0000000" IsVisible="{Binding IsProjectOpen}">
-            <Border Classes="card" Width="720" MaxHeight="620" HorizontalAlignment="Center"
-                    VerticalAlignment="Center" Padding="22">
-                <Grid RowDefinitions="Auto,*,Auto" RowSpacing="14">
-                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
-                        <Border Width="64" Height="64" CornerRadius="8" Background="#2A2028"
-                                ClipToBounds="True">
-                            <Image Source="{Binding OpenedProjectIcon}" Stretch="Uniform"
-                                   Width="64" Height="64"/>
-                        </Border>
-
-                        <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding OpenedProject.Title}" FontSize="17"
-                                       FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Text="{Binding OpenedProject.Slug}" Classes="faint"/>
-                            <TextBlock Classes="faint"
-                                       Text="{Binding OpenedProject.Downloads, StringFormat={}{0:N0} }"/>
-                        </StackPanel>
-
-                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6"
-                                    VerticalAlignment="Top">
-                            <Button Classes="ghost small"
-                                    Content="{DynamicResource Builds_Translate}"
-                                    IsVisible="{Binding !IsProjectTranslated}"
-                                    Command="{Binding TranslateProjectCommand}"/>
-                            <Button Classes="ghost small"
-                                    Content="{DynamicResource Builds_ShowOriginal}"
-                                    IsVisible="{Binding IsProjectTranslated}"
-                                    Command="{Binding TranslateProjectCommand}"/>
-                            <Button Classes="ghost small"
-                                    Content="{DynamicResource Common_Close2}"
-                                    Command="{Binding CloseProjectCommand}"/>
-                        </StackPanel>
-                    </Grid>
-
-                    <ScrollViewer Grid.Row="1">
-                        <StackPanel Spacing="14">
-                            <StackPanel Spacing="6">
-                                <TextBlock Text="{DynamicResource Builds_Details}" Classes="label"/>
-                                <TextBlock Text="{Binding OpenedProjectDescription}" TextWrapping="Wrap"
-                                           Classes="faint"/>
-                            </StackPanel>
-
-                            <ItemsControl ItemsSource="{Binding OpenedProjectGallery}"
-                                          IsVisible="{Binding OpenedProjectGallery.Count}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <WrapPanel/>
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border Width="150" Height="90" CornerRadius="6" Margin="0,0,8,8"
-                                                Background="#2A2028" ClipToBounds="True">
-                                            <Image Source="{Binding}" Stretch="UniformToFill"/>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-
-                            <StackPanel Spacing="6">
-                                <TextBlock Text="{DynamicResource Builds_DetailsVersions}" Classes="label"/>
-
-                                <ListBox ItemsSource="{Binding OpenedProjectVersions}" MaxHeight="260">
-                                    <ListBox.ItemTemplate>
-                                        <DataTemplate x:DataType="mods:ModVersion">
-                                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
-                                                <StackPanel VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding VersionNumber}"
-                                                               FontWeight="SemiBold"/>
-                                                    <TextBlock Text="{Binding Name}" Classes="faint"
-                                                               TextTrimming="CharacterEllipsis"/>
-                                                </StackPanel>
-                                                <TextBlock Grid.Column="1" Classes="faint"
-                                                           VerticalAlignment="Center"
-                                                           Text="{Binding GameVersions[0]}"/>
-                                                <Button Grid.Column="2" Classes="ghost small"
-                                                        Content="{DynamicResource Content_Install}"
-                                                        Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).InstallVersionCommand}"
-                                                        CommandParameter="{Binding}"/>
-                                            </Grid>
-                                        </DataTemplate>
-                                    </ListBox.ItemTemplate>
-                                </ListBox>
-                            </StackPanel>
-                        </StackPanel>
-                    </ScrollViewer>
-                </Grid>
-            </Border>
-        </Border>
     </Grid>
 </UserControl>
