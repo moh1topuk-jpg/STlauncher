@@ -116,14 +116,34 @@
                          one click away. -->
                     <Border Classes="panel" Padding="16" IsVisible="{Binding HasGameCrashed}" MaxWidth="560"
                             HorizontalAlignment="Left">
-                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                             <PathIcon Data="{StaticResource IconWarning}" Foreground="{DynamicResource DangerBrush}"
-                                      VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="1" Text="{Binding GameCrashNotice}" TextWrapping="Wrap"
-                                       VerticalAlignment="Center"/>
-                            <Button Grid.Column="2" Classes="ghost small"
-                                    Content="{DynamicResource Game_OpenLog}"
-                                    Command="{Binding OpenLastGameLogCommand}"/>
+                                      VerticalAlignment="Top" Margin="0,2,0,0"/>
+                            <StackPanel Grid.Column="1" Spacing="6">
+                                <TextBlock Text="{Binding GameCrashNotice}" TextWrapping="Wrap" Classes="muted"
+                                           IsVisible="{Binding !HasCrashDiagnosis}"/>
+                                <!-- The cause, in words, and what to do about it. -->
+                                <TextBlock Text="{Binding CrashDiagnosisTitle}" TextWrapping="Wrap" FontWeight="SemiBold"
+                                           IsVisible="{Binding HasCrashDiagnosis}"/>
+                                <TextBlock Text="{Binding CrashDiagnosisAdvice}" TextWrapping="Wrap" Classes="muted" FontSize="13"/>
+                                <WrapPanel Margin="0,4,0,0">
+                                    <Button Classes="primary small" Margin="0,0,8,6" IsVisible="{Binding HasCrashFix}"
+                                            Content="{Binding CrashFixLabel}" Command="{Binding ApplyCrashFixCommand}"/>
+                                    <Button Classes="ghost small" Margin="0,0,8,6"
+                                            Command="{Binding CopyCrashReportCommand}">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <PathIcon Data="{StaticResource IconCopy}" Classes="small"/>
+                                            <TextBlock Text="{DynamicResource Crash_CopyReport}"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Classes="ghost small" Margin="0,0,8,6"
+                                            Content="{DynamicResource Game_OpenLog}"
+                                            Command="{Binding OpenLastGameLogCommand}"/>
+                                    <Button Classes="plain small" Margin="0,0,8,6" IsVisible="{Binding HasCrashReportFile}"
+                                            Content="{DynamicResource Crash_OpenReport}"
+                                            Command="{Binding OpenCrashReportCommand}"/>
+                                </WrapPanel>
+                            </StackPanel>
                         </Grid>
                     </Border>
 

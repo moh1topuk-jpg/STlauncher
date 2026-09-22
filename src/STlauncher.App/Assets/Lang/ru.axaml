@@ -482,4 +482,40 @@
     <x:String x:Key="Size_Mb">{0:F0} МБ</x:String>
     <x:String x:Key="Size_Kb">{0} КБ</x:String>
 
+    <!-- Crash diagnosis -->
+    <x:String x:Key="Crash_MissingDependency">«{0}» требует «{1}», а его нет в сборке</x:String>
+    <x:String x:Key="Crash_MissingDependencyAdvice">Добавьте его во вкладке «Добавить моды» или уберите «{0}».</x:String>
+    <x:String x:Key="Crash_ModForOtherVersion">«{0}» сделан для другой версии игры или загрузчика</x:String>
+    <x:String x:Key="Crash_ModForOtherVersionAdvice">Выключите его в модах сборки или поставьте версию для {0}.</x:String>
+    <x:String x:Key="Crash_IncompatibleMods">«{0}» не работает вместе с «{1}»</x:String>
+    <x:String x:Key="Crash_IncompatibleModsAdvice">Выключите один из них в модах сборки.</x:String>
+    <x:String x:Key="Crash_DuplicateModPlain">Один и тот же мод лежит в папке модов дважды</x:String>
+    <x:String x:Key="Crash_DuplicateMod">Мод «{0}» лежит в папке модов дважды</x:String>
+    <x:String x:Key="Crash_DuplicateModAdvice">Удалите старый файл в папке модов.</x:String>
+    <x:String x:Key="Crash_MixinPlain">Один из модов не смог пропатчить игру — скорее всего, он для другой версии</x:String>
+    <x:String x:Key="Crash_Mixin">«{0}» не смог пропатчить игру — скорее всего, он для другой версии</x:String>
+    <x:String x:Key="Crash_MixinAdvice">Выключите его в модах сборки или поставьте версию для {0}.</x:String>
+    <x:String x:Key="Crash_OutOfMemory">Игре не хватило памяти</x:String>
+    <x:String x:Key="Crash_OutOfMemoryAdvice">Выделите игре больше памяти в настройках или уберите тяжёлые моды.</x:String>
+    <x:String x:Key="Crash_JavaTooOldPlain">Java, которой запущена игра, слишком старая</x:String>
+    <x:String x:Key="Crash_JavaTooOld">Игре нужна Java {0}, а запущена более старая</x:String>
+    <x:String x:Key="Crash_JavaTooOldAdvice">Пусть лаунчер выберет Java сам — он скачает нужную.</x:String>
+    <x:String x:Key="Crash_Graphics">Видеодрайвер не смог открыть окно игры</x:String>
+    <x:String x:Key="Crash_GraphicsAdvice">Обновите драйвер видеокарты. На ноутбуке запускайте игру на дискретной карте.</x:String>
+    <x:String x:Key="Crash_BrokenInstallation">Файл игры отсутствует или повреждён</x:String>
+    <x:String x:Key="Crash_BrokenInstallationAdvice">Скачайте файлы игры заново: лаунчер проверит каждый и заменит битые.</x:String>
+    <x:String x:Key="Crash_DiskFull">Диск заполнен</x:String>
+    <x:String x:Key="Crash_DiskFullAdvice">Освободите место на диске, где лежат файлы лаунчера.</x:String>
+    <x:String x:Key="Crash_UnknownAdvice">Скопируйте отчёт и отправьте в поддержку сервера — в нём есть всё нужное.</x:String>
+    <x:String x:Key="Crash_FixMemory">Выделить {0} МБ</x:String>
+    <x:String x:Key="Crash_FixJava">Java: автоматически</x:String>
+    <x:String x:Key="Crash_FixReinstall">Скачать файлы игры заново</x:String>
+    <x:String x:Key="Crash_FixFindMod">Найти «{0}» в каталоге</x:String>
+    <x:String x:Key="Crash_MemoryApplied">Память: {0} МБ — попробуйте снова</x:String>
+    <x:String x:Key="Crash_JavaApplied">Java теперь выбирается автоматически — попробуйте снова</x:String>
+    <x:String x:Key="Crash_ReinstallApplied">Файлы игры будут проверены при следующем запуске — нажмите «Играть»</x:String>
+    <x:String x:Key="Crash_CopyReport">Копировать отчёт</x:String>
+    <x:String x:Key="Crash_ReportCopied">Отчёт скопирован — вставьте его в чат</x:String>
+    <x:String x:Key="Crash_OpenReport">Отчёт игры</x:String>
+
 </ResourceDictionary>

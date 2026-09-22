@@ -482,4 +482,40 @@
     <x:String x:Key="Size_Mb">{0:F0} MB</x:String>
     <x:String x:Key="Size_Kb">{0} KB</x:String>
 
+    <!-- Crash diagnosis -->
+    <x:String x:Key="Crash_MissingDependency">"{0}" needs "{1}", which is not in the build</x:String>
+    <x:String x:Key="Crash_MissingDependencyAdvice">Add it from the "Add mods" tab, or remove "{0}".</x:String>
+    <x:String x:Key="Crash_ModForOtherVersion">"{0}" is made for a different game or loader version</x:String>
+    <x:String x:Key="Crash_ModForOtherVersionAdvice">Switch it off in the build's mods, or install a version for {0}.</x:String>
+    <x:String x:Key="Crash_IncompatibleMods">"{0}" does not work together with "{1}"</x:String>
+    <x:String x:Key="Crash_IncompatibleModsAdvice">Switch one of them off in the build's mods.</x:String>
+    <x:String x:Key="Crash_DuplicateModPlain">The same mod is in the mods folder twice</x:String>
+    <x:String x:Key="Crash_DuplicateMod">The mod "{0}" is in the mods folder twice</x:String>
+    <x:String x:Key="Crash_DuplicateModAdvice">Delete the older file in the mods folder.</x:String>
+    <x:String x:Key="Crash_MixinPlain">A mod failed to patch the game - most likely it is for another version</x:String>
+    <x:String x:Key="Crash_Mixin">"{0}" failed to patch the game - most likely it is for another version</x:String>
+    <x:String x:Key="Crash_MixinAdvice">Switch it off in the build's mods, or install a version for {0}.</x:String>
+    <x:String x:Key="Crash_OutOfMemory">The game ran out of memory</x:String>
+    <x:String x:Key="Crash_OutOfMemoryAdvice">Give the game more memory in the settings, or remove heavy mods.</x:String>
+    <x:String x:Key="Crash_JavaTooOldPlain">The Java that ran the game is too old for it</x:String>
+    <x:String x:Key="Crash_JavaTooOld">The game needs Java {0}, an older one was used</x:String>
+    <x:String x:Key="Crash_JavaTooOldAdvice">Let the launcher pick Java itself: it downloads the right one.</x:String>
+    <x:String x:Key="Crash_Graphics">The graphics driver could not open the game window</x:String>
+    <x:String x:Key="Crash_GraphicsAdvice">Update the graphics driver. On a laptop, run the game on the discrete card.</x:String>
+    <x:String x:Key="Crash_BrokenInstallation">A game file is missing or damaged</x:String>
+    <x:String x:Key="Crash_BrokenInstallationAdvice">Re-download the game files: the launcher checks every file and replaces the bad ones.</x:String>
+    <x:String x:Key="Crash_DiskFull">The disk is full</x:String>
+    <x:String x:Key="Crash_DiskFullAdvice">Free some space on the disk where the launcher keeps its files.</x:String>
+    <x:String x:Key="Crash_UnknownAdvice">Copy the report and send it to the server's support - it has everything they need.</x:String>
+    <x:String x:Key="Crash_FixMemory">Give the game {0} MB</x:String>
+    <x:String x:Key="Crash_FixJava">Java: automatic</x:String>
+    <x:String x:Key="Crash_FixReinstall">Re-download the game files</x:String>
+    <x:String x:Key="Crash_FixFindMod">Find "{0}" in the catalog</x:String>
+    <x:String x:Key="Crash_MemoryApplied">Memory set to {0} MB - try again</x:String>
+    <x:String x:Key="Crash_JavaApplied">Java is picked automatically now - try again</x:String>
+    <x:String x:Key="Crash_ReinstallApplied">The game files will be re-checked on the next launch - press Play</x:String>
+    <x:String x:Key="Crash_CopyReport">Copy report</x:String>
+    <x:String x:Key="Crash_ReportCopied">Report copied - paste it into the chat</x:String>
+    <x:String x:Key="Crash_OpenReport">Game crash report</x:String>
+
 </ResourceDictionary>

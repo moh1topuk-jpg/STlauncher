@@ -322,12 +322,19 @@ public partial class MainWindowViewModel
 
         // Exit code 0 is a normal quit. Anything else is a crash the player must hear
         // about - which is only possible because "close" no longer really closes.
-        GameCrashNotice = exitCode == 0
-            ? string.Empty
-            : Localize(
+        if (exitCode == 0)
+        {
+            GameCrashNotice = string.Empty;
+            ClearCrashDiagnosis();
+        }
+        else
+        {
+            AnalyzeCrash(exitCode, settings.GameDirectory);
+            GameCrashNotice = Localize(
                 "Game_CrashNotice",
                 "Minecraft closed with an error (code {0}). The game log says why.",
                 exitCode);
+        }
 
         if (AfterLaunch == AfterLaunchAction.Close && exitCode == 0)
         {

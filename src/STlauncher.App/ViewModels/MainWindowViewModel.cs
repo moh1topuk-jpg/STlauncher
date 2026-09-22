@@ -356,8 +356,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
         if (Enum.TryParse<Services.SkinSource>(settings.SkinSource, ignoreCase: true, out var skinSource))
         {
-            _selectedSkinSource = skinSource;
-            RefreshSkinSourceFlags();
+            // Through the property: its change handler refreshes the buttons. The avatar
+            // request it also starts is superseded by the one the username triggers.
+            SelectedSkinSource = skinSource;
         }
 
         _dismissedBuildIds.Clear();
