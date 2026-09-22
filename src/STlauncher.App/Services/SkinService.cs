@@ -75,12 +75,12 @@ public sealed class SkinService
             return Remember(username, fresh);
         }
 
-        var bytes = await FetchAsync(username, cancellationToken).ConfigureAwait(false);
+        var fetched = await FetchAsync(username, cancellationToken).ConfigureAwait(false);
 
-        if (bytes is not null && TryDecode(bytes) is { } fetched)
+        if (fetched is { } found && TryDecode(found.Bytes, found.Slim) is { } skin)
         {
-            SaveCached(cachePath, bytes);
-            return Remember(username, fetched);
+            SaveCached(cachePath, found.Bytes, found.Slim);
+            return Remember(username, skin);
         }
 
         // Nothing reachable: the last skin we saw for this name beats a stranger's face.
@@ -100,24 +100,35 @@ public sealed class SkinService
         return skin;
     }
 
+    /// <summary>A texture as fetched, with the model type when the source stated it.</summary>
+    private readonly record struct Fetched(byte[] Bytes, bool? Slim);
+
     /// <summary>
-    /// The sources, each a single request for the raw texture. The last is Mojang itself,
-    /// which takes three requests but is the one the others copy from.
+    /// The sources in order. Mojang first: it takes three requests, but it is the one the
+    /// others copy from, and it is the only one that says whether the model is slim -
+    /// the texture alone can be read wrong. The mirrors follow for names Mojang does not
+    /// know or when it cannot be reached.
     /// </summary>
-    private async Task<byte[]?> FetchAsync(string username, CancellationToken cancellationToken)
+    private async Task<Fetched?> FetchAsync(string username, CancellationToken cancellationToken)
     {
         var name = Uri.EscapeDataString(username);
 
-        return await GetBytesAsync($"https://mc-heads.net/skin/{name}", cancellationToken).ConfigureAwait(false)
-               ?? await GetBytesAsync($"https://minotar.net/skin/{name}", cancellationToken).ConfigureAwait(false)
-               ?? await FetchFromMojangAsync(name, cancellationToken).ConfigureAwait(false);
+        if (await FetchFromMojangAsync(name, cancellationToken).ConfigureAwait(false) is { } mojang)
+        {
+            return mojang;
+        }
+
+        var mirror = await GetBytesAsync($"https://mc-heads.net/skin/{name}", cancellationToken).ConfigureAwait(false)
+                     ?? await GetBytesAsync($"https://minotar.net/skin/{name}", cancellationToken).ConfigureAwait(false);
+
+        return mirror is null ? null : new Fetched(mirror, null);
     }
 
-    private async Task<byte[]?> FetchFromMojangAsync(string name, CancellationToken cancellationToken)
+    private async Task<Fetched?> FetchFromMojangAsync(string name, CancellationToken cancellationToken)
     {
         try
         {
-            var profile = await GetJsonAsync($"https://api.mojang.com/users/profiles/minecraft/{name}", cancellationToken).ConfigureAwait(false);
+            using var profile = await GetJsonAsync($"https://api.mojang.com/users/profiles/minecraft/{name}", cancellationToken).ConfigureAwait(false);
 
             if (profile is null || !profile.RootElement.TryGetProperty("id", out var idNode))
             {
@@ -127,7 +138,6 @@ public sealed class SkinService
             using var session = await GetJsonAsync(
                 $"https://sessionserver.mojang.com/session/minecraft/profile/{idNode.GetString()}",
                 cancellationToken).ConfigureAwait(false);
-            profile.Dispose();
 
             if (session is null || !session.RootElement.TryGetProperty("properties", out var properties))
             {
@@ -145,7 +155,13 @@ public sealed class SkinService
                         t.TryGetProperty("SKIN", out var skin) &&
                         skin.TryGetProperty("url", out var url) && url.GetString() is { } skinUrl)
                     {
-                        return await GetBytesAsync(skinUrl, cancellationToken).ConfigureAwait(false);
+                        // {"metadata":{"model":"slim"}} marks the slim model; absent means classic.
+                        var slim = skin.TryGetProperty("metadata", out var metadata) &&
+                                   metadata.TryGetProperty("model", out var model) &&
+                                   string.Equals(model.GetString(), "slim", StringComparison.OrdinalIgnoreCase);
+
+                        var bytes = await GetBytesAsync(skinUrl, cancellationToken).ConfigureAwait(false);
+                        return bytes is null ? null : new Fetched(bytes, slim);
                     }
                 }
             }
@@ -196,7 +212,7 @@ public sealed class SkinService
         }
     }
 
-    private static PlayerSkin? TryDecode(byte[] bytes)
+    private static PlayerSkin? TryDecode(byte[] bytes, bool? slim)
     {
         try
         {
@@ -205,7 +221,7 @@ public sealed class SkinService
 
             // A skin is 64 wide; anything else is an error page or a placeholder image.
             return bitmap.PixelSize.Width == 64 && bitmap.PixelSize.Height is 32 or 64
-                ? new PlayerSkin(bitmap, isDefault: false)
+                ? new PlayerSkin(bitmap, isDefault: false, slim)
                 : null;
         }
         catch (Exception)
@@ -213,6 +229,9 @@ public sealed class SkinService
             return null;
         }
     }
+
+    /// <summary>The model type is kept beside the texture: "slim" or "classic" in a small text file.</summary>
+    private static string ModelPath(string texturePath) => Path.ChangeExtension(texturePath, ".model");
 
     private static PlayerSkin? LoadCached(string path, TimeSpan maxAge)
     {
@@ -223,7 +242,14 @@ public sealed class SkinService
                 return null;
             }
 
-            return TryDecode(File.ReadAllBytes(path));
+            bool? slim = null;
+
+            if (File.Exists(ModelPath(path)))
+            {
+                slim = string.Equals(File.ReadAllText(ModelPath(path)).Trim(), "slim", StringComparison.OrdinalIgnoreCase);
+            }
+
+            return TryDecode(File.ReadAllBytes(path), slim);
         }
         catch (Exception)
         {
@@ -231,12 +257,21 @@ public sealed class SkinService
         }
     }
 
-    private void SaveCached(string path, byte[] bytes)
+    private void SaveCached(string path, byte[] bytes, bool? slim)
     {
         try
         {
             Directory.CreateDirectory(_cacheDirectory);
             File.WriteAllBytes(path, bytes);
+
+            if (slim is { } known)
+            {
+                File.WriteAllText(ModelPath(path), known ? "slim" : "classic");
+            }
+            else if (File.Exists(ModelPath(path)))
+            {
+                File.Delete(ModelPath(path));
+            }
         }
         catch (Exception)
         {

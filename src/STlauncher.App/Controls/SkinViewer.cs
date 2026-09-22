@@ -68,6 +68,27 @@ public sealed class SkinViewer : Control
         set => SetValue(AutoRotateProperty, value);
     }
 
+    /// <summary>Turn about the vertical axis, radians. Settable so a test can look from any side.</summary>
+    public double Yaw
+    {
+        get => _yaw;
+        set
+        {
+            _yaw = value;
+            InvalidateVisual();
+        }
+    }
+
+    public double Pitch
+    {
+        get => _pitch;
+        set
+        {
+            _pitch = Math.Clamp(value, -0.9, 0.9);
+            InvalidateVisual();
+        }
+    }
+
     private void Tick()
     {
         if (_dragFrom is not null)
@@ -124,35 +145,48 @@ public sealed class SkinViewer : Control
             return;
         }
 
-        var faces = new List<ProjectedFace>();
         var scale = Math.Min(Bounds.Width / 24, Bounds.Height / 40);
         var centre = new Point(Bounds.Width / 2, Bounds.Height / 2);
 
-        foreach (var box in Model(skin))
-        {
-            foreach (var face in box.Faces())
-            {
-                var projected = Project(face, scale, centre);
+        // Painter's algorithm by body part, not by face. The parts are convex boxes that
+        // never intersect, so ordering them by depth is exact; ordering single faces was
+        // not - at an oblique angle the inner side of an arm, a long thin face, averaged
+        // out "behind" the front of the body and was painted over it. Within a part the
+        // visible faces cannot overlap, and an outer layer is drawn right after the part
+        // it wraps.
+        var parts = Model(skin)
+            .Select(part => (Part: part, Depth: Rotate(part.Centre with { Y = part.Centre.Y - ModelMidHeight }).Z))
+            .OrderBy(p => p.Depth);
 
-                if (projected is not null)
+        foreach (var (part, _) in parts)
+        {
+            foreach (var box in new[] { part.Base, part.Overlay })
+            {
+                if (box is null)
                 {
-                    faces.Add(projected);
+                    continue;
                 }
-            }
-        }
 
-        // Painter's algorithm: the furthest faces first.
-        foreach (var face in faces.OrderBy(f => f.Depth))
-        {
-            using (context.PushTransform(face.Matrix))
-            {
-                context.DrawImage(skin.Texture, face.Texture, face.Texture);
-            }
+                foreach (var face in box.Faces())
+                {
+                    var projected = Project(face, scale, centre);
 
-            if (face.Shade > 0.01)
-            {
-                var geometry = new PolylineGeometry(face.Corners, isFilled: true);
-                context.DrawGeometry(new SolidColorBrush(Colors.Black, face.Shade), null, geometry);
+                    if (projected is null)
+                    {
+                        continue;
+                    }
+
+                    using (context.PushTransform(projected.Matrix))
+                    {
+                        context.DrawImage(skin.Texture, projected.Texture, projected.Texture);
+                    }
+
+                    if (projected.Shade > 0.01)
+                    {
+                        var geometry = new PolylineGeometry(projected.Corners, isFilled: true);
+                        context.DrawGeometry(new SolidColorBrush(Colors.Black, projected.Shade), null, geometry);
+                    }
+                }
             }
         }
     }
@@ -196,7 +230,7 @@ public sealed class SkinViewer : Control
         var lit = Math.Max(0, Dot(normal, Light));
         var shade = (1 - lit) * 0.45;
 
-        return new ProjectedFace(matrix, t, s, p.Average(v => v.Z), shade);
+        return new ProjectedFace(matrix, t, s, 0, shade);
     }
 
     private Vector3 Rotate(Vector3 v)
@@ -280,34 +314,48 @@ public sealed class SkinViewer : Control
         }
     }
 
-    /// <summary>The player: head, body, two arms, two legs, plus the outer layers a modern skin carries.</summary>
-    private static IEnumerable<Box> Model(PlayerSkin skin)
+    /// <summary>A body part: the box and, on a modern skin, the outer layer wrapped around it.</summary>
+    private sealed record Part(Box Base, Box? Overlay)
+    {
+        public Vector3 Centre => new(Base.X + Base.Width / 2, Base.Y + Base.Height / 2, Base.Z + Base.Depth / 2);
+    }
+
+    /// <summary>The player: head, body, two arms, two legs, each with its outer layer.</summary>
+    private static IEnumerable<Part> Model(PlayerSkin skin)
     {
         var arm = skin.IsSlim ? 3 : 4;
 
         // Model space: origin at the feet, y up, the player facing +z. Units are pixels.
-        yield return new Box(-4, 24, -4, 8, 8, 8, 0, 0);                         // head
-        yield return new Box(-4, 24, -4, 8, 8, 8, 32, 0, Inflate: 0.5);          // hat
-        yield return new Box(-4, 12, -2, 8, 12, 4, 16, 16);                      // body
-        yield return new Box(-2, 0, -2, 4, 12, 4, 0, 16);                        // right leg (the player's right, screen left)
+        // Outer layers are slightly inflated so they sit over the base.
+        yield return new Part(
+            new Box(-4, 24, -4, 8, 8, 8, 0, 0),
+            new Box(-4, 24, -4, 8, 8, 8, 32, 0, Inflate: 0.5));                       // head + hat
 
         if (skin.IsLegacy)
         {
-            yield return new Box(-4 - 4, 12, -2, 4, 12, 4, 40, 16);              // right arm
-            yield return new Box(4, 12, -2, 4, 12, 4, 40, 16, Mirror: true);     // left arm, mirrored
-            yield return new Box(-2 + 4, 0, -2, 4, 12, 4, 0, 16, Mirror: true);  // left leg, mirrored
+            // One arm and one leg in the texture; the other side is the same, mirrored.
+            yield return new Part(new Box(-4, 12, -2, 8, 12, 4, 16, 16), null);          // body
+            yield return new Part(new Box(-8, 12, -2, 4, 12, 4, 40, 16), null);          // right arm
+            yield return new Part(new Box(4, 12, -2, 4, 12, 4, 40, 16, Mirror: true), null); // left arm
+            yield return new Part(new Box(-2, 0, -2, 4, 12, 4, 0, 16), null);            // right leg
+            yield return new Part(new Box(2, 0, -2, 4, 12, 4, 0, 16, Mirror: true), null); // left leg
             yield break;
         }
 
-        yield return new Box(-4 - arm, 12, -2, arm, 12, 4, 40, 16);              // right arm
-        yield return new Box(4, 12, -2, arm, 12, 4, 32, 48);                     // left arm
-        yield return new Box(2, 0, -2, 4, 12, 4, 16, 48);                        // left leg
-
-        // Outer layers, slightly inflated so they sit over the base.
-        yield return new Box(-4, 12, -2, 8, 12, 4, 16, 32, Inflate: 0.25);       // jacket
-        yield return new Box(-4 - arm, 12, -2, arm, 12, 4, 40, 32, Inflate: 0.25); // right sleeve
-        yield return new Box(4, 12, -2, arm, 12, 4, 48, 48, Inflate: 0.25);      // left sleeve
-        yield return new Box(-2, 0, -2, 4, 12, 4, 0, 32, Inflate: 0.25);         // right trouser
-        yield return new Box(2, 0, -2, 4, 12, 4, 0, 48, Inflate: 0.25);          // left trouser
+        yield return new Part(
+            new Box(-4, 12, -2, 8, 12, 4, 16, 16),
+            new Box(-4, 12, -2, 8, 12, 4, 16, 32, Inflate: 0.25));                     // body + jacket
+        yield return new Part(
+            new Box(-4 - arm, 12, -2, arm, 12, 4, 40, 16),
+            new Box(-4 - arm, 12, -2, arm, 12, 4, 40, 32, Inflate: 0.25));             // right arm + sleeve
+        yield return new Part(
+            new Box(4, 12, -2, arm, 12, 4, 32, 48),
+            new Box(4, 12, -2, arm, 12, 4, 48, 48, Inflate: 0.25));                    // left arm + sleeve
+        yield return new Part(
+            new Box(-2, 0, -2, 4, 12, 4, 0, 16),
+            new Box(-2, 0, -2, 4, 12, 4, 0, 32, Inflate: 0.25));                       // right leg + trouser
+        yield return new Part(
+            new Box(2, 0, -2, 4, 12, 4, 16, 48),
+            new Box(2, 0, -2, 4, 12, 4, 0, 48, Inflate: 0.25));                        // left leg + trouser
     }
 }
