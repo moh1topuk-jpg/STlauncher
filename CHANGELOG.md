@@ -8,6 +8,8 @@
 
 ## [Не выпущено]
 
+## [0.4.0] — 2026-09-23
+
 ### Добавлено
 - У сборки появились вкладки «Ресурспаки» и «Шейдеры» — раньше паки лежали в общем списке
   с модами. Ресурспаки можно включать, выключать и менять местами прямо в лаунчере:
@@ -309,7 +311,8 @@
 - Бэкапы миров по событиям: раз в сутки, перед изменением модов, перед запуском.
 - Автообновление с уведомлением и установкой одной кнопкой.
 
-[Не выпущено]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.3.5...HEAD
+[Не выпущено]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.3.5...v0.4.0
 [0.3.5]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.3.4...v0.3.5
 [0.3.4]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.3.2...v0.3.3
