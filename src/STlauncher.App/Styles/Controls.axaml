@@ -214,6 +214,22 @@
         <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
     </Style>
 
+    <!-- Full-window scrim behind a lightbox: dark, flat, and a button so a click closes. -->
+    <Style Selector="Button.scrim">
+        <Setter Property="Background" Value="#E60C0A0D"/>
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="VerticalAlignment" Value="Stretch"/>
+        <Setter Property="CornerRadius" Value="0"/>
+        <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+    <Style Selector="Button.scrim /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="#E60C0A0D"/>
+        <Setter Property="CornerRadius" Value="0"/>
+    </Style>
+    <Style Selector="Button.scrim:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="#E60C0A0D"/>
+    </Style>
+
     <!-- A switched-off mod stays in the list, visibly off. -->
     <Style Selector="Border.mod-row.off">
         <Setter Property="Opacity" Value="0.55"/>

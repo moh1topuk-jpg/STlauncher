@@ -39,6 +39,12 @@ public sealed record ModProject(
     long Downloads,
     IReadOnlyList<string> Gallery)
 {
+    /// <summary>
+    /// Full-size originals for <see cref="Gallery"/>, same order. Modrinth's "url" is a
+    /// 350px preview; "raw_url" is what a click should open.
+    /// </summary>
+    public IReadOnlyList<string> GalleryFull { get; init; } = Array.Empty<string>();
+
     /// <summary>"mod", "resourcepack", "shader" - what folder the file belongs in.</summary>
     public string ProjectType { get; init; } = ProjectTypes.Mod;
 }
@@ -188,11 +194,11 @@ public sealed class ModrinthClient
                 return null;
             }
 
-            var gallery = (dto.Gallery ?? new List<GalleryDto>())
-                .Select(g => g.Url)
-                .Where(u => !string.IsNullOrWhiteSpace(u))
-                .Select(u => u!)
+            var images = (dto.Gallery ?? new List<GalleryDto>())
+                .Where(g => !string.IsNullOrWhiteSpace(g.Url))
                 .ToList();
+            var gallery = images.Select(g => g.Url!).ToList();
+            var galleryFull = images.Select(g => string.IsNullOrWhiteSpace(g.RawUrl) ? g.Url! : g.RawUrl!).ToList();
 
             return new ModProject(
                 dto.Id ?? string.Empty,
@@ -204,6 +210,7 @@ public sealed class ModrinthClient
                 dto.Downloads,
                 gallery)
             {
+                GalleryFull = galleryFull,
                 ProjectType = string.IsNullOrWhiteSpace(dto.ProjectType) ? ProjectTypes.Mod : dto.ProjectType!
             };
         }
@@ -624,6 +631,9 @@ public sealed class ModrinthClient
     {
         [JsonPropertyName("url")]
         public string? Url { get; set; }
+
+        [JsonPropertyName("raw_url")]
+        public string? RawUrl { get; set; }
 
         [JsonPropertyName("title")]
         public string? Title { get; set; }

@@ -730,4 +730,11 @@
     <x:String x:Key="Shaders_Delete">Удалить</x:String>
     <x:String x:Key="Error_Packs">Не удалось изменить ресурспаки: {0}</x:String>
     <x:String x:Key="Error_Shaders">Не удалось изменить шейдеры: {0}</x:String>
+    <!-- Catalog project details: description and screenshots -->
+    <x:String x:Key="Mods_ShowFullDescription">Показать полностью</x:String>
+    <x:String x:Key="Mods_ShowLessDescription">Свернуть</x:String>
+    <x:String x:Key="Gallery_Open">Открыть скриншот</x:String>
+    <x:String x:Key="Gallery_OpenInBrowser">Открыть в браузере</x:String>
+    <x:String x:Key="Gallery_Previous">Предыдущий</x:String>
+    <x:String x:Key="Gallery_Next">Следующий</x:String>
 </ResourceDictionary>

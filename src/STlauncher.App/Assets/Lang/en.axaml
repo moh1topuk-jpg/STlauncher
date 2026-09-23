@@ -730,4 +730,11 @@
     <x:String x:Key="Shaders_Delete">Delete</x:String>
     <x:String x:Key="Error_Packs">Failed to change the resource packs: {0}</x:String>
     <x:String x:Key="Error_Shaders">Failed to change the shaders: {0}</x:String>
+    <!-- Catalog project details: description and screenshots -->
+    <x:String x:Key="Mods_ShowFullDescription">Show full description</x:String>
+    <x:String x:Key="Mods_ShowLessDescription">Show less</x:String>
+    <x:String x:Key="Gallery_Open">Open screenshot</x:String>
+    <x:String x:Key="Gallery_OpenInBrowser">Open in browser</x:String>
+    <x:String x:Key="Gallery_Previous">Previous</x:String>
+    <x:String x:Key="Gallery_Next">Next</x:String>
 </ResourceDictionary>

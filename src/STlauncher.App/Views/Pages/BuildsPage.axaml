@@ -853,21 +853,41 @@
                                                     <TextBlock Text="{Binding OpenedProjectByline}" Classes="faint"/>
                                                 </StackPanel>
 
-                                                <TextBlock Text="{Binding OpenedProjectDescription}" Classes="muted" FontSize="13"
-                                                           TextWrapping="Wrap" LineHeight="19" MaxHeight="190" TextTrimming="CharacterEllipsis"/>
+                                                <StackPanel Spacing="4">
+                                                    <TextBlock Text="{Binding OpenedProjectDescription}" Classes="muted" FontSize="13"
+                                                               TextWrapping="Wrap" LineHeight="19" MaxHeight="{Binding DescriptionMaxHeight}"
+                                                               TextTrimming="CharacterEllipsis"/>
+                                                    <!-- Bodies run to pages; the card opens with a preview and unfolds on request. -->
+                                                    <Button Classes="plain small" HorizontalAlignment="Left" Padding="0"
+                                                            Command="{Binding ToggleDescriptionCommand}"
+                                                            IsVisible="{Binding OpenedProjectDescription, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                                            <TextBlock Text="{DynamicResource Mods_ShowFullDescription}" FontSize="12"
+                                                                       Foreground="{DynamicResource GoldBrush}" IsVisible="{Binding !IsDescriptionExpanded}"/>
+                                                            <TextBlock Text="{DynamicResource Mods_ShowLessDescription}" FontSize="12"
+                                                                       Foreground="{DynamicResource GoldBrush}" IsVisible="{Binding IsDescriptionExpanded}"/>
+                                                        </StackPanel>
+                                                    </Button>
+                                                </StackPanel>
 
+                                                <!-- Screenshots: a click opens the same image over the whole window. -->
                                                 <ItemsControl ItemsSource="{Binding OpenedProjectGallery}" IsVisible="{Binding OpenedProjectGallery.Count}">
                                                     <ItemsControl.ItemsPanel>
                                                         <ItemsPanelTemplate>
-                                                            <StackPanel Orientation="Horizontal" Spacing="6"/>
+                                                            <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6"/>
                                                         </ItemsPanelTemplate>
                                                     </ItemsControl.ItemsPanel>
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
-                                                            <Border Width="98" Height="58" CornerRadius="8" Background="{DynamicResource ElevatedBrush}"
-                                                                    ClipToBounds="True">
-                                                                <Image Source="{Binding}" Stretch="UniformToFill"/>
-                                                            </Border>
+                                                            <Button Classes="plain" Padding="0" Cursor="Hand"
+                                                                    ToolTip.Tip="{DynamicResource Gallery_Open}"
+                                                                    Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).OpenGalleryImageCommand}"
+                                                                    CommandParameter="{Binding}">
+                                                                <Border Width="88" Height="52" CornerRadius="8" Background="{DynamicResource ElevatedBrush}"
+                                                                        ClipToBounds="True">
+                                                                    <Image Source="{Binding}" Stretch="UniformToFill"/>
+                                                                </Border>
+                                                            </Button>
                                                         </DataTemplate>
                                                     </ItemsControl.ItemTemplate>
                                                 </ItemsControl>

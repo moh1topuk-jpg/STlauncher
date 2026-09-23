@@ -246,7 +246,7 @@ public partial class MainWindowViewModel
         }
     }
 
-    public string VersionForLabel => Localize("Mods_VersionFor", "Version for {0}", SelectedVersion?.Id ?? "?");
+    public string VersionForLabel => Localize("Mods_VersionFor", "Version for {0}", SelectedVersion?.Id ?? SelectedInstance?.VersionId ?? "?");
 
     public bool OpenedProjectInstalled => OpenedProject is not null && IsProjectInstalled(OpenedProject.Slug);
 
@@ -370,7 +370,7 @@ public partial class MainWindowViewModel
             OpenedProjectIcon = null;
             OpenedProjectPreferred = null;
             OpenedProjectVersions.Clear();
-            OpenedProjectGallery.Clear();
+            ResetGallery();
             OpenedProjectDependencies.Clear();
             OpenedProjectDescription = item.Result.Description;
 
@@ -411,13 +411,17 @@ public partial class MainWindowViewModel
 
             if (project is not null)
             {
-                foreach (var url in project.Gallery.Take(4))
+                foreach (var (url, index) in project.Gallery.Take(8).Select((u, i) => (u, i)))
                 {
                     var image = await _images.GetAsync(url).ConfigureAwait(true);
 
-                    if (image is not null)
+                    // The project may have been closed or swapped while the image loaded.
+                    if (image is not null && ReferenceEquals(OpenedProject, project))
                     {
                         OpenedProjectGallery.Add(image);
+                        _galleryUrls.Add(index < project.GalleryFull.Count ? project.GalleryFull[index] : url);
+                        OnPropertyChanged(nameof(LightboxCounter));
+                        OnPropertyChanged(nameof(HasNextLightboxImage));
                     }
                 }
             }
@@ -440,7 +444,7 @@ public partial class MainWindowViewModel
         OpenedProjectIcon = null;
         OpenedProjectPreferred = null;
         OpenedProjectVersions.Clear();
-        OpenedProjectGallery.Clear();
+        ResetGallery();
         OpenedProjectDependencies.Clear();
 
         foreach (var item in ModBrowserItems)
@@ -531,41 +535,6 @@ public partial class MainWindowViewModel
         }
     }
 
-    /// <summary>Modrinth bodies are Markdown; the card shows readable plain text.</summary>
-    public static string StripMarkdown(string markdown)
-    {
-        var lines = markdown
-            .Replace("\r\n", "\n")
-            .Split('\n')
-            .Select(line => line
-                .Replace("###", string.Empty)
-                .Replace("##", string.Empty)
-                .Replace("#", string.Empty)
-                .Replace("**", string.Empty)
-                .Replace("`", string.Empty)
-                .TrimEnd())
-            .ToList();
-
-        var result = new List<string>();
-        var blank = false;
-
-        foreach (var line in lines)
-        {
-            if (line.Length == 0)
-            {
-                if (!blank && result.Count > 0)
-                {
-                    result.Add(string.Empty);
-                }
-
-                blank = true;
-                continue;
-            }
-
-            result.Add(line);
-            blank = false;
-        }
-
-        return string.Join('\n', result).Trim();
-    }
+    /// <summary>Modrinth bodies are Markdown with HTML inside; the card shows readable plain text.</summary>
+    public static string StripMarkdown(string markdown) => Core.Text.MarkdownText.ToPlainText(markdown);
 }
