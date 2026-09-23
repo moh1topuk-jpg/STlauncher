@@ -717,7 +717,7 @@
     <x:String x:Key="Packs_Enable">Включить</x:String>
     <x:String x:Key="Packs_Disable">Выключить</x:String>
     <x:String x:Key="Packs_Locked">Пока игра запущена, паки не меняются — она перезапишет настройки при выходе</x:String>
-    <x:String x:Key="Shaders_Hint">Активный шейдер загружает Iris при старте игры. Один шейдер за раз; «Без шейдеров» выключает их совсем.</x:String>
+    <x:String x:Key="Shaders_Hint">Активный шейдер загружает Iris (на Forge — Oculus) при старте игры. Один шейдер за раз; «Без шейдеров» выключает их совсем.</x:String>
     <x:String x:Key="Shaders_OpenFolder">Папка шейдеров</x:String>
     <x:String x:Key="Shaders_FromCatalog">Из каталога</x:String>
     <x:String x:Key="Shaders_None">Без шейдеров</x:String>
@@ -725,8 +725,8 @@
     <x:String x:Key="Shaders_Active">активен</x:String>
     <x:String x:Key="Shaders_Activate">Сделать активным</x:String>
     <x:String x:Key="Shaders_Empty">Шейдеров пока нет. Их можно добавить из каталога Modrinth или положить .zip в папку шейдеров.</x:String>
-    <x:String x:Key="Shaders_NeedIris">Для шейдеров нужен мод Iris — в этой сборке его нет или он выключен.</x:String>
-    <x:String x:Key="Shaders_FindIris">Найти Iris в каталоге</x:String>
+    <x:String x:Key="Shaders_NeedLoader">Для шейдеров нужен мод {0} — в этой сборке его нет или он выключен.</x:String>
+    <x:String x:Key="Shaders_FindLoader">Найти {0} в каталоге</x:String>
     <x:String x:Key="Shaders_Delete">Удалить</x:String>
     <x:String x:Key="Error_Packs">Не удалось изменить ресурспаки: {0}</x:String>
     <x:String x:Key="Error_Shaders">Не удалось изменить шейдеры: {0}</x:String>

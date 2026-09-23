@@ -717,7 +717,7 @@
     <x:String x:Key="Packs_Enable">Enable</x:String>
     <x:String x:Key="Packs_Disable">Disable</x:String>
     <x:String x:Key="Packs_Locked">Packs stay as they are while the game runs — it overwrites the settings on exit</x:String>
-    <x:String x:Key="Shaders_Hint">Iris loads the active shader when the game starts. One shader at a time; "No shaders" turns them off entirely.</x:String>
+    <x:String x:Key="Shaders_Hint">Iris (Oculus on Forge) loads the active shader when the game starts. One shader at a time; "No shaders" turns them off entirely.</x:String>
     <x:String x:Key="Shaders_OpenFolder">Shaders folder</x:String>
     <x:String x:Key="Shaders_FromCatalog">From the catalog</x:String>
     <x:String x:Key="Shaders_None">No shaders</x:String>
@@ -725,8 +725,8 @@
     <x:String x:Key="Shaders_Active">active</x:String>
     <x:String x:Key="Shaders_Activate">Make active</x:String>
     <x:String x:Key="Shaders_Empty">No shaders yet. Add some from the Modrinth catalog, or drop a .zip into the shaders folder.</x:String>
-    <x:String x:Key="Shaders_NeedIris">Shaders need the Iris mod — this build has none, or it is switched off.</x:String>
-    <x:String x:Key="Shaders_FindIris">Find Iris in the catalog</x:String>
+    <x:String x:Key="Shaders_NeedLoader">Shaders need the {0} mod — this build has none, or it is switched off.</x:String>
+    <x:String x:Key="Shaders_FindLoader">Find {0} in the catalog</x:String>
     <x:String x:Key="Shaders_Delete">Delete</x:String>
     <x:String x:Key="Error_Packs">Failed to change the resource packs: {0}</x:String>
     <x:String x:Key="Error_Shaders">Failed to change the shaders: {0}</x:String>

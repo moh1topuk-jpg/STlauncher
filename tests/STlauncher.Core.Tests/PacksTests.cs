@@ -117,25 +117,42 @@ public class PacksTests
     }
 
     [Fact]
-    public void IrisConfig_RoundTrips_AndKeepsOtherKeys()
+    public void ShaderConfig_RoundTrips_AndKeepsOtherKeys()
     {
         var root = TempRoot();
         Directory.CreateDirectory(Path.Combine(root, "config"));
         File.WriteAllText(Path.Combine(root, "config", "iris.properties"), "#Iris\nmaxShadowRenderDistance=8\nshaderPack=Old.zip\nenableShaders=false\n");
 
-        var before = IrisConfig.Read(root);
+        var before = ShaderConfig.Read(root);
         Assert.Equal("Old.zip", before.ShaderPack);
         Assert.False(before.Enabled);
 
-        IrisConfig.Write(root, "Complementary_r5.zip");
+        ShaderConfig.Write(root, "Complementary_r5.zip");
 
-        var after = IrisConfig.Read(root);
+        var after = ShaderConfig.Read(root);
         Assert.Equal("Complementary_r5.zip", after.ShaderPack);
         Assert.True(after.Enabled);
         Assert.Contains("maxShadowRenderDistance=8", File.ReadAllText(Path.Combine(root, "config", "iris.properties")));
 
-        IrisConfig.Write(root, null);
-        Assert.False(IrisConfig.Read(root).Enabled);
+        ShaderConfig.Write(root, null);
+        Assert.False(ShaderConfig.Read(root).Enabled);
+    }
+
+    [Fact]
+    public void ShaderConfig_Oculus_UsesItsOwnFile_AndDetectionReadsJarNames()
+    {
+        var root = TempRoot();
+
+        ShaderConfig.Write(root, "BSL_v8.zip", ShaderLoader.Oculus);
+
+        Assert.True(File.Exists(Path.Combine(root, "config", "oculus.properties")));
+        Assert.False(File.Exists(Path.Combine(root, "config", "iris.properties")));
+        Assert.Equal("BSL_v8.zip", ShaderConfig.Read(root, ShaderLoader.Oculus).ShaderPack);
+        Assert.Null(ShaderConfig.Read(root, ShaderLoader.Iris).ShaderPack);
+
+        Assert.Equal(new[] { ShaderLoader.Iris }, ShaderConfig.Detect(new[] { "sodium.jar", "iris-fabric-1.8.jar" }));
+        Assert.Equal(new[] { ShaderLoader.Oculus }, ShaderConfig.Detect(new[] { "oculus-mc1.20.1-1.7.0.jar", "embeddium.jar" }));
+        Assert.Empty(ShaderConfig.Detect(new[] { "sodium.jar" }));
     }
 
     [Fact]

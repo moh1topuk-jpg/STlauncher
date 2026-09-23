@@ -194,9 +194,19 @@ public partial class MainWindowViewModel
     [ObservableProperty]
     private int _shaderPackCount;
 
-    /// <summary>The Iris mod is in the build and switched on; without it shaders do nothing.</summary>
+    /// <summary>Iris or Oculus is in the build and switched on; without one, shaders do nothing.</summary>
     [ObservableProperty]
-    private bool _hasIris;
+    private bool _hasShaderLoader;
+
+    /// <summary>The loaders found among the enabled jars; the active pack is written to each.</summary>
+    private IReadOnlyList<ShaderLoader> _shaderLoaders = Array.Empty<ShaderLoader>();
+
+    /// <summary>"Iris" on Fabric, Quilt and NeoForge; "Oculus" on Forge. What the build should have.</summary>
+    public string ExpectedShaderLoader => SelectedLoader == Core.Loaders.LoaderKind.Forge ? "Oculus" : "Iris";
+
+    public string ShaderLoaderMissingText => Localize("Shaders_NeedLoader", "Shaders need the {0} mod — this build has none, or it is switched off.", ExpectedShaderLoader);
+
+    public string FindShaderLoaderLabel => Localize("Shaders_FindLoader", "Find {0} in the catalog", ExpectedShaderLoader);
 
     /// <summary>Name of the shader Iris will load, or empty when shaders are off.</summary>
     [ObservableProperty]
@@ -309,8 +319,12 @@ public partial class MainWindowViewModel
 
     private void RefreshShaders()
     {
-        var iris = IrisConfig.Read(InstanceDirectory);
-        var active = iris.Enabled ? iris.ShaderPack ?? string.Empty : string.Empty;
+        _shaderLoaders = ShaderConfig.Detect(InstalledMods.Where(m => m.IsMod && m.Enabled).Select(m => m.FileName));
+        HasShaderLoader = _shaderLoaders.Count > 0;
+
+        // With no loader in the build the Iris file still tells what the player picked.
+        var settings = ShaderConfig.Read(InstanceDirectory, _shaderLoaders.FirstOrDefault());
+        var active = settings.Enabled ? settings.ShaderPack ?? string.Empty : string.Empty;
 
         ShaderPacks.Clear();
 
@@ -324,8 +338,18 @@ public partial class MainWindowViewModel
 
         ShaderPackCount = ShaderPacks.Count;
         ActiveShaderName = ShaderPacks.FirstOrDefault(s => s.IsActive)?.Name ?? string.Empty;
-        HasIris = InstalledMods.Any(m => m.IsMod && m.Enabled &&
-                                         m.FileName.StartsWith("iris", StringComparison.OrdinalIgnoreCase));
+        OnPropertyChanged(nameof(ExpectedShaderLoader));
+        OnPropertyChanged(nameof(ShaderLoaderMissingText));
+        OnPropertyChanged(nameof(FindShaderLoaderLabel));
+    }
+
+    /// <summary>Every loader in the build gets the choice; Iris's file when there is none yet.</summary>
+    private void WriteShaderChoice(string? shaderPack)
+    {
+        foreach (var loader in _shaderLoaders.Count > 0 ? _shaderLoaders : new[] { ShaderLoader.Iris })
+        {
+            ShaderConfig.Write(InstanceDirectory, shaderPack, loader);
+        }
     }
 
     private InstalledModRecord? FindRecord(string fileName, string folder)
@@ -520,7 +544,7 @@ public partial class MainWindowViewModel
 
         try
         {
-            IrisConfig.Write(InstanceDirectory, item.FileName);
+            WriteShaderChoice(item.FileName);
             RefreshShaders();
             OnPropertyChanged(nameof(HasNoShaderPacks));
         }
@@ -540,7 +564,7 @@ public partial class MainWindowViewModel
 
         try
         {
-            IrisConfig.Write(InstanceDirectory, null);
+            WriteShaderChoice(null);
             RefreshShaders();
         }
         catch (Exception ex)
@@ -565,7 +589,7 @@ public partial class MainWindowViewModel
 
             if (item.IsActive)
             {
-                IrisConfig.Write(InstanceDirectory, null);
+                WriteShaderChoice(null);
             }
 
             RefreshMods();
@@ -595,12 +619,12 @@ public partial class MainWindowViewModel
         BuildTab = BuildTab.Catalog;
     }
 
-    /// <summary>Iris is a mod, so the search for it happens on the mods side of the catalog.</summary>
+    /// <summary>The shader loader is a mod, so the search happens on the mods side of the catalog.</summary>
     [RelayCommand]
-    private async Task FindIrisAsync()
+    private async Task FindShaderLoaderAsync()
     {
         SelectBrowserKind(ProjectTypes.Mod);
-        ModSearchQuery = "iris";
+        ModSearchQuery = ExpectedShaderLoader.ToLowerInvariant();
         BuildTab = BuildTab.Catalog;
         await SearchModsAsync();
     }

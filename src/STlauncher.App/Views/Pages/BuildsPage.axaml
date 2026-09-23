@@ -557,14 +557,14 @@
                             </Button>
                         </Grid>
 
-                        <!-- Shaders without Iris are files in a folder; say so once, up top. -->
-                        <Border Grid.Row="1" Classes="panel" Padding="12" IsVisible="{Binding !HasIris}">
+                        <!-- Shaders without Iris or Oculus are files in a folder; say so once, up top. -->
+                        <Border Grid.Row="1" Classes="panel" Padding="12" IsVisible="{Binding !HasShaderLoader}">
                             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
                                 <PathIcon Data="{StaticResource IconWarning}" Classes="small" Foreground="{DynamicResource GoldBrush}"
                                           VerticalAlignment="Center"/>
-                                <TextBlock Grid.Column="1" Text="{DynamicResource Shaders_NeedIris}" TextWrapping="Wrap" VerticalAlignment="Center"/>
-                                <Button Grid.Column="2" Classes="ghost small" Content="{DynamicResource Shaders_FindIris}"
-                                        Command="{Binding FindIrisCommand}"/>
+                                <TextBlock Grid.Column="1" Text="{Binding ShaderLoaderMissingText}" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                                <Button Grid.Column="2" Classes="ghost small" Content="{Binding FindShaderLoaderLabel}"
+                                        Command="{Binding FindShaderLoaderCommand}"/>
                             </Grid>
                         </Border>
 

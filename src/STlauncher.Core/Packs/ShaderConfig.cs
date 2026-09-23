@@ -5,25 +5,60 @@ using System.Linq;
 
 namespace STlauncher.Core.Packs;
 
-/// <summary>The shader pack Iris will load, and whether shaders are on at all.</summary>
-public sealed record IrisSettings(string? ShaderPack, bool Enabled);
+/// <summary>The mods that load shader packs. Oculus is Iris ported to Forge, config included.</summary>
+public enum ShaderLoader
+{
+    /// <summary>Fabric, Quilt and NeoForge.</summary>
+    Iris,
+
+    /// <summary>Forge.</summary>
+    Oculus
+}
+
+/// <summary>The shader pack the loader will use, and whether shaders are on at all.</summary>
+public sealed record ShaderSettings(string? ShaderPack, bool Enabled);
 
 /// <summary>
 /// Iris keeps its choice in config/iris.properties: <c>shaderPack=Name.zip</c> and
-/// <c>enableShaders=true</c>. Writing those two keys from the launcher is the whole
-/// trick behind "make this shader active" - the same thing the in-game menu does.
+/// <c>enableShaders=true</c>; Oculus keeps the same two keys in config/oculus.properties.
+/// Writing them from the launcher is the whole trick behind "make this shader active" -
+/// the same thing the in-game menu does.
 /// </summary>
-public static class IrisConfig
+public static class ShaderConfig
 {
-    public const string RelativePath = "config/iris.properties";
-
-    public static IrisSettings Read(string gameDirectory)
+    public static string RelativePath(ShaderLoader loader) => loader switch
     {
-        var path = Path.Combine(gameDirectory, RelativePath.Replace('/', Path.DirectorySeparatorChar));
+        ShaderLoader.Oculus => "config/oculus.properties",
+        _ => "config/iris.properties"
+    };
+
+    /// <summary>Which shader loaders are in the build, judged by the enabled jars' names.</summary>
+    public static IReadOnlyList<ShaderLoader> Detect(IEnumerable<string> enabledModFileNames)
+    {
+        var found = new List<ShaderLoader>();
+
+        foreach (var name in enabledModFileNames)
+        {
+            if (name.StartsWith("iris", StringComparison.OrdinalIgnoreCase) && !found.Contains(ShaderLoader.Iris))
+            {
+                found.Add(ShaderLoader.Iris);
+            }
+            else if (name.StartsWith("oculus", StringComparison.OrdinalIgnoreCase) && !found.Contains(ShaderLoader.Oculus))
+            {
+                found.Add(ShaderLoader.Oculus);
+            }
+        }
+
+        return found;
+    }
+
+    public static ShaderSettings Read(string gameDirectory, ShaderLoader loader = ShaderLoader.Iris)
+    {
+        var path = FullPath(gameDirectory, loader);
 
         if (!File.Exists(path))
         {
-            return new IrisSettings(null, false);
+            return new ShaderSettings(null, false);
         }
 
         try
@@ -60,18 +95,18 @@ public static class IrisConfig
                 }
             }
 
-            return new IrisSettings(pack, enabled);
+            return new ShaderSettings(pack, enabled);
         }
         catch (Exception)
         {
-            return new IrisSettings(null, false);
+            return new ShaderSettings(null, false);
         }
     }
 
     /// <summary>Sets the active pack, or turns shaders off with null. Other keys are kept.</summary>
-    public static void Write(string gameDirectory, string? shaderPack)
+    public static void Write(string gameDirectory, string? shaderPack, ShaderLoader loader = ShaderLoader.Iris)
     {
-        var path = Path.Combine(gameDirectory, RelativePath.Replace('/', Path.DirectorySeparatorChar));
+        var path = FullPath(gameDirectory, loader);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
 
         var lines = File.Exists(path) ? File.ReadAllLines(path).ToList() : new List<string>();
@@ -81,6 +116,9 @@ public static class IrisConfig
 
         AtomicFile.WriteAllLines(path, lines);
     }
+
+    private static string FullPath(string gameDirectory, ShaderLoader loader)
+        => Path.Combine(gameDirectory, RelativePath(loader).Replace('/', Path.DirectorySeparatorChar));
 
     private static void Set(List<string> lines, string key, string value)
     {
