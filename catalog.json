@@ -6,6 +6,7 @@
   "serverStatsUrl": "https://showtime-stats.moh1topuk.workers.dev/",
   "updateFeedUrl": "https://showtime-updates.moh1topuk.workers.dev/",
   "discordAppId": "1551994147324559490",
+  "installerRelease": "v0.3.5",
 
   "sections": [
     {

@@ -70,7 +70,7 @@ jobs:
             Write-Error "The CHANGELOG.md section for $version is empty."
             exit 1
           }
-          $text += "`n`n**Установщик:** [STlauncher-win-Setup.exe](https://showtime-updates.moh1topuk.workers.dev/STlauncher-win-Setup.exe) — работает и без доступа к GitHub."
+          $text += "`n`n**Установщик:** [STlauncher-win-Setup.exe](https://showtime-updates.moh1topuk.workers.dev/STlauncher-win-Setup.exe) — работает и без доступа к GitHub. Установщик один на несколько версий: после установки лаунчер сам обновится до этой."
           Set-Content release-notes.md $text -Encoding utf8
           Get-Content release-notes.md -Encoding utf8
 

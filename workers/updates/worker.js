@@ -12,6 +12,13 @@
  * catalog, and the catalog lives on GitHub too - so a player who cannot reach GitHub at
  * all could never find the mirror. Serving the catalog from here closes that loop.
  *
+ * The installer is the one file that is NOT taken from the latest release. SmartScreen
+ * judges an unsigned file by how many people have already run that exact file, and a
+ * new Setup.exe per release would start from zero every few days. So /STlauncher-win-
+ * Setup.exe comes from the release named by "installerRelease" in catalog.json and
+ * stays byte-identical until that field changes; the launcher it installs updates
+ * itself to the current version on first start. GET /latest/<file> skips the pin.
+ *
  * Everything is fetched from GitHub on Cloudflare's side and streamed back, so nothing
  * has to be uploaded or kept in sync by hand - publishing a release stays exactly as it is.
  *
@@ -46,18 +53,22 @@ export default {
       return text('ok');
     }
 
+    // /latest/<file> is the owner's way past the installer pin.
+    const wantLatest = name.startsWith('latest/');
+    const file = wantLatest ? name.slice('latest/'.length) : name;
+
     // Only the launcher's own artefacts, and nothing that could walk out of them.
-    if (!/^[A-Za-z0-9._-]+$/.test(name)) {
+    if (!/^[A-Za-z0-9._-]+$/.test(file)) {
       return text('not found', 404);
     }
 
     try {
-      if (name === 'catalog.json') {
+      if (file === 'catalog.json') {
         return await catalog(env);
       }
 
-      const release = await latestRelease(env);
-      const asset = release.assets.find(a => a.name === name);
+      const release = wantLatest ? await latestRelease(env) : await releaseFor(file, env);
+      const asset = release.assets.find(a => a.name === file);
 
       if (!asset) {
         return text('not found', 404);
@@ -83,7 +94,7 @@ export default {
       // The feed changes on every release; the packages never do.
       headers.set(
         'cache-control',
-        `public, max-age=${name.endsWith('.json') || name === 'RELEASES' ? FEED_CACHE_SECONDS : ASSET_CACHE_SECONDS}`,
+        `public, max-age=${file.endsWith('.json') || file === 'RELEASES' ? FEED_CACHE_SECONDS : ASSET_CACHE_SECONDS}`,
       );
       headers.set('access-control-allow-origin', '*');
 
@@ -118,7 +129,47 @@ async function catalog(env) {
   });
 }
 
-async function latestRelease(env) {
+/** Installers come from the pinned release; feed and packages always from the latest. */
+async function releaseFor(name, env) {
+  if (!/Setup\.exe$/i.test(name)) {
+    return latestRelease(env);
+  }
+
+  const tag = await pinnedInstallerTag(env);
+  return tag ? releaseByTag(tag, env) : latestRelease(env);
+}
+
+/** "installerRelease" from catalog.json, e.g. "v0.3.5"; null when unset or unreadable. */
+async function pinnedInstallerTag(env) {
+  try {
+    const response = await catalog(env);
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const tag = (await response.json()).installerRelease;
+    return typeof tag === 'string' && /^v?\d+\.\d+\.\d+$/.test(tag) ? (tag.startsWith('v') ? tag : 'v' + tag) : null;
+  } catch (error) {
+    console.log(`installer pin unreadable: ${error}`);
+    return null;
+  }
+}
+
+async function releaseByTag(tag, env) {
+  const response = await fetch(`${API}/repos/${env.REPO}/releases/tags/${tag}`, {
+    headers: githubHeaders(env),
+    cf: { cacheEverything: true, cacheTtl: ASSET_CACHE_SECONDS },
+  });
+
+  if (!response.ok) {
+    throw new Error(`release ${tag} lookup failed: HTTP ${response.status}`);
+  }
+
+  return response.json();
+}
+
+function githubHeaders(env) {
   const headers = {
     accept: 'application/vnd.github+json',
     'user-agent': 'STlauncher-update-mirror',
@@ -128,8 +179,12 @@ async function latestRelease(env) {
     headers.authorization = `Bearer ${env.TOKEN}`;
   }
 
+  return headers;
+}
+
+async function latestRelease(env) {
   const response = await fetch(`${API}/repos/${env.REPO}/releases/latest`, {
-    headers,
+    headers: githubHeaders(env),
     cf: { cacheEverything: true, cacheTtl: FEED_CACHE_SECONDS },
   });
 
