@@ -52,6 +52,8 @@ public static class MarkdownText
         text = Fences.Replace(text, "\n");
         text = Comments.Replace(text, string.Empty);
         text = Dropped.Replace(text, "\n");
+        // HTML headings become Markdown ones, so they get the same treatment below.
+        text = Regex.Replace(text, @"<h[1-6]\b[^>]*>", "\n\n# ", Opts);
         // Block-level tags become line breaks so neighbouring text does not run together.
         text = Regex.Replace(text, @"</?(p|div|center|details|summary|h[1-6]|li|ul|ol|table|tr|blockquote|section|article|header|footer)\b[^>]*>", "\n\n", Opts);
         text = Tags.Replace(text, string.Empty);

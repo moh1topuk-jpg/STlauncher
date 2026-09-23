@@ -11,19 +11,20 @@ public class MarkdownTextTests
         var body = """
             <center><img src="https://cdn.modrinth.com/banner.png" width="600"></center>
 
-            Showcase
+            ### **Showcase**
             <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/yrfJf8dtMT0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay" allowfullscreen></iframe>
 
             ----------------------------------
 
             [![Discord](https://img.shields.io/discord/123)](https://discord.gg/abc) [![Ko-fi](https://ko-fi.com/img)](https://ko-fi.com/x)
 
+            ### **About**
             **Solas Shader** is a shader pack for *Minecraft* with `volumetric` lighting &amp; clouds.
             """;
 
         var text = MarkdownText.ToPlainText(body);
 
-        Assert.Equal("Solas Shader is a shader pack for Minecraft with volumetric lighting & clouds.", text);
+        Assert.Equal("About\n\nSolas Shader is a shader pack for Minecraft with volumetric lighting & clouds.", text);
     }
 
     [Fact]
@@ -42,12 +43,15 @@ public class MarkdownTextTests
             | Shadows | High |
 
             <details><summary>Compatibility</summary>Works with Sodium.</details>
+            <h2>Empty section</h2>
+            <h2>Credits</h2>
+            Thanks to <b>everyone</b>.
             """;
 
         var text = MarkdownText.ToPlainText(body);
 
         Assert.Equal(
-            "Features\n\n• Realistic water\n\n• Soft shadows\n\n1. First\n\n2. Second\n\nRequires Iris or Optifine.\n\nSetting · Value\n\nShadows · High\n\nCompatibility\n\nWorks with Sodium.",
+            "Features\n\n• Realistic water\n\n• Soft shadows\n\n1. First\n\n2. Second\n\nRequires Iris or Optifine.\n\nSetting · Value\n\nShadows · High\n\nCompatibility\n\nWorks with Sodium.\n\nCredits\n\nThanks to everyone.",
             text);
     }
 
