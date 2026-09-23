@@ -84,6 +84,7 @@ public static class LauncherHost
         services.AddSingleton<RemoteImageService>();
         services.AddSingleton<TranslationService>();
         services.AddSingleton<LocalizationService>();
+        services.AddSingleton<ThemeService>();
         services.AddSingleton<InstanceManager>();
         services.AddSingleton<InstanceBackupService>();
         services.AddSingleton<STlauncher.Core.Import.InstanceImporter>();

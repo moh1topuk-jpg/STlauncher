@@ -737,4 +737,16 @@
     <x:String x:Key="Gallery_OpenInBrowser">Открыть в браузере</x:String>
     <x:String x:Key="Gallery_Previous">Предыдущий</x:String>
     <x:String x:Key="Gallery_Next">Следующий</x:String>
+    <!-- Appearance: theme and accent -->
+    <x:String x:Key="Settings_Theme">Тема</x:String>
+    <x:String x:Key="Settings_ThemeDark">Тёмная</x:String>
+    <x:String x:Key="Settings_ThemeLight">Светлая</x:String>
+    <x:String x:Key="Settings_Accent">Цвет акцента</x:String>
+    <x:String x:Key="Accent_Crimson">Багровый</x:String>
+    <x:String x:Key="Accent_Orange">Оранжевый</x:String>
+    <x:String x:Key="Accent_Gold">Золотой</x:String>
+    <x:String x:Key="Accent_Green">Зелёный</x:String>
+    <x:String x:Key="Accent_Teal">Бирюзовый</x:String>
+    <x:String x:Key="Accent_Blue">Синий</x:String>
+    <x:String x:Key="Accent_Violet">Фиолетовый</x:String>
 </ResourceDictionary>

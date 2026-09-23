@@ -165,12 +165,12 @@
     </Style>
 
     <Style Selector="Border.tag.installed">
-        <Setter Property="Background" Value="#1E3A28"/>
+        <Setter Property="Background" Value="{DynamicResource InstalledTagBrush}"/>
         <Setter Property="CornerRadius" Value="999"/>
         <Setter Property="Padding" Value="8,3"/>
     </Style>
     <Style Selector="Border.tag.installed TextBlock">
-        <Setter Property="Foreground" Value="#7DD39A"/>
+        <Setter Property="Foreground" Value="{DynamicResource InstalledTagTextBrush}"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
     </Style>
 
@@ -180,6 +180,12 @@
         <Setter Property="CornerRadius" Value="14"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.16"/>
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.2"/>
+            </Transitions>
+        </Setter>
     </Style>
     <Style Selector="Border.mod-card:pointerover">
         <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
@@ -216,18 +222,18 @@
 
     <!-- Full-window scrim behind a lightbox: dark, flat, and a button so a click closes. -->
     <Style Selector="Button.scrim">
-        <Setter Property="Background" Value="#E60C0A0D"/>
+        <Setter Property="Background" Value="{DynamicResource LightboxScrimBrush}"/>
         <Setter Property="HorizontalAlignment" Value="Stretch"/>
         <Setter Property="VerticalAlignment" Value="Stretch"/>
         <Setter Property="CornerRadius" Value="0"/>
         <Setter Property="BorderThickness" Value="0"/>
     </Style>
     <Style Selector="Button.scrim /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="#E60C0A0D"/>
+        <Setter Property="Background" Value="{DynamicResource LightboxScrimBrush}"/>
         <Setter Property="CornerRadius" Value="0"/>
     </Style>
     <Style Selector="Button.scrim:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="#E60C0A0D"/>
+        <Setter Property="Background" Value="{DynamicResource LightboxScrimBrush}"/>
     </Style>
 
     <!-- A switched-off mod stays in the list, visibly off. -->
@@ -272,6 +278,30 @@
         <Setter Property="Background" Value="{DynamicResource ElevatedBrush}"/>
     </Style>
 
+    <!-- Motion: hover colours glide, a press dips the whole button by a few percent.
+         Short enough to feel like response, never like waiting. -->
+    <Style Selector="Button">
+        <Setter Property="RenderTransform" Value="scale(1)"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.12" Easing="CubicEaseOut"/>
+            </Transitions>
+        </Setter>
+    </Style>
+
+    <Style Selector="Button /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.16"/>
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.16"/>
+            </Transitions>
+        </Setter>
+    </Style>
+
+    <Style Selector="Button:pressed">
+        <Setter Property="RenderTransform" Value="scale(0.96)"/>
+    </Style>
+
     <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
     </Style>
@@ -314,12 +344,28 @@
     </Style>
 
     <Style Selector="Button.hero /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background">
-            <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
-                <GradientStop Offset="0" Color="#C02E4C"/>
-                <GradientStop Offset="1" Color="#A3243F"/>
-            </LinearGradientBrush>
+        <Setter Property="Background" Value="{DynamicResource HeroGradientBrush}"/>
+        <Setter Property="BoxShadow" Value="{DynamicResource HeroShadow}"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.22"/>
+            </Transitions>
         </Setter>
+    </Style>
+
+    <!-- The glow deepens under the pointer; the press is a small dip, not a colour change. -->
+    <Style Selector="Button.hero:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource HeroGradientBrush}"/>
+        <Setter Property="BoxShadow" Value="{DynamicResource HeroShadowHover}"/>
+    </Style>
+
+    <Style Selector="Button.hero:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource HeroGradientBrush}"/>
+        <Setter Property="BoxShadow" Value="{DynamicResource HeroShadow}"/>
+    </Style>
+
+    <Style Selector="Button.hero:pressed">
+        <Setter Property="RenderTransform" Value="scale(0.985)"/>
     </Style>
 
     <!-- A square companion to the hero button: same height, one icon. -->
@@ -334,7 +380,7 @@
     </Style>
 
     <Style Selector="Button.hero-side /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="#66141014"/>
+        <Setter Property="Background" Value="{DynamicResource HeroSideBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
     </Style>
 
@@ -361,6 +407,21 @@
         <Setter Property="Width" Value="20"/>
         <Setter Property="Height" Value="20"/>
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+        <Setter Property="RenderTransform" Value="translateY(0px) scale(1)"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.18" Easing="CubicEaseOut"/>
+                <BrushTransition Property="Foreground" Duration="0:0:0.18"/>
+            </Transitions>
+        </Setter>
+    </Style>
+
+    <Style Selector="Button.rail:pointerover PathIcon">
+        <Setter Property="RenderTransform" Value="translateY(-1px) scale(1.1)"/>
+    </Style>
+
+    <Style Selector="Button.rail.active PathIcon">
+        <Setter Property="RenderTransform" Value="translateY(0px) scale(1.12)"/>
     </Style>
 
     <Style Selector="Button.rail:pointerover /template/ ContentPresenter#PART_ContentPresenter">
@@ -535,6 +596,31 @@
         <Setter Property="Background" Value="{DynamicResource ElevatedBrush}"/>
     </Style>
 
+    <!-- Accent swatches: a circle of the colour, a ring when chosen. -->
+    <Style Selector="Button.swatch">
+        <Setter Property="Width" Value="30"/>
+        <Setter Property="Height" Value="30"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="CornerRadius" Value="15"/>
+        <Setter Property="BorderThickness" Value="2"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+    </Style>
+    <Style Selector="Button.swatch /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{Binding $parent[Button].Background}"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="CornerRadius" Value="15"/>
+    </Style>
+    <Style Selector="Button.swatch:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{Binding $parent[Button].Background}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource TextMutedBrush}"/>
+    </Style>
+    <Style Selector="Button.swatch.selected /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="BorderBrush" Value="{DynamicResource TextPrimaryBrush}"/>
+    </Style>
+    <Style Selector="Button.swatch:pointerover">
+        <Setter Property="RenderTransform" Value="scale(1.12)"/>
+    </Style>
+
     <!-- ===================== Sidebar navigation ===================== -->
 
     <Style Selector="Button.nav">
@@ -707,6 +793,14 @@
         <Setter Property="Padding" Value="10,8"/>
         <Setter Property="Margin" Value="0,1"/>
         <Setter Property="CornerRadius" Value="8"/>
+    </Style>
+
+    <Style Selector="ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.14"/>
+            </Transitions>
+        </Setter>
     </Style>
 
     <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">

@@ -8,28 +8,21 @@
     <Grid RowDefinitions="Auto,*">
 
         <!-- ======== Banner ======== -->
-        <Border Grid.Row="0" Padding="40,28" ClipToBounds="True">
-            <Border.Background>
-                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
-                    <GradientStop Offset="0" Color="#3A1A25"/>
-                    <GradientStop Offset="0.55" Color="#1A1119"/>
-                    <GradientStop Offset="1" Color="#0F0C11"/>
-                </LinearGradientBrush>
-            </Border.Background>
+        <Border Grid.Row="0" Padding="40,28" ClipToBounds="True" Background="{DynamicResource BannerBrush}">
 
             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="20" MaxWidth="1000">
                 <Border Width="84" Height="84" CornerRadius="20" Background="{DynamicResource ElevatedBrush}"
-                        ClipToBounds="True" BorderBrush="#14FFFFFF" BorderThickness="2">
+                        ClipToBounds="True" BorderBrush="{DynamicResource LightboxBorderBrush}" BorderThickness="2">
                     <Image Source="{Binding ServerIcon}" Stretch="UniformToFill" Width="84" Height="84"/>
                 </Border>
 
                 <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal" Spacing="10">
                         <TextBlock Text="{Binding ServerName}" Classes="h1" FontSize="32"/>
-                        <Border Classes="tag" Background="#1E3A28" VerticalAlignment="Center" IsVisible="{Binding IsServerOnline}">
+                        <Border Classes="tag" Background="{DynamicResource InstalledTagBrush}" VerticalAlignment="Center" IsVisible="{Binding IsServerOnline}">
                             <StackPanel Orientation="Horizontal" Spacing="6">
                                 <Border Width="6" Height="6" CornerRadius="3" Background="{DynamicResource SuccessBrush}" VerticalAlignment="Center"/>
-                                <TextBlock Text="{DynamicResource Server_Online}" Foreground="#7DD39A"/>
+                                <TextBlock Text="{DynamicResource Server_Online}" Foreground="{DynamicResource InstalledTagTextBrush}"/>
                             </StackPanel>
                         </Border>
                         <Border Classes="tag" VerticalAlignment="Center" IsVisible="{Binding !IsServerOnline}">
@@ -73,7 +66,7 @@
 
                 <!-- ======== Metrics ======== -->
                 <UniformGrid Columns="5" ColumnSpacing="12">
-                    <Border Classes="tile" Background="#1F1218">
+                    <Border Classes="tile" Background="{DynamicResource TileWarmBrush}">
                         <StackPanel Spacing="6">
                             <TextBlock Text="{DynamicResource Server_TileOnline}" Classes="label"/>
                             <TextBlock Text="{Binding ServerOnlineValue}" Classes="value" Foreground="{DynamicResource GoldBrush}"/>

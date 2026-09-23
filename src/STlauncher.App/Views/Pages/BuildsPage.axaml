@@ -7,6 +7,7 @@
              xmlns:mods="using:STlauncher.Core.Mods"
              xmlns:content="using:STlauncher.Core.Content"
              xmlns:conv="using:STlauncher.App.Converters"
+             xmlns:controls="using:STlauncher.App.Controls"
              xmlns:sys="using:System"
              x:Class="STlauncher.App.Views.Pages.BuildsPage"
              x:DataType="vm:MainWindowViewModel">
@@ -139,13 +140,7 @@
                   HorizontalAlignment="Stretch">
 
                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16">
-                    <Border Width="56" Height="56" CornerRadius="14" VerticalAlignment="Center">
-                        <Border.Background>
-                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                                <GradientStop Offset="0" Color="#2A1A22"/>
-                                <GradientStop Offset="1" Color="#1A1119"/>
-                            </LinearGradientBrush>
-                        </Border.Background>
+                    <Border Width="56" Height="56" CornerRadius="14" VerticalAlignment="Center" Background="{DynamicResource BuildIconBrush}">
                         <PathIcon Data="{StaticResource IconBuilds}" Classes="large accent"/>
                     </Border>
 
@@ -211,7 +206,7 @@
                 <Panel Grid.Row="2">
 
                     <!-- ======== Mods of the build ======== -->
-                    <Grid IsVisible="{Binding IsBuildMods}" RowDefinitions="Auto,Auto,*" RowSpacing="10">
+                    <Grid IsVisible="{Binding IsBuildMods}" RowDefinitions="Auto,Auto,*" RowSpacing="10" controls:Reveal.OnVisible="True">
                         <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="6">
                             <TextBlock Text="{Binding InstalledModsSummary}" Classes="faint"
                                        VerticalAlignment="Center"/>
@@ -320,7 +315,7 @@
                     <!-- ======== Modrinth catalog: chips, cards, details on the right ======== -->
 
                     <!-- ======== Resource packs of the build ======== -->
-                    <Grid IsVisible="{Binding IsBuildResourcePacks}" RowDefinitions="Auto,*" RowSpacing="10">
+                    <Grid IsVisible="{Binding IsBuildResourcePacks}" RowDefinitions="Auto,*" RowSpacing="10" controls:Reveal.OnVisible="True">
                         <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
                             <TextBlock Text="{DynamicResource Packs_Hint}" Classes="faint" TextWrapping="Wrap"
                                        VerticalAlignment="Center"/>
@@ -541,7 +536,7 @@
                     </Grid>
 
                     <!-- ======== Shaders of the build ======== -->
-                    <Grid IsVisible="{Binding IsBuildShaders}" RowDefinitions="Auto,Auto,*" RowSpacing="10">
+                    <Grid IsVisible="{Binding IsBuildShaders}" RowDefinitions="Auto,Auto,*" RowSpacing="10" controls:Reveal.OnVisible="True">
                         <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
                             <TextBlock Text="{DynamicResource Shaders_Hint}" Classes="faint" TextWrapping="Wrap"
                                        VerticalAlignment="Center"/>
@@ -652,7 +647,7 @@
                         </ScrollViewer>
                     </Grid>
 
-                    <Grid IsVisible="{Binding IsBuildCatalog}" RowDefinitions="Auto,Auto,*" RowSpacing="10">
+                    <Grid IsVisible="{Binding IsBuildCatalog}" RowDefinitions="Auto,Auto,*" RowSpacing="10" controls:Reveal.OnVisible="True">
 
                         <Border Classes="panel" Padding="12" IsVisible="{Binding !IsBuildConfigured}">
                             <StackPanel Spacing="8">
@@ -687,7 +682,7 @@
                                                  BorderThickness="0" Padding="0" MinHeight="0" VerticalContentAlignment="Center"
                                                  Watermark="{DynamicResource Mods_SearchPlaceholder}"/>
                                         <TextBlock Grid.Column="2" Text="Modrinth" Classes="faint" VerticalAlignment="Center"
-                                                   Foreground="#4A3F46"/>
+                                                   Foreground="{DynamicResource DividerBrush}"/>
                                     </Grid>
                                 </Border>
                                 <ComboBox Grid.Column="1" ItemsSource="{Binding ModSortOptions}" SelectedItem="{Binding SelectedModSort}"
@@ -785,7 +780,7 @@
                                                                 <Border Classes="tag installed" IsVisible="{Binding Installed}">
                                                                     <StackPanel Orientation="Horizontal" Spacing="5">
                                                                         <PathIcon Data="{StaticResource IconCheck}" Width="10" Height="10"
-                                                                                  Foreground="#7DD39A"/>
+                                                                                  Foreground="{DynamicResource InstalledTagTextBrush}"/>
                                                                         <TextBlock Text="{DynamicResource Mods_InBuild}"/>
                                                                     </StackPanel>
                                                                 </Border>
@@ -816,14 +811,7 @@
                                 <Panel>
                                     <Grid RowDefinitions="Auto,*,Auto">
                                         <Panel Height="120">
-                                            <Border>
-                                                <Border.Background>
-                                                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                                                        <GradientStop Offset="0" Color="#2A1A22"/>
-                                                        <GradientStop Offset="1" Color="#151015"/>
-                                                    </LinearGradientBrush>
-                                                </Border.Background>
-                                            </Border>
+                                            <Border Background="{DynamicResource ProjectHeaderBrush}"/>
                                             <Button Classes="plain small" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8"
                                                     Command="{Binding CloseProjectCommand}">
                                                 <PathIcon Data="{StaticResource IconClose}" Classes="small"/>
@@ -959,7 +947,7 @@
                         </Grid>
                     </Grid>
                     <!-- ======== Build settings ======== -->
-                    <ScrollViewer IsVisible="{Binding IsBuildSettings}">
+                    <ScrollViewer IsVisible="{Binding IsBuildSettings}" controls:Reveal.OnVisible="True">
                         <StackPanel Spacing="14" MaxWidth="720" HorizontalAlignment="Left">
 
                             <Border Classes="card">
@@ -1076,7 +1064,7 @@
         </Grid>
 
         <!-- ============ Import from other launchers ============ -->
-        <Border Background="#B0000000" IsVisible="{Binding IsImportOpen}">
+        <Border Background="{DynamicResource OverlayScrimBrush}" IsVisible="{Binding IsImportOpen}" controls:Reveal.OnVisible="True">
             <Border Classes="card" Width="620" MaxHeight="560" HorizontalAlignment="Center"
                     VerticalAlignment="Center" Padding="22">
                 <Grid RowDefinitions="Auto,Auto,*,Auto,Auto" RowSpacing="14">
@@ -1167,7 +1155,7 @@
         </Border>
 
         <!-- ============ New build wizard ============ -->
-        <Border Background="#B0000000" IsVisible="{Binding IsNewBuildOpen}">
+        <Border Background="{DynamicResource OverlayScrimBrush}" IsVisible="{Binding IsNewBuildOpen}" controls:Reveal.OnVisible="True">
             <Border Classes="card" Width="460" HorizontalAlignment="Center" VerticalAlignment="Center"
                     Padding="22">
                 <StackPanel Spacing="16">

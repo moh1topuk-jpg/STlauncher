@@ -34,6 +34,7 @@ public partial class App : Application
             // The language must be applied before the window is created so that the
             // first layout already renders translated strings.
             var settings = _services.GetRequiredService<SettingsService>().Load();
+            _services.GetRequiredService<ThemeService>().Apply(settings.Theme, settings.Accent);
             _services.GetRequiredService<LocalizationService>().Apply(settings.Language);
 
             var viewModel = _services.GetRequiredService<MainWindowViewModel>();

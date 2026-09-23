@@ -44,6 +44,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly UpdateService _updates;
     private readonly InstanceManager _instances;
     private readonly LocalizationService _localization;
+    private readonly ThemeService _themes;
     private readonly JavaManager _java;
     private readonly InstanceBackupService _backups;
     private readonly STlauncher.Core.Import.InstanceImporter _importer;
@@ -80,6 +81,7 @@ public partial class MainWindowViewModel : ViewModelBase
         UpdateService updates,
         InstanceManager instances,
         LocalizationService localization,
+        ThemeService theme,
         JavaManager java,
         InstanceBackupService backups,
         STlauncher.Core.Import.InstanceImporter importer,
@@ -104,6 +106,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _updates = updates;
         _instances = instances;
         _localization = localization;
+        _themes = theme;
         _java = java;
         _backups = backups;
         _importer = importer;
@@ -369,6 +372,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         ImportSuggestionDismissed = settings.ImportSuggestionDismissed;
         AnimatedBackground = settings.AnimatedBackground;
+        LoadAppearance(settings.Theme, settings.Accent);
         DiscordPresence = settings.DiscordPresence;
         UsageStats = settings.UsageStats;
         _installId = string.IsNullOrWhiteSpace(settings.InstallId) ? Guid.NewGuid().ToString("N") : settings.InstallId!;
@@ -1165,6 +1169,8 @@ public partial class MainWindowViewModel : ViewModelBase
             DismissedBuildIds = _dismissedBuildIds.ToList(),
             ImportSuggestionDismissed = ImportSuggestionDismissed,
             AnimatedBackground = AnimatedBackground,
+            Theme = Theme,
+            Accent = Accent,
             DiscordPresence = DiscordPresence,
             UsageStats = UsageStats,
             InstallId = _installId,

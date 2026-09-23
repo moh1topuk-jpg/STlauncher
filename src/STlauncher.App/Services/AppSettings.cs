@@ -55,6 +55,12 @@ public sealed class AppSettings
     /// <summary>The drifting embers behind the main screen.</summary>
     public bool AnimatedBackground { get; set; } = true;
 
+    /// <summary>"dark" or "light".</summary>
+    public string Theme { get; set; } = "dark";
+
+    /// <summary>One of <see cref="ThemeService.Accents"/> by key.</summary>
+    public string Accent { get; set; } = "crimson";
+
     /// <summary>Lines of the "build updated" card the player has not closed yet.</summary>
     public List<string> BuildChangeLines { get; set; } = new();
 

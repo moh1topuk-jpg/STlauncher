@@ -737,4 +737,16 @@
     <x:String x:Key="Gallery_OpenInBrowser">Open in browser</x:String>
     <x:String x:Key="Gallery_Previous">Previous</x:String>
     <x:String x:Key="Gallery_Next">Next</x:String>
+    <!-- Appearance: theme and accent -->
+    <x:String x:Key="Settings_Theme">Theme</x:String>
+    <x:String x:Key="Settings_ThemeDark">Dark</x:String>
+    <x:String x:Key="Settings_ThemeLight">Light</x:String>
+    <x:String x:Key="Settings_Accent">Accent colour</x:String>
+    <x:String x:Key="Accent_Crimson">Crimson</x:String>
+    <x:String x:Key="Accent_Orange">Orange</x:String>
+    <x:String x:Key="Accent_Gold">Gold</x:String>
+    <x:String x:Key="Accent_Green">Green</x:String>
+    <x:String x:Key="Accent_Teal">Teal</x:String>
+    <x:String x:Key="Accent_Blue">Blue</x:String>
+    <x:String x:Key="Accent_Violet">Violet</x:String>
 </ResourceDictionary>

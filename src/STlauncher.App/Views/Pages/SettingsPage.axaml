@@ -7,7 +7,7 @@
     <Grid ColumnDefinitions="220,*">
 
         <!-- ======== Index ======== -->
-        <Border Grid.Column="0" Padding="16,28" BorderBrush="#1B161A" BorderThickness="0,0,1,0">
+        <Border Grid.Column="0" Padding="16,28" BorderBrush="{DynamicResource IndexBorderBrush}" BorderThickness="0,0,1,0">
             <Grid RowDefinitions="Auto,Auto,*,Auto">
                 <TextBlock Text="{DynamicResource Nav_Settings}" Classes="h2" FontSize="22" Margin="10,0,0,14"/>
 
@@ -160,6 +160,44 @@
                                 <TextBlock Grid.Column="1" Text="{Binding DataMoveStatus}" Classes="gold" TextWrapping="Wrap"/>
                             </Grid>
                         </StackPanel>
+
+                        <!-- Look: dark or light, and the one colour that carries the accent. -->
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="28">
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="{DynamicResource Settings_Theme}" FontWeight="SemiBold"/>
+                                <Border Classes="panel" Padding="4" HorizontalAlignment="Left">
+                                    <StackPanel Orientation="Horizontal" Spacing="2">
+                                        <Button Classes="segment" Classes.active="{Binding IsThemeDark}"
+                                                Content="{DynamicResource Settings_ThemeDark}"
+                                                Command="{Binding SelectThemeCommand}" CommandParameter="dark"/>
+                                        <Button Classes="segment" Classes.active="{Binding IsThemeLight}"
+                                                Content="{DynamicResource Settings_ThemeLight}"
+                                                Command="{Binding SelectThemeCommand}" CommandParameter="light"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Spacing="8">
+                                <TextBlock Text="{DynamicResource Settings_Accent}" FontWeight="SemiBold"/>
+                                <ItemsControl ItemsSource="{Binding AccentOptions}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal" Spacing="8"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:AccentOption">
+                                            <Button Classes="swatch" Classes.selected="{Binding IsSelected}"
+                                                    Background="{Binding Brush}" ToolTip.Tip="{Binding Display}"
+                                                    Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).SelectAccentCommand}"
+                                                    CommandParameter="{Binding Key}">
+                                                <PathIcon Data="{StaticResource IconCheck}" Classes="small" Foreground="{DynamicResource TextOnAccentBrush}"
+                                                          IsVisible="{Binding IsSelected}"/>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Grid>
 
                         <CheckBox Content="{DynamicResource Settings_AnimatedBackground}" IsChecked="{Binding AnimatedBackground}"/>
 

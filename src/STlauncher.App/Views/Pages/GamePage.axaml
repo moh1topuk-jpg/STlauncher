@@ -13,14 +13,7 @@
     <Panel>
 
         <!-- A soft warm glow behind the play area, so the screen has a centre. -->
-        <Border IsHitTestVisible="False">
-            <Border.Background>
-                <RadialGradientBrush Center="42%,38%" GradientOrigin="42%,38%" RadiusX="60%" RadiusY="55%">
-                    <GradientStop Offset="0" Color="#34191F"/>
-                    <GradientStop Offset="1" Color="#000C0A0D"/>
-                </RadialGradientBrush>
-            </Border.Background>
-        </Border>
+        <Border IsHitTestVisible="False" Background="{DynamicResource StageGlowBrush}"/>
 
         <!-- Embers drifting behind the stage; off in the settings for those who want it still. -->
         <controls:EmberField IsActive="{Binding AnimatedBackground}"/>
@@ -114,7 +107,7 @@
 
                     <!-- The last run crashed: say so where the player is looking, with the log
                          one click away. -->
-                    <Border Classes="panel" Padding="16" IsVisible="{Binding HasGameCrashed}" MaxWidth="560"
+                    <Border Classes="panel" Padding="16" IsVisible="{Binding HasGameCrashed}" MaxWidth="560" controls:Reveal.OnVisible="True"
                             HorizontalAlignment="Left">
                         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                             <PathIcon Data="{StaticResource IconWarning}" Foreground="{DynamicResource DangerBrush}"
@@ -161,7 +154,7 @@
                 <StackPanel Grid.Column="1" Spacing="12" VerticalAlignment="Center">
 
                     <!-- The player. The face opens the model. -->
-                    <Border Classes="card" Padding="16" Background="#CC141014">
+                    <Border Classes="card" Padding="16" Background="{DynamicResource CardGlassBrush}">
                         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
                             <StackPanel Spacing="3" VerticalAlignment="Center">
                                 <Button Classes="avatar" Width="52" Height="52" ToolTip.Tip="{DynamicResource Game_ViewSkin}">
@@ -227,7 +220,7 @@
                     </Border>
 
                     <!-- Saved names, shown only while editing. -->
-                    <Border Classes="card" Padding="16" Background="#CC141014" IsVisible="{Binding IsEditingNickname}">
+                    <Border Classes="card" Padding="16" Background="{DynamicResource CardGlassBrush}" IsVisible="{Binding IsEditingNickname}">
                         <StackPanel Spacing="10">
                             <TextBlock Text="{DynamicResource Game_Nicknames}" Classes="label"/>
                             <ItemsControl ItemsSource="{Binding Nicknames}">
@@ -258,7 +251,7 @@
                     </Border>
 
                     <!-- Where the build stands. -->
-                    <Border Classes="card" Padding="16" Background="#CC141014">
+                    <Border Classes="card" Padding="16" Background="{DynamicResource CardGlassBrush}">
                         <StackPanel Spacing="10">
                             <TextBlock Text="{DynamicResource Game_State}" Classes="label"/>
                             <StackPanel Orientation="Horizontal" Spacing="10">
@@ -277,7 +270,7 @@
                     </Border>
 
                     <!-- The server owner changed the build: what is different today. -->
-                    <Border Classes="card" Padding="16" Background="#CC141014" IsVisible="{Binding HasBuildChangeNotice}">
+                    <Border Classes="card" Padding="16" Background="{DynamicResource CardGlassBrush}" IsVisible="{Binding HasBuildChangeNotice}">
                         <StackPanel Spacing="10">
                             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
                                 <PathIcon Data="{StaticResource IconRefresh}" Classes="gold" VerticalAlignment="Center"/>
@@ -305,7 +298,7 @@
                     </Border>
 
                     <!-- What this version changed, once after an update. -->
-                    <Border Classes="card" Padding="16" Background="#CC141014" IsVisible="{Binding ShowWhatsNew}">
+                    <Border Classes="card" Padding="16" Background="{DynamicResource CardGlassBrush}" IsVisible="{Binding ShowWhatsNew}">
                         <StackPanel Spacing="10">
                             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
                                 <PathIcon Data="{StaticResource IconStar}" Classes="gold" VerticalAlignment="Center"/>
@@ -342,7 +335,7 @@
 
                     <!-- Builds found in other launchers: offered once, right where the
                          player looks first. -->
-                    <Border Classes="card" Padding="16" Background="#CC1F1218" IsVisible="{Binding HasImportSuggestion}">
+                    <Border Classes="card" Padding="16" Background="{DynamicResource CardGlassWarmBrush}" IsVisible="{Binding HasImportSuggestion}">
                         <StackPanel Spacing="10">
                             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
                                 <PathIcon Data="{StaticResource IconBuilds}" Classes="gold" VerticalAlignment="Top"/>

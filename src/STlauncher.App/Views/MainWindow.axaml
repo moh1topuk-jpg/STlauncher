@@ -27,7 +27,7 @@
     <Grid RowDefinitions="36,Auto,*">
 
         <!-- ============ Title bar ============ -->
-        <Border Grid.Row="0" Background="#0F0C11" PointerPressed="OnTitleBarPressed">
+        <Border Grid.Row="0" Background="{DynamicResource RailBrush}" PointerPressed="OnTitleBarPressed">
             <Grid ColumnDefinitions="*,Auto">
                 <TextBlock Text="STlauncher" Classes="faint" Margin="18,0" VerticalAlignment="Center"/>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
@@ -46,7 +46,7 @@
 
         <!-- ============ Update notification ============ -->
         <Border Grid.Row="1" IsVisible="{Binding IsUpdateBannerVisible}"
-                Background="#1C1420" Padding="16,10">
+                Background="{DynamicResource UpdateBannerBrush}" Padding="16,10">
             <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
                 <PathIcon Data="{StaticResource IconDownload}" Classes="accent" VerticalAlignment="Center"/>
                 <TextBlock Grid.Column="1" VerticalAlignment="Center"
@@ -68,7 +68,7 @@
         <Grid Grid.Row="2" ColumnDefinitions="88,*">
 
             <!-- Rail -->
-            <Border Grid.Column="0" Background="#0F0C11">
+            <Border Grid.Column="0" Background="{DynamicResource RailBrush}">
                 <Grid RowDefinitions="Auto,*,Auto" Margin="10,14,10,14">
 
                     <Border Grid.Row="0" Width="40" Height="40" CornerRadius="12" ClipToBounds="True"
@@ -171,15 +171,15 @@
             <!-- Content -->
             <Grid Grid.Column="1" RowDefinitions="*,Auto">
                 <Panel>
-                    <pages:GamePage IsVisible="{Binding IsGameSection}"/>
-                    <pages:BuildsPage IsVisible="{Binding IsBuildsSection}"/>
-                    <pages:ServerPage IsVisible="{Binding IsServerSection}"/>
-                    <pages:ConsolePage IsVisible="{Binding IsConsoleSection}"/>
-                    <pages:SettingsPage IsVisible="{Binding IsSettingsSection}"/>
+                    <pages:GamePage IsVisible="{Binding IsGameSection}" controls:Reveal.OnVisible="True"/>
+                    <pages:BuildsPage IsVisible="{Binding IsBuildsSection}" controls:Reveal.OnVisible="True"/>
+                    <pages:ServerPage IsVisible="{Binding IsServerSection}" controls:Reveal.OnVisible="True"/>
+                    <pages:ConsolePage IsVisible="{Binding IsConsoleSection}" controls:Reveal.OnVisible="True"/>
+                    <pages:SettingsPage IsVisible="{Binding IsSettingsSection}" controls:Reveal.OnVisible="True"/>
                 </Panel>
 
                 <!-- Status line: quiet by default, a progress bar only while loading. -->
-                <Border Grid.Row="1" Background="#0F0C11" Padding="20,0" Height="28">
+                <Border Grid.Row="1" Background="{DynamicResource RailBrush}" Padding="20,0" Height="28">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                         <TextBlock Text="{Binding Status}" VerticalAlignment="Center"
                                    Classes="faint" TextTrimming="CharacterEllipsis"/>
@@ -197,7 +197,7 @@
 
     <!-- A catalog screenshot at full size. The scrim is a button, so a click anywhere
          outside the picture closes it; the picture and its controls sit above it. -->
-    <Panel IsVisible="{Binding IsLightboxOpen}">
+    <Panel IsVisible="{Binding IsLightboxOpen}" controls:Reveal.OnVisible="True">
         <Button Classes="scrim" Command="{Binding CloseLightboxCommand}"/>
         <Grid RowDefinitions="Auto,*,Auto" Margin="48,44,48,28">
             <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
@@ -220,7 +220,7 @@
                     <PathIcon Data="{StaticResource IconChevronLeft}"/>
                 </Button>
                 <Border Grid.Column="1" CornerRadius="12" ClipToBounds="True" HorizontalAlignment="Center" VerticalAlignment="Center"
-                        BorderBrush="#22FFFFFF" BorderThickness="1" Background="#0C0A0D">
+                        BorderBrush="{DynamicResource LightboxBorderBrush}" BorderThickness="1" Background="{DynamicResource LightboxFrameBrush}">
                     <Image Source="{Binding LightboxImage}" Stretch="Uniform"/>
                 </Border>
                 <Button Grid.Column="2" Classes="plain" VerticalAlignment="Center" Width="44" Height="44" CornerRadius="22"

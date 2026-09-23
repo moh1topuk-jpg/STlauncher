@@ -1,39 +1,35 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- Surfaces: deep, warm-tinted darks -->
-    <Color x:Key="AppBgColor">#0C0A0D</Color>
-    <Color x:Key="SurfaceColor">#141014</Color>
-    <Color x:Key="SurfaceAltColor">#1A1519</Color>
-    <Color x:Key="ElevatedColor">#221A20</Color>
-    <Color x:Key="HoverColor">#2A2028</Color>
+    <!-- The light palette: warm ivory grounds, the same crimson accent, ink for text.
+         Every key mirrors Colors.axaml; ThemeService swaps the two dictionaries. -->
 
-    <!-- Lines -->
-    <Color x:Key="DividerColor">#2E252C</Color>
-    <Color x:Key="BorderColor">#382C34</Color>
+    <Color x:Key="AppBgColor">#F5EFF2</Color>
+    <Color x:Key="SurfaceColor">#FFFFFF</Color>
+    <Color x:Key="SurfaceAltColor">#F1E9ED</Color>
+    <Color x:Key="ElevatedColor">#E8DDE3</Color>
+    <Color x:Key="HoverColor">#DECFD7</Color>
 
-    <!-- Text -->
-    <Color x:Key="TextPrimaryColor">#EFE9EC</Color>
-    <Color x:Key="TextSecondaryColor">#A99BA3</Color>
-    <Color x:Key="TextMutedColor">#7A6E75</Color>
+    <Color x:Key="DividerColor">#DCCDD4</Color>
+    <Color x:Key="BorderColor">#CDBBC4</Color>
+
+    <Color x:Key="TextPrimaryColor">#1E141A</Color>
+    <Color x:Key="TextSecondaryColor">#5A4B53</Color>
+    <Color x:Key="TextMutedColor">#857680</Color>
     <Color x:Key="TextOnAccentColor">#FFF6F8</Color>
 
-    <!-- Accents -->
     <Color x:Key="AccentColor">#A3243F</Color>
-    <Color x:Key="AccentHoverColor">#C02E4C</Color>
+    <Color x:Key="AccentHoverColor">#8E1F37</Color>
     <Color x:Key="AccentPressedColor">#7E1B31</Color>
-    <Color x:Key="GoldColor">#C9A227</Color>
-    <Color x:Key="GoldMutedColor">#8A6F1B</Color>
+    <Color x:Key="GoldColor">#8A6A10</Color>
+    <Color x:Key="GoldMutedColor">#B08F2E</Color>
 
-    <!-- Status -->
-    <Color x:Key="SuccessColor">#4C9A6A</Color>
-    <Color x:Key="WarningColor">#C98A27</Color>
-    <Color x:Key="DangerColor">#C0392B</Color>
+    <Color x:Key="SuccessColor">#2E7D4F</Color>
+    <Color x:Key="WarningColor">#A86A12</Color>
+    <Color x:Key="DangerColor">#B8322A</Color>
 
-    <!-- Type: Manrope (OFL) for headings and figures, Inter for everything else -->
     <FontFamily x:Key="DisplayFont">avares://STlauncher.App/Assets/Fonts#Manrope</FontFamily>
 
-    <!-- Brushes -->
     <SolidColorBrush x:Key="AppBgBrush" Color="{StaticResource AppBgColor}"/>
     <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}"/>
     <SolidColorBrush x:Key="SurfaceAltBrush" Color="{StaticResource SurfaceAltColor}"/>
@@ -58,7 +54,6 @@
     <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}"/>
     <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource DangerColor}"/>
 
-    <!-- A restrained "theatre" hint: thin warm hairline, used sparingly -->
     <LinearGradientBrush x:Key="AccentHairlineBrush" StartPoint="0%,50%" EndPoint="100%,50%">
         <GradientStop Offset="0" Color="#00A3243F"/>
         <GradientStop Offset="0.5" Color="#C9A3243F"/>
@@ -66,57 +61,49 @@
     </LinearGradientBrush>
 
     <LinearGradientBrush x:Key="SidebarBrush" StartPoint="0%,0%" EndPoint="0%,100%">
-        <GradientStop Offset="0" Color="#141014"/>
-        <GradientStop Offset="1" Color="#0F0C11"/>
+        <GradientStop Offset="0" Color="#F1E9ED"/>
+        <GradientStop Offset="1" Color="#EADFE5"/>
     </LinearGradientBrush>
 
-    <!-- Chrome: the rail, the title bar and the status bar share one deeper tone -->
-    <SolidColorBrush x:Key="RailBrush" Color="#0F0C11"/>
-    <SolidColorBrush x:Key="UpdateBannerBrush" Color="#1C1420"/>
-    <SolidColorBrush x:Key="IndexBorderBrush" Color="#1B161A"/>
+    <SolidColorBrush x:Key="RailBrush" Color="#ECE3E8"/>
+    <SolidColorBrush x:Key="UpdateBannerBrush" Color="#F3E2E8"/>
+    <SolidColorBrush x:Key="IndexBorderBrush" Color="#E3D7DD"/>
 
-    <!-- Glass cards on the main screen let the glow show through -->
-    <SolidColorBrush x:Key="CardGlassBrush" Color="#CC141014"/>
-    <SolidColorBrush x:Key="CardGlassWarmBrush" Color="#CC1F1218"/>
-    <SolidColorBrush x:Key="TileWarmBrush" Color="#1F1218"/>
-    <SolidColorBrush x:Key="HeroSideBrush" Color="#66141014"/>
+    <SolidColorBrush x:Key="CardGlassBrush" Color="#D9FFFFFF"/>
+    <SolidColorBrush x:Key="CardGlassWarmBrush" Color="#D9F8ECF1"/>
+    <SolidColorBrush x:Key="TileWarmBrush" Color="#F8ECF1"/>
+    <SolidColorBrush x:Key="HeroSideBrush" Color="#99FFFFFF"/>
 
-    <!-- Scrims behind dialogs and the screenshot viewer -->
-    <SolidColorBrush x:Key="OverlayScrimBrush" Color="#B0000000"/>
-    <SolidColorBrush x:Key="LightboxScrimBrush" Color="#E60C0A0D"/>
-    <SolidColorBrush x:Key="LightboxFrameBrush" Color="#0C0A0D"/>
-    <SolidColorBrush x:Key="LightboxBorderBrush" Color="#22FFFFFF"/>
+    <SolidColorBrush x:Key="OverlayScrimBrush" Color="#8C2A1C24"/>
+    <SolidColorBrush x:Key="LightboxScrimBrush" Color="#E6F5EFF2"/>
+    <SolidColorBrush x:Key="LightboxFrameBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="LightboxBorderBrush" Color="#22000000"/>
 
-    <!-- "Installed" pill -->
-    <SolidColorBrush x:Key="InstalledTagBrush" Color="#1E3A28"/>
-    <SolidColorBrush x:Key="InstalledTagTextBrush" Color="#7DD39A"/>
+    <SolidColorBrush x:Key="InstalledTagBrush" Color="#DDF2E5"/>
+    <SolidColorBrush x:Key="InstalledTagTextBrush" Color="#1F6B3D"/>
 
-    <!-- The warm glow behind the play area -->
     <RadialGradientBrush x:Key="StageGlowBrush" Center="42%,38%" GradientOrigin="42%,38%" RadiusX="60%" RadiusY="55%">
-        <GradientStop Offset="0" Color="#34191F"/>
-        <GradientStop Offset="1" Color="#000C0A0D"/>
+        <GradientStop Offset="0" Color="#F3D6DF"/>
+        <GradientStop Offset="1" Color="#00F5EFF2"/>
     </RadialGradientBrush>
 
-    <!-- Server page banner -->
     <LinearGradientBrush x:Key="BannerBrush" StartPoint="0%,0%" EndPoint="100%,0%">
-        <GradientStop Offset="0" Color="#3A1A25"/>
-        <GradientStop Offset="0.55" Color="#1A1119"/>
-        <GradientStop Offset="1" Color="#0F0C11"/>
+        <GradientStop Offset="0" Color="#F0D3DC"/>
+        <GradientStop Offset="0.55" Color="#F3E6EC"/>
+        <GradientStop Offset="1" Color="#ECE3E8"/>
     </LinearGradientBrush>
 
-    <!-- Build icon tile and the catalog card header -->
     <LinearGradientBrush x:Key="BuildIconBrush" StartPoint="0%,0%" EndPoint="100%,100%">
-        <GradientStop Offset="0" Color="#2A1A22"/>
-        <GradientStop Offset="1" Color="#1A1119"/>
+        <GradientStop Offset="0" Color="#F0D3DC"/>
+        <GradientStop Offset="1" Color="#E8DDE3"/>
     </LinearGradientBrush>
     <LinearGradientBrush x:Key="ProjectHeaderBrush" StartPoint="0%,0%" EndPoint="100%,100%">
-        <GradientStop Offset="0" Color="#2A1A22"/>
-        <GradientStop Offset="1" Color="#151015"/>
+        <GradientStop Offset="0" Color="#F0D3DC"/>
+        <GradientStop Offset="1" Color="#EDE3E8"/>
     </LinearGradientBrush>
 
-    <!-- Accent-derived defaults; ThemeService replaces them for the chosen accent -->
     <LinearGradientBrush x:Key="HeroGradientBrush" StartPoint="0%,0%" EndPoint="0%,100%">
-        <GradientStop Offset="0" Color="#C02E4C"/>
+        <GradientStop Offset="0" Color="#B72A48"/>
         <GradientStop Offset="1" Color="#A3243F"/>
     </LinearGradientBrush>
     <BoxShadows x:Key="HeroShadow">0 6 22 0 #47A3243F</BoxShadows>
