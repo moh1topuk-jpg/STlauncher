@@ -45,14 +45,22 @@ public static class ExternalInstanceScanner
     /// <summary>Places worth looking in, in the order they are offered.</summary>
     public static IReadOnlyList<(string Path, ExternalLauncherKind Kind)> DefaultRoots()
     {
-        var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         var profile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         var documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+
+        // Where launchers keep their data: %APPDATA% on Windows, ~/.local/share on Linux,
+        // ~/Library/Application Support on macOS. The vanilla folder is the odd one out:
+        // a dot-folder in the home directory on Linux, "minecraft" without the dot on macOS.
+        var appData = LauncherDataRoot(profile);
+        var dotMinecraft = OperatingSystem.IsLinux() ? Path.Combine(profile, ".minecraft")
+            : OperatingSystem.IsMacOS() ? Path.Combine(appData, "minecraft")
+            : Path.Combine(appData, ".minecraft");
+        var tlauncherHome = OperatingSystem.IsWindows() ? appData : profile;
 
         var roots = new List<(string, ExternalLauncherKind)>
         {
-            (Path.Combine(appData, ".minecraft"), ExternalLauncherKind.DotMinecraft),
+            (dotMinecraft, ExternalLauncherKind.DotMinecraft),
             (Path.Combine(appData, "PrismLauncher", "instances"), ExternalLauncherKind.Prism),
             (Path.Combine(appData, "PolyMC", "instances"), ExternalLauncherKind.PolyMc),
             (Path.Combine(profile, "curseforge", "minecraft", "Instances"), ExternalLauncherKind.CurseForge),
@@ -67,7 +75,7 @@ public static class ExternalInstanceScanner
         };
 
         // TLauncher can be pointed at a game folder other than .minecraft.
-        var tlauncherDirectory = ReadPropertiesValue(Path.Combine(appData, ".tlauncher", "tlauncher-2.0.properties"), "minecraft.gamedir");
+        var tlauncherDirectory = ReadPropertiesValue(Path.Combine(tlauncherHome, ".tlauncher", "tlauncher-2.0.properties"), "minecraft.gamedir");
         if (!string.IsNullOrWhiteSpace(tlauncherDirectory))
         {
             roots.Add((tlauncherDirectory!, ExternalLauncherKind.DotMinecraft));
@@ -96,6 +104,22 @@ public static class ExternalInstanceScanner
             .GroupBy(r => r.Item1.TrimEnd(Path.DirectorySeparatorChar), StringComparer.OrdinalIgnoreCase)
             .Select(g => g.First())
             .ToList();
+    }
+
+    private static string LauncherDataRoot(string profile)
+    {
+        if (OperatingSystem.IsLinux())
+        {
+            var xdg = Environment.GetEnvironmentVariable("XDG_DATA_HOME");
+            return string.IsNullOrWhiteSpace(xdg) ? Path.Combine(profile, ".local", "share") : xdg;
+        }
+
+        if (OperatingSystem.IsMacOS())
+        {
+            return Path.Combine(profile, "Library", "Application Support");
+        }
+
+        return Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
     }
 
     private static IEnumerable<string> PortableBases(string profile, string local, string documents)

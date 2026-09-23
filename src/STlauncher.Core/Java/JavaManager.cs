@@ -69,7 +69,7 @@ public sealed partial class JavaManager
         var javaHome = Environment.GetEnvironmentVariable("JAVA_HOME");
         if (!string.IsNullOrEmpty(javaHome))
         {
-            candidates.Add(Path.Combine(javaHome, "bin", "java.exe"));
+            candidates.Add(Path.Combine(javaHome, "bin", JavaExecutableName));
         }
 
         foreach (var root in KnownVendorRoots())
@@ -79,7 +79,7 @@ public sealed partial class JavaManager
                 continue;
             }
 
-            foreach (var exe in SafeEnumerate(root, "java.exe", 4))
+            foreach (var exe in SafeEnumerate(root, JavaExecutableName, 4))
             {
                 candidates.Add(exe);
             }
@@ -210,10 +210,21 @@ public sealed partial class JavaManager
         return executable;
     }
 
-    private static void ExtractArchive(string archivePath, string destination)
+    /// <summary>
+    /// Adoptium ships zip on Windows and tar.gz on Linux and macOS. Both are unpacked
+    /// with their single top-level folder stripped, so the runtime lands directly in
+    /// the destination. Tar keeps the Unix file modes: without them java is not runnable.
+    /// </summary>
+    public static void ExtractArchive(string archivePath, string destination)
     {
-        Directory.CreateDirectory(destination);
+        if (archivePath.EndsWith(".tar.gz", StringComparison.OrdinalIgnoreCase) ||
+            archivePath.EndsWith(".tgz", StringComparison.OrdinalIgnoreCase))
+        {
+            ExtractTarGz(archivePath, destination);
+            return;
+        }
 
+        Directory.CreateDirectory(destination);
         var root = Path.GetFullPath(destination);
         var rootWithSeparator = root.EndsWith(Path.DirectorySeparatorChar)
             ? root
@@ -253,6 +264,118 @@ public sealed partial class JavaManager
         }
     }
 
+    private static void ExtractTarGz(string archivePath, string destination)
+    {
+        Directory.CreateDirectory(destination);
+        var root = Path.GetFullPath(destination);
+        var rootWithSeparator = root.EndsWith(Path.DirectorySeparatorChar)
+            ? root
+            : root + Path.DirectorySeparatorChar;
+
+        // Two passes: the first finds the shared top-level folder, the second extracts.
+        string? prefix = null;
+        var single = true;
+
+        using (var probe = OpenTar(archivePath))
+        {
+            while (probe.GetNextEntry() is { } entry)
+            {
+                var name = TarEntryName(entry.Name);
+                var separator = name.IndexOf('/');
+                var top = separator < 0 ? null : name[..(separator + 1)];
+
+                if (top is null or "../" or "./")
+                {
+                    single = false;
+                    break;
+                }
+
+                prefix ??= top;
+
+                if (prefix != top)
+                {
+                    single = false;
+                    break;
+                }
+            }
+        }
+
+        if (!single)
+        {
+            prefix = null;
+        }
+
+        using var reader = OpenTar(archivePath);
+
+        while (reader.GetNextEntry() is { } entry)
+        {
+            var name = TarEntryName(entry.Name);
+            var relative = prefix is not null && name.StartsWith(prefix, StringComparison.Ordinal)
+                ? name[prefix.Length..]
+                : name;
+
+            if (string.IsNullOrEmpty(relative))
+            {
+                continue;
+            }
+
+            var target = Path.GetFullPath(Path.Combine(destination, relative));
+
+            if (!target.StartsWith(rootWithSeparator, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new IOException($"Blocked archive entry outside of destination: {entry.Name}");
+            }
+
+            switch (entry.EntryType)
+            {
+                case System.Formats.Tar.TarEntryType.Directory:
+                    Directory.CreateDirectory(target);
+                    break;
+
+                case System.Formats.Tar.TarEntryType.SymbolicLink:
+                    // JRE tarballs carry a few links (libjli.dylib and the like); they
+                    // point inside the archive, and a copy works where a link would.
+                    Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+                    if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    {
+                        try { File.CreateSymbolicLink(target, entry.LinkName); } catch (IOException) { }
+                    }
+                    break;
+
+                case System.Formats.Tar.TarEntryType.RegularFile:
+                case System.Formats.Tar.TarEntryType.V7RegularFile:
+                case System.Formats.Tar.TarEntryType.ContiguousFile:
+                    Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+                    entry.ExtractToFile(target, overwrite: true);
+
+                    if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    {
+                        File.SetUnixFileMode(target, entry.Mode);
+                    }
+
+                    break;
+            }
+        }
+    }
+
+    /// <summary>Drops a leading "./" or "/" only; ".." stays, so the path check below can catch it.</summary>
+    private static string TarEntryName(string name)
+    {
+        while (name.StartsWith("./", StringComparison.Ordinal))
+        {
+            name = name[2..];
+        }
+
+        return name.TrimStart('/');
+    }
+
+    private static System.Formats.Tar.TarReader OpenTar(string archivePath)
+    {
+        var file = File.OpenRead(archivePath);
+        var gzip = new GZipStream(file, CompressionMode.Decompress);
+        return new System.Formats.Tar.TarReader(gzip, leaveOpen: false);
+    }
+
     private static string? DetectTopLevelDirectory(ZipArchive archive)
     {
         string? prefix = null;
@@ -266,6 +389,13 @@ public sealed partial class JavaManager
             }
 
             var current = entry.FullName[..(separator + 1)];
+
+            // "../" as the shared folder would strip the traversal instead of catching it.
+            if (current is "../" or "./")
+            {
+                return null;
+            }
+
             if (prefix is null)
             {
                 prefix = current;
@@ -286,12 +416,14 @@ public sealed partial class JavaManager
             return null;
         }
 
-        var names = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-            ? new[] { "java.exe" }
-            : new[] { "java" };
-
-        return SafeEnumerate(directory, names, 4).FirstOrDefault();
+        // On macOS the JRE sits under Contents/Home, one level deeper than elsewhere.
+        return SafeEnumerate(directory, new[] { JavaExecutableName }, 5)
+            .FirstOrDefault(p => Path.GetFileName(Path.GetDirectoryName(p)) == "bin");
     }
+
+    /// <summary>"java.exe" on Windows, "java" everywhere else.</summary>
+    public static string JavaExecutableName
+        => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "java.exe" : "java";
 
     private static IEnumerable<string> SafeEnumerate(string root, string fileName, int maxDepth)
         => SafeEnumerate(root, new[] { fileName }, maxDepth);
@@ -340,8 +472,35 @@ public sealed partial class JavaManager
         }
     }
 
+    /// <summary>Where package managers and vendor installers put a JDK on each system.</summary>
     private IEnumerable<string> KnownVendorRoots()
     {
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        {
+            yield return "/usr/lib/jvm";
+            yield return "/usr/lib64/jvm";
+            yield return "/usr/java";
+            yield return "/opt/java";
+            yield return "/opt/jdk";
+            yield return Path.Combine(home, ".jdks");
+            yield return Path.Combine(home, ".sdkman", "candidates", "java");
+            yield return "/snap/openjdk/current/jdk";
+            yield break;
+        }
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        {
+            yield return "/Library/Java/JavaVirtualMachines";
+            yield return Path.Combine(home, "Library", "Java", "JavaVirtualMachines");
+            yield return "/opt/homebrew/opt";
+            yield return "/usr/local/opt";
+            yield return Path.Combine(home, ".jdks");
+            yield return Path.Combine(home, ".sdkman", "candidates", "java");
+            yield break;
+        }
+
         var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
         var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
 

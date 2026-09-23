@@ -115,6 +115,7 @@ catalog.json             каталог сервера: рекомендуема
 - [docs/monitoring.md](docs/monitoring.md) — сборщик статистики онлайна.
 - [docs/privacy.md](docs/privacy.md) — политика конфиденциальности: что лаунчер отправляет и как это выключить.
 - [docs/signing.md](docs/signing.md) — подпись установщика и SmartScreen.
+- [docs/platforms.md](docs/platforms.md) — Linux и macOS: что готово, что не проверено.
 
 ### Консольная утилита
 
