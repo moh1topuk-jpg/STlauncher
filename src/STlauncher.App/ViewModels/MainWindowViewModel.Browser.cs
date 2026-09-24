@@ -30,6 +30,9 @@ public enum BuildTab
     /// <summary>Modrinth, to add more.</summary>
     Catalog,
 
+    /// <summary>The pictures the game saved into this build.</summary>
+    Screenshots,
+
     Settings
 }
 
@@ -144,6 +147,7 @@ public partial class MainWindowViewModel
     public bool IsBuildShaders => BuildTab == BuildTab.Shaders;
     public bool IsBuildCatalog => BuildTab == BuildTab.Catalog;
     public bool IsBuildSettings => BuildTab == BuildTab.Settings;
+    public bool IsBuildScreenshots => BuildTab == BuildTab.Screenshots;
 
     partial void OnBuildTabChanged(BuildTab value)
     {
@@ -152,6 +156,13 @@ public partial class MainWindowViewModel
         OnPropertyChanged(nameof(IsBuildShaders));
         OnPropertyChanged(nameof(IsBuildCatalog));
         OnPropertyChanged(nameof(IsBuildSettings));
+        OnPropertyChanged(nameof(IsBuildScreenshots));
+
+        // Decoding thumbnails is work; do it when the tab is opened, not on every change.
+        if (value == BuildTab.Screenshots)
+        {
+            RefreshScreenshots();
+        }
     }
 
     [RelayCommand]

@@ -156,6 +156,9 @@ public partial class MainWindowViewModel
         NewBuildName = string.Empty;
         NewBuildLoader = LoaderKind.Fabric;
         NewBuildVersion = SelectedVersion ?? Versions.FirstOrDefault();
+        NewBuildCopySettings = SelectedInstance is not null;
+        OnPropertyChanged(nameof(NewBuildCopySettingsLabel));
+        OnPropertyChanged(nameof(CanCopyNewBuildSettings));
         IsNewBuildOpen = true;
     }
 
@@ -178,6 +181,7 @@ public partial class MainWindowViewModel
             instance.VersionId = NewBuildVersion.Id;
             instance.Loader = NewBuildLoader;
             _instances.Save(instance);
+            CopySettingsIntoNewBuild(instance);
 
             _allInstances.Add(instance);
             ApplyBuildFilter();

@@ -734,7 +734,6 @@
     <x:String x:Key="Mods_ShowFullDescription">Показать полностью</x:String>
     <x:String x:Key="Mods_ShowLessDescription">Свернуть</x:String>
     <x:String x:Key="Gallery_Open">Открыть скриншот</x:String>
-    <x:String x:Key="Gallery_OpenInBrowser">Открыть в браузере</x:String>
     <x:String x:Key="Gallery_Previous">Предыдущий</x:String>
     <x:String x:Key="Gallery_Next">Следующий</x:String>
     <!-- Appearance: theme and accent -->
@@ -792,4 +791,37 @@
     <x:String x:Key="Net_SomeFail">Не отвечают {0} из {1}. Скопируйте отчёт и отправьте администратору сервера.</x:String>
     <x:String x:Key="Net_Error">Проверка не удалась: {0}</x:String>
     <x:String x:Key="Net_Copied">Отчёт скопирован</x:String>
+    <!-- Screenshots, settings transfer, performance presets -->
+    <x:String x:Key="Builds_TabScreenshots">Скриншоты</x:String>
+    <x:String x:Key="Shots_Hint">Всё, что игра сохранила по F2 в этой сборке. Клик открывает во весь экран.</x:String>
+    <x:String x:Key="Shots_OpenFolder">Папка скриншотов</x:String>
+    <x:String x:Key="Shots_Empty">Скриншотов пока нет. В игре нажмите F2 — они появятся здесь.</x:String>
+    <x:String x:Key="Shots_Copy">Копировать (вставится в чат)</x:String>
+    <x:String x:Key="Shots_Delete">Удалить</x:String>
+    <x:String x:Key="Shots_DeleteConfirm">Точно удалить</x:String>
+    <x:String x:Key="Shots_Copied">Скриншот скопирован — вставьте его в чат</x:String>
+    <x:String x:Key="Shots_CopyFailed">Не удалось скопировать: {0}</x:String>
+    <x:String x:Key="Shots_OpenFailed">Не удалось открыть скриншот: {0}</x:String>
+    <x:String x:Key="Shots_DeleteFailed">Не удалось удалить: {0}</x:String>
+    <x:String x:Key="Gallery_OpenExternal">Открыть отдельно</x:String>
+    <x:String x:Key="Transfer_Title">Настройки игры из другой сборки</x:String>
+    <x:String x:Key="Transfer_Hint">Перенесёт управление, звук, графику и интерфейс. Ресурспаки и язык этой сборки останутся.</x:String>
+    <x:String x:Key="Transfer_Copy">Перенести</x:String>
+    <x:String x:Key="Transfer_Done">Настройки игры из «{0}» перенесены: {1} значений</x:String>
+    <x:String x:Key="Transfer_Nothing">У «{0}» ещё нет сохранённых настроек игры</x:String>
+    <x:String x:Key="Transfer_Failed">Не удалось перенести настройки: {0}</x:String>
+    <x:String x:Key="Builds_WizardCopySettings">Взять настройки игры из «{0}»</x:String>
+    <x:String x:Key="Perf_Title">Оптимизация одной кнопкой</x:String>
+    <x:String x:Key="Perf_Hint">Выставит графику в игре и память под этот компьютер. Управление и звук не трогает.</x:String>
+    <x:String x:Key="Perf_Low">Слабый ПК</x:String>
+    <x:String x:Key="Perf_LowHint">прорисовка 6, без облаков и теней</x:String>
+    <x:String x:Key="Perf_Balanced">Сбалансированно</x:String>
+    <x:String x:Key="Perf_BalancedHint">прорисовка 10, как задумано игрой</x:String>
+    <x:String x:Key="Perf_High">Максимум</x:String>
+    <x:String x:Key="Perf_HighHint">прорисовка 16, всё включено</x:String>
+    <x:String x:Key="Perf_ModsHint">В эту сборку «Слабый ПК» и «Сбалансированно» ещё добавят моды оптимизации: Sodium, Lithium, FerriteCore, Entity Culling, ImmediatelyFast.</x:String>
+    <x:String x:Key="Perf_Applied">Готово: настройки графики и {0} МБ памяти. Игра прочитает их при следующем запуске.</x:String>
+    <x:String x:Key="Perf_AppliedWithMods">Готово: настройки графики, {0} МБ памяти, добавлено модов оптимизации: {1}</x:String>
+    <x:String x:Key="Perf_Installing">Добавляю {0}…</x:String>
+    <x:String x:Key="Perf_Failed">Не удалось применить: {0}</x:String>
 </ResourceDictionary>

@@ -734,7 +734,6 @@
     <x:String x:Key="Mods_ShowFullDescription">Show full description</x:String>
     <x:String x:Key="Mods_ShowLessDescription">Show less</x:String>
     <x:String x:Key="Gallery_Open">Open screenshot</x:String>
-    <x:String x:Key="Gallery_OpenInBrowser">Open in browser</x:String>
     <x:String x:Key="Gallery_Previous">Previous</x:String>
     <x:String x:Key="Gallery_Next">Next</x:String>
     <!-- Appearance: theme and accent -->
@@ -792,4 +791,37 @@
     <x:String x:Key="Net_SomeFail">No answer from {0} of {1}. Copy the report and send it to the server admin.</x:String>
     <x:String x:Key="Net_Error">The check itself failed: {0}</x:String>
     <x:String x:Key="Net_Copied">Report copied</x:String>
+    <!-- Screenshots, settings transfer, performance presets -->
+    <x:String x:Key="Builds_TabScreenshots">Screenshots</x:String>
+    <x:String x:Key="Shots_Hint">Everything the game saved with F2 in this build. A click opens it full size.</x:String>
+    <x:String x:Key="Shots_OpenFolder">Screenshots folder</x:String>
+    <x:String x:Key="Shots_Empty">No screenshots yet. Press F2 in the game and they will show up here.</x:String>
+    <x:String x:Key="Shots_Copy">Copy (pastes into a chat)</x:String>
+    <x:String x:Key="Shots_Delete">Delete</x:String>
+    <x:String x:Key="Shots_DeleteConfirm">Delete for good</x:String>
+    <x:String x:Key="Shots_Copied">Screenshot copied: paste it into a chat</x:String>
+    <x:String x:Key="Shots_CopyFailed">Could not copy: {0}</x:String>
+    <x:String x:Key="Shots_OpenFailed">Could not open the screenshot: {0}</x:String>
+    <x:String x:Key="Shots_DeleteFailed">Could not delete: {0}</x:String>
+    <x:String x:Key="Gallery_OpenExternal">Open separately</x:String>
+    <x:String x:Key="Transfer_Title">Game settings from another build</x:String>
+    <x:String x:Key="Transfer_Hint">Copies controls, sound, graphics and interface. This build's resource packs and language stay.</x:String>
+    <x:String x:Key="Transfer_Copy">Copy</x:String>
+    <x:String x:Key="Transfer_Done">Game settings from “{0}” copied: {1} values</x:String>
+    <x:String x:Key="Transfer_Nothing">“{0}” has no saved game settings yet</x:String>
+    <x:String x:Key="Transfer_Failed">Could not copy the settings: {0}</x:String>
+    <x:String x:Key="Builds_WizardCopySettings">Take game settings from “{0}”</x:String>
+    <x:String x:Key="Perf_Title">One-click optimisation</x:String>
+    <x:String x:Key="Perf_Hint">Sets the game's graphics and the memory for this machine. Controls and sound are left alone.</x:String>
+    <x:String x:Key="Perf_Low">Weak PC</x:String>
+    <x:String x:Key="Perf_LowHint">render distance 6, no clouds or shadows</x:String>
+    <x:String x:Key="Perf_Balanced">Balanced</x:String>
+    <x:String x:Key="Perf_BalancedHint">render distance 10, as the game intends</x:String>
+    <x:String x:Key="Perf_High">Maximum</x:String>
+    <x:String x:Key="Perf_HighHint">render distance 16, everything on</x:String>
+    <x:String x:Key="Perf_ModsHint">In this build, “Weak PC” and “Balanced” also add the optimisation mods: Sodium, Lithium, FerriteCore, Entity Culling, ImmediatelyFast.</x:String>
+    <x:String x:Key="Perf_Applied">Done: graphics settings and {0} MB of memory. The game reads them on the next start.</x:String>
+    <x:String x:Key="Perf_AppliedWithMods">Done: graphics settings, {0} MB of memory, {1} optimisation mods added</x:String>
+    <x:String x:Key="Perf_Installing">Adding {0}…</x:String>
+    <x:String x:Key="Perf_Failed">Could not apply: {0}</x:String>
 </ResourceDictionary>

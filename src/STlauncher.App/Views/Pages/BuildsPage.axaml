@@ -197,6 +197,9 @@
                         <Button Classes="segment" Classes.active="{Binding IsBuildCatalog}"
                                 Content="{DynamicResource Builds_TabAddMods}"
                                 Command="{Binding SelectBuildTabCommand}" CommandParameter="Catalog"/>
+                        <Button Classes="segment" Classes.active="{Binding IsBuildScreenshots}"
+                                Content="{Binding ScreenshotsTabLabel}"
+                                Command="{Binding SelectBuildTabCommand}" CommandParameter="Screenshots"/>
                         <Button Classes="segment" Classes.active="{Binding IsBuildSettings}"
                                 Content="{DynamicResource Builds_TabSettings}"
                                 Command="{Binding SelectBuildTabCommand}" CommandParameter="Settings"/>
@@ -683,6 +686,74 @@
                         </ScrollViewer>
                     </Grid>
 
+                    <!-- ======== Screenshots of the build ======== -->
+                    <Grid IsVisible="{Binding IsBuildScreenshots}" RowDefinitions="Auto,*" RowSpacing="10" controls:Reveal.OnVisible="True">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                            <TextBlock Text="{DynamicResource Shots_Hint}" Classes="faint" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Classes="ghost small" VerticalAlignment="Top"
+                                    Content="{DynamicResource Shots_OpenFolder}" Command="{Binding OpenScreenshotsFolderCommand}"/>
+                        </Grid>
+
+                        <Border Grid.Row="1" Classes="panel" Padding="18" VerticalAlignment="Top" IsVisible="{Binding HasNoScreenshots}">
+                            <TextBlock Text="{DynamicResource Shots_Empty}" Classes="faint" TextWrapping="Wrap"/>
+                        </Border>
+
+                        <ScrollViewer Grid.Row="1" IsVisible="{Binding !HasNoScreenshots}">
+                            <ItemsControl ItemsSource="{Binding Screenshots}" VerticalAlignment="Top">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel Orientation="Horizontal" ItemSpacing="10" LineSpacing="10"/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:ScreenshotItem">
+                                        <Border Classes="mod-card" Width="236" ClipToBounds="True" Padding="0">
+                                            <StackPanel>
+                                                <!-- The picture is the button: a click opens it full size. -->
+                                                <Button Classes="plain" Padding="0" CornerRadius="0" Cursor="Hand"
+                                                        Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).OpenScreenshotCommand}"
+                                                        CommandParameter="{Binding}">
+                                                    <Border Width="236" Height="133" Background="{DynamicResource ElevatedBrush}" ClipToBounds="True">
+                                                        <Image Source="{Binding Thumbnail}" Stretch="UniformToFill"/>
+                                                    </Border>
+                                                </Button>
+                                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="2" Margin="10,6,6,6">
+                                                    <StackPanel Spacing="1" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding DateLabel}" FontSize="12"/>
+                                                        <TextBlock Classes="faint" FontSize="11"
+                                                                   Text="{Binding Size, Converter={x:Static conv:FileSizeConverter.Instance}}"/>
+                                                    </StackPanel>
+                                                    <!-- Delete asks once, right here; the answer is the second click. -->
+                                                    <Button Grid.Column="1" Classes="plain small" IsVisible="{Binding !IsConfirmingDelete}"
+                                                            ToolTip.Tip="{DynamicResource Shots_Copy}"
+                                                            Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).CopyScreenshotCommand}"
+                                                            CommandParameter="{Binding}">
+                                                        <PathIcon Data="{StaticResource IconCopy}" Classes="small"/>
+                                                    </Button>
+                                                    <Button Grid.Column="2" Classes="plain small icon-danger" IsVisible="{Binding !IsConfirmingDelete}"
+                                                            ToolTip.Tip="{DynamicResource Shots_Delete}"
+                                                            Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).DeleteScreenshotCommand}"
+                                                            CommandParameter="{Binding}">
+                                                        <PathIcon Data="{StaticResource IconClose}" Classes="small"/>
+                                                    </Button>
+                                                    <StackPanel Grid.Column="1" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="4"
+                                                                IsVisible="{Binding IsConfirmingDelete}">
+                                                        <Button Classes="danger small" Content="{DynamicResource Shots_DeleteConfirm}"
+                                                                Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).DeleteScreenshotCommand}"
+                                                                CommandParameter="{Binding}"/>
+                                                        <Button Classes="plain small" Content="{DynamicResource Common_Cancel}"
+                                                                Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).CancelDeleteScreenshotCommand}"
+                                                                CommandParameter="{Binding}"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Grid>
+
                     <Grid IsVisible="{Binding IsBuildCatalog}" RowDefinitions="Auto,Auto,*" RowSpacing="10" controls:Reveal.OnVisible="True">
 
                         <Border Classes="panel" Padding="12" IsVisible="{Binding !IsBuildConfigured}">
@@ -1083,6 +1154,25 @@
                                 </StackPanel>
                             </Border>
 
+                            <Border Classes="card" IsVisible="{Binding HasOtherInstances}">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="{DynamicResource Transfer_Title}" Classes="label"/>
+                                    <TextBlock Text="{DynamicResource Transfer_Hint}" Classes="faint" TextWrapping="Wrap"/>
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                        <ComboBox ItemsSource="{Binding OtherInstances}" SelectedItem="{Binding CopySettingsSource}"
+                                                  HorizontalAlignment="Stretch">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate x:DataType="inst:Instance">
+                                                    <TextBlock Text="{Binding Name}"/>
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                        <Button Grid.Column="1" Classes="ghost" Content="{DynamicResource Transfer_Copy}"
+                                                Command="{Binding CopyGameSettingsCommand}" IsEnabled="{Binding !IsGameRunning}"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
                             <Border Classes="card">
                                 <StackPanel Spacing="10">
                                     <TextBlock Text="{DynamicResource Builds_Danger}" Classes="label"/>
@@ -1221,6 +1311,9 @@
                         <ComboBox ItemsSource="{Binding LoaderKinds}" SelectedItem="{Binding NewBuildLoader}"
                                   HorizontalAlignment="Stretch"/>
                     </StackPanel>
+
+                    <CheckBox Content="{Binding NewBuildCopySettingsLabel}" IsChecked="{Binding NewBuildCopySettings}"
+                              IsVisible="{Binding CanCopyNewBuildSettings}"/>
 
                     <TextBlock Text="{DynamicResource Builds_WizardHint}" Classes="faint"
                                TextWrapping="Wrap"/>

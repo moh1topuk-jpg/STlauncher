@@ -87,6 +87,43 @@
                             </Button>
                         </Grid>
 
+                        <!-- One button instead of twelve settings. Writes options.txt and the memory;
+                             for an own Fabric build also adds the optimisation mods. -->
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="{DynamicResource Perf_Title}" FontWeight="SemiBold"/>
+                            <TextBlock Text="{DynamicResource Perf_Hint}" Classes="faint" TextWrapping="Wrap"/>
+                            <WrapPanel ItemSpacing="8" LineSpacing="8">
+                                <Button Classes="ghost" Command="{Binding ApplyPerformancePresetCommand}" CommandParameter="Low"
+                                        IsEnabled="{Binding !IsApplyingPreset}">
+                                    <StackPanel Spacing="2">
+                                        <TextBlock Text="{DynamicResource Perf_Low}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{DynamicResource Perf_LowHint}" Classes="faint" FontSize="11"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Classes="ghost" Command="{Binding ApplyPerformancePresetCommand}" CommandParameter="Balanced"
+                                        IsEnabled="{Binding !IsApplyingPreset}">
+                                    <StackPanel Spacing="2">
+                                        <TextBlock Text="{DynamicResource Perf_Balanced}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{DynamicResource Perf_BalancedHint}" Classes="faint" FontSize="11"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Classes="ghost" Command="{Binding ApplyPerformancePresetCommand}" CommandParameter="High"
+                                        IsEnabled="{Binding !IsApplyingPreset}">
+                                    <StackPanel Spacing="2">
+                                        <TextBlock Text="{DynamicResource Perf_High}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{DynamicResource Perf_HighHint}" Classes="faint" FontSize="11"/>
+                                    </StackPanel>
+                                </Button>
+                            </WrapPanel>
+                            <TextBlock Text="{DynamicResource Perf_ModsHint}" Classes="faint" TextWrapping="Wrap"
+                                       IsVisible="{Binding CanInstallOptimizationMods}"/>
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8"
+                                  IsVisible="{Binding PresetStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                <ProgressBar IsIndeterminate="True" Width="60" Height="3" VerticalAlignment="Center" IsVisible="{Binding IsApplyingPreset}"/>
+                                <TextBlock Grid.Column="1" Text="{Binding PresetStatus}" Classes="gold" TextWrapping="Wrap"/>
+                            </Grid>
+                        </StackPanel>
+
                         <CheckBox Content="{DynamicResource Settings_ForceUpdate}" IsChecked="{Binding ForceUpdate}"/>
                     </StackPanel>
                 </Border>

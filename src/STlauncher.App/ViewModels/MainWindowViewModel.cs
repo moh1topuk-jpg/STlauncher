@@ -910,6 +910,14 @@ public partial class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsCatalogInstance));
         OnPropertyChanged(nameof(BuildStateLabel));
         OnPropertyChanged(nameof(LastPlayedLabel));
+        OnPropertyChanged(nameof(CanInstallOptimizationMods));
+        RefreshOtherInstances();
+        ScreenshotCount = Core.Screenshots.ScreenshotFolder.List(InstanceDirectory).Count;
+
+        if (BuildTab == BuildTab.Screenshots)
+        {
+            RefreshScreenshots();
+        }
 
         ApplyServerFromInstance();
 

@@ -33,13 +33,33 @@ public partial class MainWindowViewModel
     [NotifyPropertyChangedFor(nameof(HasNextLightboxImage))]
     private int _lightboxIndex;
 
-    public string LightboxCounter => OpenedProjectGallery.Count == 0
+    public string LightboxCounter => _lightboxPath is not null || OpenedProjectGallery.Count == 0
         ? string.Empty
         : $"{LightboxIndex + 1} / {OpenedProjectGallery.Count}";
 
-    public bool HasPreviousLightboxImage => LightboxIndex > 0;
+    public bool HasPreviousLightboxImage => _lightboxPath is null && LightboxIndex > 0;
 
-    public bool HasNextLightboxImage => LightboxIndex < OpenedProjectGallery.Count - 1;
+    public bool HasNextLightboxImage => _lightboxPath is null && LightboxIndex < OpenedProjectGallery.Count - 1;
+
+    /// <summary>A local file shown in the viewer (a screenshot); null for a catalog picture.</summary>
+    private string? _lightboxPath;
+
+    [ObservableProperty]
+    private string _lightboxTitle = string.Empty;
+
+    /// <summary>Shows one picture from disk: no arrows, "open" launches the system viewer.</summary>
+    private void ShowLightboxFile(Bitmap image, string path, string title)
+    {
+        _lightboxPath = path;
+        LightboxIndex = 0;
+        LightboxImage = image;
+        LightboxTitle = title;
+        IsLightboxLoading = false;
+        IsLightboxOpen = true;
+        OnPropertyChanged(nameof(LightboxCounter));
+        OnPropertyChanged(nameof(HasPreviousLightboxImage));
+        OnPropertyChanged(nameof(HasNextLightboxImage));
+    }
 
     /// <summary>The full description is long for most projects; the card shows a preview first.</summary>
     [ObservableProperty]
@@ -69,6 +89,8 @@ public partial class MainWindowViewModel
     {
         IsLightboxOpen = false;
         LightboxImage = null;
+        _lightboxPath = null;
+        LightboxTitle = string.Empty;
     }
 
     [RelayCommand]
@@ -81,6 +103,12 @@ public partial class MainWindowViewModel
     [RelayCommand]
     private void OpenLightboxInBrowser()
     {
+        if (_lightboxPath is not null)
+        {
+            OpenUrl(_lightboxPath);
+            return;
+        }
+
         if (LightboxIndex >= 0 && LightboxIndex < _galleryUrls.Count)
         {
             OpenUrl(_galleryUrls[LightboxIndex]);
@@ -94,9 +122,14 @@ public partial class MainWindowViewModel
             return;
         }
 
+        _lightboxPath = null;
         LightboxIndex = index;
         LightboxImage = OpenedProjectGallery[index];
+        LightboxTitle = OpenedProject?.Title ?? string.Empty;
         IsLightboxOpen = true;
+        OnPropertyChanged(nameof(LightboxCounter));
+        OnPropertyChanged(nameof(HasPreviousLightboxImage));
+        OnPropertyChanged(nameof(HasNextLightboxImage));
 
         if (index >= _galleryUrls.Count)
         {
