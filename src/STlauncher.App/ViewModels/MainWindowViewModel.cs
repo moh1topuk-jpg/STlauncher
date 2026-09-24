@@ -339,6 +339,17 @@ public partial class MainWindowViewModel : ViewModelBase
 
         _initialized = true;
 
+        // Where the start goes: each step's cost lands in the log, so a slow launch can be
+        // read off instead of guessed at.
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        var lastMark = 0L;
+        void Trace(string step)
+        {
+            var now = clock.ElapsedMilliseconds;
+            AppendConsole($"[startup] {step}: {now - lastMark} ms (at {now} ms)");
+            lastMark = now;
+        }
+
         // Read before anything below saves: the first save is what ends "first run".
         var isFirstRun = !_settings.Exists;
         var settings = _settings.Load();
@@ -408,10 +419,11 @@ public partial class MainWindowViewModel : ViewModelBase
             SelectedSkinSource = skinSource;
         }
 
-        LoadJavaChoices();
+        var javaChoices = LoadJavaChoicesAsync();
         LoadAfterLaunchOptions();
         LoadLanguageOptions();
         RefreshBackups();
+        Trace("settings and lists");
 
         Status = Localize("Status_Ready", "Ready");
         CatalogStatus = Localize("Catalog_NotLoaded", "Catalog not loaded yet");
@@ -427,10 +439,23 @@ public partial class MainWindowViewModel : ViewModelBase
 
         _allInstances.Clear();
         _allInstances.AddRange(_instances.List());
+        Trace("instances");
+
+        // The remembered build goes on screen now, before any network: name, mods, packs.
+        // The catalog and the version list arrive after and only refine it.
+        var remembered = _allInstances.FirstOrDefault(i => i.Id == settings.SelectedInstanceId);
+
+        if (remembered is not null)
+        {
+            ApplyBuildFilter();
+            SelectedInstance = remembered;
+            Trace("build on screen");
+        }
 
         // The catalog has to be read before the first instance is created: a fresh
         // installation should start from the recommended build, not from an empty profile.
         await LoadCatalogAsync();
+        Trace("catalog");
 
         // Right after the catalog, which is what points the check at the mirror, and
         // before anything else that could fail and leave the check never started.
@@ -452,8 +477,10 @@ public partial class MainWindowViewModel : ViewModelBase
         var recommended = SyncRecommendedBuild(Snapshot(settings));
 
         ApplyBuildFilter();
+        Trace("build sync");
 
         await LoadVersionsAsync();
+        Trace("version list");
 
         SelectedInstance = Instances.FirstOrDefault(i => i.Id == settings.SelectedInstanceId)
                            ?? Instances.FirstOrDefault(i =>
@@ -462,6 +489,7 @@ public partial class MainWindowViewModel : ViewModelBase
                            ?? Instances.FirstOrDefault();
 
         await LoadLoaderVersionsAsync();
+        Trace("loader versions");
 
         if (SelectedInstance?.LoaderVersion is { Length: > 0 } loaderVersion)
         {
@@ -472,6 +500,7 @@ public partial class MainWindowViewModel : ViewModelBase
         StartServerMonitoring();
 
         RefreshMods();
+        Trace("mods");
 
         // A safe-mode launch that took the launcher down with the game left the player's
         // mods switched off; put them back before anything else is shown.
@@ -481,6 +510,9 @@ public partial class MainWindowViewModel : ViewModelBase
         }
         await LoadCategoriesAsync();
         ScheduleBrowserReload();
+        Trace("catalog categories");
+        await javaChoices;
+        Trace("java scan");
 
         // A nickname generated a moment ago only becomes this installation's identity
         // once it is on disk; without this it would be regenerated on the next start.
@@ -1122,7 +1154,10 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private void ApplyVersionFilter()
     {
-        var selectedId = SelectedVersion?.Id;
+        // The build's own version, when the picker is still empty: the build can now be on
+        // screen before the manifest has loaded, and falling back to "the newest release"
+        // here would write that release into the build.
+        var selectedId = SelectedVersion?.Id ?? (IsProfileBuild ? null : SelectedInstance?.VersionId);
 
         var filtered = _allVersions.Where(IsVersionVisible).ToList();
 
@@ -1133,7 +1168,9 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         SelectedVersion = selectedId is not null
-            ? Versions.FirstOrDefault(v => v.Id == selectedId) ?? Versions.FirstOrDefault()
+            ? Versions.FirstOrDefault(v => v.Id == selectedId)
+              ?? _allVersions.FirstOrDefault(v => v.Id == selectedId)
+              ?? Versions.FirstOrDefault()
             : Versions.FirstOrDefault();
     }
 

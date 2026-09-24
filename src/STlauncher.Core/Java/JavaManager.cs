@@ -87,6 +87,12 @@ public sealed partial class JavaManager
 
         var result = new List<JavaInstallation>();
 
+        // "java -version" costs a process start per installation, a good part of a second
+        // each; the answer only changes when the file does, so it is kept by path and
+        // modification time.
+        var cache = ReadDiscoveryCache();
+        var changed = false;
+
         foreach (var candidate in candidates)
         {
             if (!File.Exists(candidate))
@@ -94,16 +100,70 @@ public sealed partial class JavaManager
                 continue;
             }
 
-            var major = TryGetMajorVersion(candidate);
-            if (major is null)
+            var stamp = File.GetLastWriteTimeUtc(candidate).Ticks;
+
+            if (cache.TryGetValue(candidate, out var known) && known.Stamp == stamp)
             {
+                if (known.Major > 0)
+                {
+                    result.Add(new JavaInstallation(candidate, known.Major, known.Vendor));
+                }
+
                 continue;
             }
 
-            result.Add(new JavaInstallation(candidate, major.Value, Directory.GetParent(candidate)?.Parent?.Name));
+            var major = TryGetMajorVersion(candidate);
+            var vendor = Directory.GetParent(candidate)?.Parent?.Name;
+            cache[candidate] = new DiscoveryEntry(stamp, major ?? 0, vendor);
+            changed = true;
+
+            if (major is not null)
+            {
+                result.Add(new JavaInstallation(candidate, major.Value, vendor));
+            }
+        }
+
+        if (changed)
+        {
+            WriteDiscoveryCache(cache);
         }
 
         return result.OrderByDescending(j => j.MajorVersion).ToList();
+    }
+
+    private sealed record DiscoveryEntry(long Stamp, int Major, string? Vendor);
+
+    private string DiscoveryCachePath => Path.Combine(_paths.Meta, "java-installs.json");
+
+    private Dictionary<string, DiscoveryEntry> ReadDiscoveryCache()
+    {
+        try
+        {
+            if (File.Exists(DiscoveryCachePath))
+            {
+                return JsonSerializer.Deserialize<Dictionary<string, DiscoveryEntry>>(File.ReadAllText(DiscoveryCachePath))
+                       ?? new Dictionary<string, DiscoveryEntry>(StringComparer.OrdinalIgnoreCase);
+            }
+        }
+        catch (Exception)
+        {
+            // A damaged cache means one slow discovery, then a fresh cache.
+        }
+
+        return new Dictionary<string, DiscoveryEntry>(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private void WriteDiscoveryCache(Dictionary<string, DiscoveryEntry> cache)
+    {
+        try
+        {
+            Directory.CreateDirectory(_paths.Meta);
+            AtomicFile.WriteAllText(DiscoveryCachePath, JsonSerializer.Serialize(cache));
+        }
+        catch (Exception)
+        {
+            // Not worth a failed start.
+        }
     }
 
     public static int? TryGetMajorVersion(string javaExecutable)

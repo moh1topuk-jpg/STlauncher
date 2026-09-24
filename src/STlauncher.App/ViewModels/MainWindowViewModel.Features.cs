@@ -559,31 +559,64 @@ public partial class MainWindowViewModel
 
     partial void OnSelectedJavaChoiceChanged(JavaChoice? value) => PersistSettings();
 
-    private void LoadJavaChoices()
+    /// <summary>
+    /// "Automatic" is there at once; the installed JDKs arrive from a background scan,
+    /// because finding them means starting each one, and that used to hold the main
+    /// screen for a second on every launch.
+    /// </summary>
+    private async Task LoadJavaChoicesAsync()
     {
         var auto = Localize("Settings_JavaAuto", "Automatic");
 
         JavaChoices.Clear();
         JavaChoices.Add(new JavaChoice(auto, null));
 
-        try
+        // The remembered path keeps its place even before the scan confirms it.
+        if (!string.IsNullOrWhiteSpace(_globalJavaPath))
         {
-            foreach (var installation in _java.DiscoverInstalled())
-            {
-                var display = string.IsNullOrWhiteSpace(installation.Vendor)
-                    ? $"Java {installation.MajorVersion}"
-                    : $"Java {installation.MajorVersion} · {installation.Vendor}";
-
-                JavaChoices.Add(new JavaChoice(display, installation.ExecutablePath));
-            }
-        }
-        catch (Exception ex)
-        {
-            AppendConsole($"[java] discovery failed: {ex.Message}");
+            JavaChoices.Add(new JavaChoice(System.IO.Path.GetFileName(System.IO.Path.GetDirectoryName(System.IO.Path.GetDirectoryName(_globalJavaPath)) ?? _globalJavaPath), _globalJavaPath));
         }
 
         SelectedJavaChoice = JavaChoices.FirstOrDefault(c =>
                                 string.Equals(c.Path, _globalJavaPath, StringComparison.OrdinalIgnoreCase))
+                            ?? JavaChoices[0];
+
+        IReadOnlyList<STlauncher.Core.Java.JavaInstallation> found;
+
+        try
+        {
+            found = await Task.Run(() => _java.DiscoverInstalled());
+        }
+        catch (Exception ex)
+        {
+            AppendConsole($"[java] discovery failed: {ex.Message}");
+            return;
+        }
+
+        var keep = SelectedJavaChoice?.Path;
+
+        for (var i = JavaChoices.Count - 1; i >= 1; i--)
+        {
+            JavaChoices.RemoveAt(i);
+        }
+
+        foreach (var installation in found)
+        {
+            var display = string.IsNullOrWhiteSpace(installation.Vendor)
+                ? $"Java {installation.MajorVersion}"
+                : $"Java {installation.MajorVersion} · {installation.Vendor}";
+
+            JavaChoices.Add(new JavaChoice(display, installation.ExecutablePath));
+        }
+
+        if (keep is not null && JavaChoices.All(c => !string.Equals(c.Path, keep, StringComparison.OrdinalIgnoreCase)))
+        {
+            // The remembered Java is gone from the disk; keep the choice visible rather than silently reset it.
+            JavaChoices.Add(new JavaChoice(System.IO.Path.GetFileName(keep), keep));
+        }
+
+        SelectedJavaChoice = JavaChoices.FirstOrDefault(c =>
+                                string.Equals(c.Path, keep, StringComparison.OrdinalIgnoreCase))
                             ?? JavaChoices[0];
     }
 
