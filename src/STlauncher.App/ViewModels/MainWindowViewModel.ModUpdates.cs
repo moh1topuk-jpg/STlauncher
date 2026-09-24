@@ -246,20 +246,25 @@ public partial class MainWindowViewModel
 
         var newFile = ModrinthClient.SelectFile(version, SelectedVersion?.Id, SelectedLoader)?.FileName;
 
-        if (newFile is not null && !string.Equals(newFile, oldFile, StringComparison.OrdinalIgnoreCase))
+        var replaced = newFile is not null && !string.Equals(newFile, oldFile, StringComparison.OrdinalIgnoreCase);
+
+        // The install already switched the old file off by its mod id. A jar whose id
+        // could not be read is switched off here by name, so the two never run together.
+        // Nothing is deleted: the old version stays in the list for rolling back.
+        if (replaced && System.IO.File.Exists(item.Path) && _mods.SetEnabled(item.Path, false))
         {
-            _mods.Uninstall(item.Path);
-            AppendConsole($"[mods] removed {oldFile}: updated to {newFile}");
-            SelectedInstance!.InstalledMods.RemoveAll(m =>
-                string.Equals(m.FileName, oldFile, StringComparison.OrdinalIgnoreCase));
-            _instances.Save(SelectedInstance);
+            AppendConsole($"[mods] switched off {oldFile}: updated to {newFile}, kept for rolling back");
+            MarkRecordDisabled(SelectedInstance!, oldFile);
+            _instances.Save(SelectedInstance!);
         }
 
         _knownModUpdates.Remove(oldFile);
         ModUpdateCount = Math.Max(0, ModUpdateCount - 1);
 
         RefreshMods();
-        Status = Localize("Mods_Updated", "{0} updated to {1}", title, version.VersionNumber);
+        Status = replaced
+            ? Localize("Mods_UpdatedKeptOld", "{0} updated to {1}. The old version is switched off and stays in the list, so you can go back.", title, version.VersionNumber)
+            : Localize("Mods_Updated", "{0} updated to {1}", title, version.VersionNumber);
     }
 
     /// <summary>Called by the list refresh so a check survives it.</summary>

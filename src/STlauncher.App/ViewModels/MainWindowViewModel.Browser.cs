@@ -698,17 +698,18 @@ public partial class MainWindowViewModel
     }
 
     /// <summary>
-    /// A new mod file replaces older files of the same mod: they are deleted and their
-    /// records dropped, and the log says so, because a folder with two versions of one
-    /// mod is the most common reason a build refuses to start.
+    /// A new mod file takes over from older files of the same mod: they are switched off,
+    /// never deleted, so the player can go back to the old version from the mod list. The
+    /// log says which file stepped aside, because a folder with two versions of one mod
+    /// is the most common reason a build refuses to start.
     /// </summary>
     private void ReplaceOtherVersions(Instance instance, string newFileName)
     {
-        IReadOnlyList<string> removed;
+        IReadOnlyList<string> disabled;
 
         try
         {
-            removed = _mods.RemoveOtherVersions(_instances.GameDirectory(instance), newFileName);
+            disabled = _mods.DisableOtherVersions(_instances.GameDirectory(instance), newFileName);
         }
         catch (Exception ex)
         {
@@ -716,17 +717,32 @@ public partial class MainWindowViewModel
             return;
         }
 
-        foreach (var fileName in removed)
+        foreach (var fileName in disabled)
         {
-            AppendConsole($"[mods] removed {fileName}: replaced by {newFileName}");
-            instance.InstalledMods.RemoveAll(m => string.Equals(m.FileName, fileName, StringComparison.OrdinalIgnoreCase));
+            AppendConsole($"[mods] switched off {fileName}: replaced by {newFileName}, kept for rolling back");
+            MarkRecordDisabled(instance, fileName);
             _knownModUpdates.Remove(fileName);
         }
 
-        if (removed.Count > 0)
+        if (disabled.Count > 0)
         {
             _instances.Save(instance);
         }
+    }
+
+    /// <summary>The record follows a file that was renamed to .disabled, as the player's own decision.</summary>
+    private static void MarkRecordDisabled(Instance instance, string fileName)
+    {
+        var record = instance.InstalledMods.FirstOrDefault(m =>
+            string.Equals(m.FileName, fileName, StringComparison.OrdinalIgnoreCase));
+
+        if (record is null)
+        {
+            return;
+        }
+
+        record.FileName = fileName + ".disabled";
+        record.DisabledByUser = true;
     }
 
     public bool IsProjectInstalled(string slug)

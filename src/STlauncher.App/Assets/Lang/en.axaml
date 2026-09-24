@@ -532,6 +532,7 @@
     <x:String x:Key="Mods_UpdatesFailed">Could not check for updates: {0}</x:String>
     <x:String x:Key="Mods_Updating">Updating {0} to {1}…</x:String>
     <x:String x:Key="Mods_Updated">{0} updated to {1}</x:String>
+    <x:String x:Key="Mods_UpdatedKeptOld">{0} updated to {1}. The old version is switched off and stays in the list, so you can go back.</x:String>
     <x:String x:Key="Mods_CatalogPinnedHint">The server catalog sets this mod's version - updates arrive with the build.</x:String>
 
     <!-- Backup restore -->
@@ -764,6 +765,8 @@
     <x:String x:Key="Check_ProblemsMany">{0} problems</x:String>
     <x:String x:Key="Check_OpenMods">To the mod list</x:String>
     <x:String x:Key="Check_FixAll">Fix everything</x:String>
+    <x:String x:Key="Check_FixDisableNew">Switch off the newer one</x:String>
+    <x:String x:Key="Check_KeepOld">Keep the older versions</x:String>
     <x:String x:Key="Check_FixedAll">Fixed: {0} of {1}</x:String>
     <x:String x:Key="Game_PlaySafe">Safe launch</x:String>
     <x:String x:Key="Game_PlaySafeHint">Starts the game with the server's mods only; your own are switched off for this run and come back after it.</x:String>

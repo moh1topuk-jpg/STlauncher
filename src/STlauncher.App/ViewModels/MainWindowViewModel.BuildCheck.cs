@@ -41,6 +41,11 @@ public sealed class BuildIssueItem
 
     public string FixLabel { get; }
 
+    /// <summary>The other way round for a doubled mod: keep the older file, switch off the newer.</summary>
+    public string AltFixLabel => MainWindowViewModel.Localize("Check_FixDisableNew", "Switch off the newer one");
+
+    public bool HasAltFix => Issue.Kind == BuildIssueKind.DuplicateMod;
+
     public bool IsBlocking => Issue.IsBlocking;
 
     /// <summary>True when the fix is a switch on a file, not a trip to the catalog.</summary>
@@ -79,6 +84,9 @@ public partial class MainWindowViewModel
 
     /// <summary>Two or more problems that a switch can settle: one button does them all.</summary>
     public bool HasBulkBuildFix => BuildIssues.Count(i => i.CanFixBySwitch) >= 2;
+
+    /// <summary>Two or more doubled mods: one button keeps every older file instead.</summary>
+    public bool HasBulkKeepOld => BuildIssues.Count(i => i.HasAltFix) >= 2;
 
     /// <summary>Safe mode only makes sense when there is something of the player's own to leave out.</summary>
     public bool CanUseSafeMode => IsCatalogInstance && InstalledMods.Any(m => m.IsMod && m.Enabled && !m.IsCatalog);
@@ -135,6 +143,7 @@ public partial class MainWindowViewModel
 
                 OnPropertyChanged(nameof(HasBlockingBuildIssues));
                 OnPropertyChanged(nameof(HasBulkBuildFix));
+                OnPropertyChanged(nameof(HasBulkKeepOld));
                 OnPropertyChanged(nameof(CanUseSafeMode));
             });
         });
@@ -218,6 +227,51 @@ public partial class MainWindowViewModel
 
         AppendConsole($"[check] {done} of {fixes.Count} problem(s) fixed with one click");
         Status = Localize("Check_FixedAll", "Fixed: {0} of {1}", done, fixes.Count);
+    }
+
+    /// <summary>The player prefers the version they had: the newer file is switched off instead.</summary>
+    [RelayCommand]
+    private void ApplyBuildAltFix(BuildIssueItem? item)
+    {
+        if (item is null || !item.HasAltFix || item.Issue.Detail is null)
+        {
+            return;
+        }
+
+        try
+        {
+            ToggleModByFileName(item.Issue.Detail);
+        }
+        catch (Exception ex)
+        {
+            Status = Localize("Error_ToggleMod", "Failed to toggle the mod: {0}", ex.Message);
+        }
+    }
+
+    /// <summary>For every doubled mod, keeps the older file and switches off the newer one.</summary>
+    [RelayCommand]
+    private void KeepOlderVersions()
+    {
+        var pairs = BuildIssues.Where(i => i.HasAltFix && i.Issue.Detail is not null).Select(i => i.Issue).ToList();
+        var done = 0;
+
+        foreach (var issue in pairs)
+        {
+            try
+            {
+                if (ToggleModByFileName(issue.Detail!))
+                {
+                    done++;
+                }
+            }
+            catch (Exception ex)
+            {
+                AppendConsole($"[check] could not switch off {issue.Detail}: {ex.Message}");
+            }
+        }
+
+        AppendConsole($"[check] kept the older file for {done} of {pairs.Count} doubled mod(s)");
+        Status = Localize("Check_FixedAll", "Fixed: {0} of {1}", done, pairs.Count);
     }
 
     private bool ToggleModByFileName(string fileName)

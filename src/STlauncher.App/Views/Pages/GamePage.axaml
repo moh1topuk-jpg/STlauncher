@@ -122,11 +122,15 @@
                                     </ItemsControl.ItemsPanel>
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="vm:BuildIssueItem">
-                                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
                                                 <TextBlock Text="{Binding Title}" Classes="muted" FontSize="13" TextWrapping="Wrap"
                                                            VerticalAlignment="Center"/>
                                                 <Button Grid.Column="1" Classes="ghost small" Content="{Binding FixLabel}" VerticalAlignment="Center"
                                                         Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).ApplyBuildFixCommand}"
+                                                        CommandParameter="{Binding}"/>
+                                                <Button Grid.Column="2" Classes="ghost small" Content="{Binding AltFixLabel}" VerticalAlignment="Center"
+                                                        IsVisible="{Binding HasAltFix}"
+                                                        Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).ApplyBuildAltFixCommand}"
                                                         CommandParameter="{Binding}"/>
                                             </Grid>
                                         </DataTemplate>
@@ -135,6 +139,8 @@
                                 <WrapPanel Margin="0,2,0,0">
                                     <Button Classes="primary small" Margin="0,0,8,6" IsVisible="{Binding HasBulkBuildFix}"
                                             Content="{DynamicResource Check_FixAll}" Command="{Binding ApplyAllBuildFixesCommand}"/>
+                                    <Button Classes="ghost small" Margin="0,0,8,6" IsVisible="{Binding HasBulkKeepOld}"
+                                            Content="{DynamicResource Check_KeepOld}" Command="{Binding KeepOlderVersionsCommand}"/>
                                     <Button Classes="primary small" Margin="0,0,8,6" IsVisible="{Binding CanUseSafeMode}"
                                             Content="{DynamicResource Game_PlaySafe}" Command="{Binding PlaySafeCommand}"
                                             IsEnabled="{Binding !IsBusy}" ToolTip.Tip="{DynamicResource Game_PlaySafeHint}"/>

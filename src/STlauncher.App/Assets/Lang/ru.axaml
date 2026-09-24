@@ -532,6 +532,7 @@
     <x:String x:Key="Mods_UpdatesFailed">Не удалось проверить обновления: {0}</x:String>
     <x:String x:Key="Mods_Updating">Обновляю {0} до {1}…</x:String>
     <x:String x:Key="Mods_Updated">{0} обновлён до {1}</x:String>
+    <x:String x:Key="Mods_UpdatedKeptOld">{0} обновлён до {1}. Старая версия выключена и осталась в списке модов — её можно вернуть.</x:String>
     <x:String x:Key="Mods_CatalogPinnedHint">Версию этого мода задаёт каталог сервера — обновления приходят вместе со сборкой.</x:String>
 
     <!-- Backup restore -->
@@ -764,6 +765,8 @@
     <x:String x:Key="Check_ProblemsMany">{0} проблем</x:String>
     <x:String x:Key="Check_OpenMods">К списку модов</x:String>
     <x:String x:Key="Check_FixAll">Исправить всё</x:String>
+    <x:String x:Key="Check_FixDisableNew">Выключить новый</x:String>
+    <x:String x:Key="Check_KeepOld">Оставить старые версии</x:String>
     <x:String x:Key="Check_FixedAll">Исправлено: {0} из {1}</x:String>
     <x:String x:Key="Game_PlaySafe">Безопасный запуск</x:String>
     <x:String x:Key="Game_PlaySafeHint">Запустит игру только с модами сервера; свои моды временно выключатся и вернутся после выхода.</x:String>

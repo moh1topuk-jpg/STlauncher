@@ -105,13 +105,14 @@ public sealed class ModManager
     }
 
     /// <summary>
-    /// After a new file has landed in the mods folder: removes every other enabled jar that
-    /// declares the same mod id, so a newer version replaces the older one instead of
-    /// sitting next to it. Two jars with one id stop the game from starting at all.
-    /// Disabled copies are left alone; the player switched those off on purpose.
+    /// After a new file has landed in the mods folder: switches off every other enabled jar
+    /// that declares the same mod id, so the newer version runs instead of the older one
+    /// sitting next to it - two jars with one id stop the game from starting at all. The
+    /// older file is renamed, not deleted: it stays in the list and one click brings it
+    /// back. Files already switched off are left alone.
     /// </summary>
-    /// <returns>The file names that were removed, for the caller's records and log.</returns>
-    public IReadOnlyList<string> RemoveOtherVersions(string gameDirectory, string newFileName)
+    /// <returns>The file names (as they were) that were switched off, for records and log.</returns>
+    public IReadOnlyList<string> DisableOtherVersions(string gameDirectory, string newFileName)
     {
         var directory = ModsDirectory(gameDirectory);
         var newPath = Path.Combine(directory, newFileName);
@@ -137,7 +138,14 @@ public sealed class ModManager
 
             if (ModMetadataReader.Read(path).Any(m => ids.Contains(m.Id)))
             {
-                File.Delete(path);
+                var target = path + DisabledSuffix;
+
+                if (File.Exists(target))
+                {
+                    File.Delete(target);
+                }
+
+                File.Move(path, target);
                 removed.Add(fileName);
             }
         }
