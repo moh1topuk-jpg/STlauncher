@@ -38,8 +38,8 @@
         { "id": "dreamdisplays", "type": "mod", "name": "Dream Displays", "description": "Отображение моделей и косметики.", "required": true, "source": { "kind": "modrinth", "project": "dreamdisplays", "version": "1.9.6" } },
         { "id": "simple-voice-chat", "type": "mod", "name": "Simple Voice Chat", "description": "Голосовой чат прямо в игре.", "required": true, "source": { "kind": "modrinth", "project": "simple-voice-chat", "version": "fabric-1.21.11-2.6.22" } },
 
-        { "id": "xaeros-minimap", "type": "mod", "name": "Xaero's Minimap", "description": "Миникарта с метками и путевыми точками.", "required": true, "source": { "kind": "modrinth", "project": "xaeros-minimap", "version": "fabric-1.21.11-26.5.0" } },
-        { "id": "xaeros-world-map", "type": "mod", "name": "Xaero's World Map", "description": "Полноценная карта мира.", "required": true, "source": { "kind": "modrinth", "project": "xaeros-world-map", "version": "fabric-1.21.11-1.46.0" } },
+        { "id": "xaeros-minimap", "type": "mod", "name": "Xaero's Minimap", "description": "Миникарта с метками и путевыми точками.", "required": true, "source": { "kind": "modrinth", "project": "xaeros-minimap", "version": "fabric-1.21.11-25.3.12" } },
+        { "id": "xaeros-world-map", "type": "mod", "name": "Xaero's World Map", "description": "Полноценная карта мира.", "required": true, "source": { "kind": "modrinth", "project": "xaeros-world-map", "version": "fabric-1.21.11-1.40.16" } },
         { "id": "female-gender", "type": "mod", "name": "Female Gender Mod", "description": "Косметические модели и настройки внешнего вида игрока.", "required": true, "source": { "kind": "modrinth", "project": "female-gender", "version": "5.0.0-Beta.3+1.21.11" } }
       ]
     }
