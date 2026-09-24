@@ -71,6 +71,7 @@
     </LinearGradientBrush>
 
     <!-- Chrome: the rail, the title bar and the status bar share one deeper tone -->
+    <SolidColorBrush x:Key="GhostBrush" Color="#000C0A0D"/>
     <SolidColorBrush x:Key="RailBrush" Color="#0F0C11"/>
     <SolidColorBrush x:Key="UpdateBannerBrush" Color="#1C1420"/>
     <SolidColorBrush x:Key="IndexBorderBrush" Color="#1B161A"/>

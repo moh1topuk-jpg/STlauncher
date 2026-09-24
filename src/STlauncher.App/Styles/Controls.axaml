@@ -179,7 +179,7 @@
         <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
         <Setter Property="CornerRadius" Value="14"/>
         <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource GhostBrush}"/>
         <Setter Property="Transitions">
             <Transitions>
                 <BrushTransition Property="Background" Duration="0:0:0.16"/>
@@ -199,23 +199,23 @@
         <Setter Property="Padding" Value="12,5"/>
         <Setter Property="CornerRadius" Value="999"/>
         <Setter Property="FontSize" Value="12"/>
-        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
     </Style>
-    <Style Selector="Button.chip /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="Transparent"/>
+    <Style Selector="Button.chip /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
     </Style>
-    <Style Selector="Button.chip:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.chip:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
     </Style>
     <Style Selector="Button.chip.active">
         <Setter Property="Foreground" Value="{DynamicResource TextOnAccentBrush}"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
     </Style>
-    <Style Selector="Button.chip.active /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.chip.active /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
     </Style>
@@ -228,11 +228,11 @@
         <Setter Property="CornerRadius" Value="0"/>
         <Setter Property="BorderThickness" Value="0"/>
     </Style>
-    <Style Selector="Button.scrim /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.scrim /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource LightboxScrimBrush}"/>
         <Setter Property="CornerRadius" Value="0"/>
     </Style>
-    <Style Selector="Button.scrim:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.scrim:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource LightboxScrimBrush}"/>
     </Style>
 
@@ -278,42 +278,14 @@
         <Setter Property="Background" Value="{DynamicResource ElevatedBrush}"/>
     </Style>
 
-    <!-- Motion: hover colours glide, a press dips the whole button by a few percent.
-         Short enough to feel like response, never like waiting. -->
-    <Style Selector="Button">
-        <Setter Property="RenderTransform" Value="scale(1)"/>
-        <Setter Property="Transitions">
-            <Transitions>
-                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.12" Easing="CubicEaseOut"/>
-            </Transitions>
-        </Setter>
-    </Style>
-
-    <Style Selector="Button /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Transitions">
-            <Transitions>
-                <BrushTransition Property="Background" Duration="0:0:0.16"/>
-                <BrushTransition Property="BorderBrush" Duration="0:0:0.16"/>
-            </Transitions>
-        </Setter>
-    </Style>
-
-    <Style Selector="Button:pressed">
-        <Setter Property="RenderTransform" Value="scale(0.96)"/>
-    </Style>
-
-    <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
     </Style>
 
-    <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button:pressed /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
     </Style>
 
-    <Style Selector="Button:disabled /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
-        <Setter Property="Opacity" Value="0.5"/>
-    </Style>
 
     <!-- Primary action -->
     <Style Selector="Button.primary">
@@ -321,15 +293,15 @@
         <Setter Property="FontWeight" Value="SemiBold"/>
     </Style>
 
-    <Style Selector="Button.primary /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.primary /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
     </Style>
 
-    <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.primary:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}"/>
     </Style>
 
-    <Style Selector="Button.primary:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.primary:pressed /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource AccentPressedBrush}"/>
     </Style>
 
@@ -343,23 +315,18 @@
         <Setter Property="Padding" Value="44,0"/>
     </Style>
 
-    <Style Selector="Button.hero /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.hero /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource HeroGradientBrush}"/>
         <Setter Property="BoxShadow" Value="{DynamicResource HeroShadow}"/>
-        <Setter Property="Transitions">
-            <Transitions>
-                <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.22"/>
-            </Transitions>
-        </Setter>
     </Style>
 
     <!-- The glow deepens under the pointer; the press is a small dip, not a colour change. -->
-    <Style Selector="Button.hero:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.hero:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource HeroGradientBrush}"/>
         <Setter Property="BoxShadow" Value="{DynamicResource HeroShadowHover}"/>
     </Style>
 
-    <Style Selector="Button.hero:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.hero:pressed /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource HeroGradientBrush}"/>
         <Setter Property="BoxShadow" Value="{DynamicResource HeroShadow}"/>
     </Style>
@@ -379,7 +346,7 @@
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
     </Style>
 
-    <Style Selector="Button.hero-side /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.hero-side /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource HeroSideBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
     </Style>
@@ -392,15 +359,15 @@
         <Setter Property="Height" Value="60"/>
         <Setter Property="Padding" Value="0"/>
         <Setter Property="CornerRadius" Value="12"/>
-        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
         <Setter Property="FontSize" Value="11"/>
         <Setter Property="Cursor" Value="Hand"/>
     </Style>
 
-    <Style Selector="Button.rail /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="Transparent"/>
+    <Style Selector="Button.rail /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
     </Style>
 
     <Style Selector="Button.rail PathIcon">
@@ -424,7 +391,7 @@
         <Setter Property="RenderTransform" Value="translateY(0px) scale(1.12)"/>
     </Style>
 
-    <Style Selector="Button.rail:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.rail:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
     </Style>
 
@@ -437,7 +404,7 @@
         <Setter Property="Foreground" Value="{DynamicResource AccentHoverBrush}"/>
     </Style>
 
-    <Style Selector="Button.rail.active /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.rail.active /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource ElevatedBrush}"/>
     </Style>
 
@@ -449,17 +416,17 @@
         <Setter Property="FontSize" Value="11"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
-        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
     </Style>
 
-    <Style Selector="Button.version-pill /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="Transparent"/>
+    <Style Selector="Button.version-pill /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
     </Style>
 
-    <Style Selector="Button.version-pill:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.version-pill:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
     </Style>
 
@@ -468,12 +435,12 @@
         <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
     </Style>
 
-    <Style Selector="Button.version-pill.available /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.version-pill.available /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
     </Style>
 
-    <Style Selector="Button.version-pill.available:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.version-pill.available:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}"/>
     </Style>
 
@@ -485,11 +452,11 @@
         <Setter Property="BorderThickness" Value="0"/>
     </Style>
 
-    <Style Selector="Button.avatar /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.avatar /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource ElevatedBrush}"/>
     </Style>
 
-    <Style Selector="Button.avatar:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.avatar:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
     </Style>
 
@@ -499,16 +466,16 @@
         <Setter Property="HorizontalContentAlignment" Value="Left"/>
         <Setter Property="Padding" Value="12,9"/>
         <Setter Property="CornerRadius" Value="9"/>
-        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
     </Style>
 
-    <Style Selector="Button.index /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="Transparent"/>
+    <Style Selector="Button.index /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
     </Style>
 
-    <Style Selector="Button.index:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.index:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
     </Style>
 
@@ -532,12 +499,12 @@
         <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
     </Style>
 
-    <Style Selector="Button.ghost /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="Transparent"/>
+    <Style Selector="Button.ghost /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
     </Style>
 
-    <Style Selector="Button.ghost:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.ghost:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource GoldMutedBrush}"/>
     </Style>
@@ -548,11 +515,11 @@
         <Setter Property="Padding" Value="8,6"/>
     </Style>
 
-    <Style Selector="Button.plain /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="Transparent"/>
+    <Style Selector="Button.plain /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
     </Style>
 
-    <Style Selector="Button.plain:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.plain:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
     </Style>
 
@@ -562,8 +529,8 @@
         <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}"/>
     </Style>
 
-    <Style Selector="Button.danger /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="Transparent"/>
+    <Style Selector="Button.danger /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}"/>
     </Style>
 
@@ -589,10 +556,10 @@
         <Setter Property="HorizontalContentAlignment" Value="Left"/>
         <Setter Property="CornerRadius" Value="10"/>
     </Style>
-    <Style Selector="Button.link-tile /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.link-tile /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
     </Style>
-    <Style Selector="Button.link-tile:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.link-tile:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource ElevatedBrush}"/>
     </Style>
 
@@ -603,18 +570,16 @@
         <Setter Property="Padding" Value="0"/>
         <Setter Property="CornerRadius" Value="15"/>
         <Setter Property="BorderThickness" Value="2"/>
-        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource GhostBrush}"/>
     </Style>
-    <Style Selector="Button.swatch /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="{Binding $parent[Button].Background}"/>
-        <Setter Property="BorderBrush" Value="Transparent"/>
+    <Style Selector="Button.swatch /template/ Border#PART_Root">
+        <Setter Property="BorderBrush" Value="{DynamicResource GhostBrush}"/>
         <Setter Property="CornerRadius" Value="15"/>
     </Style>
-    <Style Selector="Button.swatch:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="{Binding $parent[Button].Background}"/>
+    <Style Selector="Button.swatch:pointerover /template/ Border#PART_Root">
         <Setter Property="BorderBrush" Value="{DynamicResource TextMutedBrush}"/>
     </Style>
-    <Style Selector="Button.swatch.selected /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.swatch.selected /template/ Border#PART_Root">
         <Setter Property="BorderBrush" Value="{DynamicResource TextPrimaryBrush}"/>
     </Style>
     <Style Selector="Button.swatch:pointerover">
@@ -624,7 +589,7 @@
     <!-- ===================== Sidebar navigation ===================== -->
 
     <Style Selector="Button.nav">
-        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
         <Setter Property="CornerRadius" Value="8"/>
@@ -636,8 +601,8 @@
         <Setter Property="Cursor" Value="Hand"/>
     </Style>
 
-    <Style Selector="Button.nav /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="Transparent"/>
+    <Style Selector="Button.nav /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
         <Setter Property="BorderThickness" Value="0"/>
     </Style>
 
@@ -645,7 +610,7 @@
         <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
     </Style>
 
-    <Style Selector="Button.nav:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.nav:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
     </Style>
 
@@ -658,18 +623,18 @@
         <Setter Property="Foreground" Value="{DynamicResource AccentHoverBrush}"/>
     </Style>
 
-    <Style Selector="Button.nav.active /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.nav.active /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource ElevatedBrush}"/>
     </Style>
 
-    <Style Selector="Button.nav.active:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.nav.active:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
     </Style>
 
     <!-- ===================== Segmented switcher ===================== -->
 
     <Style Selector="Button.segment">
-        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="CornerRadius" Value="6"/>
         <Setter Property="Padding" Value="14,7"/>
@@ -678,12 +643,12 @@
         <Setter Property="Cursor" Value="Hand"/>
     </Style>
 
-    <Style Selector="Button.segment /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="Transparent"/>
+    <Style Selector="Button.segment /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
         <Setter Property="BorderThickness" Value="0"/>
     </Style>
 
-    <Style Selector="Button.segment:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.segment:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
     </Style>
 
@@ -692,11 +657,11 @@
         <Setter Property="FontWeight" Value="SemiBold"/>
     </Style>
 
-    <Style Selector="Button.segment.active /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.segment.active /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource ElevatedBrush}"/>
     </Style>
 
-    <Style Selector="Button.segment.active:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.segment.active:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
     </Style>
 
@@ -710,12 +675,12 @@
         <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
     </Style>
 
-    <Style Selector="Button.update-row /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="Transparent"/>
+    <Style Selector="Button.update-row /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
     </Style>
 
-    <Style Selector="Button.update-row:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.update-row:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
     </Style>
 
@@ -725,12 +690,12 @@
         <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
     </Style>
 
-    <Style Selector="Button.update-row.available /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.update-row.available /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
     </Style>
 
-    <Style Selector="Button.update-row.available:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.update-row.available:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}"/>
     </Style>
 
@@ -795,14 +760,6 @@
         <Setter Property="CornerRadius" Value="8"/>
     </Style>
 
-    <Style Selector="ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Transitions">
-            <Transitions>
-                <BrushTransition Property="Background" Duration="0:0:0.14"/>
-            </Transitions>
-        </Setter>
-    </Style>
-
     <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
         <Setter Property="CornerRadius" Value="8"/>
@@ -834,13 +791,13 @@
         <Setter Property="Height" Value="34"/>
         <Setter Property="Padding" Value="0"/>
         <Setter Property="CornerRadius" Value="0"/>
-        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
     </Style>
 
-    <Style Selector="Button.chrome /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="Transparent"/>
+    <Style Selector="Button.chrome /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
     </Style>
 
     <Style Selector="Button.chrome PathIcon">
@@ -848,11 +805,11 @@
         <Setter Property="Height" Value="12"/>
     </Style>
 
-    <Style Selector="Button.chrome:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.chrome:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
     </Style>
 
-    <Style Selector="Button.chrome-close:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="Button.chrome-close:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource DangerBrush}"/>
     </Style>
 

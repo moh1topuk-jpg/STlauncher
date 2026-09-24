@@ -65,6 +65,7 @@
         <GradientStop Offset="1" Color="#EADFE5"/>
     </LinearGradientBrush>
 
+    <SolidColorBrush x:Key="GhostBrush" Color="#00F5EFF2"/>
     <SolidColorBrush x:Key="RailBrush" Color="#ECE3E8"/>
     <SolidColorBrush x:Key="UpdateBannerBrush" Color="#F3E2E8"/>
     <SolidColorBrush x:Key="IndexBorderBrush" Color="#E3D7DD"/>

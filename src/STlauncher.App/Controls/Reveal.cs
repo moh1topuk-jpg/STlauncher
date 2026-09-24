@@ -1,26 +1,29 @@
 using System;
-using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Animation.Easings;
 using Avalonia.Controls;
-using Avalonia.Media;
 using Avalonia.Media.Transformation;
-using Avalonia.Styling;
+using Avalonia.Threading;
 
 namespace STlauncher.App.Controls;
 
 /// <summary>
 /// <c>controls:Reveal.OnVisible="True"</c> makes a control fade and rise into place each
 /// time it becomes visible: pages when the section changes, tabs, cards that appear.
-/// Short and one-directional, so it reads as arrival, never as a wait.
+/// Done with transitions rather than a keyframe animation: Avalonia has no keyframe
+/// animator for RenderTransform, but it does transition between two TransformOperations,
+/// the same mechanism Fluent uses for its own hover motion. The control is put into its
+/// start state with transitions off, then released with them on.
 /// </summary>
 public static class Reveal
 {
     public static readonly AttachedProperty<bool> OnVisibleProperty =
         AvaloniaProperty.RegisterAttached<Control, bool>("OnVisible", typeof(Reveal));
 
-    private static readonly TimeSpan Duration = TimeSpan.FromMilliseconds(260);
+    private static readonly TimeSpan Duration = TimeSpan.FromMilliseconds(280);
+    private static readonly TransformOperations Start = TransformOperations.Parse("translateY(16px)");
+    private static readonly TransformOperations Rest = TransformOperations.Parse("translateY(0px)");
 
     static Reveal()
     {
@@ -45,47 +48,27 @@ public static class Reveal
     {
         if (e.Property == Visual.IsVisibleProperty && sender is Control { IsVisible: true } control)
         {
-            _ = PlayAsync(control);
+            Play(control);
         }
     }
 
-    private static async Task PlayAsync(Control control)
+    /// <summary>Start state now, without motion; the rest state on the next pass, with it.</summary>
+    public static void Play(Control control)
     {
-        var animation = new Animation
-        {
-            Duration = Duration,
-            Easing = new CubicEaseOut(),
-            FillMode = FillMode.None,
-            Children =
-            {
-                new KeyFrame
-                {
-                    Cue = new Cue(0),
-                    Setters =
-                    {
-                        new Setter(Visual.OpacityProperty, 0d),
-                        new Setter(Visual.RenderTransformProperty, TransformOperations.Parse("translateY(14px)"))
-                    }
-                },
-                new KeyFrame
-                {
-                    Cue = new Cue(1),
-                    Setters =
-                    {
-                        new Setter(Visual.OpacityProperty, 1d),
-                        new Setter(Visual.RenderTransformProperty, TransformOperations.Parse("translateY(0px)"))
-                    }
-                }
-            }
-        };
+        var transitions = control.Transitions;
+        control.Transitions = null;
+        control.Opacity = 0;
+        control.RenderTransform = Start;
 
-        try
+        Dispatcher.UIThread.Post(() =>
         {
-            await animation.RunAsync(control);
-        }
-        catch (Exception)
-        {
-            // A control removed mid-animation is not worth a crash.
-        }
+            control.Transitions = transitions ?? new Transitions
+            {
+                new DoubleTransition { Property = Visual.OpacityProperty, Duration = Duration, Easing = new CubicEaseOut() },
+                new TransformOperationsTransition { Property = Visual.RenderTransformProperty, Duration = Duration, Easing = new CubicEaseOut() }
+            };
+            control.Opacity = 1;
+            control.RenderTransform = Rest;
+        }, DispatcherPriority.Render);
     }
 }
