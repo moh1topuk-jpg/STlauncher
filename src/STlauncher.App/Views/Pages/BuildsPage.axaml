@@ -354,14 +354,22 @@
                     <!-- ======== Modrinth catalog: chips, cards, details on the right ======== -->
 
                     <!-- ======== Resource packs of the build ======== -->
-                    <Grid IsVisible="{Binding IsBuildResourcePacks}" RowDefinitions="Auto,*" RowSpacing="10" controls:Reveal.OnVisible="True">
-                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                    <Grid IsVisible="{Binding IsBuildResourcePacks}" RowDefinitions="Auto,Auto,*" RowSpacing="10" controls:Reveal.OnVisible="True">
+                        <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="6">
                             <TextBlock Text="{DynamicResource Packs_Hint}" Classes="faint" TextWrapping="Wrap"
                                        VerticalAlignment="Center"/>
                             <Button Grid.Column="1" Classes="ghost small" VerticalAlignment="Top"
+                                    Command="{Binding CheckPackUpdatesCommand}" IsEnabled="{Binding !IsCheckingPackUpdates}"
+                                    ToolTip.Tip="{DynamicResource Packs_CheckUpdatesHint}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <PathIcon Data="{StaticResource IconUpdate}" Classes="small"/>
+                                    <TextBlock Text="{DynamicResource Mods_CheckUpdates}"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Grid.Column="2" Classes="ghost small" VerticalAlignment="Top"
                                     Content="{DynamicResource Packs_OpenFolder}"
                                     Command="{Binding OpenResourcePacksFolderCommand}"/>
-                            <Button Grid.Column="2" Classes="ghost small" VerticalAlignment="Top"
+                            <Button Grid.Column="3" Classes="ghost small" VerticalAlignment="Top"
                                     Command="{Binding AddResourcePacksCommand}">
                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                     <PathIcon Data="{StaticResource IconPlus}" Classes="small"/>
@@ -370,7 +378,13 @@
                             </Button>
                         </Grid>
 
-                        <Border Grid.Row="1" Classes="panel" Padding="18" VerticalAlignment="Top"
+                        <Grid Grid.Row="1" ColumnDefinitions="Auto,*" ColumnSpacing="8"
+                              IsVisible="{Binding PackUpdatesSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                            <ProgressBar IsIndeterminate="True" Width="60" Height="3" VerticalAlignment="Center" IsVisible="{Binding IsCheckingPackUpdates}"/>
+                            <TextBlock Grid.Column="1" Text="{Binding PackUpdatesSummary}" Classes="gold" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                        </Grid>
+
+                        <Border Grid.Row="2" Classes="panel" Padding="18" VerticalAlignment="Top"
                                 IsVisible="{Binding HasNoResourcePacks}">
                             <StackPanel Spacing="10">
                                 <TextBlock Text="{DynamicResource Packs_Empty}" Classes="faint" TextWrapping="Wrap"/>
@@ -380,7 +394,7 @@
                             </StackPanel>
                         </Border>
 
-                        <Grid Grid.Row="1" ColumnDefinitions="*,320" ColumnSpacing="12" IsVisible="{Binding !HasNoResourcePacks}">
+                        <Grid Grid.Row="2" ColumnDefinitions="*,320" ColumnSpacing="12" IsVisible="{Binding !HasNoResourcePacks}">
                             <ScrollViewer>
                                 <StackPanel Spacing="8">
                                     <TextBlock Text="{Binding EnabledPacksHeader}" Classes="faint" FontSize="12" FontWeight="SemiBold"/>
@@ -422,8 +436,18 @@
                                                                 </Border>
                                                             </WrapPanel>
                                                         </StackPanel>
+                                                        <!-- A newer version exists; the button is the whole offer. -->
+                                                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="0" VerticalAlignment="Center">
+                                                            <Button Classes="small" IsVisible="{Binding HasUpdate}" Foreground="{DynamicResource GoldBrush}"
+                                                                    ToolTip.Tip="{DynamicResource Packs_UpdateOne}" Margin="0,0,6,0"
+                                                                    Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).UpdateResourcePackCommand}"
+                                                                    CommandParameter="{Binding}">
+                                                                <TextBlock Text="{Binding UpdateLabel}" FontWeight="SemiBold"/>
+                                                            </Button>
+                                                            <ProgressBar IsIndeterminate="True" Width="40" Height="3" VerticalAlignment="Center"
+                                                                         IsVisible="{Binding IsUpdating}" Margin="0,0,6,0"/>
                                                         <!-- Order arrows exist only on enabled packs: order is meaningless when off. -->
-                                                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="0" VerticalAlignment="Center"
+                                                        <StackPanel Orientation="Horizontal" Spacing="0" VerticalAlignment="Center"
                                                                     IsVisible="{Binding IsEnabled}">
                                                             <Button Classes="plain small" ToolTip.Tip="{DynamicResource Packs_MoveUp}"
                                                                     IsEnabled="{Binding !IsFirst}"
@@ -437,6 +461,7 @@
                                                                     CommandParameter="{Binding}">
                                                                 <PathIcon Data="{StaticResource IconArrowDown}" Classes="small"/>
                                                             </Button>
+                                                        </StackPanel>
                                                         </StackPanel>
                                                         <ToggleSwitch Grid.Column="3" IsChecked="{Binding IsEnabled, Mode=OneWay}"
                                                                       OnContent="" OffContent="" MinWidth="0" VerticalAlignment="Center"
@@ -488,8 +513,18 @@
                                                                 </Border>
                                                             </WrapPanel>
                                                         </StackPanel>
+                                                        <!-- A newer version exists; the button is the whole offer. -->
+                                                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="0" VerticalAlignment="Center">
+                                                            <Button Classes="small" IsVisible="{Binding HasUpdate}" Foreground="{DynamicResource GoldBrush}"
+                                                                    ToolTip.Tip="{DynamicResource Packs_UpdateOne}" Margin="0,0,6,0"
+                                                                    Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).UpdateResourcePackCommand}"
+                                                                    CommandParameter="{Binding}">
+                                                                <TextBlock Text="{Binding UpdateLabel}" FontWeight="SemiBold"/>
+                                                            </Button>
+                                                            <ProgressBar IsIndeterminate="True" Width="40" Height="3" VerticalAlignment="Center"
+                                                                         IsVisible="{Binding IsUpdating}" Margin="0,0,6,0"/>
                                                         <!-- Order arrows exist only on enabled packs: order is meaningless when off. -->
-                                                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="0" VerticalAlignment="Center"
+                                                        <StackPanel Orientation="Horizontal" Spacing="0" VerticalAlignment="Center"
                                                                     IsVisible="{Binding IsEnabled}">
                                                             <Button Classes="plain small" ToolTip.Tip="{DynamicResource Packs_MoveUp}"
                                                                     IsEnabled="{Binding !IsFirst}"
@@ -503,6 +538,7 @@
                                                                     CommandParameter="{Binding}">
                                                                 <PathIcon Data="{StaticResource IconArrowDown}" Classes="small"/>
                                                             </Button>
+                                                        </StackPanel>
                                                         </StackPanel>
                                                         <ToggleSwitch Grid.Column="3" IsChecked="{Binding IsEnabled, Mode=OneWay}"
                                                                       OnContent="" OffContent="" MinWidth="0" VerticalAlignment="Center"
@@ -558,6 +594,11 @@
                                             <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SourceLabel}" TextWrapping="Wrap"/>
                                         </Grid>
                                         <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <Button Classes="primary small" IsVisible="{Binding HasUpdate}"
+                                                    Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).UpdateResourcePackCommand}"
+                                                    CommandParameter="{Binding}">
+                                                <TextBlock Text="{Binding UpdateLabel}" FontWeight="SemiBold"/>
+                                            </Button>
                                             <Button Classes="ghost small" Content="{DynamicResource Packs_OnModrinth}"
                                                     IsVisible="{Binding HasModrinthPage}"
                                                     Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).OpenResourcePackOnModrinthCommand}"
@@ -575,14 +616,22 @@
                     </Grid>
 
                     <!-- ======== Shaders of the build ======== -->
-                    <Grid IsVisible="{Binding IsBuildShaders}" RowDefinitions="Auto,Auto,*" RowSpacing="10" controls:Reveal.OnVisible="True">
-                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                    <Grid IsVisible="{Binding IsBuildShaders}" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="10" controls:Reveal.OnVisible="True">
+                        <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="6">
                             <TextBlock Text="{DynamicResource Shaders_Hint}" Classes="faint" TextWrapping="Wrap"
                                        VerticalAlignment="Center"/>
                             <Button Grid.Column="1" Classes="ghost small" VerticalAlignment="Top"
+                                    Command="{Binding CheckPackUpdatesCommand}" IsEnabled="{Binding !IsCheckingPackUpdates}"
+                                    ToolTip.Tip="{DynamicResource Packs_CheckUpdatesHint}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <PathIcon Data="{StaticResource IconUpdate}" Classes="small"/>
+                                    <TextBlock Text="{DynamicResource Mods_CheckUpdates}"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Grid.Column="2" Classes="ghost small" VerticalAlignment="Top"
                                     Content="{DynamicResource Shaders_OpenFolder}"
                                     Command="{Binding OpenShaderPacksFolderCommand}"/>
-                            <Button Grid.Column="2" Classes="ghost small" VerticalAlignment="Top"
+                            <Button Grid.Column="3" Classes="ghost small" VerticalAlignment="Top"
                                     Command="{Binding AddShadersCommand}">
                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                     <PathIcon Data="{StaticResource IconPlus}" Classes="small"/>
@@ -591,8 +640,14 @@
                             </Button>
                         </Grid>
 
+                        <Grid Grid.Row="1" ColumnDefinitions="Auto,*" ColumnSpacing="8"
+                              IsVisible="{Binding PackUpdatesSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                            <ProgressBar IsIndeterminate="True" Width="60" Height="3" VerticalAlignment="Center" IsVisible="{Binding IsCheckingPackUpdates}"/>
+                            <TextBlock Grid.Column="1" Text="{Binding PackUpdatesSummary}" Classes="gold" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                        </Grid>
+
                         <!-- Shaders without Iris or Oculus are files in a folder; say so once, up top. -->
-                        <Border Grid.Row="1" Classes="panel" Padding="12" IsVisible="{Binding !HasShaderLoader}">
+                        <Border Grid.Row="2" Classes="panel" Padding="12" IsVisible="{Binding !HasShaderLoader}">
                             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
                                 <PathIcon Data="{StaticResource IconWarning}" Classes="small" Foreground="{DynamicResource GoldBrush}"
                                           VerticalAlignment="Center"/>
@@ -602,7 +657,7 @@
                             </Grid>
                         </Border>
 
-                        <Border Grid.Row="2" Classes="panel" Padding="18" VerticalAlignment="Top"
+                        <Border Grid.Row="3" Classes="panel" Padding="18" VerticalAlignment="Top"
                                 IsVisible="{Binding HasNoShaderPacks}">
                             <StackPanel Spacing="10">
                                 <TextBlock Text="{DynamicResource Shaders_Empty}" Classes="faint" TextWrapping="Wrap"/>
@@ -612,7 +667,7 @@
                             </StackPanel>
                         </Border>
 
-                        <ScrollViewer Grid.Row="2" IsVisible="{Binding !HasNoShaderPacks}">
+                        <ScrollViewer Grid.Row="3" IsVisible="{Binding !HasNoShaderPacks}">
                             <StackPanel Spacing="6">
                                 <!-- "No shaders" is a row like the others, so the choice reads as one list. -->
                                 <Border Classes="mod-card" Classes.selected="{Binding NoShaderActive}" Padding="12,10">
@@ -641,10 +696,17 @@
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="vm:ShaderPackItem">
                                             <Border Classes="mod-card" Classes.selected="{Binding IsActive}" Padding="12,10">
-                                                <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="10">
+                                                <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto" ColumnSpacing="10">
                                                     <Border Width="36" Height="36" CornerRadius="8" Background="{DynamicResource ElevatedBrush}">
                                                         <PathIcon Data="{StaticResource IconStar}" Classes="small muted"/>
                                                     </Border>
+                                                    <Button Grid.Column="2" Classes="small" IsVisible="{Binding HasUpdate}" Foreground="{DynamicResource GoldBrush}"
+                                                            ToolTip.Tip="{DynamicResource Packs_UpdateOne}"
+                                                            Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).UpdateShaderCommand}"
+                                                            CommandParameter="{Binding}">
+                                                        <TextBlock Text="{Binding UpdateLabel}" FontWeight="SemiBold"/>
+                                                    </Button>
+                                                    <ProgressBar Grid.Column="2" IsIndeterminate="True" Width="40" Height="3" VerticalAlignment="Center" IsVisible="{Binding IsUpdating}"/>
                                                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
                                                         <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding FileName}"/>
                                                         <StackPanel Orientation="Horizontal" Spacing="6">
@@ -656,21 +718,21 @@
                                                             </Border>
                                                         </StackPanel>
                                                     </StackPanel>
-                                                    <Border Grid.Column="2" Classes="tag accent" VerticalAlignment="Center" IsVisible="{Binding IsActive}">
+                                                    <Border Grid.Column="3" Classes="tag accent" VerticalAlignment="Center" IsVisible="{Binding IsActive}">
                                                         <TextBlock Text="{DynamicResource Shaders_Active}"/>
                                                     </Border>
-                                                    <Button Grid.Column="2" Classes="ghost small" Content="{DynamicResource Shaders_Activate}"
+                                                    <Button Grid.Column="3" Classes="ghost small" Content="{DynamicResource Shaders_Activate}"
                                                             IsVisible="{Binding IsNotActive}"
                                                             IsEnabled="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).CanEditPacks}"
                                                             Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).ActivateShaderCommand}"
                                                             CommandParameter="{Binding}"/>
-                                                    <Button Grid.Column="3" Classes="plain small" IsVisible="{Binding HasModrinthPage}"
+                                                    <Button Grid.Column="4" Classes="plain small" IsVisible="{Binding HasModrinthPage}"
                                                             ToolTip.Tip="{DynamicResource Packs_OnModrinth}"
                                                             Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).OpenShaderOnModrinthCommand}"
                                                             CommandParameter="{Binding}">
                                                         <PathIcon Data="{StaticResource IconOpenExternal}" Classes="small"/>
                                                     </Button>
-                                                    <Button Grid.Column="4" Classes="plain small icon-danger"
+                                                    <Button Grid.Column="5" Classes="plain small icon-danger"
                                                             ToolTip.Tip="{DynamicResource Shaders_Delete}"
                                                             IsEnabled="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).CanEditPacks}"
                                                             Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).DeleteShaderCommand}"

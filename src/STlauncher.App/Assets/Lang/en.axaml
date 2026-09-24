@@ -824,4 +824,14 @@
     <x:String x:Key="Perf_AppliedWithMods">Done: graphics settings, {0} MB of memory, {1} optimisation mods added</x:String>
     <x:String x:Key="Perf_Installing">Adding {0}…</x:String>
     <x:String x:Key="Perf_Failed">Could not apply: {0}</x:String>
+    <!-- Pack and shader updates -->
+    <x:String x:Key="Packs_CheckUpdatesHint">Compares your resource packs and shaders with Modrinth and shows which have a newer version. Installs nothing by itself.</x:String>
+    <x:String x:Key="Packs_UpdatesNothing">Nothing to check: no packs of your own</x:String>
+    <x:String x:Key="Packs_UpdatesChecking">Checking {0} pack(s) on Modrinth…</x:String>
+    <x:String x:Key="Packs_UpdatesNone">All packs and shaders are up to date</x:String>
+    <x:String x:Key="Packs_UpdatesFound">Updates available: {0}. Nothing is installed until you say so.</x:String>
+    <x:String x:Key="Packs_UpdatesFailed">Could not check for updates: {0}</x:String>
+    <x:String x:Key="Packs_UpdateOne">Install this version</x:String>
+    <x:String x:Key="Packs_Updating">Updating {0} to {1}…</x:String>
+    <x:String x:Key="Packs_Updated">{0} updated to {1}</x:String>
 </ResourceDictionary>

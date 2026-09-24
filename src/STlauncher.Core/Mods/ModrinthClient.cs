@@ -298,10 +298,22 @@ public sealed class ModrinthClient
     /// file's SHA-1. This is how "is there an update" is asked without knowing what the
     /// file is: a jar dropped into the folder by hand has no record.
     /// </summary>
-    public async Task<IReadOnlyDictionary<string, ModVersion>> GetLatestVersionsAsync(
+    public Task<IReadOnlyDictionary<string, ModVersion>> GetLatestVersionsAsync(
         IEnumerable<string> sha1Hashes,
         string? gameVersion,
         LoaderKind loader,
+        CancellationToken cancellationToken = default)
+        => GetLatestVersionsAsync(
+            sha1Hashes,
+            gameVersion,
+            ToModrinthLoader(loader) is { } name ? new[] { name } : Array.Empty<string>(),
+            cancellationToken);
+
+    /// <summary>The same by loader names: "minecraft" for resource packs, "iris" for shaders.</summary>
+    public async Task<IReadOnlyDictionary<string, ModVersion>> GetLatestVersionsAsync(
+        IEnumerable<string> sha1Hashes,
+        string? gameVersion,
+        IEnumerable<string> loaderNames,
         CancellationToken cancellationToken = default)
     {
         var hashes = sha1Hashes.Where(h => !string.IsNullOrWhiteSpace(h)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
@@ -311,7 +323,7 @@ public sealed class ModrinthClient
             return new Dictionary<string, ModVersion>(StringComparer.OrdinalIgnoreCase);
         }
 
-        var loaders = ToModrinthLoader(loader) is { } name ? new[] { name } : Array.Empty<string>();
+        var loaders = loaderNames.ToArray();
         var gameVersions = string.IsNullOrWhiteSpace(gameVersion) ? Array.Empty<string>() : new[] { gameVersion! };
 
         var body = JsonSerializer.Serialize(new

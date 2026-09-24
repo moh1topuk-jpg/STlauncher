@@ -295,6 +295,7 @@ public partial class MainWindowViewModel
 
             RenumberResourcePacks();
             ResourcePackCount = items.Count;
+            RestoreKnownPackUpdates();
 
             SelectedResourcePack = items.FirstOrDefault(i => string.Equals(i.FileName, selected, StringComparison.OrdinalIgnoreCase))
                                    ?? EnabledResourcePacks.FirstOrDefault()
@@ -338,6 +339,7 @@ public partial class MainWindowViewModel
 
         ShaderPackCount = ShaderPacks.Count;
         ActiveShaderName = ShaderPacks.FirstOrDefault(s => s.IsActive)?.Name ?? string.Empty;
+        RestoreKnownPackUpdates();
         OnPropertyChanged(nameof(ExpectedShaderLoader));
         OnPropertyChanged(nameof(ShaderLoaderMissingText));
         OnPropertyChanged(nameof(FindShaderLoaderLabel));

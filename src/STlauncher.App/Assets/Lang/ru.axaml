@@ -824,4 +824,14 @@
     <x:String x:Key="Perf_AppliedWithMods">Готово: настройки графики, {0} МБ памяти, добавлено модов оптимизации: {1}</x:String>
     <x:String x:Key="Perf_Installing">Добавляю {0}…</x:String>
     <x:String x:Key="Perf_Failed">Не удалось применить: {0}</x:String>
+    <!-- Pack and shader updates -->
+    <x:String x:Key="Packs_CheckUpdatesHint">Сверит ваши ресурспаки и шейдеры с Modrinth и покажет, у каких есть новая версия. Само ничего не обновляет.</x:String>
+    <x:String x:Key="Packs_UpdatesNothing">Проверять нечего — своих паков нет</x:String>
+    <x:String x:Key="Packs_UpdatesChecking">Сверяю с Modrinth: паков — {0}…</x:String>
+    <x:String x:Key="Packs_UpdatesNone">Все паки и шейдеры актуальны</x:String>
+    <x:String x:Key="Packs_UpdatesFound">Есть обновления: {0}. Ничего не ставится, пока вы не нажмёте.</x:String>
+    <x:String x:Key="Packs_UpdatesFailed">Не удалось проверить обновления: {0}</x:String>
+    <x:String x:Key="Packs_UpdateOne">Поставить эту версию</x:String>
+    <x:String x:Key="Packs_Updating">Обновляю {0} до {1}…</x:String>
+    <x:String x:Key="Packs_Updated">{0} обновлён до {1}</x:String>
 </ResourceDictionary>
