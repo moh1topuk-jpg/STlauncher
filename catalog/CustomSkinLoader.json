@@ -1,0 +1,8 @@
+{
+  "version": "14.28",
+  "loadlist": [
+    { "name": "TLauncher", "type": "ElyByAPI", "root": "https://auth.tlauncher.org/skin/profile/texture/login/" },
+    { "name": "ElyBy", "type": "ElyByAPI", "root": "http://skinsystem.ely.by/textures/" },
+    { "name": "Mojang", "type": "MojangAPI" }
+  ]
+}
