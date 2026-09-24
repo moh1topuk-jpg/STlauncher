@@ -75,6 +75,9 @@ public sealed class AppSettings
     /// <summary>"Playing Showtime" in Discord while the game runs.</summary>
     public bool DiscordPresence { get; set; } = true;
 
+    /// <summary>Mods switched off for a safe-mode launch, to switch back on: survives a launcher restart.</summary>
+    public List<string> SafeModeRestore { get; set; } = new();
+
     /// <summary>Which skin system the player chose to be shown from: Auto, Mojang, TLauncher, ElyBy.</summary>
     public string? SkinSource { get; set; }
 

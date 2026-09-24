@@ -218,6 +218,44 @@
                             <TextBlock Text="{DynamicResource Settings_DevConsoleHint}" Classes="faint"
                                        TextWrapping="Wrap" Margin="28,0,0,0"/>
                         </StackPanel>
+
+                        <!-- "Nothing downloads": probe every host the launcher uses and say which answer. -->
+                        <StackPanel Spacing="8">
+                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                                <StackPanel Spacing="2" VerticalAlignment="Center">
+                                    <TextBlock Text="{DynamicResource Settings_NetworkCheck}" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{DynamicResource Settings_NetworkCheckHint}" Classes="faint" TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <Button Grid.Column="1" Classes="ghost" Content="{DynamicResource Settings_NetworkCopy}"
+                                        Command="{Binding CopyNetworkReportCommand}" IsVisible="{Binding NetworkChecks.Count}"/>
+                                <Button Grid.Column="2" Classes="primary" Content="{DynamicResource Settings_NetworkRun}"
+                                        Command="{Binding RunNetworkCheckCommand}" IsEnabled="{Binding !IsNetworkCheckRunning}"/>
+                            </Grid>
+                            <ItemsControl ItemsSource="{Binding NetworkChecks}" IsVisible="{Binding NetworkChecks.Count}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Spacing="4"/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:NetworkCheckItem">
+                                        <Border Classes="panel" Padding="12,8">
+                                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                                <Panel Width="10" Height="10" VerticalAlignment="Center">
+                                                    <Border CornerRadius="5" Background="{DynamicResource SuccessBrush}" IsVisible="{Binding IsOk}"/>
+                                                    <Border CornerRadius="5" Background="{DynamicResource DangerBrush}" IsVisible="{Binding IsFailed}"/>
+                                                    <Border CornerRadius="5" Background="{DynamicResource DividerBrush}" IsVisible="{Binding IsPending}"/>
+                                                </Panel>
+                                                <TextBlock Grid.Column="1" Text="{Binding Display}" VerticalAlignment="Center" FontSize="13"/>
+                                                <TextBlock Grid.Column="2" Text="{Binding Verdict}" Classes="faint" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Text="{Binding NetworkCheckSummary}" Classes="gold" TextWrapping="Wrap"
+                                       IsVisible="{Binding NetworkCheckSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
 

@@ -42,6 +42,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly STlauncher.Core.Server.ServerStatsClient _stats;
     private readonly CatalogInstaller _catalogInstaller;
     private readonly UpdateService _updates;
+    private readonly STlauncher.Core.Diagnostics.NetworkDiagnostics _network;
     private readonly InstanceManager _instances;
     private readonly LocalizationService _localization;
     private readonly ThemeService _themes;
@@ -88,8 +89,10 @@ public partial class MainWindowViewModel : ViewModelBase
         LauncherPaths paths,
         GameLauncher gameLauncher,
         DiscordPresenceService discord,
-        UsageReporter usage)
+        UsageReporter usage,
+        STlauncher.Core.Diagnostics.NetworkDiagnostics network)
     {
+        _network = network;
         _versions = versions;
         _launch = launch;
         _loaders = loaders;
@@ -374,6 +377,7 @@ public partial class MainWindowViewModel : ViewModelBase
         AnimatedBackground = settings.AnimatedBackground;
         LoadAppearance(settings.Theme, settings.Accent);
         DiscordPresence = settings.DiscordPresence;
+        _safeModeRestore = settings.SafeModeRestore?.ToList() ?? new List<string>();
         UsageStats = settings.UsageStats;
         _installId = string.IsNullOrWhiteSpace(settings.InstallId) ? Guid.NewGuid().ToString("N") : settings.InstallId!;
         LoadBuildChangeNotice(settings.BuildChangeLines, settings.BuildChangeTitle);
@@ -468,6 +472,13 @@ public partial class MainWindowViewModel : ViewModelBase
         StartServerMonitoring();
 
         RefreshMods();
+
+        // A safe-mode launch that took the launcher down with the game left the player's
+        // mods switched off; put them back before anything else is shown.
+        if (_safeModeRestore.Count > 0)
+        {
+            RestoreSafeMode();
+        }
         await LoadCategoriesAsync();
         ScheduleBrowserReload();
 
@@ -1172,6 +1183,7 @@ public partial class MainWindowViewModel : ViewModelBase
             Theme = Theme,
             Accent = Accent,
             DiscordPresence = DiscordPresence,
+            SafeModeRestore = _safeModeRestore.ToList(),
             UsageStats = UsageStats,
             InstallId = _installId,
             BuildChangeLines = BuildChangeLines.ToList(),

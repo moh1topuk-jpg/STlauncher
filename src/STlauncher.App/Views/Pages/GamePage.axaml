@@ -105,6 +105,58 @@
                         </StackPanel>
                     </StackPanel>
 
+                    <!-- What the jars say before the game is asked: the same verdicts the crash
+                         analyser gives afterwards, offered while there is still time to act. -->
+                    <Border Classes="panel" Padding="16" IsVisible="{Binding HasBuildIssues}" MaxWidth="560"
+                            HorizontalAlignment="Left" controls:Reveal.OnVisible="True">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                            <PathIcon Data="{StaticResource IconWarning}" Foreground="{DynamicResource GoldBrush}"
+                                      VerticalAlignment="Top" Margin="0,2,0,0"/>
+                            <StackPanel Grid.Column="1" Spacing="8">
+                                <TextBlock Text="{Binding BuildCheckSummary}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                <ItemsControl ItemsSource="{Binding BuildIssues}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Spacing="6"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:BuildIssueItem">
+                                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                <TextBlock Text="{Binding Title}" Classes="muted" FontSize="13" TextWrapping="Wrap"
+                                                           VerticalAlignment="Center"/>
+                                                <Button Grid.Column="1" Classes="ghost small" Content="{Binding FixLabel}" VerticalAlignment="Center"
+                                                        Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).ApplyBuildFixCommand}"
+                                                        CommandParameter="{Binding}"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <WrapPanel Margin="0,2,0,0">
+                                    <Button Classes="primary small" Margin="0,0,8,6" IsVisible="{Binding CanUseSafeMode}"
+                                            Content="{DynamicResource Game_PlaySafe}" Command="{Binding PlaySafeCommand}"
+                                            IsEnabled="{Binding !IsBusy}" ToolTip.Tip="{DynamicResource Game_PlaySafeHint}"/>
+                                    <Button Classes="ghost small" Margin="0,0,8,6" Content="{DynamicResource Check_OpenMods}"
+                                            Command="{Binding OpenBuildIssuesCommand}"/>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Safe mode is offered on its own too: half the "it crashes" reports have no
+                         issue the metadata can see. -->
+                    <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding CanUseSafeMode}">
+                        <Button Classes="ghost small" Command="{Binding PlaySafeCommand}" IsEnabled="{Binding !IsBusy}"
+                                IsVisible="{Binding !HasBuildIssues}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <PathIcon Data="{StaticResource IconCheck}" Classes="small"/>
+                                <TextBlock Text="{DynamicResource Game_PlaySafe}"/>
+                            </StackPanel>
+                        </Button>
+                        <TextBlock Text="{DynamicResource Game_PlaySafeHint}" Classes="faint" VerticalAlignment="Center"
+                                   IsVisible="{Binding !HasBuildIssues}" TextWrapping="Wrap" MaxWidth="400"/>
+                    </StackPanel>
+
                     <!-- The last run crashed: say so where the player is looking, with the log
                          one click away. -->
                     <Border Classes="panel" Padding="16" IsVisible="{Binding HasGameCrashed}" MaxWidth="560" controls:Reveal.OnVisible="True"

@@ -63,6 +63,10 @@ public partial class InstalledModItem : ObservableObject
 
     /// <summary>Modrinth project id, learnt from the file's hash during a check.</summary>
     public string? ProjectId { get; set; }
+
+    /// <summary>Filtered out by the search box; the file is still in the build.</summary>
+    [ObservableProperty]
+    private bool _isHidden;
 }
 
 /// <summary>

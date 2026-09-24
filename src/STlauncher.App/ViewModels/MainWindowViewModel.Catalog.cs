@@ -230,6 +230,9 @@ public partial class MainWindowViewModel
             OnPropertyChanged(nameof(HasNoInstalledMods));
 
             RefreshPacks();
+            ApplyModsFilter();
+            ScheduleBuildCheck();
+            OnPropertyChanged(nameof(CanUseSafeMode));
             RefreshBrowserInstallState();
         }
         catch (Exception ex)

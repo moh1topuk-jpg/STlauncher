@@ -206,7 +206,7 @@
                 <Panel Grid.Row="2">
 
                     <!-- ======== Mods of the build ======== -->
-                    <Grid IsVisible="{Binding IsBuildMods}" RowDefinitions="Auto,Auto,*" RowSpacing="10" controls:Reveal.OnVisible="True">
+                    <Grid IsVisible="{Binding IsBuildMods}" RowDefinitions="Auto,Auto,Auto,Auto,*" RowSpacing="10" controls:Reveal.OnVisible="True">
                         <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="6">
                             <TextBlock Text="{Binding InstalledModsSummary}" Classes="faint"
                                        VerticalAlignment="Center"/>
@@ -235,8 +235,44 @@
                                     IsEnabled="{Binding !IsModsBusy}"/>
                         </Grid>
 
+                        <!-- Search inside the build, and the two bulk switches for the player's own mods. -->
+                        <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                            <TextBox Text="{Binding ModsFilter}" Watermark="{DynamicResource Mods_FilterPlaceholder}" MaxWidth="360"
+                                     HorizontalAlignment="Left"/>
+                            <Button Grid.Column="1" Classes="ghost small" Content="{DynamicResource Mods_DisableOwn}"
+                                    Command="{Binding DisableOwnModsCommand}" IsVisible="{Binding HasOwnModsEnabled}"
+                                    IsEnabled="{Binding !IsGameRunning}" ToolTip.Tip="{DynamicResource Mods_OwnHint}"/>
+                            <Button Grid.Column="2" Classes="ghost small" Content="{DynamicResource Mods_EnableOwn}"
+                                    Command="{Binding EnableOwnModsCommand}" IsVisible="{Binding HasOwnModsDisabled}"
+                                    IsEnabled="{Binding !IsGameRunning}" ToolTip.Tip="{DynamicResource Mods_OwnHint}"/>
+                        </Grid>
+
+                        <!-- The pre-launch check, in full. -->
+                        <Border Grid.Row="2" Classes="panel" Padding="14,10" IsVisible="{Binding HasBuildIssues}">
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="{Binding BuildCheckSummary}" Classes="gold" FontWeight="SemiBold"/>
+                                <ItemsControl ItemsSource="{Binding BuildIssues}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Spacing="4"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:BuildIssueItem">
+                                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                <TextBlock Text="{Binding Title}" Classes="muted" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                                                <Button Grid.Column="1" Classes="ghost small" Content="{Binding FixLabel}" VerticalAlignment="Center"
+                                                        Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).ApplyBuildFixCommand}"
+                                                        CommandParameter="{Binding}"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+
                         <!-- The verdict of the last check. -->
-                        <Grid Grid.Row="1" ColumnDefinitions="Auto,*" ColumnSpacing="8"
+                        <Grid Grid.Row="3" ColumnDefinitions="Auto,*" ColumnSpacing="8"
                               IsVisible="{Binding ModUpdatesSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                             <ProgressBar IsIndeterminate="True" Width="60" Height="3" VerticalAlignment="Center"
                                          IsVisible="{Binding IsCheckingModUpdates}"/>
@@ -244,7 +280,7 @@
                                        VerticalAlignment="Center"/>
                         </Grid>
 
-                        <Panel Grid.Row="2">
+                        <Panel Grid.Row="4">
                             <Border Classes="panel" Padding="18" VerticalAlignment="Top"
                                     IsVisible="{Binding HasNoInstalledMods}">
                                 <StackPanel Spacing="10">
@@ -267,7 +303,7 @@
                                     </ItemsControl.ItemsPanel>
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="vm:InstalledModItem">
-                                            <Border Classes="panel mod-row" Classes.off="{Binding !Enabled}"
+                                            <Border Classes="panel mod-row" Classes.off="{Binding !Enabled}" IsVisible="{Binding !IsHidden}"
                                                     Padding="12,8" VerticalAlignment="Stretch">
                                                 <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="10">
                                                     <!-- The switch shows the state and changes it:
