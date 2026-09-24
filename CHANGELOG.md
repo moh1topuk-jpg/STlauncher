@@ -8,6 +8,8 @@
 
 ## [Не выпущено]
 
+## [0.5.0] — 2026-09-24
+
 ### Добавлено
 - Оптимизация одной кнопкой в настройках: «Слабый ПК», «Сбалансированно», «Максимум».
   Выставляет графику в игре и память под этот компьютер; в свою сборку на Fabric ещё
@@ -358,7 +360,8 @@
 - Бэкапы миров по событиям: раз в сутки, перед изменением модов, перед запуском.
 - Автообновление с уведомлением и установкой одной кнопкой.
 
-[Не выпущено]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.4.1...HEAD
+[Не выпущено]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.3.5...v0.4.0
 [0.3.5]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.3.4...v0.3.5
