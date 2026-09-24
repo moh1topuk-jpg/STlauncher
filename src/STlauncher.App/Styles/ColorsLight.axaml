@@ -4,24 +4,24 @@
     <!-- The light palette: warm ivory grounds, the same crimson accent, ink for text.
          Every key mirrors Colors.axaml; ThemeService swaps the two dictionaries. -->
 
-    <Color x:Key="AppBgColor">#F5EFF2</Color>
+    <Color x:Key="AppBgColor">#F3EEF0</Color>
     <Color x:Key="SurfaceColor">#FFFFFF</Color>
-    <Color x:Key="SurfaceAltColor">#F1E9ED</Color>
-    <Color x:Key="ElevatedColor">#E8DDE3</Color>
-    <Color x:Key="HoverColor">#DECFD7</Color>
+    <Color x:Key="SurfaceAltColor">#EFE7EB</Color>
+    <Color x:Key="ElevatedColor">#E4D9DF</Color>
+    <Color x:Key="HoverColor">#D8C8D0</Color>
 
-    <Color x:Key="DividerColor">#DCCDD4</Color>
+    <Color x:Key="DividerColor">#D3C3CB</Color>
     <Color x:Key="BorderColor">#CDBBC4</Color>
 
     <Color x:Key="TextPrimaryColor">#1E141A</Color>
-    <Color x:Key="TextSecondaryColor">#5A4B53</Color>
-    <Color x:Key="TextMutedColor">#857680</Color>
+    <Color x:Key="TextSecondaryColor">#463840</Color>
+    <Color x:Key="TextMutedColor">#6B5C65</Color>
     <Color x:Key="TextOnAccentColor">#FFF6F8</Color>
 
     <Color x:Key="AccentColor">#A3243F</Color>
     <Color x:Key="AccentHoverColor">#8E1F37</Color>
     <Color x:Key="AccentPressedColor">#7E1B31</Color>
-    <Color x:Key="GoldColor">#8A6A10</Color>
+    <Color x:Key="GoldColor">#7A5E0E</Color>
     <Color x:Key="GoldMutedColor">#B08F2E</Color>
 
     <Color x:Key="SuccessColor">#2E7D4F</Color>
@@ -65,7 +65,7 @@
         <GradientStop Offset="1" Color="#EADFE5"/>
     </LinearGradientBrush>
 
-    <SolidColorBrush x:Key="GhostBrush" Color="#00F5EFF2"/>
+    <SolidColorBrush x:Key="GhostBrush" Color="#00F3EEF0"/>
     <SolidColorBrush x:Key="RailBrush" Color="#ECE3E8"/>
     <SolidColorBrush x:Key="UpdateBannerBrush" Color="#F3E2E8"/>
     <SolidColorBrush x:Key="IndexBorderBrush" Color="#E3D7DD"/>
@@ -76,7 +76,7 @@
     <SolidColorBrush x:Key="HeroSideBrush" Color="#99FFFFFF"/>
 
     <SolidColorBrush x:Key="OverlayScrimBrush" Color="#8C2A1C24"/>
-    <SolidColorBrush x:Key="LightboxScrimBrush" Color="#E6F5EFF2"/>
+    <SolidColorBrush x:Key="LightboxScrimBrush" Color="#E6F3EEF0"/>
     <SolidColorBrush x:Key="LightboxFrameBrush" Color="#FFFFFF"/>
     <SolidColorBrush x:Key="LightboxBorderBrush" Color="#22000000"/>
 
@@ -84,8 +84,9 @@
     <SolidColorBrush x:Key="InstalledTagTextBrush" Color="#1F6B3D"/>
 
     <RadialGradientBrush x:Key="StageGlowBrush" Center="42%,38%" GradientOrigin="42%,38%" RadiusX="60%" RadiusY="55%">
-        <GradientStop Offset="0" Color="#F3D6DF"/>
-        <GradientStop Offset="1" Color="#00F5EFF2"/>
+        <GradientStop Offset="0" Color="#FBF4EE"/>
+        <GradientStop Offset="0.7" Color="#40F6E4EA"/>
+        <GradientStop Offset="1" Color="#00F3EEF0"/>
     </RadialGradientBrush>
 
     <LinearGradientBrush x:Key="BannerBrush" StartPoint="0%,0%" EndPoint="100%,0%">

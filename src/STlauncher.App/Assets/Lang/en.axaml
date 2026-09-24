@@ -76,8 +76,8 @@
     <x:String x:Key="Builds_TagImported">Imported</x:String>
     <x:String x:Key="Builds_SyncWithCatalog">Check against catalog</x:String>
     <x:String x:Key="Builds_OpenFolder">Build folder</x:String>
-    <x:String x:Key="Mods_OpenFolder">Mods folder</x:String>
-    <x:String x:Key="Mods_GoCatalog">Open the mod catalog</x:String>
+    <x:String x:Key="Mods_OpenFolder">Open folder</x:String>
+    <x:String x:Key="Mods_GoCatalog">Open the catalog</x:String>
     <x:String x:Key="Mods_SummaryAll">Mods in the build: {0}</x:String>
     <x:String x:Key="Mods_SummaryDisabled">Mods in the build: {0}, switched off: {1}</x:String>
     <x:String x:Key="Size_MbPrecise">{0:F1} MB</x:String>
@@ -128,8 +128,8 @@
     <!-- Mods page -->
     <x:String x:Key="Mods_SearchHint">Search Modrinth…</x:String>
     <x:String x:Key="Mods_Search">Search</x:String>
-    <x:String x:Key="Mods_Refresh">Refresh</x:String>
-    <x:String x:Key="Mods_Import">Import .mrpack / .zip</x:String>
+    <x:String x:Key="Mods_Refresh">Re-read folder</x:String>
+    <x:String x:Key="Mods_Import">Import modpack</x:String>
     <x:String x:Key="Mods_Modrinth">Modrinth</x:String>
     <x:String x:Key="Mods_Installed">Installed</x:String>
     <x:String x:Key="Mods_InstallSelected">Install selected</x:String>
@@ -381,7 +381,7 @@
     <x:String x:Key="Server_ChartWeek">Online over 7 days</x:String>
     <x:String x:Key="Server_CopyAddress">Copy address</x:String>
     <x:String x:Key="Server_AddressCopied">Address copied: {0}</x:String>
-    <x:String x:Key="Builds_TabAddMods">Add mods</x:String>
+    <x:String x:Key="Builds_TabAddMods">Catalog</x:String>
     <x:String x:Key="Settings_SectionLauncher">Launcher</x:String>
     <x:String x:Key="Settings_BackupsTitle">Backups of worlds and builds</x:String>
     <x:String x:Key="Settings_MemoryCeiling">more than 8 GB will not make it faster</x:String>
@@ -690,8 +690,8 @@
     <x:String x:Key="Builds_TabPacks">Resource packs</x:String>
     <x:String x:Key="Builds_TabShaders">Shaders</x:String>
     <x:String x:Key="Packs_Hint">Enabled packs apply top to bottom: the top one overrides the rest. Order and state are written to options.txt, and the game reads them at start.</x:String>
-    <x:String x:Key="Packs_OpenFolder">Resource packs folder</x:String>
-    <x:String x:Key="Packs_FromCatalog">From the catalog</x:String>
+    <x:String x:Key="Packs_OpenFolder">Open folder</x:String>
+    <x:String x:Key="Packs_FromCatalog">Add from the catalog</x:String>
     <x:String x:Key="Packs_EnabledHeader">Enabled · {0}</x:String>
     <x:String x:Key="Packs_DisabledHeader">Disabled · {0}</x:String>
     <x:String x:Key="Packs_Empty">No resource packs yet. Add some from the Modrinth catalog, or drop a .zip into the resource packs folder.</x:String>
@@ -718,8 +718,8 @@
     <x:String x:Key="Packs_Disable">Disable</x:String>
     <x:String x:Key="Packs_Locked">Packs stay as they are while the game runs — it overwrites the settings on exit</x:String>
     <x:String x:Key="Shaders_Hint">Iris (Oculus on Forge) loads the active shader when the game starts. One shader at a time; "No shaders" turns them off entirely.</x:String>
-    <x:String x:Key="Shaders_OpenFolder">Shaders folder</x:String>
-    <x:String x:Key="Shaders_FromCatalog">From the catalog</x:String>
+    <x:String x:Key="Shaders_OpenFolder">Open folder</x:String>
+    <x:String x:Key="Shaders_FromCatalog">Add from the catalog</x:String>
     <x:String x:Key="Shaders_None">No shaders</x:String>
     <x:String x:Key="Shaders_NoneHint">The game starts without shaders</x:String>
     <x:String x:Key="Shaders_Active">active</x:String>
@@ -766,10 +766,10 @@
     <x:String x:Key="Game_PlaySafe">Safe launch</x:String>
     <x:String x:Key="Game_PlaySafeHint">Starts the game with the server's mods only; your own are switched off for this run and come back after it.</x:String>
     <x:String x:Key="Safe_Starting">Starting with the server's mods only: {0} of yours switched off</x:String>
-    <x:String x:Key="Mods_FilterPlaceholder">Find a mod in the build</x:String>
-    <x:String x:Key="Mods_DisableOwn">Switch off mine</x:String>
-    <x:String x:Key="Mods_EnableOwn">Switch on mine</x:String>
-    <x:String x:Key="Mods_OwnHint">The server catalog's mods are left alone; only the ones you added.</x:String>
+    <x:String x:Key="Mods_FilterPlaceholder">Search the build's mods</x:String>
+    <x:String x:Key="Mods_DisableOwn">Switch off my mods</x:String>
+    <x:String x:Key="Mods_EnableOwn">Switch on my mods</x:String>
+    <x:String x:Key="Mods_OwnHint">Mods from the server catalog are left alone; only the ones you added.</x:String>
     <x:String x:Key="Mods_OwnEnabled">Your mods switched on: {0}</x:String>
     <x:String x:Key="Mods_OwnDisabled">Your mods switched off: {0}</x:String>
     <x:String x:Key="Settings_NetworkCheck">Network check</x:String>

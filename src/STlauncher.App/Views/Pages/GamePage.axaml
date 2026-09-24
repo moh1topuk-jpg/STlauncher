@@ -16,7 +16,7 @@
         <Border IsHitTestVisible="False" Background="{DynamicResource StageGlowBrush}"/>
 
         <!-- Embers drifting behind the stage; off in the settings for those who want it still. -->
-        <controls:EmberField IsActive="{Binding AnimatedBackground}"/>
+        <controls:EmberField IsActive="{Binding AnimatedBackground}" IsLight="{Binding IsThemeLight}"/>
 
         <ScrollViewer>
             <Grid Margin="72,32" ColumnDefinitions="*,300" ColumnSpacing="56"

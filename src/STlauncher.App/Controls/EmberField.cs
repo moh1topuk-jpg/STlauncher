@@ -25,8 +25,14 @@ public sealed class EmberField : Control
     public static readonly StyledProperty<int> CountProperty =
         AvaloniaProperty.Register<EmberField, int>(nameof(Count), 70);
 
+    /// <summary>On a light ground the embers are darker and fewer: dust in sunlight, not sparks.</summary>
+    public static readonly StyledProperty<bool> IsLightProperty =
+        AvaloniaProperty.Register<EmberField, bool>(nameof(IsLight));
+
     private static readonly Color Warm = Color.Parse("#E0B83A");
     private static readonly Color Rose = Color.Parse("#E04A68");
+    private static readonly Color WarmLight = Color.Parse("#A8801A");
+    private static readonly Color RoseLight = Color.Parse("#A3243F");
 
     private readonly List<Ember> _embers = new();
     private readonly Random _random = new();
@@ -37,7 +43,7 @@ public sealed class EmberField : Control
 
     static EmberField()
     {
-        AffectsRender<EmberField>(IsActiveProperty, ShowLinksProperty);
+        AffectsRender<EmberField>(IsActiveProperty, ShowLinksProperty, IsLightProperty);
     }
 
     public EmberField()
@@ -51,6 +57,12 @@ public sealed class EmberField : Control
     {
         get => GetValue(IsActiveProperty);
         set => SetValue(IsActiveProperty, value);
+    }
+
+    public bool IsLight
+    {
+        get => GetValue(IsLightProperty);
+        set => SetValue(IsLightProperty, value);
     }
 
     public bool ShowLinks
@@ -193,14 +205,22 @@ public sealed class EmberField : Control
             }
         }
 
+        var light = IsLight;
+
         foreach (var ember in _embers)
         {
             var at = At(ember);
-            var colour = ember.Rose ? Rose : Warm;
+            var colour = light ? (ember.Rose ? RoseLight : WarmLight) : (ember.Rose ? Rose : Warm);
+            var opacity = light ? ember.Opacity * 0.45 : ember.Opacity;
 
-            // A soft halo under a small core, so the dot glows rather than sits.
-            context.DrawEllipse(new SolidColorBrush(colour, ember.Opacity * 0.25), null, at, ember.Radius * 3, ember.Radius * 3);
-            context.DrawEllipse(new SolidColorBrush(colour, ember.Opacity), null, at, ember.Radius, ember.Radius);
+            // A soft halo under a small core, so the dot glows rather than sits. On a light
+            // ground the halo would read as a smudge, so only the core is drawn.
+            if (!light)
+            {
+                context.DrawEllipse(new SolidColorBrush(colour, opacity * 0.25), null, at, ember.Radius * 3, ember.Radius * 3);
+            }
+
+            context.DrawEllipse(new SolidColorBrush(colour, opacity), null, at, ember.Radius, ember.Radius);
         }
     }
 

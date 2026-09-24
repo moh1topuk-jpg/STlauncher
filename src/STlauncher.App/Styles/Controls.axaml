@@ -331,6 +331,11 @@
         <Setter Property="BoxShadow" Value="{DynamicResource HeroShadow}"/>
     </Style>
 
+    <!-- The big button grows a touch under the pointer, on top of the glow. -->
+    <Style Selector="Button.hero:pointerover">
+        <Setter Property="RenderTransform" Value="scale(1.025)"/>
+    </Style>
+
     <Style Selector="Button.hero:pressed">
         <Setter Property="RenderTransform" Value="scale(0.985)"/>
     </Style>
@@ -349,6 +354,16 @@
     <Style Selector="Button.hero-side /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource HeroSideBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
+    </Style>
+
+    <!-- A class style outranks the plain :pointerover rule, so the side button needs its own. -->
+    <Style Selector="Button.hero-side:pointerover /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource GoldMutedBrush}"/>
+    </Style>
+
+    <Style Selector="Button.hero-side:pointerover">
+        <Setter Property="RenderTransform" Value="scale(1.04)"/>
     </Style>
 
     <!-- ===================== Navigation rail =====================
@@ -458,6 +473,11 @@
 
     <Style Selector="Button.avatar:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
+    </Style>
+
+    <!-- The face fills the button, so a colour change is invisible: it grows instead. -->
+    <Style Selector="Button.avatar:pointerover">
+        <Setter Property="RenderTransform" Value="scale(1.08)"/>
     </Style>
 
     <!-- Section index on the settings page. -->

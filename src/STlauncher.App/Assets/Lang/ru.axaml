@@ -76,8 +76,8 @@
     <x:String x:Key="Builds_TagImported">Импорт</x:String>
     <x:String x:Key="Builds_SyncWithCatalog">Сверить с каталогом</x:String>
     <x:String x:Key="Builds_OpenFolder">Папка сборки</x:String>
-    <x:String x:Key="Mods_OpenFolder">Папка модов</x:String>
-    <x:String x:Key="Mods_GoCatalog">Открыть каталог модов</x:String>
+    <x:String x:Key="Mods_OpenFolder">Открыть папку</x:String>
+    <x:String x:Key="Mods_GoCatalog">Открыть каталог</x:String>
     <x:String x:Key="Mods_SummaryAll">Модов в сборке: {0}</x:String>
     <x:String x:Key="Mods_SummaryDisabled">Модов в сборке: {0}, выключено: {1}</x:String>
     <x:String x:Key="Size_MbPrecise">{0:F1} МБ</x:String>
@@ -128,8 +128,8 @@
     <!-- Mods page -->
     <x:String x:Key="Mods_SearchHint">Поиск на Modrinth…</x:String>
     <x:String x:Key="Mods_Search">Найти</x:String>
-    <x:String x:Key="Mods_Refresh">Обновить</x:String>
-    <x:String x:Key="Mods_Import">Импорт .mrpack / .zip</x:String>
+    <x:String x:Key="Mods_Refresh">Перечитать папку</x:String>
+    <x:String x:Key="Mods_Import">Импортировать модпак</x:String>
     <x:String x:Key="Mods_Modrinth">Modrinth</x:String>
     <x:String x:Key="Mods_Installed">Установленные</x:String>
     <x:String x:Key="Mods_InstallSelected">Установить выбранный</x:String>
@@ -381,7 +381,7 @@
     <x:String x:Key="Server_ChartWeek">Онлайн за 7 дней</x:String>
     <x:String x:Key="Server_CopyAddress">Скопировать адрес</x:String>
     <x:String x:Key="Server_AddressCopied">Адрес скопирован: {0}</x:String>
-    <x:String x:Key="Builds_TabAddMods">Добавить моды</x:String>
+    <x:String x:Key="Builds_TabAddMods">Каталог</x:String>
     <x:String x:Key="Settings_SectionLauncher">Лаунчер</x:String>
     <x:String x:Key="Settings_BackupsTitle">Бэкапы миров и сборок</x:String>
     <x:String x:Key="Settings_MemoryCeiling">больше 8 ГБ не ускорит игру</x:String>
@@ -690,8 +690,8 @@
     <x:String x:Key="Builds_TabPacks">Ресурспаки</x:String>
     <x:String x:Key="Builds_TabShaders">Шейдеры</x:String>
     <x:String x:Key="Packs_Hint">Включённые паки применяются сверху вниз: верхний перекрывает остальные. Порядок и включение пишутся в options.txt — игра прочитает их при запуске.</x:String>
-    <x:String x:Key="Packs_OpenFolder">Папка ресурспаков</x:String>
-    <x:String x:Key="Packs_FromCatalog">Из каталога</x:String>
+    <x:String x:Key="Packs_OpenFolder">Открыть папку</x:String>
+    <x:String x:Key="Packs_FromCatalog">Добавить из каталога</x:String>
     <x:String x:Key="Packs_EnabledHeader">Включены · {0}</x:String>
     <x:String x:Key="Packs_DisabledHeader">Выключены · {0}</x:String>
     <x:String x:Key="Packs_Empty">Ресурспаков пока нет. Их можно добавить из каталога Modrinth или положить .zip в папку ресурспаков.</x:String>
@@ -718,8 +718,8 @@
     <x:String x:Key="Packs_Disable">Выключить</x:String>
     <x:String x:Key="Packs_Locked">Пока игра запущена, паки не меняются — она перезапишет настройки при выходе</x:String>
     <x:String x:Key="Shaders_Hint">Активный шейдер загружает Iris (на Forge — Oculus) при старте игры. Один шейдер за раз; «Без шейдеров» выключает их совсем.</x:String>
-    <x:String x:Key="Shaders_OpenFolder">Папка шейдеров</x:String>
-    <x:String x:Key="Shaders_FromCatalog">Из каталога</x:String>
+    <x:String x:Key="Shaders_OpenFolder">Открыть папку</x:String>
+    <x:String x:Key="Shaders_FromCatalog">Добавить из каталога</x:String>
     <x:String x:Key="Shaders_None">Без шейдеров</x:String>
     <x:String x:Key="Shaders_NoneHint">Игра запустится без шейдеров</x:String>
     <x:String x:Key="Shaders_Active">активен</x:String>
@@ -766,10 +766,10 @@
     <x:String x:Key="Game_PlaySafe">Безопасный запуск</x:String>
     <x:String x:Key="Game_PlaySafeHint">Запустит игру только с модами сервера; свои моды временно выключатся и вернутся после выхода.</x:String>
     <x:String x:Key="Safe_Starting">Запуск только с модами сервера: выключено ваших модов — {0}</x:String>
-    <x:String x:Key="Mods_FilterPlaceholder">Найти мод в сборке</x:String>
-    <x:String x:Key="Mods_DisableOwn">Выключить свои</x:String>
-    <x:String x:Key="Mods_EnableOwn">Включить свои</x:String>
-    <x:String x:Key="Mods_OwnHint">Моды каталога сервера не трогаются, только добавленные вами.</x:String>
+    <x:String x:Key="Mods_FilterPlaceholder">Поиск по модам сборки</x:String>
+    <x:String x:Key="Mods_DisableOwn">Выключить мои моды</x:String>
+    <x:String x:Key="Mods_EnableOwn">Включить мои моды</x:String>
+    <x:String x:Key="Mods_OwnHint">Моды из каталога сервера не трогаются, только добавленные вами.</x:String>
     <x:String x:Key="Mods_OwnEnabled">Ваших модов включено: {0}</x:String>
     <x:String x:Key="Mods_OwnDisabled">Ваших модов выключено: {0}</x:String>
     <x:String x:Key="Settings_NetworkCheck">Проверка сети</x:String>
