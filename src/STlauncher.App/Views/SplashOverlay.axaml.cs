@@ -29,6 +29,8 @@ public partial class SplashOverlay : UserControl
     private readonly SplashFrame _frame = new();
     private readonly ScaleTransform _markScale = new(1, 1);
     private readonly TranslateTransform _markShift = new();
+    private readonly SolidColorBrush _stage = new(Stage);
+    private static readonly Color Stage = Color.FromRgb(0x0C, 0x0A, 0x0D);
     private double _flashStart = -1;
     private bool _done;
 
@@ -54,6 +56,7 @@ public partial class SplashOverlay : UserControl
         InitializeComponent();
 
         Mark.RenderTransform = new TransformGroup { Children = { _markScale, _markShift } };
+        Root.Background = _stage;
 
         AttachedToVisualTree += (_, _) =>
         {
@@ -90,6 +93,8 @@ public partial class SplashOverlay : UserControl
 
         Canvas.SetLeft(Glow, cx - Glow.Width / 2);
         Canvas.SetTop(Glow, cy - Glow.Height / 2);
+        Canvas.SetLeft(MarkGlow, cx - MarkGlow.Width / 2);
+        Canvas.SetTop(MarkGlow, cy - MarkGlow.Height / 2);
         Canvas.SetLeft(Mark, cx - Mark.Width / 2);
         Canvas.SetTop(Mark, cy - Mark.Height / 2);
         Canvas.SetLeft(Caption, cx - Math.Max(1, Caption.Bounds.Width) / 2);
@@ -141,11 +146,7 @@ public partial class SplashOverlay : UserControl
             var flash = since < FlashMs ? since / FlashMs : Math.Max(0, 1 - (since - FlashMs) / 220);
             _frame.Flash = flash;
             _markScale.ScaleX = _markScale.ScaleY = 1 + 0.12 * flash;
-            Mark.BoxShadow = new BoxShadows(new BoxShadow
-            {
-                Blur = 40 + 60 * flash,
-                Color = Color.FromArgb((byte)(80 + 140 * flash), 0xE0, 0x4A, 0x68)
-            });
+            MarkGlow.Opacity = flash;
 
             // ---- release: sparks settle across the window, the mark flies to the rail
             var release = Math.Clamp((since - FlashMs) / ReleaseMs, 0, 1);
@@ -161,10 +162,13 @@ public partial class SplashOverlay : UserControl
             var scale = (1 + 0.12 * flash) * (1 - fly) + landed * fly;
             _markScale.ScaleX = _markScale.ScaleY = scale;
 
-            // ---- reveal: the stage fades, the screen underneath is already there
+            // ---- reveal: the stage fades, the screen underneath is already there. The
+            // pieces fade one by one rather than the overlay as a whole, which would need
+            // an off-screen copy of the window on every frame.
             var reveal = Math.Clamp((since - FlashMs - ReleaseMs + 120) / RevealMs, 0, 1);
-            Opacity = 1 - reveal;
-            _frame.Alpha = 1 - reveal * 0.6;
+            _stage.Color = Color.FromArgb((byte)(255 * (1 - reveal)), Stage.R, Stage.G, Stage.B);
+            Glow.Opacity = 1 - reveal;
+            _frame.Alpha = 1 - reveal;
             Mark.Opacity = 1 - Math.Clamp((reveal - 0.5) * 2, 0, 1);
 
             if (reveal >= 1)

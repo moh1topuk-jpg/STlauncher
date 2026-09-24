@@ -73,7 +73,7 @@
         <DataTemplate x:DataType="vm:OnboardingWelcomePage">
             <StackPanel Classes="page" Spacing="22" HorizontalAlignment="Center" MaxWidth="440">
                 <Panel Width="132" Height="132" HorizontalAlignment="Center">
-                    <Border Classes="pulse" Width="132" Height="132" CornerRadius="66">
+                    <Border Classes.pulse="{Binding $parent[UserControl].IsVisible}" Width="132" Height="132" CornerRadius="66">
                         <Border.RenderTransform>
                             <ScaleTransform/>
                         </Border.RenderTransform>

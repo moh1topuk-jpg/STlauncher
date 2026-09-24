@@ -4,6 +4,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
+using Avalonia.Media.Immutable;
 using Avalonia.Threading;
 
 namespace STlauncher.App.Controls;
@@ -40,6 +41,8 @@ public sealed class EmberField : Control
     private Point _pointer = new(double.NaN, double.NaN);
     private Point _lean;
     private TopLevel? _topLevel;
+    private bool _paintedLight;
+    private int _unwatchedTicks;
 
     static EmberField()
     {
@@ -49,7 +52,7 @@ public sealed class EmberField : Control
     public EmberField()
     {
         IsHitTestVisible = false;
-        _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(40) };
+        _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
         _timer.Tick += (_, _) => Tick();
     }
 
@@ -119,6 +122,20 @@ public sealed class EmberField : Control
             return;
         }
 
+        // Nobody is watching a minimised window; a window behind the game gets a slow drift.
+        if (_topLevel is Window window)
+        {
+            if (window.WindowState == WindowState.Minimized)
+            {
+                return;
+            }
+
+            if (!window.IsActive && ++_unwatchedTicks % 4 != 0)
+            {
+                return;
+            }
+        }
+
         Seed();
 
         // The field leans a little away from the pointer, eased so it never jerks.
@@ -163,11 +180,27 @@ public sealed class EmberField : Control
                 Y = _random.NextDouble() * Bounds.Height,
                 Depth = depth,
                 Radius = 0.8 + depth * 1.8,
-                Speed = 0.08 + depth * 0.25,
+                Speed = 0.1 + depth * 0.31,
                 Opacity = 0.12 + depth * 0.3,
                 Phase = _random.NextDouble() * Math.PI * 2,
                 Rose = _random.NextDouble() < 0.3
             });
+        }
+
+        Paint(IsLight);
+    }
+
+    /// <summary>Brushes are made once per theme, not per dot per frame.</summary>
+    private void Paint(bool light)
+    {
+        _paintedLight = light;
+
+        foreach (var ember in _embers)
+        {
+            var colour = light ? (ember.Rose ? RoseLight : WarmLight) : (ember.Rose ? Rose : Warm);
+            var opacity = light ? ember.Opacity * 0.45 : ember.Opacity;
+            ember.Core = new ImmutableSolidColorBrush(colour, opacity);
+            ember.Halo = new ImmutableSolidColorBrush(colour, opacity * 0.25);
         }
     }
 
@@ -207,20 +240,23 @@ public sealed class EmberField : Control
 
         var light = IsLight;
 
+        if (light != _paintedLight)
+        {
+            Paint(light);
+        }
+
         foreach (var ember in _embers)
         {
             var at = At(ember);
-            var colour = light ? (ember.Rose ? RoseLight : WarmLight) : (ember.Rose ? Rose : Warm);
-            var opacity = light ? ember.Opacity * 0.45 : ember.Opacity;
 
             // A soft halo under a small core, so the dot glows rather than sits. On a light
             // ground the halo would read as a smudge, so only the core is drawn.
             if (!light)
             {
-                context.DrawEllipse(new SolidColorBrush(colour, opacity * 0.25), null, at, ember.Radius * 3, ember.Radius * 3);
+                context.DrawEllipse(ember.Halo, null, at, ember.Radius * 3, ember.Radius * 3);
             }
 
-            context.DrawEllipse(new SolidColorBrush(colour, opacity), null, at, ember.Radius, ember.Radius);
+            context.DrawEllipse(ember.Core, null, at, ember.Radius, ember.Radius);
         }
     }
 
@@ -234,5 +270,7 @@ public sealed class EmberField : Control
         public double Opacity;
         public double Phase;
         public bool Rose;
+        public IBrush? Core;
+        public IBrush? Halo;
     }
 }

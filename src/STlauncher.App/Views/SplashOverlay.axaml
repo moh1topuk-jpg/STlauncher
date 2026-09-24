@@ -7,7 +7,7 @@
          mark while the build is prepared, a flash when it is ready, and the mark flies to
          its place in the rail as the screen shows through. Positions are set in code from
          the real window size, so the mark lands exactly on the rail logo. -->
-    <Canvas Name="Root" Background="#0C0A0D">
+    <Canvas Name="Root">
         <Border Name="Glow" Width="900" Height="600" Opacity="0" IsHitTestVisible="False">
             <Border.Background>
                 <RadialGradientBrush Center="50%,50%" GradientOrigin="50%,50%" RadiusX="50%" RadiusY="50%">
@@ -18,6 +18,17 @@
         </Border>
 
         <controls:SplashEmbers Name="Embers"/>
+
+        <!-- The flash: a gradient, not a blurred shadow, so weak machines keep the frame rate. -->
+        <Border Name="MarkGlow" Width="360" Height="360" Opacity="0" IsHitTestVisible="False">
+            <Border.Background>
+                <RadialGradientBrush Center="50%,50%" GradientOrigin="50%,50%" RadiusX="50%" RadiusY="50%">
+                    <GradientStop Offset="0" Color="#B0E04A68"/>
+                    <GradientStop Offset="0.35" Color="#40E04A68"/>
+                    <GradientStop Offset="1" Color="#00E04A68"/>
+                </RadialGradientBrush>
+            </Border.Background>
+        </Border>
 
         <!-- The same artwork as the rail logo, so the landing is seamless. -->
         <Border Name="Mark" Width="84" Height="84" CornerRadius="25" Opacity="0" ClipToBounds="True"
