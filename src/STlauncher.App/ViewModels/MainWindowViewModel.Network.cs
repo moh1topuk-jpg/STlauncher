@@ -75,6 +75,11 @@ public partial class MainWindowViewModel
         yield return new NetworkCheckItem(new NetworkTarget("libraries", "https://libraries.minecraft.net/"), Localize("Net_Libraries", "Mojang (libraries)"));
         yield return new NetworkCheckItem(new NetworkTarget("adoptium", "https://api.adoptium.net/v3/info/available_releases"), Localize("Net_Java", "Adoptium (Java)"));
 
+        // What the game itself needs to show skins: player profiles and the texture files.
+        // A provider that swaps these for a web page leaves everyone on the server as Steve.
+        yield return new NetworkCheckItem(new NetworkTarget("session", "https://sessionserver.mojang.com/session/minecraft/profile/069a79f444e94726a5befca90e38aaf5", RejectHtml: true), Localize("Net_Session", "Mojang (player profiles)"));
+        yield return new NetworkCheckItem(new NetworkTarget("textures", "https://textures.minecraft.net/", RejectHtml: true), Localize("Net_Textures", "Mojang (skin textures)"));
+
         if (!string.IsNullOrWhiteSpace(ServerAddress))
         {
             var host = ServerAddress.Split(':')[0];

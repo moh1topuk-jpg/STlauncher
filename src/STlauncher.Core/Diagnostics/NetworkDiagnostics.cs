@@ -11,7 +11,11 @@ namespace STlauncher.Core.Diagnostics;
 
 /// <summary>Something the launcher needs to reach, and how to probe it.</summary>
 /// <param name="Url">An https address for a GET, or "tcp://host:port" for a plain connect.</param>
-public sealed record NetworkTarget(string Key, string Url);
+/// <param name="RejectHtml">
+/// True for hosts that never answer with a web page: a 200 with text/html there is a
+/// provider's block page standing in for the service, which is a failure, not a pass.
+/// </param>
+public sealed record NetworkTarget(string Key, string Url, bool RejectHtml = false);
 
 /// <summary>One probe's outcome: reached in N ms, or what went wrong.</summary>
 public sealed record NetworkCheckResult(NetworkTarget Target, bool Ok, int Milliseconds, string? Error)
@@ -74,6 +78,13 @@ public sealed class NetworkDiagnostics
             // Any answer from the host proves the path is open; a 404 on a probe path is
             // still an answer. Only 5xx means the service itself is down.
             var ok = (int)response.StatusCode < 500;
+
+            if (ok && target.RejectHtml &&
+                string.Equals(response.Content.Headers.ContentType?.MediaType, "text/html", StringComparison.OrdinalIgnoreCase))
+            {
+                return new NetworkCheckResult(target, false, (int)watch.ElapsedMilliseconds, "html-stub");
+            }
+
             return new NetworkCheckResult(target, ok, (int)watch.ElapsedMilliseconds, ok ? null : $"HTTP {(int)response.StatusCode}");
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)

@@ -790,6 +790,8 @@
     <x:String x:Key="Net_Mojang">Mojang (файлы игры)</x:String>
     <x:String x:Key="Net_Libraries">Mojang (библиотеки)</x:String>
     <x:String x:Key="Net_Java">Adoptium (Java)</x:String>
+    <x:String x:Key="Net_Session">Mojang (профили игроков, нужны для скинов)</x:String>
+    <x:String x:Key="Net_Textures">Mojang (файлы скинов)</x:String>
     <x:String x:Key="Net_Server">Сервер</x:String>
     <x:String x:Key="Net_Running">Проверяю…</x:String>
     <x:String x:Key="Net_AllOk">Всё отвечает. Если скачивание всё равно не идёт, дело не в сети.</x:String>

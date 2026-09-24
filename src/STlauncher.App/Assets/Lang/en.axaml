@@ -790,6 +790,8 @@
     <x:String x:Key="Net_Mojang">Mojang (game files)</x:String>
     <x:String x:Key="Net_Libraries">Mojang (libraries)</x:String>
     <x:String x:Key="Net_Java">Adoptium (Java)</x:String>
+    <x:String x:Key="Net_Session">Mojang (player profiles, needed for skins)</x:String>
+    <x:String x:Key="Net_Textures">Mojang (skin textures)</x:String>
     <x:String x:Key="Net_Server">Server</x:String>
     <x:String x:Key="Net_Running">Checking…</x:String>
     <x:String x:Key="Net_AllOk">Everything answers. If downloads still fail, the problem is not the network.</x:String>
