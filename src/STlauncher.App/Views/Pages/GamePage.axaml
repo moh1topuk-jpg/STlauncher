@@ -60,7 +60,7 @@
                             <Button Classes="hero-side" ToolTip.Tip="{DynamicResource Game_PickBuild}">
                                 <PathIcon Data="{StaticResource IconChevronDown}"/>
                                 <Button.Flyout>
-                                    <Flyout Placement="BottomEdgeAlignedLeft">
+                                    <controls:RevealFlyout Placement="BottomEdgeAlignedLeft">
                                         <StackPanel Spacing="10" Width="320">
                                             <TextBlock Text="{DynamicResource Game_PickBuild}" Classes="label"/>
                                             <ListBox ItemsSource="{Binding Instances}"
@@ -86,7 +86,7 @@
                                                     Command="{Binding SelectSectionCommand}"
                                                     CommandParameter="Builds"/>
                                         </StackPanel>
-                                    </Flyout>
+                                    </controls:RevealFlyout>
                                 </Button.Flyout>
                             </Button>
                         </StackPanel>
@@ -212,7 +212,7 @@
                                 <Button Classes="avatar" Width="52" Height="52" ToolTip.Tip="{DynamicResource Game_ViewSkin}">
                                     <controls:SkinFace Skin="{Binding PlayerSkin}" Width="52" Height="52" CornerRadius="12"/>
                                     <Button.Flyout>
-                                        <Flyout Placement="Bottom">
+                                        <controls:RevealFlyout Placement="Bottom">
                                             <StackPanel Spacing="10" Width="300">
                                                 <controls:SkinViewer Skin="{Binding PlayerSkin}" Height="280"/>
                                                 <!-- Which skin system to look in; a player can have one in several. -->
@@ -231,7 +231,7 @@
                                                 <TextBlock Text="{DynamicResource Game_ViewerHint}" Classes="faint" HorizontalAlignment="Center"/>
                                                 <TextBlock Text="{Binding SkinSourceLabel}" Classes="faint" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="280"/>
                                             </StackPanel>
-                                        </Flyout>
+                                        </controls:RevealFlyout>
                                     </Button.Flyout>
                                 </Button>
                                 <!-- A face is not obviously a button; the smallest possible nudge. -->

@@ -1,6 +1,7 @@
 ﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:STlauncher.App.ViewModels"
+             xmlns:controls="using:STlauncher.App.Controls"
              x:Class="STlauncher.App.Views.Pages.SettingsPage"
              x:DataType="vm:MainWindowViewModel">
 
@@ -372,7 +373,7 @@
                                                         <PathIcon Data="{StaticResource IconChevronDown}" Width="10" Height="10"/>
                                                     </StackPanel>
                                                     <Button.Flyout>
-                                                        <Flyout Placement="BottomEdgeAlignedRight">
+                                                        <controls:RevealFlyout Placement="BottomEdgeAlignedRight">
                                                             <StackPanel Spacing="4" Width="300">
                                                                 <Button Classes="ghost small" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
                                                                         Command="{Binding RestoreWorldsCommand}" IsEnabled="{Binding CanRestoreWorlds}">
@@ -396,7 +397,7 @@
                                                                     </StackPanel>
                                                                 </Button>
                                                             </StackPanel>
-                                                        </Flyout>
+                                                        </controls:RevealFlyout>
                                                     </Button.Flyout>
                                                 </Button>
                                                 <Button Grid.Column="2" Classes="plain small icon-danger" VerticalAlignment="Center"

@@ -22,7 +22,6 @@ public static class Reveal
         AvaloniaProperty.RegisterAttached<Control, bool>("OnVisible", typeof(Reveal));
 
     private static readonly TimeSpan Duration = TimeSpan.FromMilliseconds(280);
-    private static readonly TransformOperations Start = TransformOperations.Parse("translateY(16px)");
     private static readonly TransformOperations Rest = TransformOperations.Parse("translateY(0px)");
 
     static Reveal()
@@ -48,17 +47,17 @@ public static class Reveal
     {
         if (e.Property == Visual.IsVisibleProperty && sender is Control { IsVisible: true } control)
         {
-            Play(control);
+            Play(control, offset: 16);
         }
     }
 
     /// <summary>Start state now, without motion; the rest state on the next pass, with it.</summary>
-    public static void Play(Control control)
+    public static void Play(Control control, double offset)
     {
         var transitions = control.Transitions;
         control.Transitions = null;
         control.Opacity = 0;
-        control.RenderTransform = Start;
+        control.RenderTransform = TransformOperations.Parse($"translateY({offset.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)}px)");
 
         Dispatcher.UIThread.Post(() =>
         {
