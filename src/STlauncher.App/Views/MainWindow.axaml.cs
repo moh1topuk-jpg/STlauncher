@@ -13,6 +13,16 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         ApplyBrandIcon();
+
+        // The mark flies to the rail logo, wherever the layout puts it.
+        Splash.LayoutUpdated += (_, _) =>
+        {
+            if (RailLogo.Bounds.Width > 0 &&
+                Avalonia.VisualExtensions.TranslatePoint(RailLogo, new Avalonia.Point(RailLogo.Bounds.Width / 2, RailLogo.Bounds.Height / 2), this) is { X: > 0, Y: > 0 } centre)
+            {
+                Splash.RailLogoCentre = centre;
+            }
+        };
     }
 
     /// <summary>

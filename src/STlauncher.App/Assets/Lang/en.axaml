@@ -834,4 +834,6 @@
     <x:String x:Key="Packs_UpdateOne">Install this version</x:String>
     <x:String x:Key="Packs_Updating">Updating {0} to {1}…</x:String>
     <x:String x:Key="Packs_Updated">{0} updated to {1}</x:String>
+    <!-- Start splash -->
+    <x:String x:Key="Splash_Loading">Preparing the build</x:String>
 </ResourceDictionary>

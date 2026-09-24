@@ -449,6 +449,7 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             ApplyBuildFilter();
             SelectedInstance = remembered;
+            IsStartupReady = true;
             Trace("build on screen");
         }
 
@@ -490,6 +491,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
         await LoadLoaderVersionsAsync();
         Trace("loader versions");
+
+        // A fresh installation has no remembered build; the splash waits for this one.
+        IsStartupReady = true;
 
         if (SelectedInstance?.LoaderVersion is { Length: > 0 } loaderVersion)
         {
@@ -1187,8 +1191,13 @@ public partial class MainWindowViewModel : ViewModelBase
     /// Reports a failure raised while the window was starting up. The app stays open so the
     /// message is readable instead of disappearing with the process.
     /// </summary>
+    /// <summary>Lets the start splash finish: the main screen has what it needs to be looked at.</summary>
+    [ObservableProperty]
+    private bool _isStartupReady;
+
     public void ReportStartupFailure(Exception ex)
     {
+        IsStartupReady = true;
         Status = Localize("Error_Startup", "Startup failed: {0}", ex.Message);
         AppendConsole($"[startup] {ex}");
         FlushConsole();

@@ -834,4 +834,6 @@
     <x:String x:Key="Packs_UpdateOne">Поставить эту версию</x:String>
     <x:String x:Key="Packs_Updating">Обновляю {0} до {1}…</x:String>
     <x:String x:Key="Packs_Updated">{0} обновлён до {1}</x:String>
+    <!-- Start splash -->
+    <x:String x:Key="Splash_Loading">Собираю сборку</x:String>
 </ResourceDictionary>

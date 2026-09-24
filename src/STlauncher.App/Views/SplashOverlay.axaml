@@ -1,0 +1,31 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:STlauncher.App.Controls"
+             x:Class="STlauncher.App.Views.SplashOverlay">
+
+    <!-- The first two seconds: a dark stage, the sparks gather into a ring around the
+         mark while the build is prepared, a flash when it is ready, and the mark flies to
+         its place in the rail as the screen shows through. Positions are set in code from
+         the real window size, so the mark lands exactly on the rail logo. -->
+    <Canvas Name="Root" Background="#0C0A0D">
+        <Border Name="Glow" Width="900" Height="600" Opacity="0" IsHitTestVisible="False">
+            <Border.Background>
+                <RadialGradientBrush Center="50%,50%" GradientOrigin="50%,50%" RadiusX="50%" RadiusY="50%">
+                    <GradientStop Offset="0" Color="#34191F"/>
+                    <GradientStop Offset="0.6" Color="#000C0A0D"/>
+                </RadialGradientBrush>
+            </Border.Background>
+        </Border>
+
+        <controls:SplashEmbers Name="Embers"/>
+
+        <!-- The same artwork as the rail logo, so the landing is seamless. -->
+        <Border Name="Mark" Width="84" Height="84" CornerRadius="25" Opacity="0" ClipToBounds="True"
+                Background="#7E1B31" RenderTransformOrigin="50%,50%">
+            <Image Source="/Assets/server-logo.png" Stretch="UniformToFill"/>
+        </Border>
+
+        <TextBlock Name="Caption" Text="{DynamicResource Splash_Loading}" Opacity="0"
+                   FontSize="12" LetterSpacing="1.4" Foreground="#A99BA3"/>
+    </Canvas>
+</UserControl>
