@@ -471,14 +471,18 @@ public partial class MainWindowViewModel
         previousCts?.Cancel();
         previousCts?.Dispose();
 
+        // The token is taken now: a newer request disposes this source while the wait is
+        // still running, and asking a disposed source for its token throws.
+        var token = cts.Token;
+
         _ = Task.Run(async () =>
         {
             try
             {
-                await Task.Delay(350, cts.Token);
+                await Task.Delay(350, token);
 
                 // A newer request may have arrived while this one waited.
-                if (cts.IsCancellationRequested)
+                if (token.IsCancellationRequested)
                 {
                     return;
                 }
@@ -488,10 +492,10 @@ public partial class MainWindowViewModel
                 // so wait for the in-flight one to finish and then refresh.
                 for (var waited = 0; waited < 2000 && IsBrowserBusy; waited += 100)
                 {
-                    await Task.Delay(100, cts.Token);
+                    await Task.Delay(100, token);
                 }
 
-                if (cts.IsCancellationRequested)
+                if (token.IsCancellationRequested)
                 {
                     return;
                 }
