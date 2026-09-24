@@ -306,7 +306,8 @@
                                 </StackPanel>
                             </Border>
 
-                            <ScrollViewer>
+                            <!-- Hidden while empty: an empty list still catches clicks meant for the panel above. -->
+                            <ScrollViewer IsVisible="{Binding !HasNoInstalledMods}">
                                 <ItemsControl ItemsSource="{Binding InstalledMods}" VerticalAlignment="Top">
                                     <!-- Two columns: a 30-mod build fits on one screen. -->
                                     <ItemsControl.ItemsPanel>
