@@ -8,6 +8,8 @@
 
 ## [Не выпущено]
 
+## [0.5.1] — 2026-09-24
+
 ### Добавлено
 - Заставка при запуске: искры слетаются в кольцо вокруг логотипа, пока лаунчер готовит
   сборку, вспышка, когда всё готово, и экран проявляется, а логотип уплывает на своё место
@@ -380,7 +382,8 @@
 - Бэкапы миров по событиям: раз в сутки, перед изменением модов, перед запуском.
 - Автообновление с уведомлением и установкой одной кнопкой.
 
-[Не выпущено]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.5.0...HEAD
+[Не выпущено]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.3.5...v0.4.0
