@@ -42,6 +42,9 @@ public sealed class BuildIssueItem
     public string FixLabel { get; }
 
     public bool IsBlocking => Issue.IsBlocking;
+
+    /// <summary>True when the fix is a switch on a file, not a trip to the catalog.</summary>
+    public bool CanFixBySwitch => Issue.Kind != BuildIssueKind.MissingDependency || Issue.DisabledFileName is not null;
 }
 
 /// <summary>
@@ -73,6 +76,9 @@ public partial class MainWindowViewModel
     public bool HasBuildIssues => BuildIssueCount > 0;
 
     public bool HasBlockingBuildIssues => BuildIssues.Any(i => i.IsBlocking);
+
+    /// <summary>Two or more problems that a switch can settle: one button does them all.</summary>
+    public bool HasBulkBuildFix => BuildIssues.Count(i => i.CanFixBySwitch) >= 2;
 
     /// <summary>Safe mode only makes sense when there is something of the player's own to leave out.</summary>
     public bool CanUseSafeMode => IsCatalogInstance && InstalledMods.Any(m => m.IsMod && m.Enabled && !m.IsCatalog);
@@ -128,6 +134,7 @@ public partial class MainWindowViewModel
                         : Localize("Check_SummaryWarnings", "May not start: {0}", Plural(BuildIssues.Count, "Check_Problems"));
 
                 OnPropertyChanged(nameof(HasBlockingBuildIssues));
+                OnPropertyChanged(nameof(HasBulkBuildFix));
                 OnPropertyChanged(nameof(CanUseSafeMode));
             });
         });
@@ -181,14 +188,49 @@ public partial class MainWindowViewModel
         }
     }
 
-    private void ToggleModByFileName(string fileName)
+    /// <summary>
+    /// Switches off every file the check named: the older copies of doubled mods, the
+    /// jars for the wrong loader or game version, and switches on the disabled ones a mod
+    /// depends on. Nothing is deleted, so it is all reversible from the mod list.
+    /// </summary>
+    [RelayCommand]
+    private void ApplyAllBuildFixes()
+    {
+        var fixes = BuildIssues.Where(i => i.CanFixBySwitch).Select(i => i.Issue).ToList();
+        var done = 0;
+
+        foreach (var issue in fixes)
+        {
+            try
+            {
+                var target = issue.Kind == BuildIssueKind.MissingDependency ? issue.DisabledFileName! : issue.FileName;
+
+                if (ToggleModByFileName(target))
+                {
+                    done++;
+                }
+            }
+            catch (Exception ex)
+            {
+                AppendConsole($"[check] could not fix {issue.FileName}: {ex.Message}");
+            }
+        }
+
+        AppendConsole($"[check] {done} of {fixes.Count} problem(s) fixed with one click");
+        Status = Localize("Check_FixedAll", "Fixed: {0} of {1}", done, fixes.Count);
+    }
+
+    private bool ToggleModByFileName(string fileName)
     {
         var mod = InstalledMods.FirstOrDefault(m => string.Equals(m.FileName, fileName, StringComparison.OrdinalIgnoreCase));
 
-        if (mod is not null)
+        if (mod is null)
         {
-            ToggleMod(mod);
+            return false;
         }
+
+        ToggleMod(mod);
+        return true;
     }
 
     [RelayCommand]

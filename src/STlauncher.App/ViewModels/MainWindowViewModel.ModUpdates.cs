@@ -249,6 +249,7 @@ public partial class MainWindowViewModel
         if (newFile is not null && !string.Equals(newFile, oldFile, StringComparison.OrdinalIgnoreCase))
         {
             _mods.Uninstall(item.Path);
+            AppendConsole($"[mods] removed {oldFile}: updated to {newFile}");
             SelectedInstance!.InstalledMods.RemoveAll(m =>
                 string.Equals(m.FileName, oldFile, StringComparison.OrdinalIgnoreCase));
             _instances.Save(SelectedInstance);

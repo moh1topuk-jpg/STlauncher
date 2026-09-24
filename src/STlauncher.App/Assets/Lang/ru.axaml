@@ -763,6 +763,8 @@
     <x:String x:Key="Check_ProblemsFew">{0} проблемы</x:String>
     <x:String x:Key="Check_ProblemsMany">{0} проблем</x:String>
     <x:String x:Key="Check_OpenMods">К списку модов</x:String>
+    <x:String x:Key="Check_FixAll">Исправить всё</x:String>
+    <x:String x:Key="Check_FixedAll">Исправлено: {0} из {1}</x:String>
     <x:String x:Key="Game_PlaySafe">Безопасный запуск</x:String>
     <x:String x:Key="Game_PlaySafeHint">Запустит игру только с модами сервера; свои моды временно выключатся и вернутся после выхода.</x:String>
     <x:String x:Key="Safe_Starting">Запуск только с модами сервера: выключено ваших модов — {0}</x:String>

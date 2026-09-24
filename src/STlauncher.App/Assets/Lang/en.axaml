@@ -763,6 +763,8 @@
     <x:String x:Key="Check_ProblemsFew">{0} problems</x:String>
     <x:String x:Key="Check_ProblemsMany">{0} problems</x:String>
     <x:String x:Key="Check_OpenMods">To the mod list</x:String>
+    <x:String x:Key="Check_FixAll">Fix everything</x:String>
+    <x:String x:Key="Check_FixedAll">Fixed: {0} of {1}</x:String>
     <x:String x:Key="Game_PlaySafe">Safe launch</x:String>
     <x:String x:Key="Game_PlaySafeHint">Starts the game with the server's mods only; your own are switched off for this run and come back after it.</x:String>
     <x:String x:Key="Safe_Starting">Starting with the server's mods only: {0} of yours switched off</x:String>

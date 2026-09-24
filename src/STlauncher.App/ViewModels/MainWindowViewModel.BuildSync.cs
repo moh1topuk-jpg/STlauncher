@@ -468,6 +468,7 @@ public partial class MainWindowViewModel
             var fileName = System.IO.Path.GetFileName(result.Path);
 
             ReplaceInstalledFile(instance, item.Id, fileName);
+            ReplaceOtherVersions(instance, fileName);
             RecordInstalledMod(instance, new InstalledModRecord
             {
                 FileName = fileName,

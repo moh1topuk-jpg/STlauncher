@@ -625,6 +625,12 @@ public partial class MainWindowViewModel
 
         Status = Localize("Status_InstallingFile", "Installing {0}…", file.FileName);
         await _mods.InstallAsync(InstanceDirectory, folder, file.FileName, file.Url, file.Sha1, file.Size);
+        AppendConsole($"[mods] installed {folder}/{file.FileName} ({slug} {version.VersionNumber})");
+
+        if (string.Equals(folder, ModManager.ModsFolderName, StringComparison.OrdinalIgnoreCase) && SelectedInstance is not null)
+        {
+            ReplaceOtherVersions(SelectedInstance, file.FileName);
+        }
 
         RecordInstalledMod(new InstalledModRecord
         {
@@ -689,6 +695,38 @@ public partial class MainWindowViewModel
 
         instance.InstalledMods.Add(record);
         _instances.Save(instance);
+    }
+
+    /// <summary>
+    /// A new mod file replaces older files of the same mod: they are deleted and their
+    /// records dropped, and the log says so, because a folder with two versions of one
+    /// mod is the most common reason a build refuses to start.
+    /// </summary>
+    private void ReplaceOtherVersions(Instance instance, string newFileName)
+    {
+        IReadOnlyList<string> removed;
+
+        try
+        {
+            removed = _mods.RemoveOtherVersions(_instances.GameDirectory(instance), newFileName);
+        }
+        catch (Exception ex)
+        {
+            AppendConsole($"[mods] could not check for older copies of {newFileName}: {ex.Message}");
+            return;
+        }
+
+        foreach (var fileName in removed)
+        {
+            AppendConsole($"[mods] removed {fileName}: replaced by {newFileName}");
+            instance.InstalledMods.RemoveAll(m => string.Equals(m.FileName, fileName, StringComparison.OrdinalIgnoreCase));
+            _knownModUpdates.Remove(fileName);
+        }
+
+        if (removed.Count > 0)
+        {
+            _instances.Save(instance);
+        }
     }
 
     public bool IsProjectInstalled(string slug)

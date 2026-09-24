@@ -104,6 +104,47 @@ public sealed class ModManager
         return false;
     }
 
+    /// <summary>
+    /// After a new file has landed in the mods folder: removes every other enabled jar that
+    /// declares the same mod id, so a newer version replaces the older one instead of
+    /// sitting next to it. Two jars with one id stop the game from starting at all.
+    /// Disabled copies are left alone; the player switched those off on purpose.
+    /// </summary>
+    /// <returns>The file names that were removed, for the caller's records and log.</returns>
+    public IReadOnlyList<string> RemoveOtherVersions(string gameDirectory, string newFileName)
+    {
+        var directory = ModsDirectory(gameDirectory);
+        var newPath = Path.Combine(directory, newFileName);
+        var ids = ModMetadataReader.Read(newPath).Select(m => m.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        if (ids.Count == 0)
+        {
+            return Array.Empty<string>();
+        }
+
+        var removed = new List<string>();
+
+        foreach (var path in Directory.EnumerateFiles(directory, "*", SearchOption.TopDirectoryOnly))
+        {
+            var fileName = Path.GetFileName(path);
+
+            if (!IsModFile(path) ||
+                fileName.EndsWith(DisabledSuffix, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(fileName, newFileName, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (ModMetadataReader.Read(path).Any(m => ids.Contains(m.Id)))
+            {
+                File.Delete(path);
+                removed.Add(fileName);
+            }
+        }
+
+        return removed;
+    }
+
     public void Uninstall(string path)
     {
         if (File.Exists(path))

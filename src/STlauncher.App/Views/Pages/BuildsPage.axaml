@@ -271,6 +271,8 @@
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
+                                <Button Classes="primary small" HorizontalAlignment="Left" IsVisible="{Binding HasBulkBuildFix}"
+                                        Content="{DynamicResource Check_FixAll}" Command="{Binding ApplyAllBuildFixesCommand}"/>
                             </StackPanel>
                         </Border>
 
