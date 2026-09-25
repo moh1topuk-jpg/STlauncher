@@ -8,6 +8,8 @@
 
 ## [Не выпущено]
 
+## [0.5.2] — 2026-09-25
+
 ### Исправлено
 - Две версии одного мода больше не могут оказаться включёнными вместе. Когда новая
   версия приходит из каталога сервера, из обновления в списке модов, из подбора модов
@@ -400,7 +402,8 @@
 - Бэкапы миров по событиям: раз в сутки, перед изменением модов, перед запуском.
 - Автообновление с уведомлением и установкой одной кнопкой.
 
-[Не выпущено]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.5.1...HEAD
+[Не выпущено]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.5.2...HEAD
+[0.5.2]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.4.0...v0.4.1
