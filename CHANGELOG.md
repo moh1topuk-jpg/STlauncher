@@ -8,6 +8,8 @@
 
 ## [Не выпущено]
 
+## [0.5.3] — 2026-09-25
+
 ### Изменено
 - Настройки перебраны по частоте использования. Пять разделов: «Игра» (оптимизация одной
   кнопкой сверху, память, окно), «Оформление» (тема, акцент, язык, живой фон), «Лаунчер»
@@ -426,7 +428,8 @@
 - Бэкапы миров по событиям: раз в сутки, перед изменением модов, перед запуском.
 - Автообновление с уведомлением и установкой одной кнопкой.
 
-[Не выпущено]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.5.2...HEAD
+[Не выпущено]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.5.3...HEAD
+[0.5.3]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.4.1...v0.5.0
