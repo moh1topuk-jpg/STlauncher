@@ -192,6 +192,9 @@
                                     <Button Classes="ghost small" Margin="0,0,8,6"
                                             Content="{DynamicResource Game_OpenLog}"
                                             Command="{Binding OpenLastGameLogCommand}"/>
+                                    <Button Classes="ghost small" Margin="0,0,8,6"
+                                            Content="{DynamicResource Report_Collect}"
+                                            Command="{Binding CollectSupportReportCommand}"/>
                                     <Button Classes="plain small" Margin="0,0,8,6" IsVisible="{Binding HasCrashReportFile}"
                                             Content="{DynamicResource Crash_OpenReport}"
                                             Command="{Binding OpenCrashReportCommand}"/>
@@ -200,11 +203,39 @@
                         </Grid>
                     </Border>
 
-                    <!-- Launch progress. -->
+                    <!-- Launch progress: the steps, each marked as it goes, so minutes of
+                         downloading on a first start read as work, not as a hang. -->
                     <Border Classes="panel" Padding="16" IsVisible="{Binding ShowLaunchProgress}" MaxWidth="560"
-                            HorizontalAlignment="Left">
+                            HorizontalAlignment="Left" MinWidth="360">
                         <StackPanel Spacing="10">
-                            <TextBlock Text="{Binding Status}" TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding Status}" TextWrapping="Wrap" FontWeight="SemiBold"/>
+                            <ItemsControl ItemsSource="{Binding LaunchStages}" IsVisible="{Binding LaunchStages.Count}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Spacing="5"/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:LaunchStageItem">
+                                        <Grid ColumnDefinitions="16,Auto,*" ColumnSpacing="8">
+                                            <Panel Width="16" Height="16" VerticalAlignment="Center">
+                                                <Border Width="6" Height="6" CornerRadius="3" Background="{DynamicResource DividerBrush}"
+                                                        IsVisible="{Binding IsPending}"/>
+                                                <Border Width="8" Height="8" CornerRadius="4" Background="{DynamicResource GoldBrush}"
+                                                        IsVisible="{Binding IsActive}"/>
+                                                <PathIcon Data="{StaticResource IconCheck}" Width="12" Height="12"
+                                                          Foreground="{DynamicResource SuccessBrush}" IsVisible="{Binding IsDone}"/>
+                                                <PathIcon Data="{StaticResource IconClose}" Width="12" Height="12"
+                                                          Foreground="{DynamicResource DangerBrush}" IsVisible="{Binding IsFailed}"/>
+                                            </Panel>
+                                            <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="13" VerticalAlignment="Center"
+                                                       Classes.muted="{Binding IsPending}"/>
+                                            <TextBlock Grid.Column="2" Text="{Binding Detail}" Classes="faint" FontSize="12"
+                                                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                             <ProgressBar Value="{Binding Progress}" Minimum="0" Maximum="100" Height="6"/>
                         </StackPanel>
                     </Border>

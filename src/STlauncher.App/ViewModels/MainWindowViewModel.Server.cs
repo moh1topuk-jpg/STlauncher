@@ -83,7 +83,11 @@ public partial class MainWindowViewModel
 
     partial void OnServerOnlineValueChanged(string value) => OnPropertyChanged(nameof(OnlineNowLabel));
 
-    partial void OnIsBuildSyncBusyChanged(bool value) => OnPropertyChanged(nameof(BuildStateLabel));
+    partial void OnIsBuildSyncBusyChanged(bool value)
+    {
+        OnPropertyChanged(nameof(BuildStateLabel));
+        OnPropertyChanged(nameof(ShowLaunchProgress));
+    }
 
     private static string FriendlyTime(DateTimeOffset at)
     {

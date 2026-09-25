@@ -792,6 +792,24 @@
     <x:String x:Key="Catalog_Back">Back to the build</x:String>
     <x:String x:Key="Catalog_Title">Modrinth catalog</x:String>
     <x:String x:Key="Common_Done">Done</x:String>
+    <!-- Launch steps -->
+    <x:String x:Key="Launch_StageLoader">Loader {0}</x:String>
+    <x:String x:Key="Launch_StageMods">Build mods</x:String>
+    <x:String x:Key="Launch_StageFiles">Game files</x:String>
+    <x:String x:Key="Launch_StageJava">Java</x:String>
+    <x:String x:Key="Launch_StageStart">Start</x:String>
+    <x:String x:Key="Launch_Files">{0} of {1}</x:String>
+    <x:String x:Key="Launch_Resolving">reading the version</x:String>
+    <x:String x:Key="Launch_Unpacking">unpacking</x:String>
+    <x:String x:Key="Launch_JavaCheck">checking, downloading if missing</x:String>
+    <x:String x:Key="Launch_Done">done</x:String>
+    <x:String x:Key="Launch_Failed">failed</x:String>
+    <!-- Support report -->
+    <x:String x:Key="Report_Title">Support report</x:String>
+    <x:String x:Key="Report_Hint">Launcher and game logs, the build's makeup, settings and the network check in one file, to send to the admin.</x:String>
+    <x:String x:Key="Report_Collect">Collect a report</x:String>
+    <x:String x:Key="Report_Saved">Report saved: {0}. The path is in the clipboard; the file is shown in the file manager.</x:String>
+    <x:String x:Key="Report_Failed">Could not collect the report: {0}</x:String>
     <x:String x:Key="Check_FixDisableNew">Switch off the newer one</x:String>
     <x:String x:Key="Check_KeepOld">Keep the older versions</x:String>
     <x:String x:Key="Check_FixedAll">Fixed: {0} of {1}</x:String>

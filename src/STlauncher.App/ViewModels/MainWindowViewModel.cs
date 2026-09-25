@@ -236,7 +236,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public bool IsSettingsSection => Section == ShellSection.Settings;
 
     /// <summary>The launch progress block is shown while preparing or running.</summary>
-    public bool ShowLaunchProgress => IsBusy || IsGameRunning;
+    public bool ShowLaunchProgress => IsBusy || IsGameRunning || IsBuildSyncBusy;
 
     private DispatcherTimer? _updateTimer;
 
@@ -517,6 +517,7 @@ public partial class MainWindowViewModel : ViewModelBase
         Trace("catalog categories");
         await javaChoices;
         Trace("java scan");
+        AppendConsole($"[mem] managed {GC.GetTotalMemory(false) / 1024 / 1024} MB, working set {Environment.WorkingSet / 1024 / 1024} MB");
 
         // A nickname generated a moment ago only becomes this installation's identity
         // once it is on disk; without this it would be regenerated on the next start.
@@ -723,6 +724,7 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             IsBusy = true;
             Progress = 0;
+            BeginLaunchStages(withLoader: SelectedLoader != LoaderKind.Vanilla && string.IsNullOrWhiteSpace(profileId));
             AppendConsole($"--- Launching {(string.IsNullOrWhiteSpace(profileId) ? SelectedVersion!.Id : profileId)} as {Username} ---");
             await MaybeBackupAsync(BackupTrigger.BeforeLaunch);
 
@@ -736,6 +738,7 @@ public partial class MainWindowViewModel : ViewModelBase
             if (SelectedLoader != LoaderKind.Vanilla && string.IsNullOrWhiteSpace(profileId))
             {
                 Status = Localize("Status_InstallingLoader", "Installing {0}…", SelectedLoader);
+                Mark(_stageLoader, LaunchStageState.Active);
                 AppendConsole($"--- Installing {SelectedLoader} for {versionId} ---");
 
                 var gameJava = (await _versions.ResolveAsync(versionId)).RequiredJavaMajor;
@@ -749,9 +752,11 @@ public partial class MainWindowViewModel : ViewModelBase
                     installerLog);
 
                 AppendConsole($"--- Loader ready: {versionId} ---");
+                Mark(_stageLoader, LaunchStageState.Done, Localize("Launch_Done", "done"));
             }
 
             // A startup sync may still be downloading into the same mods folder.
+            Mark(_stageMods, LaunchStageState.Active);
             await WaitForBuildSyncAsync();
 
             Status = Localize("Status_CheckingBuildMods", "Checking build mods…");
@@ -786,18 +791,15 @@ public partial class MainWindowViewModel : ViewModelBase
                 LanguageCode = Language == "en" ? "en_us" : "ru_ru"
             };
 
-            var progress = new Progress<DownloadProgress>(p =>
-            {
-                Progress = p.Fraction * 100;
-                Status = p.Failed > 0
-                    ? Localize("Status_FilesFailed", "Files {0}/{1}, failed: {2}", p.Completed, p.Total, p.Failed)
-                    : Localize("Status_Files", "Files {0}/{1}", p.Completed, p.Total);
-            });
+            Mark(_stageMods, LaunchStageState.Done, Localize("Launch_Done", "done"));
+            var progress = new Progress<DownloadProgress>(OnLaunchDownload);
+            var phase = new Progress<LaunchPhase>(OnLaunchPhase);
 
             Status = Localize("Status_Preparing", "Preparing…");
-            var command = await _launch.PrepareAsync(versionId, account, settings, progress);
+            var command = await _launch.PrepareAsync(versionId, account, settings, progress, phase);
 
             Status = Localize("Status_StartingGame", "Starting Minecraft…");
+            Mark(_stageStart, LaunchStageState.Done, Localize("Launch_Done", "done"));
             IsGameRunning = true;
 
             if (SelectedInstance is not null)
@@ -820,6 +822,7 @@ public partial class MainWindowViewModel : ViewModelBase
         catch (Exception ex)
         {
             Status = Localize("Error_Launch", "Launch failed: {0}", ex.Message);
+            FailActiveStage();
             _ = ExplainDownloadFailureAsync(Localize("Net_WhatGame", "the game files"), ex);
             AppendConsole(ex.ToString());
         }

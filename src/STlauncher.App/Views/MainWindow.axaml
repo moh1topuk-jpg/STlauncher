@@ -11,7 +11,8 @@
         x:Class="STlauncher.App.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Width="1180" Height="760"
-        MinWidth="960" MinHeight="620"
+        MinWidth="900" MinHeight="560"
+        WindowStartupLocation="CenterScreen"
         Background="{DynamicResource AppBgBrush}"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaChromeHints="NoChrome"
@@ -23,6 +24,9 @@
         <KeyBinding Gesture="Escape" Command="{Binding CloseLightboxCommand}"/>
     </Window.KeyBindings>
 
+    <!-- On a small screen the whole interface is scaled down a notch rather than clipped:
+         everything keeps its place, only smaller. The factor is set from the window size. -->
+    <LayoutTransformControl Name="Zoom">
     <Panel>
     <Grid RowDefinitions="36,Auto,*">
 
@@ -236,4 +240,5 @@
     <!-- The start: sparks, the mark, and the screen showing through when the build is ready. -->
     <views:SplashOverlay Name="Splash" IsReady="{Binding IsStartupReady}"/>
     </Panel>
+    </LayoutTransformControl>
 </Window>

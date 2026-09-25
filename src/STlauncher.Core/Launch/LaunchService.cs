@@ -48,9 +48,11 @@ public sealed class LaunchService
         OfflineAccount account,
         LaunchSettings settings,
         IProgress<DownloadProgress>? progress = null,
+        IProgress<LaunchPhase>? phase = null,
         CancellationToken cancellationToken = default)
     {
         _paths.EnsureCreated();
+        phase?.Report(LaunchPhase.Resolving);
 
         var context = RuleContext.Current(BuildFeatures(settings));
 
@@ -88,6 +90,7 @@ public sealed class LaunchService
         }
 
         _logger?.LogInformation("Downloading {Count} files for {Version}.", items.Count, versionId);
+        phase?.Report(LaunchPhase.Downloading);
         var summary = await _downloader.DownloadAllAsync(items, progress, cancellationToken).ConfigureAwait(false);
 
         if (summary.Failed > 0)
@@ -96,6 +99,7 @@ public sealed class LaunchService
                 $"Failed to download {summary.Failed} of {summary.Total} files for {versionId}.");
         }
 
+        phase?.Report(LaunchPhase.Natives);
         var nativesDirectory = Path.Combine(_paths.Versions, resolved.Id, "natives");
         foreach (var native in libraries.Natives)
         {
@@ -105,14 +109,17 @@ public sealed class LaunchService
         var assetsDirectory = _paths.Assets;
         if (assetIndex is not null && _assets.IsVirtual(resolved.Assets))
         {
+            phase?.Report(LaunchPhase.Assets);
             await _assets.BuildVirtualAssetsAsync(assetIndex, resolved.Assets!, cancellationToken).ConfigureAwait(false);
             assetsDirectory = _assets.VirtualDirectory(resolved.Assets!);
         }
 
+        phase?.Report(LaunchPhase.Java);
         var javaPath = string.IsNullOrWhiteSpace(settings.JavaPath)
             ? await _java.EnsureJavaAsync(resolved.RequiredJavaMajor, cancellationToken).ConfigureAwait(false)
             : settings.JavaPath!;
 
+        phase?.Report(LaunchPhase.Ready);
         Directory.CreateDirectory(settings.GameDirectory);
 
         // Written before the first launch so the language picker and the accessibility

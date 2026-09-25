@@ -792,6 +792,24 @@
     <x:String x:Key="Catalog_Back">К сборке</x:String>
     <x:String x:Key="Catalog_Title">Каталог Modrinth</x:String>
     <x:String x:Key="Common_Done">Готово</x:String>
+    <!-- Launch steps -->
+    <x:String x:Key="Launch_StageLoader">Загрузчик {0}</x:String>
+    <x:String x:Key="Launch_StageMods">Моды сборки</x:String>
+    <x:String x:Key="Launch_StageFiles">Файлы игры</x:String>
+    <x:String x:Key="Launch_StageJava">Java</x:String>
+    <x:String x:Key="Launch_StageStart">Запуск</x:String>
+    <x:String x:Key="Launch_Files">{0} из {1}</x:String>
+    <x:String x:Key="Launch_Resolving">читаю версию</x:String>
+    <x:String x:Key="Launch_Unpacking">распаковка</x:String>
+    <x:String x:Key="Launch_JavaCheck">проверяю, скачиваю, если нет</x:String>
+    <x:String x:Key="Launch_Done">готово</x:String>
+    <x:String x:Key="Launch_Failed">ошибка</x:String>
+    <!-- Support report -->
+    <x:String x:Key="Report_Title">Отчёт для поддержки</x:String>
+    <x:String x:Key="Report_Hint">Логи лаунчера и игры, состав сборки, настройки и проверка сети одним файлом, чтобы прислать администратору.</x:String>
+    <x:String x:Key="Report_Collect">Собрать отчёт</x:String>
+    <x:String x:Key="Report_Saved">Отчёт сохранён: {0}. Путь в буфере обмена, файл показан в проводнике.</x:String>
+    <x:String x:Key="Report_Failed">Не удалось собрать отчёт: {0}</x:String>
     <x:String x:Key="Check_FixDisableNew">Выключить новый</x:String>
     <x:String x:Key="Check_KeepOld">Оставить старые версии</x:String>
     <x:String x:Key="Check_FixedAll">Исправлено: {0} из {1}</x:String>

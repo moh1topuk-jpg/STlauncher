@@ -701,6 +701,7 @@ public partial class MainWindowViewModel
         }
 
         AppendConsole($"--- Build: {plan.Pending.Count} mod(s) to install ---");
+        BeginSyncOnlyStages();
 
         var downloadedCount = 0;
         var index = 0;
@@ -709,6 +710,7 @@ public partial class MainWindowViewModel
         {
             index++;
             Status = Localize("Builds_SyncItem", "Build: {0} ({1}/{2})", item.Name, index, plan.Pending.Count);
+            ReportSyncProgress(index, plan.Pending.Count, item.Name);
 
             var result = await _catalogInstaller.InstallAsync(item, directory, gameVersion, loader);
 
@@ -742,6 +744,7 @@ public partial class MainWindowViewModel
             }
         }
 
+        Mark(_stageMods, LaunchStageState.Done, Localize("Launch_Done", "done"));
         return downloadedCount;
     }
 

@@ -452,6 +452,16 @@
                                            IsVisible="{Binding NetworkCheckSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                             </StackPanel>
 
+                            <!-- Everything the admin asks for, in one file. -->
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                <StackPanel Spacing="2" VerticalAlignment="Center">
+                                    <TextBlock Text="{DynamicResource Report_Title}" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{DynamicResource Report_Hint}" Classes="faint" TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <Button Grid.Column="1" Classes="ghost" Content="{DynamicResource Report_Collect}"
+                                        Command="{Binding CollectSupportReportCommand}"/>
+                            </Grid>
+
                             <StackPanel Spacing="10">
                                 <CheckBox Content="{DynamicResource Settings_ForceUpdate}" IsChecked="{Binding ForceUpdate}"/>
                                 <StackPanel Spacing="4">

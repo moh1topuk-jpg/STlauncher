@@ -34,6 +34,9 @@ sealed class Program
     public static AppBuilder BuildAvaloniaApp()
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()
+            // The launcher draws a few dozen small textures; the default cache is sized
+            // for a game. A smaller one keeps the working set down on weak machines.
+            .With(new SkiaOptions { MaxGpuResourceSizeBytes = 96L * 1024 * 1024 })
             .WithInterFont()
             .LogToTrace();
 
