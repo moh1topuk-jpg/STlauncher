@@ -8,6 +8,8 @@
 
 ## [Не выпущено]
 
+## [0.5.4] — 2026-09-26
+
 ### Добавлено
 - Запуск показывает шаги: загрузчик, моды сборки, файлы игры, Java, запуск, с отметками
   и счётчиками. На первом запуске, когда качаются Java, игра и все моды, видно, что
@@ -454,7 +456,8 @@
 - Бэкапы миров по событиям: раз в сутки, перед изменением модов, перед запуском.
 - Автообновление с уведомлением и установкой одной кнопкой.
 
-[Не выпущено]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.5.3...HEAD
+[Не выпущено]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.5.4...HEAD
+[0.5.4]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.5.3...v0.5.4
 [0.5.3]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.5.0...v0.5.1
