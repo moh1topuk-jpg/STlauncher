@@ -361,7 +361,7 @@
                                 <TextBlock Text="{Binding LastPlayedLabel}" Classes="muted" FontSize="13"/>
                             </StackPanel>
                             <!-- Hours in this build, and in all of them when that is a different number. -->
-                            <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding HasPlaytime}">
+                            <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding HasPlaytime}" IsHitTestVisible="False">
                                 <Border Width="8" Height="8" CornerRadius="4" VerticalAlignment="Center"
                                         Background="{DynamicResource TextMutedBrush}"/>
                                 <StackPanel Spacing="2">

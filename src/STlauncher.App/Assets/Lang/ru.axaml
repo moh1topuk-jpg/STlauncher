@@ -898,6 +898,7 @@
     <x:String x:Key="Settings_DiscreteGpu">Запускать игру на дискретной видеокарте (Windows)</x:String>
     <x:String x:Key="Settings_DiscreteGpuHint">Перед запуском лаунчер отмечает Java игры в настройках графики Windows как «высокая производительность». На ноутбуках с двумя видеокартами игра иначе идёт на встроенной.</x:String>
     <x:String x:Key="Game_Playtime">Наиграно {0}, за неделю {1}</x:String>
+    <x:String x:Key="Game_PlaytimeNone">Время игры считается со следующего запуска</x:String>
     <x:String x:Key="Game_PlaytimeTotalOnly">Наиграно {0}</x:String>
     <x:String x:Key="Game_PlaytimeAll">{0} во всех сборках</x:String>
     <x:String x:Key="Time_Minutes">{0} мин</x:String>

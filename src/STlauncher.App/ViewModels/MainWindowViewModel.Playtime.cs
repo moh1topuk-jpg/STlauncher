@@ -11,14 +11,23 @@ namespace STlauncher.App.ViewModels;
 /// </summary>
 public partial class MainWindowViewModel
 {
-    /// <summary>"Played 12 h 30 min in this build, 3 h this week"; empty before the first run.</summary>
+    /// <summary>
+    /// "Played 12 h 30 min in this build, 3 h this week". Before the first counted session
+    /// the line says so, rather than hiding: a build last played yesterday with no hours
+    /// next to it looks like a counter that lost the number.
+    /// </summary>
     public string PlaytimeLabel
     {
         get
         {
-            if (SelectedInstance is not { } instance || instance.PlaySeconds <= 0)
+            if (SelectedInstance is not { } instance)
             {
                 return string.Empty;
+            }
+
+            if (instance.PlaySeconds <= 0)
+            {
+                return Localize("Game_PlaytimeNone", "Play time is counted from the next launch");
             }
 
             var total = Playtime.Total(instance);
