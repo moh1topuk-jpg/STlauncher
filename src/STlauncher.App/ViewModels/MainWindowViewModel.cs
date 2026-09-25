@@ -756,7 +756,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
             Status = Localize("Status_CheckingBuildMods", "Checking build mods…");
 
-            if (SelectedInstance is not null)
+            // An offer still on the main screen means the player has not said yes: the
+            // game starts with the build exactly as it is.
+            if (SelectedInstance is not null && !HasPendingBuildSync)
             {
                 await EnsureBuildItemsInstalledAsync(SelectedInstance);
                 RefreshMods();
@@ -818,6 +820,7 @@ public partial class MainWindowViewModel : ViewModelBase
         catch (Exception ex)
         {
             Status = Localize("Error_Launch", "Launch failed: {0}", ex.Message);
+            _ = ExplainDownloadFailureAsync(Localize("Net_WhatGame", "the game files"), ex);
             AppendConsole(ex.ToString());
         }
         finally
@@ -1240,8 +1243,8 @@ public partial class MainWindowViewModel : ViewModelBase
             SafeModeRestore = _safeModeRestore.ToList(),
             UsageStats = UsageStats,
             InstallId = _installId,
-            BuildChangeLines = BuildChangeLines.ToList(),
-            BuildChangeTitle = string.IsNullOrEmpty(BuildChangeTitle) ? null : BuildChangeTitle,
+            BuildChangeLines = HasPendingBuildSync ? new List<string>() : BuildChangeLines.ToList(),
+            BuildChangeTitle = HasPendingBuildSync || string.IsNullOrEmpty(BuildChangeTitle) ? null : BuildChangeTitle,
             LastSeenVersion = _lastSeenVersion,
             SkinSource = SelectedSkinSource.ToString(),
             ShowOldReleases = ShowOldReleases,

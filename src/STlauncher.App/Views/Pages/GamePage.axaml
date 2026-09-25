@@ -353,7 +353,19 @@
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
-                            <TextBlock Text="{DynamicResource BuildChange_Hint}" Classes="faint" TextWrapping="Wrap"/>
+                            <TextBlock Text="{DynamicResource BuildChange_Hint}" Classes="faint" TextWrapping="Wrap"
+                                       IsVisible="{Binding !HasPendingBuildSync}"/>
+
+                            <!-- Nothing has happened yet: the player decides. -->
+                            <StackPanel Spacing="10" IsVisible="{Binding HasPendingBuildSync}">
+                                <TextBlock Text="{DynamicResource BuildChange_PendingHint}" Classes="faint" TextWrapping="Wrap"/>
+                                <WrapPanel>
+                                    <Button Classes="primary small" Margin="0,0,8,6" Content="{DynamicResource BuildChange_Apply}"
+                                            Command="{Binding ApplyPendingBuildSyncCommand}" IsEnabled="{Binding !IsBuildSyncBusy}"/>
+                                    <Button Classes="ghost small" Margin="0,0,8,6" Content="{DynamicResource BuildChange_Later}"
+                                            Command="{Binding DeclinePendingBuildSyncCommand}"/>
+                                </WrapPanel>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
 

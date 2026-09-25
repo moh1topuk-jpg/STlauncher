@@ -297,6 +297,7 @@ public partial class MainWindowViewModel
         catch (Exception ex)
         {
             Status = Localize("Error_InstallMod", "Mod install failed: {0}", ex.Message);
+            _ = ExplainDownloadFailureAsync(Localize("Net_WhatMod", "the mod"), ex);
             AppendConsole(ex.ToString());
         }
         finally
@@ -532,6 +533,7 @@ public partial class MainWindowViewModel
         catch (Exception ex)
         {
             Status = Localize("Error_InstallMod", "Mod install failed: {0}", ex.Message);
+            _ = ExplainDownloadFailureAsync(Localize("Net_WhatMod", "the mod"), ex);
         }
         finally
         {

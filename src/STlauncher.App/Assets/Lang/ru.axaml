@@ -675,6 +675,16 @@
     <x:String x:Key="BuildChange_Removed">Убрано: {0}</x:String>
     <x:String x:Key="BuildChange_Updated">Обновлено: {0}</x:String>
     <x:String x:Key="BuildChange_Hint">Изменения внёс владелец сервера в каталог сборки. Файлы уже на месте.</x:String>
+    <x:String x:Key="BuildChange_PendingTitle">«{0}»: в каталоге есть изменения</x:String>
+    <x:String x:Key="BuildChange_PendingHint">Пока ничего не скачано и не изменено. Обновить сейчас или отложить до следующего запуска?</x:String>
+    <x:String x:Key="BuildChange_Apply">Обновить</x:String>
+    <x:String x:Key="BuildChange_Later">Не сейчас</x:String>
+    <x:String x:Key="BuildChange_Server">Сервер: {0} → {1}</x:String>
+    <x:String x:Key="BuildChange_WillAdd">Добавится: {0}</x:String>
+    <x:String x:Key="BuildChange_WillUpdate">Обновится: {0}</x:String>
+    <x:String x:Key="BuildChange_WillRestore">Вернутся недостающие файлы: {0}</x:String>
+    <x:String x:Key="BuildChange_WillRemove">Уберётся: {0}</x:String>
+    <x:String x:Key="Builds_SyncDeclined">Сборка оставлена как есть. Спрошу снова при следующем запуске.</x:String>
     <x:String x:Key="Settings_UsageStats">Анонимная статистика запусков</x:String>
     <x:String x:Key="Settings_UsageStatsHint">Раз за запуск лаунчер отправляет на сборщик статистики случайный идентификатор установки, версию, язык, ОС и исход проверки обновлений; если игра упала — причину падения, версию игры и загрузчик. Ник, файлы, пути и адрес не передаются. Так владелец сервера видит, сколько людей пользуются лаунчером и что у них ломается.</x:String>
     <x:String x:Key="Settings_UsageNumbers">Пользователей лаунчера: {0} за сутки · {1} за 7 дней · запусков за сутки: {2}</x:String>
@@ -798,6 +808,10 @@
     <x:String x:Key="Net_SomeFail">Не отвечают {0} из {1}. Скопируйте отчёт и отправьте администратору сервера.</x:String>
     <x:String x:Key="Net_Error">Проверка не удалась: {0}</x:String>
     <x:String x:Key="Net_Copied">Отчёт скопирован</x:String>
+    <x:String x:Key="Net_AfterFailure">Не удалось скачать {0}. Не отвечают: {1}. Подробности: Настройки → Проверка сети.</x:String>
+    <x:String x:Key="Net_AfterFailureAllOk">Не удалось скачать {0}, хотя все адреса отвечают. Попробуйте ещё раз через минуту.</x:String>
+    <x:String x:Key="Net_WhatMod">мод</x:String>
+    <x:String x:Key="Net_WhatGame">файлы игры</x:String>
     <!-- Screenshots, settings transfer, performance presets -->
     <x:String x:Key="Builds_TabScreenshots">Скриншоты</x:String>
     <x:String x:Key="Shots_Hint">Всё, что игра сохранила по F2 в этой сборке. Клик открывает во весь экран.</x:String>

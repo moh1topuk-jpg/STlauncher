@@ -100,6 +100,12 @@ public partial class MainWindowViewModel
     [RelayCommand]
     private void DismissBuildChangeNotice()
     {
+        if (HasPendingBuildSync)
+        {
+            DeclinePendingBuildSync();
+            return;
+        }
+
         BuildChangeLines.Clear();
         BuildChangeTitle = string.Empty;
         OnPropertyChanged(nameof(HasBuildChangeNotice));

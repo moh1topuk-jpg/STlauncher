@@ -88,6 +88,48 @@ public partial class MainWindowViewModel
         }
     }
 
+    /// <summary>
+    /// After a download failed for a network-looking reason: runs the check and turns the
+    /// status line from a bare error into the list of hosts that did not answer, so the
+    /// player knows whether it is their connection, their provider, or a service.
+    /// </summary>
+    private async Task ExplainDownloadFailureAsync(string what, Exception ex)
+    {
+        if (!LooksLikeNetworkTrouble(ex) || IsNetworkCheckRunning)
+        {
+            return;
+        }
+
+        AppendConsole($"[net] could not download {what} ({ex.GetType().Name}); running the network check");
+        await RunNetworkCheckAsync();
+
+        var failed = NetworkChecks.Where(i => i.IsFailed).Select(i => i.Display).ToList();
+
+        Status = failed.Count == 0
+            ? Localize("Net_AfterFailureAllOk", "Could not download {0}, yet every address answers. Try again in a minute.", what)
+            : Localize("Net_AfterFailure", "Could not download {0}. Not answering: {1}. Details: Settings → Network check.", what, string.Join(", ", failed));
+
+        AppendConsole("[net] " + string.Join("; ", NetworkChecks.Select(i => i.Result?.ToString() ?? i.Display)));
+    }
+
+    private static bool LooksLikeNetworkTrouble(Exception ex)
+    {
+        for (var e = (Exception?)ex; e is not null; e = e.InnerException)
+        {
+            if (e is System.Net.Http.HttpRequestException
+                or System.Net.Sockets.SocketException
+                or System.Net.WebException
+                or System.IO.IOException
+                or TimeoutException
+                or TaskCanceledException)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     [RelayCommand]
     private async Task RunNetworkCheckAsync()
     {

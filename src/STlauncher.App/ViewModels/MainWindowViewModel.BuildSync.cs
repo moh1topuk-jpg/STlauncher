@@ -97,25 +97,28 @@ public partial class MainWindowViewModel
             _allInstances.Add(instance);
         }
 
-        var before = BuildSnapshot.Of(instance!);
-        var changes = CatalogBuildSync.Apply(instance!, build, isNew);
-
-        if (isNew || changes.Any)
-        {
-            _instances.Save(instance!);
-        }
-
         if (isNew)
         {
+            CatalogBuildSync.Apply(instance!, build, isNew: true);
+            _instances.Save(instance!);
             AppendConsole($"[builds] created '{instance!.Name}' from the catalog");
+            return instance;
         }
-        else if (changes.Any)
-        {
-            AppendConsole($"[builds] '{instance!.Name}' updated from the catalog");
 
-            // Said on the main screen, not only in the console: the owner changed the
-            // build, and the player deserves to know what is different today.
-            AnnounceBuildChanges(instance!.Name, BuildChangeNotice.Between(before, BuildSnapshot.Of(instance), CatalogItemName));
+        // Not applied here. A change to a build the player already has is offered on the
+        // main screen and made only when they say so; until then the build stays as it is.
+        var preview = PreviewCatalogBuild(instance!, build);
+        var notice = BuildChangeNotice.Between(BuildSnapshot.Of(instance!), BuildSnapshot.Of(preview), CatalogItemName);
+        var serverChanged = !string.Equals(instance!.ServerAddress, preview.ServerAddress, StringComparison.OrdinalIgnoreCase) ||
+                            !string.Equals(instance.ServerName, preview.ServerName, StringComparison.Ordinal);
+
+        if (notice.Any || serverChanged)
+        {
+            _pendingCatalogBuild = build;
+            _pendingCatalogNotice = notice;
+            _pendingServerLine = serverChanged
+                ? Localize("BuildChange_Server", "Server: {0} → {1}", instance.ServerAddress ?? "-", preview.ServerAddress ?? "-")
+                : null;
         }
 
         return instance;
@@ -156,27 +159,240 @@ public partial class MainWindowViewModel
         {
             IsBuildSyncBusy = true;
 
-            var downloaded = await EnsureBuildItemsInstalledAsync(instance);
+            var plan = PlanBuildSync(instance);
+            var pendingBuild = _pendingCatalogBuild;
 
-            if (downloaded > 0)
+            if (pendingBuild is null && !plan.Any)
             {
-                Status = Localize("Builds_SyncDone", "Build updated: {0} file(s) downloaded", downloaded);
+                AppendConsole($"[build] {instance.EnabledCatalogItems.Count} item(s) checked, nothing to do");
+
+                if (IsSelectedBuild(instance))
+                {
+                    Status = Localize("Builds_SyncReady", "Build is up to date - ready to play");
+                }
+
+                return;
             }
-            else if (string.Equals(instance.Id, SelectedInstance?.Id, StringComparison.OrdinalIgnoreCase))
+
+            // A build with nothing of the player's in it yet is filled without asking: that
+            // is the first install, and there is nothing to lose. Anything else changes what
+            // they have, so it is offered rather than made.
+            if (pendingBuild is null && instance.InstalledMods.Count == 0)
             {
-                Status = Localize("Builds_SyncReady", "Build is up to date - ready to play");
+                var downloaded = await ApplyBuildSyncPlanAsync(instance, plan);
+                ReportSyncOutcome(instance, downloaded);
+                return;
             }
+
+            OfferBuildSync(instance, plan);
         }
         catch (Exception ex)
         {
             Status = Localize("Builds_SyncFailed", "Could not update the build: {0}", ex.Message);
             AppendConsole($"[builds] sync failed: {ex}");
+            _ = ExplainDownloadFailureAsync(instance.Name, ex);
         }
         finally
         {
             IsBuildSyncBusy = false;
             RefreshMods();
         }
+    }
+
+    private void ReportSyncOutcome(Instance instance, int downloaded)
+    {
+        if (downloaded > 0)
+        {
+            Status = Localize("Builds_SyncDone", "Build updated: {0} file(s) downloaded", downloaded);
+        }
+        else if (IsSelectedBuild(instance))
+        {
+            Status = Localize("Builds_SyncReady", "Build is up to date - ready to play");
+        }
+    }
+
+    // ===================== The offer =====================
+
+    private CatalogBuild? _pendingCatalogBuild;
+    private BuildChangeNotice? _pendingCatalogNotice;
+    private string? _pendingServerLine;
+    private Instance? _pendingSyncInstance;
+
+    /// <summary>True while the main screen shows catalog changes waiting for a yes or no.</summary>
+    [ObservableProperty]
+    private bool _hasPendingBuildSync;
+
+    /// <summary>The build definition with the catalog applied, on a copy, to word the difference.</summary>
+    private static Instance PreviewCatalogBuild(Instance instance, CatalogBuild build)
+    {
+        var copy = new Instance
+        {
+            Id = instance.Id,
+            Name = instance.Name,
+            VersionId = instance.VersionId,
+            Loader = instance.Loader,
+            LoaderVersion = instance.LoaderVersion,
+            ServerName = instance.ServerName,
+            ServerAddress = instance.ServerAddress,
+            CatalogBuildId = instance.CatalogBuildId,
+            MaxMemoryMb = instance.MaxMemoryMb,
+            EnabledCatalogItems = instance.EnabledCatalogItems.ToList()
+        };
+
+        CatalogBuildSync.Apply(copy, build);
+        return copy;
+    }
+
+    /// <summary>
+    /// Puts the catalog's changes on the main screen as a question. Nothing is downloaded,
+    /// deleted or rewritten until the player presses "Update".
+    /// </summary>
+    private void OfferBuildSync(Instance instance, BuildSyncPlan plan)
+    {
+        var lines = new List<string>();
+        var notice = _pendingCatalogNotice;
+
+        if (notice is not null)
+        {
+            if (notice.VersionChanged)
+            {
+                lines.Add(Localize("BuildChange_Version", "Minecraft {0} → {1}", notice.OldVersion, notice.NewVersion));
+            }
+
+            if (notice.LoaderChanged)
+            {
+                lines.Add(Localize("BuildChange_Loader", "{0} → {1}", notice.OldLoader, notice.NewLoader));
+            }
+        }
+
+        if (_pendingServerLine is not null)
+        {
+            lines.Add(_pendingServerLine);
+        }
+
+        var added = (notice?.Added ?? Array.Empty<string>()).Concat(plan.Added).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        var removed = (notice?.Removed ?? Array.Empty<string>())
+            .Concat(plan.Removed.Select(r => r.Name ?? r.FileName))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (added.Count > 0)
+        {
+            lines.Add(Localize("BuildChange_WillAdd", "Will be added: {0}", string.Join(", ", added)));
+        }
+
+        if (plan.Updated.Count > 0)
+        {
+            lines.Add(Localize("BuildChange_WillUpdate", "Will be updated: {0}", string.Join(", ", plan.Updated)));
+        }
+
+        if (plan.Restored.Count > 0)
+        {
+            lines.Add(Localize("BuildChange_WillRestore", "Missing files will be brought back: {0}", string.Join(", ", plan.Restored)));
+        }
+
+        if (removed.Count > 0)
+        {
+            lines.Add(Localize("BuildChange_WillRemove", "Will be removed: {0}", string.Join(", ", removed)));
+        }
+
+        _pendingSyncInstance = instance;
+        BuildChangeLines.Clear();
+
+        foreach (var line in lines)
+        {
+            BuildChangeLines.Add(line);
+        }
+
+        BuildChangeTitle = Localize("BuildChange_PendingTitle", "\"{0}\": the catalog has changes", instance.Name);
+        HasPendingBuildSync = true;
+        OnPropertyChanged(nameof(HasBuildChangeNotice));
+        AppendConsole($"[build] '{instance.Name}': {lines.Count} change(s) offered, waiting for the player");
+    }
+
+    /// <summary>The player said yes: the definition first, then the files.</summary>
+    [RelayCommand]
+    private async Task ApplyPendingBuildSyncAsync()
+    {
+        var instance = _pendingSyncInstance;
+        var build = _pendingCatalogBuild;
+
+        if (instance is null)
+        {
+            return;
+        }
+
+        ClearPendingBuildSync();
+        _buildSync = ApplyOfferedBuildSyncAsync(instance, build);
+        await _buildSync;
+    }
+
+    private async Task ApplyOfferedBuildSyncAsync(Instance instance, CatalogBuild? build)
+    {
+        try
+        {
+            IsBuildSyncBusy = true;
+            Status = Localize("Builds_SyncBusy", "Updating the build from the catalog…");
+
+            if (build is not null)
+            {
+                var before = BuildSnapshot.Of(instance);
+                var changes = CatalogBuildSync.Apply(instance, build);
+                _instances.Save(instance);
+                AppendConsole($"[builds] '{instance.Name}' updated from the catalog");
+
+                if (changes.Any)
+                {
+                    AnnounceBuildChanges(instance.Name, BuildChangeNotice.Between(before, BuildSnapshot.Of(instance), CatalogItemName));
+                }
+
+                if (IsSelectedBuild(instance))
+                {
+                    await ApplyBuildToEditorAsync(build);
+                }
+            }
+
+            var downloaded = await ApplyBuildSyncPlanAsync(instance, PlanBuildSync(instance));
+            ReportSyncOutcome(instance, downloaded);
+        }
+        catch (Exception ex)
+        {
+            Status = Localize("Builds_SyncFailed", "Could not update the build: {0}", ex.Message);
+            AppendConsole($"[builds] sync failed: {ex}");
+            _ = ExplainDownloadFailureAsync(instance.Name, ex);
+        }
+        finally
+        {
+            IsBuildSyncBusy = false;
+            RefreshMods();
+        }
+    }
+
+    /// <summary>The player said not now: nothing changes, and the question returns on the next start.</summary>
+    [RelayCommand]
+    private void DeclinePendingBuildSync()
+    {
+        if (!HasPendingBuildSync)
+        {
+            return;
+        }
+
+        var name = _pendingSyncInstance?.Name;
+        ClearPendingBuildSync();
+        Status = Localize("Builds_SyncDeclined", "The build is left as it is. You will be asked again on the next start.");
+        AppendConsole($"[build] '{name}': catalog changes declined for this session");
+    }
+
+    private void ClearPendingBuildSync()
+    {
+        _pendingSyncInstance = null;
+        _pendingCatalogBuild = null;
+        _pendingCatalogNotice = null;
+        _pendingServerLine = null;
+        HasPendingBuildSync = false;
+        BuildChangeLines.Clear();
+        BuildChangeTitle = string.Empty;
+        OnPropertyChanged(nameof(HasBuildChangeNotice));
     }
 
     /// <summary>Waits for a startup sync that is still running, so a launch never races it.</summary>
@@ -218,6 +434,9 @@ public partial class MainWindowViewModel
         try
         {
             IsBuildImportBusy = true;
+
+            // Asked for by hand, so an offer waiting on the main screen is answered by this.
+            ClearPendingBuildSync();
 
             // The startup sync may be downloading into the same folder right now.
             await WaitForBuildSyncAsync();
@@ -366,41 +585,37 @@ public partial class MainWindowViewModel
     /// version in the catalog.
     /// </summary>
     /// <returns>How many files were downloaded.</returns>
-    private async Task<int> EnsureBuildItemsInstalledAsync(Instance instance)
+    /// <summary>What a catalog sync would do to a build, worked out before anything is touched.</summary>
+    private sealed record BuildSyncPlan(
+        IReadOnlyList<InstalledModRecord> Removed,
+        IReadOnlyList<CatalogItem> Pending,
+        IReadOnlyList<string> Added,
+        IReadOnlyList<string> Updated,
+        IReadOnlyList<string> Restored)
     {
-        if (instance is null)
-        {
-            return 0;
-        }
+        public bool Any => Removed.Count > 0 || Pending.Count > 0;
+    }
 
-        // Backups are scoped to the build that is open, so only back up when the sync is
-        // touching that one.
-        if (string.Equals(instance.Id, SelectedInstance?.Id, StringComparison.OrdinalIgnoreCase))
-        {
-            await MaybeBackupAsync(BackupTrigger.BeforeModChange);
-        }
-
-        // The instance is the authority here, not the editor: the startup sync runs for
-        // the recommended build even when the player has another one selected.
+    /// <summary>
+    /// Compares the build's records and files with the catalog and lists what a sync would
+    /// change. Nothing is downloaded or deleted here; that is the caller's decision.
+    /// </summary>
+    private BuildSyncPlan PlanBuildSync(Instance instance)
+    {
         var directory = _instances.GameDirectory(instance);
-        var gameVersion = instance.VersionId;
-        var loader = instance.Loader;
         var enabledIds = instance.EnabledCatalogItems;
 
-        // Catalog mods that are no longer part of the build are removed.
+        // Catalog mods that are no longer part of the build.
         var removed = instance.InstalledMods
             .Where(m => m.Source == ModSource.Catalog &&
                         m.Id is not null &&
                         !enabledIds.Contains(m.Id, StringComparer.OrdinalIgnoreCase))
             .ToList();
 
-        foreach (var record in removed)
-        {
-            DeleteInstalledFile(instance, record);
-        }
-
         var pending = new List<CatalogItem>();
-        var bumped = new List<string>();
+        var added = new List<string>();
+        var updated = new List<string>();
+        var restored = new List<string>();
 
         foreach (var id in enabledIds)
         {
@@ -422,39 +637,78 @@ public partial class MainWindowViewModel
 
             var action = CatalogSyncDecision.Decide(item, record, fileExists);
 
-            if (action.NeedsInstall())
+            if (!action.NeedsInstall())
             {
-                pending.Add(item);
+                continue;
             }
+
+            pending.Add(item);
 
             if (action == CatalogSyncAction.Update)
             {
-                bumped.Add(item.Name);
+                updated.Add(item.Name);
             }
+            else if (record is null)
+            {
+                added.Add(item.Name);
+            }
+            else
+            {
+                restored.Add(item.Name);
+            }
+        }
+
+        return new BuildSyncPlan(removed, pending, added, updated, restored);
+    }
+
+    /// <summary>Carries a plan out: removes what left the catalog, downloads what it lists.</summary>
+    private async Task<int> ApplyBuildSyncPlanAsync(Instance instance, BuildSyncPlan plan)
+    {
+        if (!plan.Any)
+        {
+            AppendConsole($"[build] {instance.EnabledCatalogItems.Count} item(s) checked, nothing to do");
+            return 0;
+        }
+
+        // Backups are scoped to the build that is open, so only back up when the sync is
+        // touching that one.
+        if (IsSelectedBuild(instance))
+        {
+            await MaybeBackupAsync(BackupTrigger.BeforeModChange);
+        }
+
+        // The instance is the authority here, not the editor: the startup sync runs for
+        // the recommended build even when the player has another one selected.
+        var directory = _instances.GameDirectory(instance);
+        var gameVersion = instance.VersionId;
+        var loader = instance.Loader;
+
+        foreach (var record in plan.Removed)
+        {
+            DeleteInstalledFile(instance, record);
         }
 
         // A pinned version moved in the catalog: that is an update the player should
         // hear about, unlike a plain re-download of a missing file.
-        if (bumped.Count > 0 && !string.IsNullOrWhiteSpace(instance.CatalogBuildId))
+        if (plan.Updated.Count > 0 && !string.IsNullOrWhiteSpace(instance.CatalogBuildId))
         {
-            AnnounceBuildUpdates(instance.Name, bumped);
+            AnnounceBuildUpdates(instance.Name, plan.Updated);
         }
 
-        if (pending.Count == 0)
+        if (plan.Pending.Count == 0)
         {
-            AppendConsole($"[build] {enabledIds.Count} item(s) checked, nothing to do");
             return 0;
         }
 
-        AppendConsole($"--- Build: {pending.Count} mod(s) to install ---");
+        AppendConsole($"--- Build: {plan.Pending.Count} mod(s) to install ---");
 
         var downloadedCount = 0;
         var index = 0;
 
-        foreach (var item in pending)
+        foreach (var item in plan.Pending)
         {
             index++;
-            Status = Localize("Builds_SyncItem", "Build: {0} ({1}/{2})", item.Name, index, pending.Count);
+            Status = Localize("Builds_SyncItem", "Build: {0} ({1}/{2})", item.Name, index, plan.Pending.Count);
 
             var result = await _catalogInstaller.InstallAsync(item, directory, gameVersion, loader);
 
@@ -490,6 +744,13 @@ public partial class MainWindowViewModel
 
         return downloadedCount;
     }
+
+    /// <summary>Plan and apply in one go, for the paths where the player asked for the sync.</summary>
+    private Task<int> EnsureBuildItemsInstalledAsync(Instance instance)
+        => instance is null ? Task.FromResult(0) : ApplyBuildSyncPlanAsync(instance, PlanBuildSync(instance));
+
+    private bool IsSelectedBuild(Instance instance)
+        => string.Equals(instance.Id, SelectedInstance?.Id, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Deletes a recorded file and forgets it.</summary>
     private void DeleteInstalledFile(Instance instance, InstalledModRecord record)

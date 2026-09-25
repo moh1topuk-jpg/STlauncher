@@ -675,6 +675,16 @@
     <x:String x:Key="BuildChange_Removed">Removed: {0}</x:String>
     <x:String x:Key="BuildChange_Updated">Updated: {0}</x:String>
     <x:String x:Key="BuildChange_Hint">The server owner changed the build in the catalog. The files are already in place.</x:String>
+    <x:String x:Key="BuildChange_PendingTitle">"{0}": the catalog has changes</x:String>
+    <x:String x:Key="BuildChange_PendingHint">Nothing has been downloaded or changed yet. Update now, or leave it until the next start?</x:String>
+    <x:String x:Key="BuildChange_Apply">Update</x:String>
+    <x:String x:Key="BuildChange_Later">Not now</x:String>
+    <x:String x:Key="BuildChange_Server">Server: {0} → {1}</x:String>
+    <x:String x:Key="BuildChange_WillAdd">Will be added: {0}</x:String>
+    <x:String x:Key="BuildChange_WillUpdate">Will be updated: {0}</x:String>
+    <x:String x:Key="BuildChange_WillRestore">Missing files will be brought back: {0}</x:String>
+    <x:String x:Key="BuildChange_WillRemove">Will be removed: {0}</x:String>
+    <x:String x:Key="Builds_SyncDeclined">The build is left as it is. You will be asked again on the next start.</x:String>
     <x:String x:Key="Settings_UsageStats">Anonymous launch statistics</x:String>
     <x:String x:Key="Settings_UsageStatsHint">Once per launch the launcher sends the statistics collector a random installation id, the version, the language, the OS and how the update check went; after a game crash, the cause, game version and loader. No nickname, files, paths or address are sent. That is how the server owner sees how many people use the launcher and what breaks for them.</x:String>
     <x:String x:Key="Settings_UsageNumbers">Launcher users: {0} today · {1} over 7 days · launches today: {2}</x:String>
@@ -798,6 +808,10 @@
     <x:String x:Key="Net_SomeFail">No answer from {0} of {1}. Copy the report and send it to the server admin.</x:String>
     <x:String x:Key="Net_Error">The check itself failed: {0}</x:String>
     <x:String x:Key="Net_Copied">Report copied</x:String>
+    <x:String x:Key="Net_AfterFailure">Could not download {0}. Not answering: {1}. Details: Settings → Network check.</x:String>
+    <x:String x:Key="Net_AfterFailureAllOk">Could not download {0}, yet every address answers. Try again in a minute.</x:String>
+    <x:String x:Key="Net_WhatMod">the mod</x:String>
+    <x:String x:Key="Net_WhatGame">the game files</x:String>
     <!-- Screenshots, settings transfer, performance presets -->
     <x:String x:Key="Builds_TabScreenshots">Screenshots</x:String>
     <x:String x:Key="Shots_Hint">Everything the game saved with F2 in this build. A click opens it full size.</x:String>

@@ -44,21 +44,97 @@ public sealed partial class LoaderService
     [GeneratedRegex("<version>([^<]+)</version>")]
     private static partial Regex MavenVersionRegex();
 
+    /// <summary>A loader list younger than this is used without asking the network.</summary>
+    private static readonly TimeSpan LoaderListFreshFor = TimeSpan.FromHours(12);
+
+    /// <summary>
+    /// The cached copy first: the list of loader builds changes a few times a month, and
+    /// fetching it on every start cost one to two seconds of every launch. A failed fetch
+    /// falls back to whatever copy is on disk, however old.
+    /// </summary>
     public async Task<IReadOnlyList<LoaderVersion>> GetLoaderVersionsAsync(
         LoaderKind kind,
         string gameVersion,
         CancellationToken cancellationToken = default)
     {
-        return kind switch
+        if (kind == LoaderKind.Vanilla || string.IsNullOrWhiteSpace(gameVersion))
         {
-            LoaderKind.Fabric => await GetFabricLikeAsync($"{FabricMeta}/versions/loader/{gameVersion}", cancellationToken)
-                .ConfigureAwait(false),
-            LoaderKind.Quilt => await GetFabricLikeAsync($"{QuiltMeta}/versions/loader/{gameVersion}", cancellationToken)
-                .ConfigureAwait(false),
-            LoaderKind.Forge => await GetForgeAsync(gameVersion, cancellationToken).ConfigureAwait(false),
-            LoaderKind.NeoForge => await GetNeoForgeAsync(gameVersion, cancellationToken).ConfigureAwait(false),
-            _ => Array.Empty<LoaderVersion>()
-        };
+            return Array.Empty<LoaderVersion>();
+        }
+
+        var cachePath = LoaderListCachePath(kind, gameVersion);
+
+        if (TryReadLoaderList(cachePath, LoaderListFreshFor) is { } fresh)
+        {
+            return fresh;
+        }
+
+        IReadOnlyList<LoaderVersion> fetched;
+
+        try
+        {
+            fetched = kind switch
+            {
+                LoaderKind.Fabric => await GetFabricLikeAsync($"{FabricMeta}/versions/loader/{gameVersion}", cancellationToken)
+                    .ConfigureAwait(false),
+                LoaderKind.Quilt => await GetFabricLikeAsync($"{QuiltMeta}/versions/loader/{gameVersion}", cancellationToken)
+                    .ConfigureAwait(false),
+                LoaderKind.Forge => await GetForgeAsync(gameVersion, cancellationToken).ConfigureAwait(false),
+                LoaderKind.NeoForge => await GetNeoForgeAsync(gameVersion, cancellationToken).ConfigureAwait(false),
+                _ => Array.Empty<LoaderVersion>()
+            };
+        }
+        catch (Exception) when (TryReadLoaderList(cachePath, TimeSpan.MaxValue) is { } stale)
+        {
+            _logger?.LogWarning("Loader list fetch failed for {Kind} {Version}; using the cached copy.", kind, gameVersion);
+            return stale;
+        }
+
+        if (fetched.Count > 0)
+        {
+            WriteLoaderList(cachePath, fetched);
+            return fetched;
+        }
+
+        // An empty answer is what a failed Fabric fetch looks like; the old copy beats nothing.
+        return TryReadLoaderList(cachePath, TimeSpan.MaxValue) ?? fetched;
+    }
+
+    private string LoaderListCachePath(LoaderKind kind, string gameVersion)
+    {
+        var safeVersion = string.Concat(gameVersion.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
+        return Path.Combine(_paths.Meta, "loaders", $"{kind.ToString().ToLowerInvariant()}-{safeVersion}.json");
+    }
+
+    private static IReadOnlyList<LoaderVersion>? TryReadLoaderList(string path, TimeSpan maxAge)
+    {
+        try
+        {
+            if (!File.Exists(path) || DateTime.UtcNow - File.GetLastWriteTimeUtc(path) > maxAge)
+            {
+                return null;
+            }
+
+            var list = JsonSerializer.Deserialize<List<LoaderVersion>>(File.ReadAllText(path));
+            return list is { Count: > 0 } ? list : null;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    private void WriteLoaderList(string path, IReadOnlyList<LoaderVersion> versions)
+    {
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllText(path, JsonSerializer.Serialize(versions));
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning(ex, "Could not cache the loader list at {Path}.", path);
+        }
     }
 
     public async Task<string> InstallAsync(
