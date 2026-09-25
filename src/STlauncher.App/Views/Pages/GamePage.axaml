@@ -193,6 +193,9 @@
                                             Content="{DynamicResource Game_OpenLog}"
                                             Command="{Binding OpenLastGameLogCommand}"/>
                                     <Button Classes="ghost small" Margin="0,0,8,6"
+                                            Content="{DynamicResource Builds_Repair}" ToolTip.Tip="{DynamicResource Builds_RepairHint}"
+                                            Command="{Binding RepairBuildCommand}" IsEnabled="{Binding CanRepairBuild}"/>
+                                    <Button Classes="ghost small" Margin="0,0,8,6"
                                             Content="{DynamicResource Report_Collect}"
                                             Command="{Binding CollectSupportReportCommand}"/>
                                     <Button Classes="plain small" Margin="0,0,8,6" IsVisible="{Binding HasCrashReportFile}"
@@ -356,6 +359,16 @@
                                 <Border Width="8" Height="8" CornerRadius="4" VerticalAlignment="Center"
                                         Background="{DynamicResource TextMutedBrush}"/>
                                 <TextBlock Text="{Binding LastPlayedLabel}" Classes="muted" FontSize="13"/>
+                            </StackPanel>
+                            <!-- Hours in this build, and in all of them when that is a different number. -->
+                            <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding HasPlaytime}">
+                                <Border Width="8" Height="8" CornerRadius="4" VerticalAlignment="Center"
+                                        Background="{DynamicResource TextMutedBrush}"/>
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="{Binding PlaytimeLabel}" Classes="muted" FontSize="13" TextWrapping="Wrap"/>
+                                    <TextBlock Text="{Binding PlaytimeAllLabel}" Classes="faint" FontSize="12"
+                                               IsVisible="{Binding PlaytimeAllLabel, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                </StackPanel>
                             </StackPanel>
                         </StackPanel>
                     </Border>

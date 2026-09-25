@@ -4,6 +4,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
+using STlauncher.App.ViewModels;
 
 namespace STlauncher.App.Views;
 
@@ -15,6 +16,7 @@ public partial class MainWindow : Window
         ApplyBrandIcon();
         FitToScreen();
         SizeChanged += (_, _) => UpdateCompactScale();
+        DataContextChanged += (_, _) => WatchUiScale();
 
         // The mark flies to the rail logo, wherever the layout puts it.
         Splash.LayoutUpdated += (_, _) =>
@@ -54,14 +56,48 @@ public partial class MainWindow : Window
         }
     }
 
-    /// <summary>Below a comfortable height the interface shrinks as a whole, never by clipping.</summary>
+    private MainWindowViewModel? _scaleSource;
+
+    /// <summary>The player's scale lives in the view model; the window applies it as it changes.</summary>
+    private void WatchUiScale()
+    {
+        if (_scaleSource is not null)
+        {
+            _scaleSource.PropertyChanged -= OnScaleSourceChanged;
+        }
+
+        _scaleSource = DataContext as MainWindowViewModel;
+
+        if (_scaleSource is not null)
+        {
+            _scaleSource.PropertyChanged += OnScaleSourceChanged;
+        }
+
+        UpdateCompactScale();
+    }
+
+    private void OnScaleSourceChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(MainWindowViewModel.UiScale))
+        {
+            UpdateCompactScale();
+        }
+    }
+
+    /// <summary>
+    /// Below a comfortable height the interface shrinks as a whole, never by clipping. The
+    /// player's own scale comes on top, measured against the room it leaves: 125 % on a
+    /// small window would push the edges out of sight, so the compact rule wins there.
+    /// </summary>
     private void UpdateCompactScale()
     {
-        var height = ClientSize.Height;
-        var width = ClientSize.Width;
-        var scale = height < 620 || width < 980 ? 0.86
+        var user = _scaleSource?.UiScale ?? 1.0;
+        var height = ClientSize.Height / user;
+        var width = ClientSize.Width / user;
+        var compact = height < 620 || width < 980 ? 0.86
             : height < 700 || width < 1080 ? 0.93
             : 1.0;
+        var scale = compact * user;
 
         var current = Zoom.LayoutTransform is Avalonia.Media.ScaleTransform existing ? existing.ScaleX : 1.0;
 
@@ -70,7 +106,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        Zoom.LayoutTransform = scale >= 0.999 ? null : new Avalonia.Media.ScaleTransform(scale, scale);
+        Zoom.LayoutTransform = Math.Abs(scale - 1.0) < 0.001 ? null : new Avalonia.Media.ScaleTransform(scale, scale);
     }
 
     /// <summary>

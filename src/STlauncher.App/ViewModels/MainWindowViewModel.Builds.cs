@@ -118,6 +118,7 @@ public partial class MainWindowViewModel
         {
             OnPropertyChanged(nameof(SelectedInstance));
             OnPropertyChanged(nameof(LastPlayedLabel));
+            RaisePlaytimeLabels();
         }
     }
 

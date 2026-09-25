@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using STlauncher.Core.Loaders;
 
@@ -86,6 +87,14 @@ public sealed class Instance
     /// <summary>Last time this build was launched, for sorting and display.</summary>
     [JsonPropertyName("lastPlayedAt")]
     public DateTimeOffset? LastPlayedAt { get; set; }
+
+    /// <summary>Seconds played in this build, over all sessions ever, even those dropped from the list.</summary>
+    [JsonPropertyName("playSeconds")]
+    public long PlaySeconds { get; set; }
+
+    /// <summary>The most recent sessions, newest last, for "this week".</summary>
+    [JsonPropertyName("playSessions")]
+    public List<PlaySession> PlaySessions { get; set; } = new();
 
     /// <summary>Catalog mods the build installs before launch. Not serialized.</summary>
     [JsonIgnore]

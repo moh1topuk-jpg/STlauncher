@@ -85,6 +85,7 @@ public partial class MainWindowViewModel
 
     partial void OnIsBuildSyncBusyChanged(bool value)
     {
+        OnPropertyChanged(nameof(CanRepairBuild));
         OnPropertyChanged(nameof(BuildStateLabel));
         OnPropertyChanged(nameof(ShowLaunchProgress));
     }

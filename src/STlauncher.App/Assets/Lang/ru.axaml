@@ -892,4 +892,21 @@
     <x:String x:Key="Packs_Updated">{0} обновлён до {1}</x:String>
     <!-- Start splash -->
     <x:String x:Key="Splash_Loading">Собираю сборку</x:String>
+    <!-- Scale, graphics card, play time, repair -->
+    <x:String x:Key="Settings_UiScale">Масштаб интерфейса</x:String>
+    <x:String x:Key="Settings_UiScaleHint">На маленьком окне интерфейс всё равно ужмётся, чтобы поместиться целиком.</x:String>
+    <x:String x:Key="Settings_DiscreteGpu">Запускать игру на дискретной видеокарте (Windows)</x:String>
+    <x:String x:Key="Settings_DiscreteGpuHint">Перед запуском лаунчер отмечает Java игры в настройках графики Windows как «высокая производительность». На ноутбуках с двумя видеокартами игра иначе идёт на встроенной.</x:String>
+    <x:String x:Key="Game_Playtime">Наиграно {0}, за неделю {1}</x:String>
+    <x:String x:Key="Game_PlaytimeTotalOnly">Наиграно {0}</x:String>
+    <x:String x:Key="Game_PlaytimeAll">{0} во всех сборках</x:String>
+    <x:String x:Key="Time_Minutes">{0} мин</x:String>
+    <x:String x:Key="Time_Hours">{0} ч</x:String>
+    <x:String x:Key="Time_HoursMinutes">{0} ч {1} мин</x:String>
+    <x:String x:Key="Builds_Repair">Починить сборку</x:String>
+    <x:String x:Key="Builds_RepairHint">Проверит файлы модов и игры, докачает недостающее и выключит лишние копии модов. Ничего не удаляется.</x:String>
+    <x:String x:Key="Repair_Running">Чиню сборку…</x:String>
+    <x:String x:Key="Repair_Done">Сборка починена: модов докачано — {0}, проблем исправлено — {1}. Файлы игры проверятся при следующем запуске.</x:String>
+    <x:String x:Key="Repair_DoneOwn">Сборка починена: проблем исправлено — {0}. Файлы игры проверятся при следующем запуске.</x:String>
+    <x:String x:Key="Repair_Failed">Не удалось починить сборку: {0}</x:String>
 </ResourceDictionary>

@@ -206,6 +206,15 @@ public partial class MainWindowViewModel
     private void ApplyAllBuildFixes()
     {
         var fixes = BuildIssues.Where(i => i.CanFixBySwitch).Select(i => i.Issue).ToList();
+        var done = ApplySwitchFixes(fixes);
+
+        AppendConsole($"[check] {done} of {fixes.Count} problem(s) fixed with one click");
+        Status = Localize("Check_FixedAll", "Fixed: {0} of {1}", done, fixes.Count);
+    }
+
+    /// <summary>Flips the switch each issue asks for and counts the ones that took.</summary>
+    private int ApplySwitchFixes(IReadOnlyList<BuildIssue> fixes)
+    {
         var done = 0;
 
         foreach (var issue in fixes)
@@ -225,8 +234,7 @@ public partial class MainWindowViewModel
             }
         }
 
-        AppendConsole($"[check] {done} of {fixes.Count} problem(s) fixed with one click");
-        Status = Localize("Check_FixedAll", "Fixed: {0} of {1}", done, fixes.Count);
+        return done;
     }
 
     /// <summary>The player prefers the version they had: the newer file is switched off instead.</summary>

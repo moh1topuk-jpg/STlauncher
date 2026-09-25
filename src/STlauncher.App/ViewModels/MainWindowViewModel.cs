@@ -41,6 +41,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly ContentCatalogService _catalog;
     private readonly STlauncher.Core.Server.ServerStatsClient _stats;
     private readonly CatalogInstaller _catalogInstaller;
+    private readonly VerifiedFileCache _verifiedFiles;
     private readonly UpdateService _updates;
     private readonly STlauncher.Core.Diagnostics.NetworkDiagnostics _network;
     private readonly InstanceManager _instances;
@@ -79,6 +80,7 @@ public partial class MainWindowViewModel : ViewModelBase
         ContentCatalogService catalog,
         STlauncher.Core.Server.ServerStatsClient stats,
         CatalogInstaller catalogInstaller,
+        VerifiedFileCache verifiedFiles,
         UpdateService updates,
         InstanceManager instances,
         LocalizationService localization,
@@ -106,6 +108,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _catalog = catalog;
         _stats = stats;
         _catalogInstaller = catalogInstaller;
+        _verifiedFiles = verifiedFiles;
         _updates = updates;
         _instances = instances;
         _localization = localization;
@@ -241,11 +244,16 @@ public partial class MainWindowViewModel : ViewModelBase
     private DispatcherTimer? _updateTimer;
 
 
-    partial void OnIsBusyChanged(bool value) => OnPropertyChanged(nameof(ShowLaunchProgress));
+    partial void OnIsBusyChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ShowLaunchProgress));
+        OnPropertyChanged(nameof(CanRepairBuild));
+    }
 
     partial void OnIsGameRunningChanged(bool value)
     {
         OnPropertyChanged(nameof(ShowLaunchProgress));
+        OnPropertyChanged(nameof(CanRepairBuild));
         OnPropertyChanged(nameof(CanEditPacks));
     }
 
@@ -386,6 +394,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
         ImportSuggestionDismissed = settings.ImportSuggestionDismissed;
         AnimatedBackground = settings.AnimatedBackground;
+        UiScale = NormalizeUiScale(settings.UiScale);
+        PreferDiscreteGpu = settings.PreferDiscreteGpu;
         LoadAppearance(settings.Theme, settings.Accent);
         DiscordPresence = settings.DiscordPresence;
         _safeModeRestore = settings.SafeModeRestore?.ToList() ?? new List<string>();
@@ -798,6 +808,8 @@ public partial class MainWindowViewModel : ViewModelBase
             Status = Localize("Status_Preparing", "Preparing…");
             var command = await _launch.PrepareAsync(versionId, account, settings, progress, phase);
 
+            ApplyGpuPreference(command.FileName);
+
             Status = Localize("Status_StartingGame", "Starting Minecraft…");
             Mark(_stageStart, LaunchStageState.Done, Localize("Launch_Done", "done"));
             IsGameRunning = true;
@@ -811,8 +823,11 @@ public partial class MainWindowViewModel : ViewModelBase
 
             GameCrashNotice = string.Empty;
             ApplyDiscordPresence(playing: true, joinServer);
+            var playedInstance = SelectedInstance;
+            var playedFrom = DateTimeOffset.Now;
             var exitCode = await LaunchAndReactAsync(command, settings);
             ApplyDiscordPresence(playing: false, joinServer: false);
+            RecordPlaytime(playedInstance, playedFrom);
 
             Status = exitCode == 0
                 ? Localize("Status_GameClosed", "Minecraft closed")
@@ -952,7 +967,9 @@ public partial class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(nameof(ProfileBuildHint));
         OnPropertyChanged(nameof(IsCatalogInstance));
         OnPropertyChanged(nameof(BuildStateLabel));
+        OnPropertyChanged(nameof(CanRepairBuild));
         OnPropertyChanged(nameof(LastPlayedLabel));
+        RaisePlaytimeLabels();
         OnPropertyChanged(nameof(CanInstallOptimizationMods));
         RefreshOtherInstances();
         ScreenshotCount = Core.Screenshots.ScreenshotFolder.List(InstanceDirectory).Count;
@@ -1241,6 +1258,8 @@ public partial class MainWindowViewModel : ViewModelBase
             DismissedBuildIds = _dismissedBuildIds.ToList(),
             ImportSuggestionDismissed = ImportSuggestionDismissed,
             AnimatedBackground = AnimatedBackground,
+            UiScale = UiScale,
+            PreferDiscreteGpu = PreferDiscreteGpu,
             Theme = Theme,
             Accent = Accent,
             DiscordPresence = DiscordPresence,

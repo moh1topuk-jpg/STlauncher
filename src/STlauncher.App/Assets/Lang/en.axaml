@@ -892,4 +892,21 @@
     <x:String x:Key="Packs_Updated">{0} updated to {1}</x:String>
     <!-- Start splash -->
     <x:String x:Key="Splash_Loading">Preparing the build</x:String>
+    <!-- Scale, graphics card, play time, repair -->
+    <x:String x:Key="Settings_UiScale">Interface scale</x:String>
+    <x:String x:Key="Settings_UiScaleHint">In a small window the interface still shrinks to fit whole.</x:String>
+    <x:String x:Key="Settings_DiscreteGpu">Run the game on the discrete graphics card (Windows)</x:String>
+    <x:String x:Key="Settings_DiscreteGpuHint">Before each launch the game's Java is marked "high performance" in the Windows graphics settings. On laptops with two cards the game otherwise runs on the integrated one.</x:String>
+    <x:String x:Key="Game_Playtime">Played {0}, {1} this week</x:String>
+    <x:String x:Key="Game_PlaytimeTotalOnly">Played {0}</x:String>
+    <x:String x:Key="Game_PlaytimeAll">{0} in all builds</x:String>
+    <x:String x:Key="Time_Minutes">{0} min</x:String>
+    <x:String x:Key="Time_Hours">{0} h</x:String>
+    <x:String x:Key="Time_HoursMinutes">{0} h {1} min</x:String>
+    <x:String x:Key="Builds_Repair">Repair the build</x:String>
+    <x:String x:Key="Builds_RepairHint">Checks the mod and game files, downloads what is missing and switches off extra copies of mods. Nothing is deleted.</x:String>
+    <x:String x:Key="Repair_Running">Repairing the build…</x:String>
+    <x:String x:Key="Repair_Done">Build repaired: {0} mod(s) downloaded again, {1} problem(s) fixed. The game files are checked on the next launch.</x:String>
+    <x:String x:Key="Repair_DoneOwn">Build repaired: {0} problem(s) fixed. The game files are checked on the next launch.</x:String>
+    <x:String x:Key="Repair_Failed">Could not repair the build: {0}</x:String>
 </ResourceDictionary>

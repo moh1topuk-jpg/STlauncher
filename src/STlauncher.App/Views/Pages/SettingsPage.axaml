@@ -168,6 +168,24 @@
                             </StackPanel>
                         </Grid>
 
+                        <!-- 100 % is the designed size; the others are for a 4K desk or a small laptop. -->
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="{DynamicResource Settings_UiScale}" FontWeight="SemiBold"/>
+                            <Border Classes="panel" Padding="4" HorizontalAlignment="Left">
+                                <StackPanel Orientation="Horizontal" Spacing="2">
+                                    <Button Classes="segment" Classes.active="{Binding IsUiScale90}" Content="90 %"
+                                            Command="{Binding SelectUiScaleCommand}" CommandParameter="0.9"/>
+                                    <Button Classes="segment" Classes.active="{Binding IsUiScale100}" Content="100 %"
+                                            Command="{Binding SelectUiScaleCommand}" CommandParameter="1.0"/>
+                                    <Button Classes="segment" Classes.active="{Binding IsUiScale110}" Content="110 %"
+                                            Command="{Binding SelectUiScaleCommand}" CommandParameter="1.1"/>
+                                    <Button Classes="segment" Classes.active="{Binding IsUiScale125}" Content="125 %"
+                                            Command="{Binding SelectUiScaleCommand}" CommandParameter="1.25"/>
+                                </StackPanel>
+                            </Border>
+                            <TextBlock Text="{DynamicResource Settings_UiScaleHint}" Classes="faint" TextWrapping="Wrap"/>
+                        </StackPanel>
+
                         <CheckBox Content="{DynamicResource Settings_AnimatedBackground}" IsChecked="{Binding AnimatedBackground}"/>
                     </StackPanel>
                 </Border>
@@ -463,6 +481,11 @@
                             </Grid>
 
                             <StackPanel Spacing="10">
+                                <StackPanel Spacing="4">
+                                    <CheckBox Content="{DynamicResource Settings_DiscreteGpu}" IsChecked="{Binding PreferDiscreteGpu}"/>
+                                    <TextBlock Text="{DynamicResource Settings_DiscreteGpuHint}" Classes="faint"
+                                               TextWrapping="Wrap" Margin="28,0,0,0"/>
+                                </StackPanel>
                                 <CheckBox Content="{DynamicResource Settings_ForceUpdate}" IsChecked="{Binding ForceUpdate}"/>
                                 <StackPanel Spacing="4">
                                     <CheckBox Content="{DynamicResource Settings_DevConsole}" IsChecked="{Binding ShowDeveloperConsole}"/>

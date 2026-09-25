@@ -55,6 +55,12 @@ public sealed class AppSettings
     /// <summary>The drifting embers behind the main screen.</summary>
     public bool AnimatedBackground { get; set; } = true;
 
+    /// <summary>Interface size, 1.0 being the designed size. 0.9, 1.1 and 1.25 are the other choices.</summary>
+    public double UiScale { get; set; } = 1.0;
+
+    /// <summary>Ask Windows to run the game's Java on the high-performance graphics card.</summary>
+    public bool PreferDiscreteGpu { get; set; } = true;
+
     /// <summary>"dark" or "light".</summary>
     public string Theme { get; set; } = "dark";
 

@@ -176,6 +176,9 @@
                                     <MenuItem Header="{DynamicResource Builds_SyncWithCatalog}"
                                               Command="{Binding SyncSelectedBuildCommand}"
                                               IsVisible="{Binding IsCatalogInstance}"/>
+                                    <MenuItem Header="{DynamicResource Builds_Repair}"
+                                              Command="{Binding RepairBuildCommand}"
+                                              IsEnabled="{Binding CanRepairBuild}"/>
                                     <MenuItem Header="{DynamicResource Builds_OpenFolder}"
                                               Command="{Binding OpenGameFolderCommand}"/>
                                     <MenuItem Header="{DynamicResource Builds_AddCopy}"
