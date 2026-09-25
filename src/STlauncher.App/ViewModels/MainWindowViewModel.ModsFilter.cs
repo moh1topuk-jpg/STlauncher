@@ -20,13 +20,15 @@ public partial class MainWindowViewModel
 
         foreach (var mod in InstalledMods)
         {
-            mod.IsHidden = query.Length > 0 &&
-                           !mod.DisplayName.Contains(query, StringComparison.OrdinalIgnoreCase) &&
-                           !mod.FileName.Contains(query, StringComparison.OrdinalIgnoreCase);
+            var matches = query.Length == 0 ||
+                          mod.DisplayName.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                          mod.FileName.Contains(query, StringComparison.OrdinalIgnoreCase);
+            mod.IsHidden = !matches || !IsInModsScope(mod);
         }
 
         OnPropertyChanged(nameof(HasOwnModsEnabled));
         OnPropertyChanged(nameof(HasOwnModsDisabled));
+        RaiseModsScopeCounts();
     }
 
     public bool HasOwnModsEnabled => InstalledMods.Any(m => m.IsMod && m.Enabled && !m.IsCatalog);

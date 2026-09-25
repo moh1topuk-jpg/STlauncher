@@ -161,16 +161,30 @@
                     </StackPanel>
 
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <!-- Only a catalog build has something to check against. -->
-                        <Button Classes="ghost small" ToolTip.Tip="{DynamicResource Builds_SyncWithCatalog}"
-                                IsVisible="{Binding IsCatalogInstance}"
-                                IsEnabled="{Binding !IsBuildImportBusy}"
-                                Command="{Binding SyncSelectedBuildCommand}">
-                            <PathIcon Data="{StaticResource IconRefresh}" Classes="small"/>
+                        <!-- The build's own settings open beside the page, not instead of it. -->
+                        <Button Classes="ghost small" Command="{Binding OpenBuildSettingsCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <PathIcon Data="{StaticResource IconSettings}" Classes="small"/>
+                                <TextBlock Text="{DynamicResource Builds_TabSettings}"/>
+                            </StackPanel>
                         </Button>
-                        <Button Classes="ghost small" ToolTip.Tip="{DynamicResource Builds_OpenFolder}"
-                                Command="{Binding OpenGameFolderCommand}">
-                            <PathIcon Data="{StaticResource IconFolder}" Classes="small"/>
+                        <!-- The rare actions, out of the way but one click deep. -->
+                        <Button Classes="ghost small" ToolTip.Tip="{DynamicResource Builds_More}" MinWidth="36">
+                            <TextBlock Text="&#x22EF;" FontSize="16" VerticalAlignment="Center"/>
+                            <Button.Flyout>
+                                <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                    <MenuItem Header="{DynamicResource Builds_SyncWithCatalog}"
+                                              Command="{Binding SyncSelectedBuildCommand}"
+                                              IsVisible="{Binding IsCatalogInstance}"/>
+                                    <MenuItem Header="{DynamicResource Builds_OpenFolder}"
+                                              Command="{Binding OpenGameFolderCommand}"/>
+                                    <MenuItem Header="{DynamicResource Builds_AddCopy}"
+                                              Command="{Binding DuplicateInstanceCommand}"/>
+                                    <Separator/>
+                                    <MenuItem Header="{DynamicResource Game_DeleteInstance}"
+                                              Command="{Binding DeleteInstanceCommand}"/>
+                                </MenuFlyout>
+                            </Button.Flyout>
                         </Button>
                         <!-- Starting from here saves the trip back to the main screen. -->
                         <Button Classes="primary" Height="40" Padding="18,0" CornerRadius="11"
@@ -194,15 +208,9 @@
                         <Button Classes="segment" Classes.active="{Binding IsBuildShaders}"
                                 Content="{Binding ShadersTabLabel}"
                                 Command="{Binding SelectBuildTabCommand}" CommandParameter="Shaders"/>
-                        <Button Classes="segment" Classes.active="{Binding IsBuildCatalog}"
-                                Content="{DynamicResource Builds_TabAddMods}"
-                                Command="{Binding SelectBuildTabCommand}" CommandParameter="Catalog"/>
                         <Button Classes="segment" Classes.active="{Binding IsBuildScreenshots}"
                                 Content="{Binding ScreenshotsTabLabel}"
                                 Command="{Binding SelectBuildTabCommand}" CommandParameter="Screenshots"/>
-                        <Button Classes="segment" Classes.active="{Binding IsBuildSettings}"
-                                Content="{DynamicResource Builds_TabSettings}"
-                                Command="{Binding SelectBuildTabCommand}" CommandParameter="Settings"/>
                     </StackPanel>
                 </Border>
 
@@ -210,45 +218,73 @@
 
                     <!-- ======== Mods of the build ======== -->
                     <Grid IsVisible="{Binding IsBuildMods}" RowDefinitions="Auto,Auto,Auto,Auto,*" RowSpacing="10" controls:Reveal.OnVisible="True">
-                        <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="6">
-                            <TextBlock Text="{Binding InstalledModsSummary}" Classes="faint"
-                                       VerticalAlignment="Center"/>
-                            <!-- Updates are shown, never applied on their own: the player
-                                 decides, mod by mod or all at once. -->
-                            <Button Grid.Column="1" Classes="ghost small"
-                                    Command="{Binding CheckModUpdatesCommand}"
-                                    IsEnabled="{Binding !IsCheckingModUpdates}"
-                                    ToolTip.Tip="{DynamicResource Mods_CheckUpdatesHint}">
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                            <!-- Search, then the slices of the list with their counts. -->
+                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <TextBox Text="{Binding ModsFilter}" Watermark="{DynamicResource Mods_FilterPlaceholder}" Width="230"/>
+                                <Button Classes="chip" Classes.active="{Binding IsScopeAll}"
+                                        Command="{Binding SelectModsScopeCommand}" CommandParameter="All">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <TextBlock Text="{DynamicResource Mods_ScopeAll}"/>
+                                        <TextBlock Text="{Binding ModsCountAll}" Classes="faint"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Classes="chip" Classes.active="{Binding IsScopeCatalog}"
+                                        Command="{Binding SelectModsScopeCommand}" CommandParameter="Catalog">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <TextBlock Text="{DynamicResource Mods_ScopeCatalog}"/>
+                                        <TextBlock Text="{Binding ModsCountCatalog}" Classes="faint"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Classes="chip" Classes.active="{Binding IsScopeOwn}"
+                                        Command="{Binding SelectModsScopeCommand}" CommandParameter="Own">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <TextBlock Text="{DynamicResource Mods_ScopeOwn}"/>
+                                        <TextBlock Text="{Binding ModsCountOwn}" Classes="faint"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Classes="chip" Classes.active="{Binding IsScopeDisabled}"
+                                        Command="{Binding SelectModsScopeCommand}" CommandParameter="Disabled">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <TextBlock Text="{DynamicResource Mods_ScopeDisabled}"/>
+                                        <TextBlock Text="{Binding ModsCountDisabled}" Classes="faint"/>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                            <!-- Adding lives where the mods are, and opens the catalog on mods. -->
+                            <Button Grid.Column="1" Classes="ghost small" Foreground="{DynamicResource GoldBrush}"
+                                    Command="{Binding OpenCatalogForModsCommand}">
                                 <StackPanel Orientation="Horizontal" Spacing="6">
-                                    <PathIcon Data="{StaticResource IconUpdate}" Classes="small"/>
-                                    <TextBlock Text="{DynamicResource Mods_CheckUpdates}"/>
+                                    <PathIcon Data="{StaticResource IconPlus}" Classes="small"/>
+                                    <TextBlock Text="{DynamicResource Mods_AddButton}" FontWeight="SemiBold"/>
                                 </StackPanel>
                             </Button>
-                            <Button Grid.Column="2" Classes="primary small" IsVisible="{Binding HasModUpdates}"
-                                    Content="{Binding UpdateAllLabel}" Command="{Binding UpdateAllModsCommand}"/>
-                            <Button Grid.Column="3" Classes="ghost small"
-                                    Content="{DynamicResource Mods_Refresh}"
-                                    Command="{Binding RefreshModsCommand}"/>
-                            <Button Grid.Column="4" Classes="ghost small"
-                                    Content="{DynamicResource Mods_OpenFolder}"
-                                    Command="{Binding OpenModsFolderCommand}"/>
-                            <Button Grid.Column="5" Classes="ghost small"
-                                    Content="{DynamicResource Mods_Import}"
-                                    Click="OnImportModpackClick"
-                                    IsEnabled="{Binding !IsModsBusy}"/>
+                            <Button Grid.Column="2" Classes="ghost small" ToolTip.Tip="{DynamicResource Builds_More}" MinWidth="36">
+                                <TextBlock Text="&#x22EF;" FontSize="16" VerticalAlignment="Center"/>
+                                <Button.Flyout>
+                                    <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                        <!-- Updates are shown, never applied on their own: the player
+                                             decides, mod by mod or all at once. -->
+                                        <MenuItem Header="{DynamicResource Mods_CheckUpdates}"
+                                                  Command="{Binding CheckModUpdatesCommand}"/>
+                                        <MenuItem Header="{Binding UpdateAllLabel}"
+                                                  Command="{Binding UpdateAllModsCommand}" IsVisible="{Binding HasModUpdates}"/>
+                                        <MenuItem Header="{DynamicResource Mods_DisableOwn}"
+                                                  Command="{Binding DisableOwnModsCommand}" IsVisible="{Binding HasOwnModsEnabled}"/>
+                                        <MenuItem Header="{DynamicResource Mods_EnableOwn}"
+                                                  Command="{Binding EnableOwnModsCommand}" IsVisible="{Binding HasOwnModsDisabled}"/>
+                                        <MenuItem Header="{DynamicResource Mods_Import}" Click="OnImportModpackClick"/>
+                                        <Separator/>
+                                        <MenuItem Header="{DynamicResource Mods_OpenFolder}"
+                                                  Command="{Binding OpenModsFolderCommand}"/>
+                                        <MenuItem Header="{DynamicResource Mods_Refresh}"
+                                                  Command="{Binding RefreshModsCommand}"/>
+                                    </MenuFlyout>
+                                </Button.Flyout>
+                            </Button>
                         </Grid>
 
-                        <!-- Search inside the build, and the two bulk switches for the player's own mods. -->
-                        <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
-                            <TextBox Text="{Binding ModsFilter}" Watermark="{DynamicResource Mods_FilterPlaceholder}" MaxWidth="360"
-                                     HorizontalAlignment="Left"/>
-                            <Button Grid.Column="1" Classes="ghost small" Content="{DynamicResource Mods_DisableOwn}"
-                                    Command="{Binding DisableOwnModsCommand}" IsVisible="{Binding HasOwnModsEnabled}"
-                                    IsEnabled="{Binding !IsGameRunning}" ToolTip.Tip="{DynamicResource Mods_OwnHint}"/>
-                            <Button Grid.Column="2" Classes="ghost small" Content="{DynamicResource Mods_EnableOwn}"
-                                    Command="{Binding EnableOwnModsCommand}" IsVisible="{Binding HasOwnModsDisabled}"
-                                    IsEnabled="{Binding !IsGameRunning}" ToolTip.Tip="{DynamicResource Mods_OwnHint}"/>
-                        </Grid>
+                        <TextBlock Grid.Row="1" Text="{Binding InstalledModsSummary}" Classes="faint"/>
 
                         <!-- The pre-launch check, in full. -->
                         <Border Grid.Row="2" Classes="panel" Padding="14,10" IsVisible="{Binding HasBuildIssues}">
@@ -301,8 +337,7 @@
                                                TextWrapping="Wrap"/>
                                     <Button Classes="ghost small" HorizontalAlignment="Left"
                                             Content="{DynamicResource Mods_GoCatalog}"
-                                            Command="{Binding SelectBuildTabCommand}"
-                                            CommandParameter="Catalog"/>
+                                            Command="{Binding OpenCatalogForModsCommand}"/>
                                 </StackPanel>
                             </Border>
 
@@ -827,18 +862,29 @@
                         </ScrollViewer>
                     </Grid>
 
-                    <Grid IsVisible="{Binding IsBuildCatalog}" RowDefinitions="Auto,Auto,*" RowSpacing="10" controls:Reveal.OnVisible="True">
+                    <Grid IsVisible="{Binding IsBuildCatalog}" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="10" controls:Reveal.OnVisible="True">
 
-                        <Border Classes="panel" Padding="12" IsVisible="{Binding !IsBuildConfigured}">
+                        <!-- The catalog is opened from a tab and closes back to it. -->
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                            <Button Classes="ghost small" Command="{Binding CloseCatalogCommand}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <PathIcon Data="{StaticResource IconChevronLeft}" Classes="small"/>
+                                    <TextBlock Text="{DynamicResource Catalog_Back}"/>
+                                </StackPanel>
+                            </Button>
+                            <TextBlock Grid.Column="1" Text="{DynamicResource Catalog_Title}" Classes="h3" VerticalAlignment="Center"/>
+                        </Grid>
+
+                        <Border Grid.Row="1" Classes="panel" Padding="12" IsVisible="{Binding !IsBuildConfigured}">
                             <StackPanel Spacing="8">
                                 <TextBlock Text="{DynamicResource Builds_NotConfigured}" Classes="faint" TextWrapping="Wrap"/>
                                 <Button Classes="ghost small" HorizontalAlignment="Left"
                                         Content="{DynamicResource Builds_GoSettings}"
-                                        Command="{Binding SelectBuildTabCommand}" CommandParameter="Settings"/>
+                                        Command="{Binding OpenBuildSettingsCommand}"/>
                             </StackPanel>
                         </Border>
 
-                        <StackPanel Grid.Row="1" Spacing="10">
+                        <StackPanel Grid.Row="2" Spacing="10">
                             <!-- One catalog, three kinds of content. Packs and shaders go to
                                  their own folders and fit a vanilla build too. -->
                             <Border Classes="panel" Padding="4" HorizontalAlignment="Left">
@@ -904,7 +950,7 @@
                             </Grid>
                         </StackPanel>
 
-                        <Grid Grid.Row="2" ColumnDefinitions="*,Auto" ColumnSpacing="14">
+                        <Grid Grid.Row="3" ColumnDefinitions="*,Auto" ColumnSpacing="14">
 
                             <!-- Cards -->
                             <Grid RowDefinitions="*,Auto" RowSpacing="8">
@@ -1126,138 +1172,6 @@
                             </Border>
                         </Grid>
                     </Grid>
-                    <!-- ======== Build settings ======== -->
-                    <ScrollViewer IsVisible="{Binding IsBuildSettings}" controls:Reveal.OnVisible="True">
-                        <StackPanel Spacing="14" MaxWidth="720" HorizontalAlignment="Left">
-
-                            <Border Classes="card">
-                                <StackPanel Spacing="12">
-                                    <TextBlock Text="{DynamicResource Builds_Selected}" Classes="label"/>
-                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                        <TextBox Text="{Binding InstanceNameEdit}"
-                                                 Watermark="{DynamicResource Game_InstanceNameHint}"/>
-                                        <Button Grid.Column="1" Classes="ghost"
-                                                Content="{DynamicResource Builds_Rename}"
-                                                Command="{Binding RenameInstanceCommand}"/>
-                                    </Grid>
-                                </StackPanel>
-                            </Border>
-                            <Border Classes="card">
-                                <StackPanel Spacing="12">
-                                    <TextBlock Text="{DynamicResource Game_Profile}" Classes="label"/>
-
-                                    <!-- An imported build starts from its own profile: its version and
-                                         loader are fixed by it, so they are stated, not offered. -->
-                                    <TextBlock Text="{Binding ProfileBuildHint}" Classes="faint"
-                                               TextWrapping="Wrap" IsVisible="{Binding IsProfileBuild}"/>
-
-                                    <StackPanel Spacing="12" IsVisible="{Binding IsNotProfileBuild}">
-                                    <StackPanel Spacing="6">
-                                        <TextBlock Text="{DynamicResource Game_Version}" Classes="faint"/>
-                                        <ComboBox ItemsSource="{Binding Versions}"
-                                                  SelectedItem="{Binding SelectedVersion}"
-                                                  HorizontalAlignment="Stretch">
-                                            <ComboBox.ItemTemplate>
-                                                <DataTemplate x:DataType="m:VersionSummary">
-                                                    <TextBlock Text="{Binding Id}"/>
-                                                </DataTemplate>
-                                            </ComboBox.ItemTemplate>
-                                        </ComboBox>
-                                    </StackPanel>
-
-                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                                        <StackPanel Spacing="6">
-                                            <TextBlock Text="{DynamicResource Game_Loader}" Classes="faint"/>
-                                            <ComboBox ItemsSource="{Binding LoaderKinds}"
-                                                      SelectedItem="{Binding SelectedLoader}"
-                                                      HorizontalAlignment="Stretch"/>
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="1" Spacing="6">
-                                            <TextBlock Text="{DynamicResource Game_LoaderVersion}"
-                                                       Classes="faint"/>
-                                            <ComboBox ItemsSource="{Binding LoaderVersions}"
-                                                      SelectedItem="{Binding SelectedLoaderVersion}"
-                                                      IsEnabled="{Binding !IsLoaderBusy}"
-                                                      HorizontalAlignment="Stretch">
-                                                <ComboBox.ItemTemplate>
-                                                    <DataTemplate x:DataType="loaders:LoaderVersion">
-                                                        <TextBlock Text="{Binding Version}"/>
-                                                    </DataTemplate>
-                                                </ComboBox.ItemTemplate>
-                                            </ComboBox>
-                                        </StackPanel>
-                                    </Grid>
-                                    </StackPanel>
-
-                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                                        <StackPanel Spacing="6">
-                                            <TextBlock Text="{DynamicResource Settings_Resolution}"
-                                                       Classes="faint"/>
-                                            <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="6">
-                                                <NumericUpDown Value="{Binding Width}" Minimum="0"
-                                                               Maximum="7680" Increment="10"
-                                                               FormatString="0" ShowButtonSpinner="False"/>
-                                                <TextBlock Grid.Column="1" Text="&#x00D7;"
-                                                           VerticalAlignment="Center" Classes="faint"/>
-                                                <NumericUpDown Grid.Column="2" Value="{Binding Height}"
-                                                               Minimum="0" Maximum="4320" Increment="10"
-                                                               FormatString="0" ShowButtonSpinner="False"/>
-                                            </Grid>
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="1" Spacing="6">
-                                            <TextBlock Text="{DynamicResource Settings_Memory}" Classes="faint"/>
-                                            <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="6">
-                                                <NumericUpDown Value="{Binding MinMemoryMb}" Minimum="256"
-                                                               Maximum="32768" Increment="256"
-                                                               FormatString="0" ShowButtonSpinner="False"/>
-                                                <TextBlock Grid.Column="1" Text="&#x2013;"
-                                                           VerticalAlignment="Center" Classes="faint"/>
-                                                <NumericUpDown Grid.Column="2" Value="{Binding MaxMemoryMb}"
-                                                               Minimum="512" Maximum="65536" Increment="512"
-                                                               FormatString="0" ShowButtonSpinner="False"/>
-                                            </Grid>
-                                        </StackPanel>
-                                    </Grid>
-
-                                    <StackPanel Spacing="6">
-                                        <TextBlock Text="{DynamicResource Settings_ExtraArgs}" Classes="faint"/>
-                                        <TextBox Text="{Binding ExtraGameArgs}"
-                                                 Watermark="--fullscreen --width 1920"/>
-                                    </StackPanel>
-                                </StackPanel>
-                            </Border>
-
-                            <Border Classes="card" IsVisible="{Binding HasOtherInstances}">
-                                <StackPanel Spacing="10">
-                                    <TextBlock Text="{DynamicResource Transfer_Title}" Classes="label"/>
-                                    <TextBlock Text="{DynamicResource Transfer_Hint}" Classes="faint" TextWrapping="Wrap"/>
-                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                        <ComboBox ItemsSource="{Binding OtherInstances}" SelectedItem="{Binding CopySettingsSource}"
-                                                  HorizontalAlignment="Stretch">
-                                            <ComboBox.ItemTemplate>
-                                                <DataTemplate x:DataType="inst:Instance">
-                                                    <TextBlock Text="{Binding Name}"/>
-                                                </DataTemplate>
-                                            </ComboBox.ItemTemplate>
-                                        </ComboBox>
-                                        <Button Grid.Column="1" Classes="ghost" Content="{DynamicResource Transfer_Copy}"
-                                                Command="{Binding CopyGameSettingsCommand}" IsEnabled="{Binding !IsGameRunning}"/>
-                                    </Grid>
-                                </StackPanel>
-                            </Border>
-
-                            <Border Classes="card">
-                                <StackPanel Spacing="10">
-                                    <TextBlock Text="{DynamicResource Builds_Danger}" Classes="label"/>
-                                    <Button Classes="danger" HorizontalAlignment="Left"
-                                            Content="{DynamicResource Game_DeleteInstance}"
-                                            Command="{Binding DeleteInstanceCommand}"/>
-                                </StackPanel>
-                            </Border>
-
-                        </StackPanel>
-                    </ScrollViewer>
-
                 </Panel>
             </Grid>
         </Grid>
@@ -1399,6 +1313,121 @@
                                 IsEnabled="{Binding CanCreateBuild}"/>
                     </StackPanel>
                 </StackPanel>
+            </Border>
+        </Border>
+
+        <!-- ============ Build settings: a sheet on the right; the page stays put ============ -->
+        <Border Background="{DynamicResource OverlayScrimBrush}" IsVisible="{Binding IsBuildSettingsOpen}" controls:Reveal.OnVisible="True">
+            <Border Classes="card" Width="460" HorizontalAlignment="Right" VerticalAlignment="Stretch"
+                    CornerRadius="0" Padding="22">
+                <Grid RowDefinitions="Auto,*,Auto" RowSpacing="14">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{DynamicResource Builds_TabSettings}" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <Button Grid.Column="1" Classes="plain small" Command="{Binding CloseBuildSettingsCommand}"
+                                ToolTip.Tip="{DynamicResource WhatsNew_Close}">
+                            <PathIcon Data="{StaticResource IconClose}" Classes="small"/>
+                        </Button>
+                    </Grid>
+
+                    <ScrollViewer Grid.Row="1">
+                        <StackPanel Spacing="14">
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="{DynamicResource Builds_Selected}" Classes="label"/>
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                    <TextBox Text="{Binding InstanceNameEdit}"
+                                             Watermark="{DynamicResource Game_InstanceNameHint}"/>
+                                    <Button Grid.Column="1" Classes="ghost"
+                                            Content="{DynamicResource Builds_Rename}"
+                                            Command="{Binding RenameInstanceCommand}"/>
+                                </Grid>
+                            </StackPanel>
+
+                            <Border Classes="hairline"/>
+
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="{DynamicResource Game_Profile}" Classes="label"/>
+
+                                <!-- An imported build starts from its own profile: its version and
+                                     loader are fixed by it, so they are stated, not offered. -->
+                                <TextBlock Text="{Binding ProfileBuildHint}" Classes="faint"
+                                           TextWrapping="Wrap" IsVisible="{Binding IsProfileBuild}"/>
+
+                                <StackPanel Spacing="12" IsVisible="{Binding IsNotProfileBuild}">
+                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                                        <StackPanel Spacing="6">
+                                            <TextBlock Text="{DynamicResource Game_Version}" Classes="faint"/>
+                                            <ComboBox ItemsSource="{Binding Versions}"
+                                                      SelectedItem="{Binding SelectedVersion}"
+                                                      HorizontalAlignment="Stretch">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate x:DataType="m:VersionSummary">
+                                                        <TextBlock Text="{Binding Id}"/>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" Spacing="6">
+                                            <TextBlock Text="{DynamicResource Game_Loader}" Classes="faint"/>
+                                            <ComboBox ItemsSource="{Binding LoaderKinds}"
+                                                      SelectedItem="{Binding SelectedLoader}"
+                                                      HorizontalAlignment="Stretch"/>
+                                        </StackPanel>
+                                    </Grid>
+                                    <StackPanel Spacing="6">
+                                        <TextBlock Text="{DynamicResource Game_LoaderVersion}" Classes="faint"/>
+                                        <ComboBox ItemsSource="{Binding LoaderVersions}"
+                                                  SelectedItem="{Binding SelectedLoaderVersion}"
+                                                  IsEnabled="{Binding !IsLoaderBusy}"
+                                                  HorizontalAlignment="Stretch">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate x:DataType="loaders:LoaderVersion">
+                                                    <TextBlock Text="{Binding Version}"/>
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- Memory and the window are on the settings page, for the build that is
+                                     open; two copies of the same number in two places argued with each other. -->
+                                <TextBlock Text="{DynamicResource Builds_MemoryHint}" Classes="faint" TextWrapping="Wrap"/>
+
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="{DynamicResource Settings_ExtraArgs}" Classes="faint"/>
+                                    <TextBox Text="{Binding ExtraGameArgs}"
+                                             Watermark="--fullscreen --width 1920"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <Border Classes="hairline" IsVisible="{Binding HasOtherInstances}"/>
+
+                            <StackPanel Spacing="10" IsVisible="{Binding HasOtherInstances}">
+                                <TextBlock Text="{DynamicResource Transfer_Title}" Classes="label"/>
+                                <TextBlock Text="{DynamicResource Transfer_Hint}" Classes="faint" TextWrapping="Wrap"/>
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                    <ComboBox ItemsSource="{Binding OtherInstances}" SelectedItem="{Binding CopySettingsSource}"
+                                              HorizontalAlignment="Stretch">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate x:DataType="inst:Instance">
+                                                <TextBlock Text="{Binding Name}"/>
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                    <Button Grid.Column="1" Classes="ghost" Content="{DynamicResource Transfer_Copy}"
+                                            Command="{Binding CopyGameSettingsCommand}" IsEnabled="{Binding !IsGameRunning}"/>
+                                </Grid>
+                            </StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <!-- Deleting sits apart from everything else, and "Done" is the way out. -->
+                    <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                        <Button Classes="danger small" Content="{DynamicResource Game_DeleteInstance}"
+                                Command="{Binding DeleteInstanceCommand}"/>
+                        <Button Grid.Column="2" Classes="primary" Content="{DynamicResource Common_Done}"
+                                Command="{Binding CloseBuildSettingsCommand}"/>
+                    </Grid>
+                </Grid>
             </Border>
         </Border>
 

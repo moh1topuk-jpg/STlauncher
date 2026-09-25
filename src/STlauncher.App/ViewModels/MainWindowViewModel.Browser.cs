@@ -151,6 +151,12 @@ public partial class MainWindowViewModel
 
     partial void OnBuildTabChanged(BuildTab value)
     {
+        // The catalog is a detour, not a tab: it closes back to where it was opened from.
+        if (value is not BuildTab.Catalog and not BuildTab.Settings)
+        {
+            _tabBeforeCatalog = value;
+        }
+
         OnPropertyChanged(nameof(IsBuildMods));
         OnPropertyChanged(nameof(IsBuildResourcePacks));
         OnPropertyChanged(nameof(IsBuildShaders));

@@ -13,9 +13,17 @@ public partial class SettingsPage : UserControl
     /// <summary>The index on the left scrolls to the section the button names in its Tag.</summary>
     private void OnIndexClick(object? sender, RoutedEventArgs e)
     {
-        if (sender is Button { Tag: string name } && this.FindControl<Control>(name) is { } section)
+        if (sender is not Button { Tag: string name } || this.FindControl<Control>(name) is not { } section)
         {
-            section.BringIntoView();
+            return;
         }
+
+        // Pointing at the folded section unfolds it; scrolling to a one-line card helps nobody.
+        if (name == "MoreSection" && DataContext is ViewModels.MainWindowViewModel viewModel)
+        {
+            viewModel.IsMoreSettingsOpen = true;
+        }
+
+        section.BringIntoView();
     }
 }

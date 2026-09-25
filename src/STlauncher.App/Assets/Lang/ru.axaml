@@ -775,6 +775,23 @@
     <x:String x:Key="Check_ProblemsMany">{0} проблем</x:String>
     <x:String x:Key="Check_OpenMods">К списку модов</x:String>
     <x:String x:Key="Check_FixAll">Исправить всё</x:String>
+    <!-- Settings and builds, restructured -->
+    <x:String x:Key="Settings_SectionLook">Оформление</x:String>
+    <x:String x:Key="Settings_SectionMore">Дополнительно</x:String>
+    <x:String x:Key="Settings_MoreSummary">Папка данных и папка игры, показ снапшотов, аргументы Minecraft, проверка сети, консоль разработчика</x:String>
+    <x:String x:Key="Settings_MoreHint">Редко нужное. Всё это работало и раньше, просто лежало вперемешку с главным.</x:String>
+    <x:String x:Key="Settings_BackupsDetails">Расписание, лимиты и список бэкапов</x:String>
+    <x:String x:Key="Settings_ForBuild">для сборки «{0}»</x:String>
+    <x:String x:Key="Builds_More">Ещё</x:String>
+    <x:String x:Key="Builds_MemoryHint">Память и разрешение окна для этой сборки задаются в Настройках → Игра, пока она выбрана.</x:String>
+    <x:String x:Key="Mods_AddButton">Добавить моды</x:String>
+    <x:String x:Key="Mods_ScopeAll">Все</x:String>
+    <x:String x:Key="Mods_ScopeCatalog">Из каталога</x:String>
+    <x:String x:Key="Mods_ScopeOwn">Мои</x:String>
+    <x:String x:Key="Mods_ScopeDisabled">Выключенные</x:String>
+    <x:String x:Key="Catalog_Back">К сборке</x:String>
+    <x:String x:Key="Catalog_Title">Каталог Modrinth</x:String>
+    <x:String x:Key="Common_Done">Готово</x:String>
     <x:String x:Key="Check_FixDisableNew">Выключить новый</x:String>
     <x:String x:Key="Check_KeepOld">Оставить старые версии</x:String>
     <x:String x:Key="Check_FixedAll">Исправлено: {0} из {1}</x:String>

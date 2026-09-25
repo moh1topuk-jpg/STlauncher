@@ -188,7 +188,7 @@ public partial class MainWindowViewModel
             SelectedInstance = instance;
 
             IsNewBuildOpen = false;
-            BuildTab = BuildTab.Settings;
+            IsBuildSettingsOpen = true;
             Status = Localize("Status_BuildCreated", "Build \"{0}\" created", instance.Name);
         }
         catch (Exception ex)

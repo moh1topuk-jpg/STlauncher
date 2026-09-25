@@ -918,6 +918,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     partial void OnSelectedInstanceChanged(Instance? value)
     {
+        OnPropertyChanged(nameof(GameSettingsScopeLabel));
         if (value is null || _refreshingListItem)
         {
             return;

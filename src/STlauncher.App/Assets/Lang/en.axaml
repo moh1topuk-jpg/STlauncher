@@ -775,6 +775,23 @@
     <x:String x:Key="Check_ProblemsMany">{0} problems</x:String>
     <x:String x:Key="Check_OpenMods">To the mod list</x:String>
     <x:String x:Key="Check_FixAll">Fix everything</x:String>
+    <!-- Settings and builds, restructured -->
+    <x:String x:Key="Settings_SectionLook">Appearance</x:String>
+    <x:String x:Key="Settings_SectionMore">More</x:String>
+    <x:String x:Key="Settings_MoreSummary">Data and game folders, snapshot versions, Minecraft arguments, network check, developer console</x:String>
+    <x:String x:Key="Settings_MoreHint">Rarely needed. All of this worked before; it just sat mixed in with the essentials.</x:String>
+    <x:String x:Key="Settings_BackupsDetails">Schedule, limits and the list of backups</x:String>
+    <x:String x:Key="Settings_ForBuild">for the build "{0}"</x:String>
+    <x:String x:Key="Builds_More">More</x:String>
+    <x:String x:Key="Builds_MemoryHint">Memory and window size for this build are set in Settings → Game while it is selected.</x:String>
+    <x:String x:Key="Mods_AddButton">Add mods</x:String>
+    <x:String x:Key="Mods_ScopeAll">All</x:String>
+    <x:String x:Key="Mods_ScopeCatalog">From the catalog</x:String>
+    <x:String x:Key="Mods_ScopeOwn">Mine</x:String>
+    <x:String x:Key="Mods_ScopeDisabled">Switched off</x:String>
+    <x:String x:Key="Catalog_Back">Back to the build</x:String>
+    <x:String x:Key="Catalog_Title">Modrinth catalog</x:String>
+    <x:String x:Key="Common_Done">Done</x:String>
     <x:String x:Key="Check_FixDisableNew">Switch off the newer one</x:String>
     <x:String x:Key="Check_KeepOld">Keep the older versions</x:String>
     <x:String x:Key="Check_FixedAll">Fixed: {0} of {1}</x:String>
