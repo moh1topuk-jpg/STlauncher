@@ -219,38 +219,9 @@
                     <!-- ======== Mods of the build ======== -->
                     <Grid IsVisible="{Binding IsBuildMods}" RowDefinitions="Auto,Auto,Auto,Auto,*" RowSpacing="10" controls:Reveal.OnVisible="True">
                         <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-                            <!-- Search, then the slices of the list with their counts. -->
-                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                <TextBox Text="{Binding ModsFilter}" Watermark="{DynamicResource Mods_FilterPlaceholder}" Width="230"/>
-                                <Button Classes="chip" Classes.active="{Binding IsScopeAll}"
-                                        Command="{Binding SelectModsScopeCommand}" CommandParameter="All">
-                                    <StackPanel Orientation="Horizontal" Spacing="5">
-                                        <TextBlock Text="{DynamicResource Mods_ScopeAll}"/>
-                                        <TextBlock Text="{Binding ModsCountAll}" Classes="faint"/>
-                                    </StackPanel>
-                                </Button>
-                                <Button Classes="chip" Classes.active="{Binding IsScopeCatalog}"
-                                        Command="{Binding SelectModsScopeCommand}" CommandParameter="Catalog">
-                                    <StackPanel Orientation="Horizontal" Spacing="5">
-                                        <TextBlock Text="{DynamicResource Mods_ScopeCatalog}"/>
-                                        <TextBlock Text="{Binding ModsCountCatalog}" Classes="faint"/>
-                                    </StackPanel>
-                                </Button>
-                                <Button Classes="chip" Classes.active="{Binding IsScopeOwn}"
-                                        Command="{Binding SelectModsScopeCommand}" CommandParameter="Own">
-                                    <StackPanel Orientation="Horizontal" Spacing="5">
-                                        <TextBlock Text="{DynamicResource Mods_ScopeOwn}"/>
-                                        <TextBlock Text="{Binding ModsCountOwn}" Classes="faint"/>
-                                    </StackPanel>
-                                </Button>
-                                <Button Classes="chip" Classes.active="{Binding IsScopeDisabled}"
-                                        Command="{Binding SelectModsScopeCommand}" CommandParameter="Disabled">
-                                    <StackPanel Orientation="Horizontal" Spacing="5">
-                                        <TextBlock Text="{DynamicResource Mods_ScopeDisabled}"/>
-                                        <TextBlock Text="{Binding ModsCountDisabled}" Classes="faint"/>
-                                    </StackPanel>
-                                </Button>
-                            </StackPanel>
+                            <!-- Search on the left, the two actions on the right; the slices wrap on their own row below. -->
+                            <TextBox Text="{Binding ModsFilter}" Watermark="{DynamicResource Mods_FilterPlaceholder}"
+                                     MaxWidth="360" HorizontalAlignment="Left" VerticalAlignment="Center"/>
                             <!-- Adding lives where the mods are, and opens the catalog on mods. -->
                             <Button Grid.Column="1" Classes="ghost small" Foreground="{DynamicResource GoldBrush}"
                                     Command="{Binding OpenCatalogForModsCommand}">
@@ -284,7 +255,40 @@
                             </Button>
                         </Grid>
 
-                        <TextBlock Grid.Row="1" Text="{Binding InstalledModsSummary}" Classes="faint"/>
+                        <Grid Grid.Row="1" ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                            <WrapPanel ItemSpacing="6" LineSpacing="6" VerticalAlignment="Center">
+                                <Button Classes="chip" Classes.active="{Binding IsScopeAll}"
+                                        Command="{Binding SelectModsScopeCommand}" CommandParameter="All">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <TextBlock Text="{DynamicResource Mods_ScopeAll}"/>
+                                        <TextBlock Text="{Binding ModsCountAll}" Classes="faint"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Classes="chip" Classes.active="{Binding IsScopeCatalog}"
+                                        Command="{Binding SelectModsScopeCommand}" CommandParameter="Catalog">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <TextBlock Text="{DynamicResource Mods_ScopeCatalog}"/>
+                                        <TextBlock Text="{Binding ModsCountCatalog}" Classes="faint"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Classes="chip" Classes.active="{Binding IsScopeOwn}"
+                                        Command="{Binding SelectModsScopeCommand}" CommandParameter="Own">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <TextBlock Text="{DynamicResource Mods_ScopeOwn}"/>
+                                        <TextBlock Text="{Binding ModsCountOwn}" Classes="faint"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Classes="chip" Classes.active="{Binding IsScopeDisabled}"
+                                        Command="{Binding SelectModsScopeCommand}" CommandParameter="Disabled">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <TextBlock Text="{DynamicResource Mods_ScopeDisabled}"/>
+                                        <TextBlock Text="{Binding ModsCountDisabled}" Classes="faint"/>
+                                    </StackPanel>
+                                </Button>
+                                                        </WrapPanel>
+                            <TextBlock Grid.Column="1" Text="{Binding InstalledModsSummary}" Classes="faint"
+                                       VerticalAlignment="Center" HorizontalAlignment="Right" TextWrapping="Wrap"/>
+                        </Grid>
 
                         <!-- The pre-launch check, in full. -->
                         <Border Grid.Row="2" Classes="panel" Padding="14,10" IsVisible="{Binding HasBuildIssues}">
