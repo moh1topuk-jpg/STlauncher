@@ -369,14 +369,16 @@
                                                                   MinWidth="0" VerticalAlignment="Center"
                                                                   Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).ToggleModCommand}"
                                                                   CommandParameter="{Binding}"/>
-                                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                                        <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center"
+                                                    <!-- A grid, not a stack: a stack never limits the name, so a long
+                                                         file name ran under the size instead of trimming. -->
+                                                    <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="8" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center" HorizontalAlignment="Left"
                                                                    TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding FileName}"/>
-                                                        <Border Classes="tag" IsVisible="{Binding IsCatalog}" VerticalAlignment="Center"
+                                                        <Border Grid.Column="1" Classes="tag" IsVisible="{Binding IsCatalog}" VerticalAlignment="Center"
                                                                 ToolTip.Tip="{DynamicResource Mods_CatalogPinnedHint}">
                                                             <TextBlock Text="{DynamicResource Builds_TagCatalog}"/>
                                                         </Border>
-                                                    </StackPanel>
+                                                    </Grid>
                                                     <!-- A newer version exists; the button is the whole offer. -->
                                                     <Button Grid.Column="2" Classes="small" IsVisible="{Binding HasUpdate}"
                                                             Foreground="{DynamicResource GoldBrush}"
