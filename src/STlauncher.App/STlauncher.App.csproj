@@ -9,7 +9,7 @@
     <AssemblyTitle>STlauncher</AssemblyTitle>
     <Product>STlauncher</Product>
     <Company>Showtime</Company>
-    <Version>0.5.4</Version>
+    <Version>0.5.5</Version>
   </PropertyGroup>
 
   <ItemGroup>

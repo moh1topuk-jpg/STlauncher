@@ -8,6 +8,8 @@
 
 ## [Не выпущено]
 
+## [0.5.5] — 2026-09-29
+
 ### Добавлено
 - Моды можно перетащить прямо в лаунчер: .jar ложится в моды, .zip в ресурспаки или
   шейдеры (по содержимому или по открытой вкладке), .mrpack ставится как модпак. Файлы
@@ -485,7 +487,8 @@
 - Бэкапы миров по событиям: раз в сутки, перед изменением модов, перед запуском.
 - Автообновление с уведомлением и установкой одной кнопкой.
 
-[Не выпущено]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.5.4...HEAD
+[Не выпущено]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.5.5...HEAD
+[0.5.5]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.5.4...v0.5.5
 [0.5.4]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.5.3...v0.5.4
 [0.5.3]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.5.1...v0.5.2
