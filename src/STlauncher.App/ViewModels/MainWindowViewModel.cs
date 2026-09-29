@@ -1100,11 +1100,22 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             await Task.Delay(400, cts.Token);
+
+            // The face changes with the name at once: what the launcher already knows
+            // about the new name, or Steve. A player who switched nicknames used to look
+            // at the old face for as long as Mojang took to answer, or to time out.
+            var known = _skins.PeekCached(Username, SelectedSkinSource) ?? _skins.Default;
+
+            if (!ReferenceEquals(PlayerSkin, known))
+            {
+                await Dispatcher.UIThread.InvokeAsync(() => PlayerSkin = known);
+            }
+
             var skin = await _skins.GetSkinAsync(Username, SelectedSkinSource, cts.Token);
 
             if (!cts.IsCancellationRequested)
             {
-                PlayerSkin = skin;
+                await Dispatcher.UIThread.InvokeAsync(() => PlayerSkin = skin);
                 AppendConsole(skin.IsDefault
                     ? $"[skin] {Username}: not found at Mojang, TLauncher or ely.by - showing Steve"
                     : $"[skin] {Username}: {skin.Source}, {(skin.IsSlim ? "slim" : "classic")}");

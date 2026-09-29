@@ -11,9 +11,17 @@ sealed class Program
     // Initialization code. Don't use any Avalonia, third-party APIs or any
     // SynchronizationContext-reliant code before AppMain is called: things aren't initialized
     // yet and stuff might break.
+    /// <summary>
+    /// Started with --smoke: the launcher shows its window, waits a few seconds and exits 0.
+    /// CI runs the Linux build this way under a virtual display, so a port that crashes on
+    /// start is caught before anyone downloads it.
+    /// </summary>
+    public static bool SmokeRun { get; private set; }
+
     [STAThread]
     public static void Main(string[] args)
     {
+        SmokeRun = Array.Exists(args, a => a == "--smoke");
         VelopackApp.Build().Run();
 
         // Without these, a failure outside the UI's try/catch disappears with the process

@@ -106,6 +106,18 @@ public partial class App : Application
 
             window.Opened += (_, _) => SafeInitialize(viewModel);
 
+            if (Program.SmokeRun)
+            {
+                var smoke = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(8) };
+                smoke.Tick += (_, _) =>
+                {
+                    smoke.Stop();
+                    Console.WriteLine($"smoke: window {window.ClientSize.Width:F0}x{window.ClientSize.Height:F0}, ready={viewModel.IsStartupReady}");
+                    desktop.Shutdown(viewModel.IsStartupReady ? 0 : 2);
+                };
+                smoke.Start();
+            }
+
             // Discord shows the last presence until the client says goodbye.
             desktop.Exit += (_, _) => _services.GetRequiredService<DiscordPresenceService>().Dispose();
 

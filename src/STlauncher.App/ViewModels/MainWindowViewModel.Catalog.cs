@@ -215,6 +215,7 @@ public partial class MainWindowViewModel
 
                 var item = new InstalledModItem(mod, record);
                 RestoreKnownUpdate(item);
+                item.IsNew = _freshModFiles.Contains(mod.FileName);
                 InstalledMods.Add(item);
             }
 

@@ -10,7 +10,8 @@
              xmlns:controls="using:STlauncher.App.Controls"
              xmlns:sys="using:System"
              x:Class="STlauncher.App.Views.Pages.BuildsPage"
-             x:DataType="vm:MainWindowViewModel">
+             x:DataType="vm:MainWindowViewModel"
+             DragDrop.AllowDrop="True">
 
     <Grid>
         <Grid Margin="24" ColumnDefinitions="260,*" ColumnSpacing="20">
@@ -350,7 +351,7 @@
 
                             <!-- Hidden while empty: an empty list still catches clicks meant for the panel above. -->
                             <ScrollViewer IsVisible="{Binding !HasNoInstalledMods}">
-                                <ItemsControl ItemsSource="{Binding InstalledMods}" VerticalAlignment="Top">
+                                <ItemsControl Name="ModsItems" ItemsSource="{Binding InstalledMods}" VerticalAlignment="Top">
                                     <!-- Two columns: a 30-mod build fits on one screen. -->
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate>
@@ -359,7 +360,7 @@
                                     </ItemsControl.ItemsPanel>
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="vm:InstalledModItem">
-                                            <Border Classes="panel mod-row" Classes.off="{Binding !Enabled}" IsVisible="{Binding !IsHidden}"
+                                            <Border Classes="panel mod-row" Classes.off="{Binding !Enabled}" Classes.new="{Binding IsNew}" IsVisible="{Binding !IsHidden}"
                                                     Padding="12,8" VerticalAlignment="Stretch">
                                                 <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="10">
                                                     <!-- The switch shows the state and changes it:
@@ -1438,6 +1439,18 @@
                     </Grid>
                 </Grid>
             </Border>
+        </Border>
+
+        <!-- Where a dragged file will land. Not hit-testable: the drop goes to the page. -->
+        <Border IsVisible="{Binding IsDropHover}" IsHitTestVisible="False" Margin="24"
+                Background="{DynamicResource LightboxScrimBrush}" CornerRadius="16"
+                BorderBrush="{DynamicResource AccentBrush}" BorderThickness="2">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="10">
+                <PathIcon Data="{StaticResource IconPlus}" Width="28" Height="28" Foreground="{DynamicResource AccentBrush}"/>
+                <TextBlock Text="{DynamicResource Mods_DropHere}" Classes="h3" HorizontalAlignment="Center"/>
+                <TextBlock Text="{DynamicResource Mods_DropHint}" Classes="muted" HorizontalAlignment="Center" TextAlignment="Center"
+                           TextWrapping="Wrap" MaxWidth="520"/>
+            </StackPanel>
         </Border>
 
     </Grid>

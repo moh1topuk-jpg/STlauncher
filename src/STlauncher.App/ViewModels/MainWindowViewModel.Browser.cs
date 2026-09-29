@@ -548,6 +548,8 @@ public partial class MainWindowViewModel
                 return;
             }
 
+            _installBatch.Clear();
+
             await InstallProjectWithDependenciesAsync(
                 preferred,
                 item.Result.Slug,
@@ -557,6 +559,9 @@ public partial class MainWindowViewModel
 
             item.Installed = true;
             RefreshHiddenItems();
+
+            // The mod itself is the last file installed: its dependencies came first.
+            RevealFreshMods(_installBatch.ToList(), _installBatch.LastOrDefault());
         }
         catch (Exception ex)
         {
@@ -637,6 +642,7 @@ public partial class MainWindowViewModel
         if (string.Equals(folder, ModManager.ModsFolderName, StringComparison.OrdinalIgnoreCase) && SelectedInstance is not null)
         {
             ReplaceOtherVersions(SelectedInstance, file.FileName);
+            _installBatch.Add(file.FileName);
         }
 
         RecordInstalledMod(new InstalledModRecord

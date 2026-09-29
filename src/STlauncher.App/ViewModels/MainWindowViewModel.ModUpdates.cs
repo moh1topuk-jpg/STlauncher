@@ -67,6 +67,10 @@ public partial class InstalledModItem : ObservableObject
     /// <summary>Filtered out by the search box; the file is still in the build.</summary>
     [ObservableProperty]
     private bool _isHidden;
+
+    /// <summary>Just added: outlined in the list for a while, so it can be found without reading every row.</summary>
+    [ObservableProperty]
+    private bool _isNew;
 }
 
 /// <summary>

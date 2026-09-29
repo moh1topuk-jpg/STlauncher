@@ -58,6 +58,15 @@ jobs:
           -p:DebugType=none
           -o publish
 
+      # The published binary is started under a virtual display and must show its window
+      # and exit 0 by itself: a port that dies on start fails here, not on a player's desk.
+      - name: Smoke-run under Xvfb
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb libfontconfig1 libice6 libsm6 libx11-6 libxext6 libxrender1
+          chmod +x publish/STlauncher.App
+          timeout 120 xvfb-run -a -s "-screen 0 1280x800x24" publish/STlauncher.App --smoke
+
       - name: Install Velopack CLI
         run: dotnet tool install -g vpk --version 1.2.0
 
@@ -65,6 +74,7 @@ jobs:
         run: |
           version=$(grep -oP '(?<=<Version>)[^<]+' src/STlauncher.App/STlauncher.App.csproj)
           vpk pack -u STlauncher -v "$version" -p publish -e STlauncher.App -o releases-linux -i src/STlauncher.App/Assets/app.png
+          ls -la releases-linux
 
       - name: Upload Linux artifact
         uses: actions/upload-artifact@v4
@@ -74,7 +84,7 @@ jobs:
           retention-days: 30
 
   release:
-    needs: build
+    needs: [build, build-linux]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: windows-latest
     permissions:
@@ -170,6 +180,26 @@ jobs:
         run: |
           gh release upload ${{ github.ref_name }} releases/SHA256SUMS.txt --clobber
           gh release edit ${{ github.ref_name }} --notes-file release-notes.md
+
+      # The Linux build rides along as a plain file for whoever wants to try it. Missing
+      # (the Linux job is allowed to fail) means the release simply has no AppImage.
+      - name: Download Linux build
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: STlauncher-linux-x64
+          path: linux
+
+      - name: Attach Linux build
+        shell: pwsh
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $image = Get-ChildItem linux -Recurse -Filter *.AppImage -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($null -eq $image) { Write-Host "No AppImage from the Linux job; skipping."; exit 0 }
+          Copy-Item $image.FullName STlauncher-linux-x64.AppImage
+          gh release upload ${{ github.ref_name }} STlauncher-linux-x64.AppImage --clobber
 
       # Free cryptographic proof that the artifacts were built by this workflow
       # from this repository. Verify with: gh attestation verify <file> -R <owner/repo>

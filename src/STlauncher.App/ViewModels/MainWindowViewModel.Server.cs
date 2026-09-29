@@ -47,6 +47,41 @@ public partial class MainWindowViewModel
             ? Localize("Game_StateSynced", "Mods match the catalog")
             : Localize("Game_StateOwn", "Your own build - the catalog leaves it alone");
 
+    /// <summary>"Peak: 71 · Record: 84" under the online count on the main screen; the peak alone when they agree.</summary>
+    [ObservableProperty]
+    private string _serverPeakLine = string.Empty;
+
+    /// <summary>The all-time record: the collector's when it has one, the launcher's own otherwise.</summary>
+    private (int Online, DateTimeOffset? At)? BestRecord()
+    {
+        var remote = _remoteStats?.Summary?.Peak;
+        var local = _serverHistory?.GetRecord(ServerAddress);
+
+        if (remote is { } r && (local is null || r >= local.Online))
+        {
+            return (r, _remoteStats?.Summary?.PeakAt);
+        }
+
+        return local is null ? null : (local.Online, local.Time);
+    }
+
+    private void RefreshRecordLine()
+    {
+        var record = BestRecord();
+        var peakValue = _serverHistory?.GetSummary(ServerAddress, TimeSpan.FromDays(14)).Peak ?? 0;
+
+        ServerPeakLine = record is { } best && best.Online > peakValue
+            ? (ServerPeak.Length > 0 ? ServerPeak + " · " : string.Empty) + Localize("Server_Record", "Record: {0}", best.Online)
+            : ServerPeak;
+
+        // The tile on the server page: the collector's record when it has one, else ours.
+        if (_remoteStats?.Summary?.Peak is null && record is { } own)
+        {
+            ServerRecordValue = own.Online.ToString(CultureInfo.CurrentCulture);
+            ServerRecordCaption = own.At is { } at ? at.ToLocalTime().ToString("dd.MM.yyyy", CultureInfo.CurrentCulture) : string.Empty;
+        }
+    }
+
     /// <summary>"33 online on Showtime" for the small card on the main screen.</summary>
     public string OnlineNowLabel => IsServerOnline
         ? Localize("Game_OnlineNow", "{0} online on {1}", ServerOnlineValue, ServerName)
@@ -526,6 +561,7 @@ public partial class MainWindowViewModel
                 : string.Empty;
 
         ApplyStatsSummary();
+        RefreshRecordLine();
 
         ServerMonitoringNote = remote is not null
             ? string.Empty

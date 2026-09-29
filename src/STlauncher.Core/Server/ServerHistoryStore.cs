@@ -40,6 +40,19 @@ public sealed record ServerHistoryBucket(
     int Peak,
     int SampleCount);
 
+/// <summary>The most players seen online at once, and when. Kept for good, unlike the samples.</summary>
+public sealed class ServerRecord
+{
+    [JsonPropertyName("address")]
+    public string? Address { get; set; }
+
+    [JsonPropertyName("online")]
+    public int Online { get; set; }
+
+    [JsonPropertyName("time")]
+    public DateTimeOffset Time { get; set; }
+}
+
 /// <summary>
 /// Local online history. Samples are collected whenever the launcher pings the server,
 /// which is all a launcher can do without a backend of its own.
@@ -54,13 +67,49 @@ public sealed class ServerHistoryStore
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
     private readonly string _path;
+    private readonly string _recordPath;
     private readonly object _gate = new();
     private readonly List<ServerSample> _samples = new();
+    private readonly List<ServerRecord> _records = new();
 
     public ServerHistoryStore(string path)
     {
         _path = path ?? throw new ArgumentNullException(nameof(path));
+        // Its own file: the samples file stays a plain list an older launcher can read.
+        _recordPath = Path.Combine(Path.GetDirectoryName(path) ?? string.Empty, "server-record.json");
         Load();
+        LoadRecords();
+    }
+
+    /// <summary>The highest reading ever taken for this server, or null before the first one.</summary>
+    public ServerRecord? GetRecord(string address)
+    {
+        lock (_gate)
+        {
+            return _records.FirstOrDefault(r => r.Address is null || string.Equals(r.Address, Normalize(address), StringComparison.Ordinal));
+        }
+    }
+
+    /// <summary>Raises the record when a reading beats it. Returns true when it did.</summary>
+    private bool RaiseRecord(string address, int online, DateTimeOffset time)
+    {
+        var normalized = Normalize(address);
+        var record = _records.FirstOrDefault(r => string.Equals(r.Address, normalized, StringComparison.Ordinal));
+
+        if (record is null)
+        {
+            _records.Add(new ServerRecord { Address = normalized, Online = online, Time = time });
+            return true;
+        }
+
+        if (online <= record.Online)
+        {
+            return false;
+        }
+
+        record.Online = online;
+        record.Time = time;
+        return true;
     }
 
     public IReadOnlyList<ServerSample> Samples
@@ -100,6 +149,11 @@ public sealed class ServerHistoryStore
             _samples.RemoveAll(s => time - s.Time > Retention);
             _samples.Sort((a, b) => a.Time.CompareTo(b.Time));
 
+            if (RaiseRecord(address, online, time))
+            {
+                SaveRecords(new List<ServerRecord>(_records));
+            }
+
             // Snapshot under the lock, then write outside it: the file write is disk I/O
             // and has no business blocking every other reader.
             snapshot = new List<ServerSample>(_samples);
@@ -107,6 +161,58 @@ public sealed class ServerHistoryStore
 
         Save(snapshot);
         return true;
+    }
+
+    private void LoadRecords()
+    {
+        try
+        {
+            if (File.Exists(_recordPath))
+            {
+                var loaded = JsonSerializer.Deserialize<List<ServerRecord>>(File.ReadAllText(_recordPath), JsonOptions);
+
+                if (loaded is not null)
+                {
+                    _records.AddRange(loaded);
+                }
+            }
+        }
+        catch (Exception)
+        {
+        }
+
+        // The first record comes from the samples already on disk, so the figure does not
+        // start from zero on the day this was added.
+        var seeded = false;
+
+        foreach (var group in _samples.Where(s => s.Address is not null).GroupBy(s => s.Address))
+        {
+            var best = group.OrderByDescending(s => s.Online).First();
+            seeded |= RaiseRecord(group.Key!, best.Online, best.Time);
+        }
+
+        if (seeded)
+        {
+            SaveRecords(new List<ServerRecord>(_records));
+        }
+    }
+
+    private void SaveRecords(IReadOnlyList<ServerRecord> records)
+    {
+        try
+        {
+            var directory = Path.GetDirectoryName(_recordPath);
+
+            if (!string.IsNullOrEmpty(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            AtomicFile.WriteAllText(_recordPath, JsonSerializer.Serialize(records, JsonOptions));
+        }
+        catch (Exception)
+        {
+        }
     }
 
     /// <summary>

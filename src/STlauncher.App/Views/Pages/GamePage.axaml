@@ -479,7 +479,7 @@
                             </Border>
                             <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
                                 <TextBlock Text="{Binding OnlineNowLabel}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-                                <TextBlock Text="{Binding ServerPeak}" Classes="faint"/>
+                                <TextBlock Text="{Binding ServerPeakLine}" Classes="faint"/>
                             </StackPanel>
                             <PathIcon Grid.Column="2" Data="{StaticResource IconChevronRight}" Classes="small muted"
                                       VerticalAlignment="Center"/>

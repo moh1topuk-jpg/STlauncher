@@ -910,4 +910,12 @@
     <x:String x:Key="Repair_Done">Build repaired: {0} mod(s) downloaded again, {1} problem(s) fixed. The game files are checked on the next launch.</x:String>
     <x:String x:Key="Repair_DoneOwn">Build repaired: {0} problem(s) fixed. The game files are checked on the next launch.</x:String>
     <x:String x:Key="Repair_Failed">Could not repair the build: {0}</x:String>
+    <!-- Dropped files, fresh mods, record -->
+    <x:String x:Key="Mods_DropHere">Drop to add to the build</x:String>
+    <x:String x:Key="Mods_DropHint">.jar goes to mods, .zip to resource packs or shaders, .mrpack imports as a modpack. Files are copied; the originals stay where they are.</x:String>
+    <x:String x:Key="Mods_DropDone">Added to the build: {0}</x:String>
+    <x:String x:Key="Mods_DropPartial">Added: {0}. Not a mod or pack: {1}</x:String>
+    <x:String x:Key="Mods_DropFailed">Could not add the files: {0}</x:String>
+    <x:String x:Key="Mods_DropBusy">Wait for the current install to finish, then drop again</x:String>
+    <x:String x:Key="Mods_AddedMarked">Added: {0}. Outlined in the mod list.</x:String>
 </ResourceDictionary>

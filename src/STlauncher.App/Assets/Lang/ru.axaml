@@ -910,4 +910,12 @@
     <x:String x:Key="Repair_Done">Сборка починена: модов докачано — {0}, проблем исправлено — {1}. Файлы игры проверятся при следующем запуске.</x:String>
     <x:String x:Key="Repair_DoneOwn">Сборка починена: проблем исправлено — {0}. Файлы игры проверятся при следующем запуске.</x:String>
     <x:String x:Key="Repair_Failed">Не удалось починить сборку: {0}</x:String>
+    <!-- Dropped files, fresh mods, record -->
+    <x:String x:Key="Mods_DropHere">Отпустите, чтобы добавить в сборку</x:String>
+    <x:String x:Key="Mods_DropHint">.jar — в моды, .zip — в ресурспаки или шейдеры, .mrpack — как модпак. Файлы копируются, оригиналы остаются на месте.</x:String>
+    <x:String x:Key="Mods_DropDone">Добавлено в сборку: {0}</x:String>
+    <x:String x:Key="Mods_DropPartial">Добавлено: {0}. Не мод и не пак: {1}</x:String>
+    <x:String x:Key="Mods_DropFailed">Не удалось добавить файлы: {0}</x:String>
+    <x:String x:Key="Mods_DropBusy">Дождитесь окончания текущей установки и перетащите снова</x:String>
+    <x:String x:Key="Mods_AddedMarked">Добавлено: {0}. Выделено в списке модов.</x:String>
 </ResourceDictionary>

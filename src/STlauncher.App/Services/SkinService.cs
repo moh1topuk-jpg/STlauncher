@@ -117,6 +117,31 @@ public sealed class SkinService
         return Default;
     }
 
+    /// <summary>
+    /// What is known about a name without asking anyone: the session's copy or the file on
+    /// disk, however old. Null when the name has never been seen. Shown the moment the
+    /// name changes, so the previous player's face does not linger while the network
+    /// takes its time.
+    /// </summary>
+    public PlayerSkin? PeekCached(string username, SkinSource source = SkinSource.Auto)
+    {
+        if (string.IsNullOrWhiteSpace(username))
+        {
+            return null;
+        }
+
+        var key = source == SkinSource.Auto ? username : $"{username}@{source}";
+
+        if (_memory.TryGetValue(key, out var cached))
+        {
+            return cached;
+        }
+
+        var cachePath = Path.Combine(_cacheDirectory, SafeFileName(key) + ".png");
+        var stored = LoadCached(cachePath, TimeSpan.MaxValue);
+        return stored is not null && IsTrustedSource(stored.Source) ? stored : null;
+    }
+
     /// <summary>Systems that answer only for names they know. Mirrors invent a Steve for the rest.</summary>
     private static bool IsTrustedSource(string? source)
         => source is "Mojang" or "TLauncher" or "ely.by";

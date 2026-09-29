@@ -230,7 +230,9 @@ public partial class MainWindowViewModel
     /// <summary>Pack edits are file edits the game would overwrite on exit, so they wait.</summary>
     public bool CanEditPacks => !IsGameRunning;
 
-    public string ModsTabLabel => TabLabel("Builds_TabMods", "Mods", InstalledMods.Count);
+    public string ModsTabLabel => _freshModFiles.Count > 0
+        ? TabLabel("Builds_TabMods", "Mods", InstalledMods.Count) + " · +" + _freshModFiles.Count
+        : TabLabel("Builds_TabMods", "Mods", InstalledMods.Count);
 
     public string ResourcePacksTabLabel => TabLabel("Builds_TabPacks", "Resource packs", ResourcePackCount);
 

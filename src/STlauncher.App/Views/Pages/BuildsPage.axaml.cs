@@ -13,9 +13,117 @@ namespace STlauncher.App.Views.Pages;
 
 public partial class BuildsPage : UserControl
 {
+    private MainWindowViewModel? _viewModel;
+
     public BuildsPage()
     {
         InitializeComponent();
+
+        AddHandler(DragDrop.DragEnterEvent, OnDragOver);
+        AddHandler(DragDrop.DragOverEvent, OnDragOver);
+        AddHandler(DragDrop.DragLeaveEvent, OnDragLeave);
+        AddHandler(DragDrop.DropEvent, OnDrop);
+
+        DataContextChanged += (_, _) =>
+        {
+            if (_viewModel is not null)
+            {
+                _viewModel.RevealModRequested -= RevealMod;
+            }
+
+            _viewModel = DataContext as MainWindowViewModel;
+
+            if (_viewModel is not null)
+            {
+                _viewModel.RevealModRequested += RevealMod;
+            }
+        };
+    }
+
+    // ===================== Files dragged in =====================
+
+    private static bool HasFiles(DragEventArgs e) => e.DataTransfer.Contains(DataFormat.File);
+
+    private void OnDragOver(object? sender, DragEventArgs e)
+    {
+        var accepted = HasFiles(e);
+        e.DragEffects = accepted ? DragDropEffects.Copy : DragDropEffects.None;
+
+        if (_viewModel is not null)
+        {
+            _viewModel.IsDropHover = accepted;
+        }
+
+        e.Handled = true;
+    }
+
+    private void OnDragLeave(object? sender, DragEventArgs e)
+    {
+        if (_viewModel is not null)
+        {
+            _viewModel.IsDropHover = false;
+        }
+    }
+
+    private async void OnDrop(object? sender, DragEventArgs e)
+    {
+        if (_viewModel is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var paths = (e.DataTransfer.TryGetFiles() ?? Enumerable.Empty<IStorageItem>())
+                .Select(f => f.TryGetLocalPath())
+                .Where(p => !string.IsNullOrEmpty(p))
+                .Select(p => p!)
+                .ToList();
+
+            e.Handled = true;
+            await _viewModel.AddLocalFilesAsync(paths);
+        }
+        catch (Exception ex)
+        {
+            _viewModel.IsDropHover = false;
+            _viewModel.ReportUiFailure(ex);
+        }
+    }
+
+    // ===================== Scroll to a fresh mod =====================
+
+    /// <summary>
+    /// Brings the row into view once the list has laid itself out; the tab may have just
+    /// switched, so this waits for a layout pass rather than measuring an invisible panel.
+    /// </summary>
+    private void RevealMod(string fileName)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            if (_viewModel is null || this.FindControl<ItemsControl>("ModsItems") is not { } items)
+            {
+                return;
+            }
+
+            var index = -1;
+
+            for (var i = 0; i < _viewModel.InstalledMods.Count; i++)
+            {
+                if (string.Equals(_viewModel.InstalledMods[i].FileName, fileName, StringComparison.OrdinalIgnoreCase))
+                {
+                    index = i;
+                    break;
+                }
+            }
+
+            if (index < 0)
+            {
+                return;
+            }
+
+            items.UpdateLayout();
+            items.ContainerFromIndex(index)?.BringIntoView();
+        }, Avalonia.Threading.DispatcherPriority.Background);
     }
 
     /// <summary>Opens the project card when a mod row is clicked.</summary>

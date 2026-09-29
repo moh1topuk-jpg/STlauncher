@@ -241,6 +241,12 @@
         <Setter Property="Opacity" Value="0.55"/>
     </Style>
 
+    <!-- Just added: an outline for a while, so it can be found in a long list. -->
+    <Style Selector="Border.mod-row.new">
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+        <Setter Property="BorderThickness" Value="1.5"/>
+    </Style>
+
     <Style Selector="Border.hairline">
         <Setter Property="Height" Value="1"/>
         <Setter Property="Background" Value="{DynamicResource AccentHairlineBrush}"/>
