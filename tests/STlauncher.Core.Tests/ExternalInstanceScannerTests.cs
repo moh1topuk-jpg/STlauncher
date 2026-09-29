@@ -109,6 +109,8 @@ public class ExternalInstanceScannerTests : IDisposable
     [InlineData("""{ "libraries": [] }""", "my build", null)]
     [InlineData("""{ "libraries": [] }""", "Fabric 26.2", "26.2")]
     [InlineData("""{ "downloads": { "client": { "url": "https://x/client.jar" } }, "mainClass": "net.minecraft.client.main.Main" }""", "26.3-snapshot-1", "26.3-snapshot-1")]
+    [InlineData("""{ "downloads": { "client": { "url": "https://x/client.jar" } }, "mainClass": "net.minecraft.client.main.Main" }""", "OptiFine 1.16.5", "1.16.5")]
+    [InlineData("""{ "downloads": { "client": { "url": "https://x/client.jar" } }, "mainClass": "net.minecraft.client.main.Main" }""", "1.21.11", "1.21.11")]
     public void DetectGameVersion_ReadsWhatTheProfileIsBuiltOn(string json, string id, string? expected)
     {
         var profile = JsonSerializer.Deserialize<VersionJson>(json, MetadataJson.Options)!;
@@ -216,6 +218,101 @@ public class ExternalInstanceScannerTests : IDisposable
         Assert.Equal(LoaderKind.Fabric, found.Loader);
         Assert.False(found.SharesGameDirectory);
         Assert.EndsWith(".minecraft", found.GameDirectory);
+    }
+
+    [Fact]
+    public void DiscoverMultiMcFamily_FindsAForkByItsFiles()
+    {
+        // A fork nobody listed: the folder name is new, the files are Prism's.
+        var data = Path.Combine(_root, "appdata");
+        var fork = Path.Combine(data, "PineconeMC");
+        var instance = Path.Combine(fork, "instances", "Survival");
+        Directory.CreateDirectory(Path.Combine(instance, ".minecraft", "mods"));
+        File.WriteAllText(Path.Combine(fork, "elyprismlauncher.cfg"), "[General]\nInstanceDir=instances\n");
+        File.WriteAllText(Path.Combine(instance, "instance.cfg"), "[General]\nname=Survival\n");
+        File.WriteAllText(Path.Combine(instance, "mmc-pack.json"), """
+            { "components": [ { "uid": "net.minecraft", "version": "1.21.1" }, { "uid": "net.neoforged", "version": "21.1.0" } ] }
+            """);
+        Directory.CreateDirectory(Path.Combine(data, "Unrelated", "instances"));
+
+        var roots = ExternalInstanceScanner.DiscoverMultiMcFamily(data);
+
+        Assert.All(roots, r => Assert.Equal(ExternalLauncherKind.Prism, r.Kind));
+        Assert.Contains(roots, r => r.Path.TrimEnd(Path.DirectorySeparatorChar).EndsWith(Path.Combine("PineconeMC", "instances"), StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(roots, r => r.Path.Contains("Unrelated", StringComparison.OrdinalIgnoreCase));
+
+        var found = ExternalInstanceScanner.ScanAll(roots).Single();
+        Assert.Equal("Survival", found.Name);
+        Assert.Equal("1.21.1", found.VersionId);
+        Assert.Equal(LoaderKind.NeoForge, found.Loader);
+    }
+
+    [Fact]
+    public void DiscoverMultiMcFamily_FindsAPortableZipUnderAnyName()
+    {
+        var downloads = Path.Combine(_root, "Downloads");
+        var portable = Path.Combine(downloads, "PrismLauncher-Windows-MSVC-Portable-9.4");
+        var instance = Path.Combine(portable, "instances", "Pack");
+        Directory.CreateDirectory(Path.Combine(instance, "minecraft", "saves"));
+        File.WriteAllText(Path.Combine(portable, "prismlauncher.cfg"), "InstanceDir=instances\n");
+        File.WriteAllText(Path.Combine(instance, "mmc-pack.json"), """
+            { "components": [ { "uid": "net.minecraft", "version": "1.20.4" } ] }
+            """);
+
+        var found = ExternalInstanceScanner.ScanAll(ExternalInstanceScanner.DiscoverMultiMcFamily(downloads)).Single();
+
+        Assert.Equal("Pack", found.Name);
+        Assert.Equal(ExternalLauncherKind.Prism, found.Source);
+        Assert.EndsWith("minecraft", found.GameDirectory);
+    }
+
+    [Fact]
+    public void Scan_ReadsLegacyLauncherSubfolders()
+    {
+        var dotMinecraft = DotMinecraft();
+        WriteVersion(dotMinecraft, "Fabric 1.21.11", """
+            { "id": "Fabric 1.21.11", "inheritsFrom": "1.21.11", "mainClass": "net.fabricmc.loader.impl.launch.knot.KnotClient",
+              "libraries": [ { "name": "net.fabricmc:fabric-loader:0.16.9" }, { "name": "net.fabricmc:intermediary:1.21.11" } ] }
+            """);
+        var home = Path.Combine(dotMinecraft, "home", "Fabric 1.21.11");
+        Directory.CreateDirectory(Path.Combine(home, "mods"));
+        Directory.CreateDirectory(Path.Combine(home, "saves"));
+        File.WriteAllBytes(Path.Combine(home, "mods", "sodium.jar"), new byte[] { 1 });
+        Directory.CreateDirectory(Path.Combine(dotMinecraft, "home", "1.8.9", "saves"));
+
+        var found = ExternalInstanceScanner.Scan(dotMinecraft, ExternalLauncherKind.DotMinecraft);
+
+        var fabric = found.Single(f => f.Name == "Fabric 1.21.11" && f.HasOwnFolder);
+        Assert.Equal(home, fabric.GameDirectory);
+        Assert.Equal("Fabric 1.21.11", fabric.VersionId);
+        Assert.Equal("1.21.11", fabric.GameVersion);
+        Assert.Equal(LoaderKind.Fabric, fabric.Loader);
+        Assert.Equal(1, fabric.ModCount);
+        Assert.False(fabric.SharesGameDirectory);
+
+        var vanilla = found.Single(f => f.Name == "1.8.9");
+        Assert.True(vanilla.HasOwnFolder);
+        Assert.Equal("1.8.9", vanilla.GameVersion);
+    }
+
+    [Fact]
+    public void ConfiguredGameDirectories_ReadsEveryPropertiesFileUnderTlauncher()
+    {
+        var settings = Path.Combine(_root, ".tlauncher");
+        var gameA = Path.Combine(_root, "GameA");
+        var gameB = Path.Combine(_root, "GameB");
+        Directory.CreateDirectory(gameA);
+        Directory.CreateDirectory(gameB);
+        Directory.CreateDirectory(Path.Combine(settings, "legacy", "Minecraft"));
+        File.WriteAllText(Path.Combine(settings, "tlauncher-2.0.properties"), "minecraft.gamedir=" + gameA.Replace("\\", "\\\\").Replace(":", "\\:") + "\n");
+        File.WriteAllText(Path.Combine(settings, "legacy", "Minecraft", "tl.properties"), "minecraft.gamedir=" + gameB + "\nother=1\n");
+        File.WriteAllText(Path.Combine(settings, "legacy.properties"), "client.gamedir=" + Path.Combine(_root, "missing") + "\n");
+
+        var found = ExternalInstanceScanner.ConfiguredGameDirectories(settings);
+
+        Assert.Equal(2, found.Count);
+        Assert.Contains(gameA, found, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains(gameB, found, StringComparer.OrdinalIgnoreCase);
     }
 
     [Fact]

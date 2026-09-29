@@ -39,8 +39,18 @@ public static class ExternalInstanceScanner
         ("Prism Launcher", ExternalLauncherKind.Prism, "prismlauncher.cfg"),
         ("PolyMC", ExternalLauncherKind.PolyMc, "polymc.cfg"),
         ("MultiMC", ExternalLauncherKind.MultiMc, "multimc.cfg"),
+        ("PineconeMC", ExternalLauncherKind.Prism, "elyprismlauncher.cfg"),
+        ("ElyPrismLauncher", ExternalLauncherKind.Prism, "elyprismlauncher.cfg"),
+        ("FjordLauncher", ExternalLauncherKind.Prism, "fjordlauncher.cfg"),
+        ("PollyMC", ExternalLauncherKind.PolyMc, "pollymc.cfg"),
         ("ATLauncher", ExternalLauncherKind.AtLauncher, null)
     };
+
+    /// <summary>
+    /// Legacy Launcher keeps a game folder of each version under home/ when its
+    /// "subfolders" setting is on: home/1.21.11, home/Fabric 1.21.11, home/Forge-1.12.
+    /// </summary>
+    private const string LegacyHomeFolder = "home";
 
     /// <summary>Places worth looking in, in the order they are offered.</summary>
     public static IReadOnlyList<(string Path, ExternalLauncherKind Kind)> DefaultRoots()
@@ -85,6 +95,20 @@ public static class ExternalInstanceScanner
         AddConfiguredInstanceDirectory(roots, Path.Combine(appData, "PrismLauncher", "prismlauncher.cfg"), ExternalLauncherKind.Prism);
         AddConfiguredInstanceDirectory(roots, Path.Combine(appData, "PolyMC", "polymc.cfg"), ExternalLauncherKind.PolyMc);
 
+        // Legacy Launcher: its settings live in several places depending on the version,
+        // all under .tlauncher, and each may point the game at a folder of its own.
+        foreach (var directory in ConfiguredGameDirectories(Path.Combine(tlauncherHome, ".tlauncher")))
+        {
+            roots.Add((directory, ExternalLauncherKind.DotMinecraft));
+        }
+
+        // Every fork of Prism or MultiMC under the data root, whatever it is called:
+        // PineconeMC, Fjord, PollyMC and the next one. Told by the files, not the name.
+        foreach (var found in DiscoverMultiMcFamily(appData))
+        {
+            roots.Add(found);
+        }
+
         // Portable installs: MultiMC only ever ships that way, Prism and ATLauncher often do.
         foreach (var basePath in PortableBases(profile, local, documents))
         {
@@ -97,6 +121,13 @@ public static class ExternalInstanceScanner
                 {
                     AddConfiguredInstanceDirectory(roots, Path.Combine(directory, config), kind);
                 }
+            }
+
+            // A portable zip unpacks as "PrismLauncher-Windows-MSVC-Portable-9.4" or whatever
+            // the player renamed it to; the instances folder inside is what gives it away.
+            foreach (var found in DiscoverMultiMcFamily(basePath))
+            {
+                roots.Add(found);
             }
         }
 
@@ -150,6 +181,150 @@ public static class ExternalInstanceScanner
                 yield return Path.Combine(drive.RootDirectory.FullName, "Games");
             }
         }
+    }
+
+    /// <summary>
+    /// Folders directly under <paramref name="baseDirectory"/> that hold a MultiMC-style
+    /// launcher: an instances folder with at least one instance described by mmc-pack.json
+    /// or instance.cfg, or a launcher .cfg that names the instance folder. The kind comes
+    /// from the config file's name when it is a known one; a fork nobody has heard of is
+    /// still found, listed under the name of its folder.
+    /// </summary>
+    public static IReadOnlyList<(string Path, ExternalLauncherKind Kind)> DiscoverMultiMcFamily(string baseDirectory)
+    {
+        var result = new List<(string, ExternalLauncherKind)>();
+
+        foreach (var directory in SafeDirectories(baseDirectory))
+        {
+            var kind = ExternalLauncherKind.Unknown;
+            var configured = false;
+
+            foreach (var config in SafeFiles(directory, "*.cfg"))
+            {
+                var name = Path.GetFileName(config).ToLowerInvariant();
+                var configKind = name switch
+                {
+                    "prismlauncher.cfg" => ExternalLauncherKind.Prism,
+                    "polymc.cfg" or "pollymc.cfg" => ExternalLauncherKind.PolyMc,
+                    "multimc.cfg" => ExternalLauncherKind.MultiMc,
+                    _ => ExternalLauncherKind.Unknown
+                };
+
+                if (ReadPropertiesValue(config, "InstanceDir") is { Length: > 0 })
+                {
+                    var before = result.Count;
+                    AddConfiguredInstanceDirectory(result, config, configKind == ExternalLauncherKind.Unknown ? ExternalLauncherKind.Prism : configKind);
+                    configured |= result.Count > before;
+                }
+
+                if (configKind != ExternalLauncherKind.Unknown)
+                {
+                    kind = configKind;
+                }
+            }
+
+            var instances = Path.Combine(directory, "instances");
+
+            if (!Directory.Exists(instances) || !LooksLikeMultiMcInstances(instances))
+            {
+                continue;
+            }
+
+            // Any .cfg beside an instances folder of that shape is a MultiMC descendant;
+            // Prism is the one people mean today.
+            if (kind == ExternalLauncherKind.Unknown && (configured || SafeFiles(directory, "*.cfg").Any()))
+            {
+                kind = ExternalLauncherKind.Prism;
+            }
+
+            result.Add((instances, kind));
+        }
+
+        return result;
+    }
+
+    private static bool LooksLikeMultiMcInstances(string instances)
+        => SafeDirectories(instances).Any(d =>
+            File.Exists(Path.Combine(d, "mmc-pack.json")) || File.Exists(Path.Combine(d, "instance.cfg")));
+
+    /// <summary>
+    /// Game folders named in any properties file under a launcher's settings folder, as
+    /// TLauncher and Legacy Launcher keep them: "minecraft.gamedir" in tlauncher-2.0.properties,
+    /// legacy.properties or legacy/Minecraft/tl.properties. Any key ending in "gamedir" counts,
+    /// so a renamed setting in the next version still works.
+    /// </summary>
+    public static IReadOnlyList<string> ConfiguredGameDirectories(string settingsDirectory)
+    {
+        var result = new List<string>();
+
+        if (!Directory.Exists(settingsDirectory))
+        {
+            return result;
+        }
+
+        foreach (var file in SafeFiles(settingsDirectory, "*.properties", depth: 3))
+        {
+            try
+            {
+                foreach (var line in File.ReadLines(file))
+                {
+                    var separator = line.IndexOf('=');
+
+                    if (separator <= 0)
+                    {
+                        continue;
+                    }
+
+                    var key = line[..separator].Trim();
+
+                    if (!key.EndsWith("gamedir", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    var value = line[(separator + 1)..].Trim().Trim('"').Replace("\\:", ":").Replace("\\\\", "\\");
+
+                    if (value.Length > 0 && Directory.Exists(value) &&
+                        !result.Contains(value, StringComparer.OrdinalIgnoreCase))
+                    {
+                        result.Add(value);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        return result;
+    }
+
+    private static IEnumerable<string> SafeFiles(string directory, string pattern, int depth = 1)
+    {
+        var result = new List<string>();
+
+        try
+        {
+            if (!Directory.Exists(directory))
+            {
+                return result;
+            }
+
+            result.AddRange(Directory.EnumerateFiles(directory, pattern, SearchOption.TopDirectoryOnly));
+
+            if (depth > 1)
+            {
+                foreach (var child in Directory.EnumerateDirectories(directory))
+                {
+                    result.AddRange(SafeFiles(child, pattern, depth - 1));
+                }
+            }
+        }
+        catch (Exception)
+        {
+        }
+
+        return result;
     }
 
     /// <summary>MultiMC-style "InstanceDir=" from an ini file; relative to the file when relative.</summary>
@@ -210,11 +385,26 @@ public static class ExternalInstanceScanner
 
     /// <summary>Scans every known location. Missing ones are simply skipped.</summary>
     public static IReadOnlyList<ExternalInstance> ScanAll(IEnumerable<(string Path, ExternalLauncherKind Kind)>? roots = null)
+        => ScanAll(roots, null);
+
+    /// <summary>
+    /// The same, telling the caller which locations actually existed. "Found nothing" with
+    /// no trail is what every complaint about the import looks like from the other side.
+    /// </summary>
+    public static IReadOnlyList<ExternalInstance> ScanAll(
+        IEnumerable<(string Path, ExternalLauncherKind Kind)>? roots,
+        List<string>? scannedRoots)
     {
         var result = new List<ExternalInstance>();
 
         foreach (var (path, kind) in roots ?? DefaultRoots())
         {
+            if (!Directory.Exists(path))
+            {
+                continue;
+            }
+
+            scannedRoots?.Add($"{path} ({kind})");
             result.AddRange(Scan(path, kind));
         }
 
@@ -249,9 +439,22 @@ public static class ExternalInstanceScanner
             return Array.Empty<ExternalInstance>();
         }
 
-        if (Directory.Exists(Path.Combine(path, "versions")))
+        if (Directory.Exists(Path.Combine(path, "versions")) || Directory.Exists(Path.Combine(path, LegacyHomeFolder)))
         {
             return ScanDotMinecraft(path);
+        }
+
+        // The root of a MultiMC-family launcher, or a folder of several such launchers.
+        var family = DiscoverMultiMcFamily(path);
+
+        if (family.Count > 0)
+        {
+            var fromFamily = family.SelectMany(f => ScanInstanceFolders(f.Path, f.Kind)).ToList();
+
+            if (fromFamily.Count > 0)
+            {
+                return Sort(Deduplicate(fromFamily));
+            }
         }
 
         // The root of a launcher rather than its instance folder.
@@ -315,8 +518,70 @@ public static class ExternalInstanceScanner
         }
 
         result.AddRange(ScanLauncherProfiles(dotMinecraft));
+        result.AddRange(ScanLegacyHomeFolders(dotMinecraft));
 
         return Sort(result);
+    }
+
+    /// <summary>
+    /// Legacy Launcher with subfolders on: each version plays in home/&lt;name&gt;, and the
+    /// shared mods folder stays empty. The name is the version ("1.21.11", "Fabric 1.21.11")
+    /// or a family ("Forge-1.12"); the matching profile in versions/ is used when there is
+    /// one, otherwise the mods say what the folder is for.
+    /// </summary>
+    private static IEnumerable<ExternalInstance> ScanLegacyHomeFolders(string dotMinecraft)
+    {
+        var home = Path.Combine(dotMinecraft, LegacyHomeFolder);
+        var result = new List<ExternalInstance>();
+
+        if (!Directory.Exists(home))
+        {
+            return result;
+        }
+
+        var versions = Path.Combine(dotMinecraft, "versions");
+        var versionIds = SafeDirectories(versions).Select(Path.GetFileName).Where(n => !string.IsNullOrEmpty(n)).Select(n => n!).ToList();
+
+        foreach (var directory in SafeDirectories(home))
+        {
+            var name = Path.GetFileName(directory);
+
+            if (string.IsNullOrEmpty(name) || !IsGameFolder(directory))
+            {
+                continue;
+            }
+
+            var modCount = CountMods(Path.Combine(directory, ModsFolder));
+
+            // "Fabric 1.21.11" and "Fabric-1.21.11" both mean the profile named so, or the
+            // one whose id carries both words.
+            var words = name.Split(new[] { ' ', '-', '_' }, StringSplitOptions.RemoveEmptyEntries);
+            var versionId = versionIds.FirstOrDefault(id => string.Equals(id, name, StringComparison.OrdinalIgnoreCase))
+                            ?? versionIds.FirstOrDefault(id => words.Length > 1 && words.All(w => id.Contains(w, StringComparison.OrdinalIgnoreCase)))
+                            ?? (words.Length == 1 ? versionIds.FirstOrDefault(id => string.Equals(id, words[0], StringComparison.OrdinalIgnoreCase)) : null);
+
+            ExternalInstance instance;
+
+            if (versionId is not null)
+            {
+                instance = InspectVersionFolder(Path.Combine(versions, versionId), versionId, directory, ExternalLauncherKind.DotMinecraft, modCount);
+            }
+            else
+            {
+                var verdict = modCount > 0 ? ModFolderInspector.Inspect(Path.Combine(directory, ModsFolder)) : null;
+                var guessed = verdict?.GameVersion ?? Regex.Match(name, @"(?<![\d.])(1\.\d{1,2}(\.\d{1,2})?|2\d\.\d{1,2}(\.\d{1,2})?)(?![\d.])").Value;
+
+                instance = new ExternalInstance(name, directory, string.Empty, verdict?.Loader ?? LoaderFromName(name), ExternalLauncherKind.DotMinecraft, null, modCount)
+                {
+                    GameVersion = string.IsNullOrEmpty(guessed) ? null : guessed,
+                    VersionInferred = verdict is not null
+                };
+            }
+
+            result.Add(instance with { Name = name, GameDirectory = directory, ModCount = modCount, HasOwnFolder = true });
+        }
+
+        return result;
     }
 
     /// <summary>
@@ -588,7 +853,10 @@ public static class ExternalInstanceScanner
 
         // A profile that carries the client download is the game itself, and its id is
         // the version - whatever shape Mojang gives it ("1.21.1", "26.2", "26.3-snapshot-1").
-        if (json.Downloads?.Client is not null && DetectLoader(json) == LoaderKind.Vanilla)
+        // Unless someone named it: TLauncher's "OptiFine 1.16.5" carries the download too,
+        // and the version is inside the name, not the name.
+        if (json.Downloads?.Client is not null && DetectLoader(json) == LoaderKind.Vanilla &&
+            Regex.IsMatch(id, @"^(1\.\d{1,2}(\.\d{1,2})?|2\d\.\d{1,2}(\.\d{1,2})?)(-[\w.-]+)?$"))
         {
             return id;
         }

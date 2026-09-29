@@ -140,7 +140,10 @@ public partial class MainWindowViewModel
 
         try
         {
-            var found = await Task.Run(() => ExternalInstanceScanner.ScanAll());
+            var scanned = new List<string>();
+            var found = await Task.Run(() => ExternalInstanceScanner.ScanAll(null, scanned));
+            AppendConsole($"[import] looked in {scanned.Count} place(s): {string.Join("; ", scanned)}");
+            AppendConsole($"[import] found {found.Count} build(s): {string.Join("; ", found.Select(f => $"{f.Name} [{f.Source}, {f.VersionId}{(f.Problem == ExternalInstanceProblem.None ? string.Empty : ", " + f.Problem)}]"))}");
 
             // Only builds that would actually import, and are not here already.
             var usable = found.Where(i => i.IsUsable && !IsAlreadyLinked(i)).ToList();
@@ -217,7 +220,10 @@ public partial class MainWindowViewModel
             IsImportBusy = true;
             ImportStatus = Localize("Import_Scanning", "Looking for builds…");
 
-            var found = await Task.Run(() => ExternalInstanceScanner.ScanAll());
+            var scanned = new List<string>();
+            var found = await Task.Run(() => ExternalInstanceScanner.ScanAll(null, scanned));
+            AppendConsole($"[import] looked in {scanned.Count} place(s): {string.Join("; ", scanned)}");
+            AppendConsole($"[import] found {found.Count} build(s): {string.Join("; ", found.Select(f => $"{f.Name} [{f.Source}, {f.VersionId}{(f.Problem == ExternalInstanceProblem.None ? string.Empty : ", " + f.Problem)}]"))}");
 
             ShowCandidates(found);
         }
