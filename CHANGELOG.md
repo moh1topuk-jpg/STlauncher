@@ -8,6 +8,8 @@
 
 ## [Не выпущено]
 
+## [0.5.6] — 2026-09-30
+
 ### Добавлено
 - Моды в списке показываются под своим названием и со своей иконкой, а не именем файла:
   «Entity Culling» с версией и размером под названием вместо
@@ -520,7 +522,8 @@
 - Бэкапы миров по событиям: раз в сутки, перед изменением модов, перед запуском.
 - Автообновление с уведомлением и установкой одной кнопкой.
 
-[Не выпущено]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.5.5...HEAD
+[Не выпущено]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.5.6...HEAD
+[0.5.6]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.5.5...v0.5.6
 [0.5.5]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.5.4...v0.5.5
 [0.5.4]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.5.3...v0.5.4
 [0.5.3]: https://github.com/moh1topuk-jpg/STlauncher/compare/v0.5.2...v0.5.3
