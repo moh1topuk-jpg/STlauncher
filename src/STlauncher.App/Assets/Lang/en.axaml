@@ -944,4 +944,21 @@
     <x:String x:Key="Export_Writing">Export: writing the modpack…</x:String>
     <x:String x:Key="Export_Done">Modpack saved: {0} by Modrinth address, {1} inside the file ({2})</x:String>
     <x:String x:Key="Export_Failed">Could not export the build: {0}</x:String>
+    <!-- Report to the admin; build code -->
+    <x:String x:Key="Report_SendOpen">Send to the admin</x:String>
+    <x:String x:Key="Report_SendTitle">Send the report to the server admin</x:String>
+    <x:String x:Key="Report_SendSummary">The admin will get: launcher and game logs, the crash report, the build's mod list, launcher settings, and what this machine is. Your nickname: {0}. Nothing else.</x:String>
+    <x:String x:Key="Report_CommentHint">What you did and what you saw — optional, but it helps</x:String>
+    <x:String x:Key="Report_SendButton">Send</x:String>
+    <x:String x:Key="Report_Sending">Sending the report…</x:String>
+    <x:String x:Key="Report_Sent">Report sent. The admin has it; the copy stayed in the reports folder.</x:String>
+    <x:String x:Key="Report_SendFailed">Could not send the report ({0}). Use “Collect a report” and send the file by hand.</x:String>
+    <x:String x:Key="Builds_CopyCode">Copy the build code</x:String>
+    <x:String x:Key="Builds_FromCode">From a build code (in the clipboard)</x:String>
+    <x:String x:Key="Code_Copied">Build code copied: {0} file(s), {1} characters. Paste it to a friend.</x:String>
+    <x:String x:Key="Code_CopiedPartial">Build code copied: {0} file(s). Not on Modrinth, so not in the code: {1}</x:String>
+    <x:String x:Key="Code_NotFound">The clipboard holds no build code. Copy the line that starts with STB1. and try again.</x:String>
+    <x:String x:Key="Code_Added">Build “{0}” added from the code</x:String>
+    <x:String x:Key="Code_AddedPartial">Build “{0}” added. Not in the code, add by hand: {1}</x:String>
+    <x:String x:Key="Code_Failed">Could not make the build code: {0}</x:String>
 </ResourceDictionary>

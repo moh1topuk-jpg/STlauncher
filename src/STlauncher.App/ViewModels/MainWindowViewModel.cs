@@ -42,6 +42,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly STlauncher.Core.Server.ServerStatsClient _stats;
     private readonly CatalogInstaller _catalogInstaller;
     private readonly VerifiedFileCache _verifiedFiles;
+    private readonly SupportReportSender _reportSender;
     private readonly UpdateService _updates;
     private readonly STlauncher.Core.Diagnostics.NetworkDiagnostics _network;
     private readonly InstanceManager _instances;
@@ -81,6 +82,7 @@ public partial class MainWindowViewModel : ViewModelBase
         STlauncher.Core.Server.ServerStatsClient stats,
         CatalogInstaller catalogInstaller,
         VerifiedFileCache verifiedFiles,
+        SupportReportSender reportSender,
         UpdateService updates,
         InstanceManager instances,
         LocalizationService localization,
@@ -109,6 +111,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _stats = stats;
         _catalogInstaller = catalogInstaller;
         _verifiedFiles = verifiedFiles;
+        _reportSender = reportSender;
         _updates = updates;
         _instances = instances;
         _localization = localization;

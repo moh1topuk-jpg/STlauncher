@@ -47,6 +47,8 @@
                                             </Style>
                                         </MenuItem.Styles>
                                     </MenuItem>
+                                    <MenuItem Header="{DynamicResource Builds_FromCode}"
+                                              Command="{Binding AddBuildFromCodeCommand}"/>
                                     <MenuItem Header="{DynamicResource Import_Open}"
                                               Command="{Binding OpenImportCommand}"/>
                                     <Separator/>
@@ -185,6 +187,8 @@
                                     <MenuItem Header="{DynamicResource Builds_AddCopy}"
                                               Command="{Binding DuplicateInstanceCommand}"/>
                                     <MenuItem Header="{DynamicResource Builds_Export}" Click="OnExportModpackClick"/>
+                                    <MenuItem Header="{DynamicResource Builds_CopyCode}"
+                                              Command="{Binding CopyBuildCodeCommand}"/>
                                     <Separator/>
                                     <MenuItem Header="{DynamicResource Game_DeleteInstance}"
                                               Command="{Binding DeleteInstanceCommand}"/>

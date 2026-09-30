@@ -92,6 +92,7 @@ public static class LauncherHost
         services.AddSingleton<UpdateService>();
         services.AddSingleton<DiscordPresenceService>();
         services.AddSingleton<UsageReporter>();
+        services.AddSingleton<SupportReportSender>();
 
         services.AddTransient<MainWindowViewModel>();
 

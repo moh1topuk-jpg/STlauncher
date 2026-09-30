@@ -477,9 +477,30 @@
                                     <TextBlock Text="{DynamicResource Report_Title}" FontWeight="SemiBold"/>
                                     <TextBlock Text="{DynamicResource Report_Hint}" Classes="faint" TextWrapping="Wrap"/>
                                 </StackPanel>
-                                <Button Grid.Column="1" Classes="ghost" Content="{DynamicResource Report_Collect}"
-                                        Command="{Binding CollectSupportReportCommand}"/>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                    <Button Classes="ghost" Content="{DynamicResource Report_Collect}"
+                                            Command="{Binding CollectSupportReportCommand}"/>
+                                    <Button Classes="ghost" Content="{DynamicResource Report_SendOpen}" IsVisible="{Binding CanSendReport}"
+                                            Command="{Binding OpenReportSendCommand}"/>
+                                </StackPanel>
                             </Grid>
+                            <!-- "Send to the admin": what goes, a line from the player, and the button. -->
+                                <Border Classes="panel" Padding="14,12" IsVisible="{Binding IsReportSendOpen}" controls:Reveal.OnVisible="True">
+                                    <StackPanel Spacing="10">
+                                        <TextBlock Text="{DynamicResource Report_SendTitle}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding ReportSendSummary}" Classes="muted" FontSize="13" TextWrapping="Wrap"/>
+                                        <TextBox Text="{Binding ReportComment}" Watermark="{DynamicResource Report_CommentHint}"
+                                                 AcceptsReturn="True" MaxLength="600" MinHeight="56" TextWrapping="Wrap"/>
+                                        <WrapPanel ItemSpacing="8" LineSpacing="6">
+                                            <Button Classes="primary small" Content="{DynamicResource Report_SendButton}"
+                                                    Command="{Binding SendSupportReportCommand}" IsEnabled="{Binding !IsReportSending}"/>
+                                            <Button Classes="plain small" Content="{DynamicResource Common_Cancel}"
+                                                    Command="{Binding CancelReportSendCommand}" IsEnabled="{Binding !IsReportSending}"/>
+                                            <ProgressBar IsIndeterminate="True" Width="60" Height="3" VerticalAlignment="Center"
+                                                         IsVisible="{Binding IsReportSending}"/>
+                                        </WrapPanel>
+                                    </StackPanel>
+                                </Border>
 
                             <StackPanel Spacing="10">
                                 <StackPanel Spacing="4">

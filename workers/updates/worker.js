@@ -40,14 +40,29 @@ const ASSET_CACHE_SECONDS = 86400;
 /** The catalog is edited by hand and should show up within a minute. */
 const CATALOG_CACHE_SECONDS = 60;
 
+/**
+ * Support reports from the launcher, forwarded to the owner's Telegram as a document.
+ * Nothing is stored here: the zip goes straight to the chat and the response says so.
+ *
+ * Bindings (see docs/reports.md):
+ *   Secret   TG_BOT_TOKEN   the bot's token from @BotFather
+ *   Secret   TG_CHAT_ID     the chat the bot posts to (the owner's id, or a group's)
+ */
+const REPORT_MAX_BYTES = 8 * 1024 * 1024;
+
 export default {
   async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    const name = decodeURIComponent(url.pathname.replace(/^\/+/, ''));
+
+    if (name === 'report') {
+      // A GET answers 200 so the launcher can tell this mirror takes reports before showing the button.
+      return request.method === 'POST' ? report(request, env) : text('post a report here');
+    }
+
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       return text('method not allowed', 405);
     }
-
-    const url = new URL(request.url);
-    const name = decodeURIComponent(url.pathname.replace(/^\/+/, ''));
 
     if (name === '' || name === 'health') {
       return text('ok');
@@ -204,3 +219,62 @@ function text(body, status = 200) {
     },
   });
 }
+
+/** Takes the launcher's multipart post apart and hands the zip to Telegram. */
+async function report(request, env) {
+  if (!env.TG_BOT_TOKEN || !env.TG_CHAT_ID) {
+    return text('reports are not set up on this mirror', 503);
+  }
+
+  // The launcher always says who it is; a bare browser post does not.
+  if (!request.headers.get('x-stlauncher')) {
+    return text('forbidden', 403);
+  }
+
+  const length = Number(request.headers.get('content-length') || 0);
+  if (length > REPORT_MAX_BYTES) {
+    return text('report too large', 413);
+  }
+
+  let form;
+  try {
+    form = await request.formData();
+  } catch (error) {
+    return text('bad request', 400);
+  }
+
+  const file = form.get('file');
+  if (!(file instanceof File) || file.size === 0 || file.size > REPORT_MAX_BYTES) {
+    return text('no report file', 400);
+  }
+
+  const clean = (value, max) => String(value || '').replace(/[\r\n]+/g, ' ').trim().slice(0, max);
+  const nick = clean(form.get('nick'), 40) || '?';
+  const version = clean(form.get('version'), 40) || '?';
+  const install = clean(form.get('install'), 40).slice(0, 8);
+  const comment = clean(form.get('comment'), 600);
+
+  const caption = [
+    `Отчёт STlauncher ${version}`,
+    `Ник: ${nick}` + (install ? `  ·  установка ${install}` : ''),
+    comment ? `\n${comment}` : '',
+  ].join('\n').trim().slice(0, 1000);
+
+  const telegram = new FormData();
+  telegram.set('chat_id', env.TG_CHAT_ID);
+  telegram.set('caption', caption);
+  telegram.set('document', file, clean(file.name, 80) || 'report.zip');
+
+  const response = await fetch(`https://api.telegram.org/bot${env.TG_BOT_TOKEN}/sendDocument`, {
+    method: 'POST',
+    body: telegram,
+  });
+
+  if (!response.ok) {
+    console.log(`telegram refused a report: ${response.status} ${await response.text()}`);
+    return text('could not deliver the report', 502);
+  }
+
+  return text('delivered');
+}
+

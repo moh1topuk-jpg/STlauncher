@@ -16,6 +16,9 @@ public sealed class AppSettings
     /// </summary>
     public const string CatalogMirrorUrl = "https://showtime-updates.moh1topuk.workers.dev/catalog.json";
 
+    /// <summary>The mirror's report endpoint; the catalog's reportUrl overrides it. See docs/reports.md.</summary>
+    public const string DefaultReportUrl = "https://showtime-updates.moh1topuk.workers.dev/report";
+
     /// <summary>
     /// Update mirrors the launcher knows without a catalog. The catalog can add more; this
     /// is the floor, so a player who cannot fetch the catalog still skips GitHub.

@@ -66,6 +66,13 @@ public sealed class ContentCatalog
     [JsonPropertyName("updateFeedUrls")]
     public List<string> UpdateFeedUrls { get; set; } = new();
 
+    /// <summary>
+    /// Where "send the report to the admin" posts the zip. Empty hides the button. The
+    /// launcher ships with the mirror's /report; this overrides it without a release.
+    /// </summary>
+    [JsonPropertyName("reportUrl")]
+    public string? ReportUrl { get; set; }
+
     /// <summary>Every update mirror the catalog names, single field first.</summary>
     public IEnumerable<string> AllUpdateFeeds()
     {

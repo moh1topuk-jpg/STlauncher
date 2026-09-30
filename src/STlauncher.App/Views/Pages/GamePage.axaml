@@ -198,10 +198,30 @@
                                     <Button Classes="ghost small" Margin="0,0,8,6"
                                             Content="{DynamicResource Report_Collect}"
                                             Command="{Binding CollectSupportReportCommand}"/>
+                                    <Button Classes="ghost small" Margin="0,0,8,6" IsVisible="{Binding CanSendReport}"
+                                            Content="{DynamicResource Report_SendOpen}"
+                                            Command="{Binding OpenReportSendCommand}"/>
                                     <Button Classes="plain small" Margin="0,0,8,6" IsVisible="{Binding HasCrashReportFile}"
                                             Content="{DynamicResource Crash_OpenReport}"
                                             Command="{Binding OpenCrashReportCommand}"/>
                                 </WrapPanel>
+                                <!-- "Send to the admin": what goes, a line from the player, and the button. -->
+                                <Border Classes="panel" Padding="14,12" IsVisible="{Binding IsReportSendOpen}" controls:Reveal.OnVisible="True">
+                                    <StackPanel Spacing="10">
+                                        <TextBlock Text="{DynamicResource Report_SendTitle}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding ReportSendSummary}" Classes="muted" FontSize="13" TextWrapping="Wrap"/>
+                                        <TextBox Text="{Binding ReportComment}" Watermark="{DynamicResource Report_CommentHint}"
+                                                 AcceptsReturn="True" MaxLength="600" MinHeight="56" TextWrapping="Wrap"/>
+                                        <WrapPanel ItemSpacing="8" LineSpacing="6">
+                                            <Button Classes="primary small" Content="{DynamicResource Report_SendButton}"
+                                                    Command="{Binding SendSupportReportCommand}" IsEnabled="{Binding !IsReportSending}"/>
+                                            <Button Classes="plain small" Content="{DynamicResource Common_Cancel}"
+                                                    Command="{Binding CancelReportSendCommand}" IsEnabled="{Binding !IsReportSending}"/>
+                                            <ProgressBar IsIndeterminate="True" Width="60" Height="3" VerticalAlignment="Center"
+                                                         IsVisible="{Binding IsReportSending}"/>
+                                        </WrapPanel>
+                                    </StackPanel>
+                                </Border>
                             </StackPanel>
                         </Grid>
                     </Border>

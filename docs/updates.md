@@ -40,6 +40,7 @@ https://showtime-updates.moh1topuk.workers.dev/
 | `/latest/STlauncher-win-Setup.exe` | установщик последнего релиза, мимо заморозки |
 | `/catalog.json` | каталог из `main` |
 | `/health` | `ok` |
+| `POST /report` | отчёт от игрока, уходит ботом в Telegram — см. [reports.md](reports.md) |
 
 Почему установщик заморожен. SmartScreen не проверяет код: он смотрит на подпись и на
 то, сколько людей уже запускали ровно этот файл. Новый `Setup.exe` на каждый релиз

@@ -6,7 +6,10 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Avalonia.Input.Platform;
+using STlauncher.App.Services;
 
 namespace STlauncher.App.ViewModels;
 
@@ -24,6 +27,125 @@ public partial class MainWindowViewModel
     private async Task CollectSupportReportAsync()
     {
         try
+        {
+            var (zipPath, name) = WriteSupportReport();
+            AppendConsole($"[report] saved {zipPath}");
+            await CopyToClipboardAsync(zipPath);
+            RevealInFileManager(zipPath);
+            Status = Localize("Report_Saved", "Report saved: {0}. The path is in the clipboard; send the file to the server admin.", name);
+        }
+        catch (Exception ex)
+        {
+            Status = Localize("Report_Failed", "Could not collect the report: {0}", ex.Message);
+            AppendConsole($"[report] failed: {ex}");
+        }
+    }
+
+    // ===================== Straight to the admin =====================
+
+    /// <summary>Where the report goes: the catalog's address, else the mirror's. Empty means the button is not shown.</summary>
+    public string ReportUrl => _loadedCatalog is { ReportUrl: { } configured }
+        ? configured.Trim()
+        : AppSettings.DefaultReportUrl;
+
+    /// <summary>Set once the endpoint has answered that it takes reports; the button waits for it.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanSendReport))]
+    private bool _isReportEndpointReady;
+
+    private string? _probedReportUrl;
+
+    public bool CanSendReport => ReportUrl.Length > 0 && IsReportEndpointReady;
+
+    /// <summary>Asks the endpoint once per address whether it is there. Off the launch path, never blocking.</summary>
+    private async Task ProbeReportEndpointAsync()
+    {
+        var url = ReportUrl;
+
+        if (url.Length == 0 || string.Equals(url, _probedReportUrl, StringComparison.Ordinal))
+        {
+            OnPropertyChanged(nameof(CanSendReport));
+            return;
+        }
+
+        _probedReportUrl = url;
+        var ready = await _reportSender.ProbeAsync(url);
+        IsReportEndpointReady = ready;
+        AppendConsole(ready ? $"[report] endpoint ready: {url}" : $"[report] endpoint not taking reports yet: {url}");
+    }
+
+    /// <summary>True while the "this is what will be sent" card is up.</summary>
+    [ObservableProperty]
+    private bool _isReportSendOpen;
+
+    [ObservableProperty]
+    private bool _isReportSending;
+
+    /// <summary>A line from the player for the admin: what they did, what they saw.</summary>
+    [ObservableProperty]
+    private string _reportComment = string.Empty;
+
+    /// <summary>What the zip holds, in words, so the player agrees to something concrete.</summary>
+    public string ReportSendSummary => Localize(
+        "Report_SendSummary",
+        "The admin will get: launcher and game logs, the crash report, the build's mod list, launcher settings, and what this machine is. Your nickname: {0}. Nothing else.",
+        Username);
+
+    [RelayCommand]
+    private void OpenReportSend()
+    {
+        OnPropertyChanged(nameof(ReportSendSummary));
+        IsReportSendOpen = true;
+    }
+
+    [RelayCommand]
+    private void CancelReportSend() => IsReportSendOpen = false;
+
+    /// <summary>Collects the zip and posts it. Only ever from the button on the card.</summary>
+    [RelayCommand]
+    private async Task SendSupportReportAsync()
+    {
+        if (IsReportSending || !CanSendReport)
+        {
+            return;
+        }
+
+        try
+        {
+            IsReportSending = true;
+            Status = Localize("Report_Sending", "Sending the report…");
+
+            var (zipPath, name) = WriteSupportReport();
+            var version = _updates.CurrentVersion ?? "dev";
+            var outcome = await _reportSender.SendAsync(ReportUrl, zipPath, Username, version, ReportComment.Trim(), _installId);
+
+            if (outcome.Sent)
+            {
+                AppendConsole($"[report] sent {name} to {ReportUrl}: {outcome.Message}");
+                Status = Localize("Report_Sent", "Report sent. The admin has it; the copy stayed in the reports folder.");
+                IsReportSendOpen = false;
+                ReportComment = string.Empty;
+            }
+            else
+            {
+                AppendConsole($"[report] not sent: {outcome.Message}");
+                Status = Localize("Report_SendFailed", "Could not send the report ({0}). Use “Collect a report” and send the file by hand.", outcome.Message);
+            }
+        }
+        catch (Exception ex)
+        {
+            AppendConsole($"[report] send failed: {ex}");
+            Status = Localize("Report_SendFailed", "Could not send the report ({0}). Use “Collect a report” and send the file by hand.", ex.Message);
+        }
+        finally
+        {
+            IsReportSending = false;
+        }
+    }
+
+    /// <summary>The zip itself, in the reports folder. Shared by the two buttons.</summary>
+    private (string Path, string Name) WriteSupportReport()
+    {
         {
             var directory = Path.Combine(_paths.Root, "reports");
             Directory.CreateDirectory(directory);
@@ -52,16 +174,18 @@ public partial class MainWindowViewModel
                 }
             }
 
-            AppendConsole($"[report] saved {zipPath}");
-            await CopyToClipboardAsync(zipPath);
-            RevealInFileManager(zipPath);
-            Status = Localize("Report_Saved", "Report saved: {0}. The path is in the clipboard; send the file to the server admin.", name);
+            return (zipPath, name);
         }
-        catch (Exception ex)
-        {
-            Status = Localize("Report_Failed", "Could not collect the report: {0}", ex.Message);
-            AppendConsole($"[report] failed: {ex}");
-        }
+    }
+
+    /// <summary>Whatever text is in the clipboard, or null when the window is not there to ask.</summary>
+    private static async Task<string?> ReadClipboardAsync()
+    {
+        var clipboard = Avalonia.Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime { MainWindow: { } window }
+            ? window.Clipboard
+            : null;
+
+        return clipboard is null ? null : await clipboard.TryGetTextAsync();
     }
 
     private string BuildSupportSummary()

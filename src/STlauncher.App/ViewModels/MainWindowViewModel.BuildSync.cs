@@ -457,6 +457,7 @@ public partial class MainWindowViewModel
             }
 
             _loadedCatalog = result.Catalog;
+            _ = ProbeReportEndpointAsync();
 
             CatalogBuilds.Clear();
             foreach (var catalogBuild in result.Catalog.Builds)

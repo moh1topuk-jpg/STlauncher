@@ -84,6 +84,7 @@ public partial class MainWindowViewModel
             if (result.Catalog is not null)
             {
                 _loadedCatalog = result.Catalog;
+                _ = ProbeReportEndpointAsync();
 
                 foreach (var build in result.Catalog.Builds)
                 {

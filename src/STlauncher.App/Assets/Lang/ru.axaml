@@ -944,4 +944,21 @@
     <x:String x:Key="Export_Writing">Экспорт: записываю модпак…</x:String>
     <x:String x:Key="Export_Done">Модпак сохранён: по адресам Modrinth — {0}, файлами внутри — {1} ({2})</x:String>
     <x:String x:Key="Export_Failed">Не удалось экспортировать сборку: {0}</x:String>
+    <!-- Report to the admin; build code -->
+    <x:String x:Key="Report_SendOpen">Отправить админу</x:String>
+    <x:String x:Key="Report_SendTitle">Отправить отчёт администратору сервера</x:String>
+    <x:String x:Key="Report_SendSummary">Администратор получит: логи лаунчера и игры, отчёт о падении, список модов сборки, настройки лаунчера и сведения об этом компьютере. Ваш ник: {0}. Больше ничего.</x:String>
+    <x:String x:Key="Report_CommentHint">Что делали и что увидели — необязательно, но помогает</x:String>
+    <x:String x:Key="Report_SendButton">Отправить</x:String>
+    <x:String x:Key="Report_Sending">Отправляю отчёт…</x:String>
+    <x:String x:Key="Report_Sent">Отчёт отправлен. Администратор его получил; копия осталась в папке reports.</x:String>
+    <x:String x:Key="Report_SendFailed">Не удалось отправить отчёт ({0}). Нажмите «Собрать отчёт» и перешлите файл вручную.</x:String>
+    <x:String x:Key="Builds_CopyCode">Скопировать код сборки</x:String>
+    <x:String x:Key="Builds_FromCode">Из кода сборки (из буфера обмена)</x:String>
+    <x:String x:Key="Code_Copied">Код сборки скопирован: файлов — {0}, символов — {1}. Вставьте его другу.</x:String>
+    <x:String x:Key="Code_CopiedPartial">Код сборки скопирован: файлов — {0}. Этого нет на Modrinth, в код не вошло: {1}</x:String>
+    <x:String x:Key="Code_NotFound">В буфере обмена нет кода сборки. Скопируйте строку, начинающуюся с STB1., и попробуйте снова.</x:String>
+    <x:String x:Key="Code_Added">Сборка «{0}» добавлена из кода</x:String>
+    <x:String x:Key="Code_AddedPartial">Сборка «{0}» добавлена. В код не вошло, добавьте вручную: {1}</x:String>
+    <x:String x:Key="Code_Failed">Не удалось собрать код сборки: {0}</x:String>
 </ResourceDictionary>
