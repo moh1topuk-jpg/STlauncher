@@ -196,6 +196,53 @@ public partial class BuildsPage : UserControl
         }
     }
 
+    /// <summary>Asks where to save the build as a .mrpack; the view model does the packing.</summary>
+    private async void OnExportModpackClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel viewModel || viewModel.SelectedInstance is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var storage = TopLevel.GetTopLevel(this)?.StorageProvider;
+
+            if (storage is null)
+            {
+                return;
+            }
+
+            var invalid = System.IO.Path.GetInvalidFileNameChars();
+            var suggested = new string(viewModel.SelectedInstance.Name.Select(c => invalid.Contains(c) ? '_' : c).ToArray());
+
+            var file = await storage.SaveFilePickerAsync(new FilePickerSaveOptions
+            {
+                Title = MainWindowViewModel.Localize("Export_Title", "Save the build as a modpack"),
+                SuggestedFileName = suggested + ".mrpack",
+                DefaultExtension = "mrpack",
+                FileTypeChoices = new[]
+                {
+                    new FilePickerFileType(MainWindowViewModel.Localize("Modpack_PickType", "Modrinth modpack"))
+                    {
+                        Patterns = new[] { "*.mrpack" }
+                    }
+                }
+            });
+
+            var path = file?.TryGetLocalPath();
+
+            if (!string.IsNullOrEmpty(path))
+            {
+                await viewModel.ExportModpackAsync(path);
+            }
+        }
+        catch (Exception ex)
+        {
+            viewModel.ReportUiFailure(ex);
+        }
+    }
+
     private async void OnImportModpackClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not MainWindowViewModel viewModel)

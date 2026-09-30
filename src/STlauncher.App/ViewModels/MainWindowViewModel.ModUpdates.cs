@@ -33,7 +33,53 @@ public partial class InstalledModItem : ObservableObject
 
     public string FileName => Mod.FileName;
 
-    public string DisplayName => Record?.Name is { Length: > 0 } name ? name : Mod.DisplayName;
+    /// <summary>
+    /// The catalog's or Modrinth's title when the launcher installed the file; otherwise
+    /// the title the jar carries for itself; the file name only when neither exists. A
+    /// record made for a dropped or imported file holds the file name, which is no title.
+    /// </summary>
+    public string DisplayName
+        => Record is { Name.Length: > 0, Source: ModSource.Catalog or ModSource.Modrinth } titled ? titled.Name!
+            : MetaName is { Length: > 0 } meta ? meta
+            : Record?.Name is { Length: > 0 } name ? name
+            : Mod.DisplayName;
+
+    /// <summary>The mod's title from its own metadata, read after the list is on screen.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DisplayName))]
+    private string? _metaName;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(VersionLabel))]
+    [NotifyPropertyChangedFor(nameof(MetaLine))]
+    private string? _metaVersion;
+
+    /// <summary>The mod's own icon from inside the jar; null shows the placeholder.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasIcon))]
+    private Avalonia.Media.Imaging.Bitmap? _icon;
+
+    public bool HasIcon => Icon is not null;
+
+    /// <summary>The jar's own version; the record's pin only when the jar has none ("fabric-1.21.11-25.3.12" is an id, not a number).</summary>
+    public string VersionLabel => MetaVersion is { Length: > 0 } own ? own : Record?.Version ?? string.Empty;
+
+    /// <summary>"1.10.5 · 1,5 MB" under the title.</summary>
+    public string MetaLine
+    {
+        get
+        {
+            var size = Converters.FileSizeConverter.Instance.Convert(Size, typeof(string), null, System.Globalization.CultureInfo.CurrentCulture) as string ?? string.Empty;
+            return VersionLabel.Length > 0 ? VersionLabel + " · " + size : size;
+        }
+    }
+
+    /// <summary>When the file appeared in the folder, for sorting by date added.</summary>
+    public DateTime Added { get; init; }
+
+    /// <summary>Ticked in selection mode, for the actions that take several mods at once.</summary>
+    [ObservableProperty]
+    private bool _isSelected;
 
     public string Path => Mod.Path;
 

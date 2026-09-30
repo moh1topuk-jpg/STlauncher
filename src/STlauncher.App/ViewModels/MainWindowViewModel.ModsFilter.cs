@@ -51,10 +51,21 @@ public partial class MainWindowViewModel
 
         var targets = InstalledMods.Where(m => m.IsMod && !m.IsCatalog && m.Enabled != enabled).ToList();
 
-        foreach (var mod in targets)
+        try
         {
-            ToggleMod(mod);
+            _deferModRefresh = true;
+
+            foreach (var mod in targets)
+            {
+                ToggleMod(mod);
+            }
         }
+        finally
+        {
+            _deferModRefresh = false;
+        }
+
+        RefreshMods();
 
         Status = enabled
             ? Localize("Mods_OwnEnabled", "Your mods switched on: {0}", targets.Count)

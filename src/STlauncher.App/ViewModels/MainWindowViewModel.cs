@@ -413,6 +413,7 @@ public partial class MainWindowViewModel : ViewModelBase
         AnimatedBackground = settings.AnimatedBackground;
         UiScale = NormalizeUiScale(settings.UiScale);
         PreferDiscreteGpu = settings.PreferDiscreteGpu;
+        ModsSort = Enum.TryParse<ModsSortOrder>(settings.ModsSort, ignoreCase: true, out var modsSort) ? modsSort : ModsSortOrder.Default;
         LoadAppearance(settings.Theme, settings.Accent);
         DiscordPresence = settings.DiscordPresence;
         _safeModeRestore = settings.SafeModeRestore?.ToList() ?? new List<string>();
@@ -1289,6 +1290,7 @@ public partial class MainWindowViewModel : ViewModelBase
             AnimatedBackground = AnimatedBackground,
             UiScale = UiScale,
             PreferDiscreteGpu = PreferDiscreteGpu,
+            ModsSort = ModsSort.ToString(),
             Theme = Theme,
             Accent = Accent,
             DiscordPresence = DiscordPresence,

@@ -79,6 +79,12 @@ public sealed record ExternalInstance(
     public string? LoaderVersion { get; init; }
 
     /// <summary>
+    /// The launcher's own name when it is not one the launcher kind already says: a fork
+    /// of Prism found by its files is "PineconeMC" to its player, not "Prism Launcher".
+    /// </summary>
+    public string? LauncherName { get; init; }
+
+    /// <summary>
     /// True when the version and loader were worked out from the mod files themselves,
     /// because the launcher kept no readable description. Right in practice, but worth
     /// a glance from the player.

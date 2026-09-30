@@ -919,4 +919,29 @@
     <x:String x:Key="Mods_DropBusy">Wait for the current install to finish, then drop again</x:String>
     <x:String x:Key="Mods_AddedMarked">Added: {0}. Outlined in the mod list.</x:String>
     <x:String x:Key="Mods_OffCount">{0} off</x:String>
+    <!-- Mod list: titles, order, several at once; export -->
+    <x:String x:Key="Mods_Select">Select</x:String>
+    <x:String x:Key="Mods_SelectedCount">Selected: {0}</x:String>
+    <x:String x:Key="Mods_SelectVisible">All in the list</x:String>
+    <x:String x:Key="Mods_BulkEnable">Switch on</x:String>
+    <x:String x:Key="Mods_BulkDisable">Switch off</x:String>
+    <x:String x:Key="Mods_BulkDelete">Delete</x:String>
+    <x:String x:Key="Mods_BulkDeleteConfirm">Really delete: {0}</x:String>
+    <x:String x:Key="Mods_BulkEnabled">Mods switched on: {0}</x:String>
+    <x:String x:Key="Mods_BulkDisabled">Mods switched off: {0}</x:String>
+    <x:String x:Key="Mods_BulkDeleted">Mods deleted: {0}</x:String>
+    <x:String x:Key="Mods_BulkGameRunning">Close the game first: it has the mod files open</x:String>
+    <x:String x:Key="Mods_Sort">Sort: {0}</x:String>
+    <x:String x:Key="Mods_SortDefault">Enabled first</x:String>
+    <x:String x:Key="Mods_SortName">By name</x:String>
+    <x:String x:Key="Mods_SortSize">By size</x:String>
+    <x:String x:Key="Mods_SortAdded">By date added</x:String>
+    <x:String x:Key="Builds_Export">Export as .mrpack</x:String>
+    <x:String x:Key="Export_Title">Save the build as a modpack</x:String>
+    <x:String x:Key="Export_NoVersion">Pick the game version in the build settings first: a modpack has to name it</x:String>
+    <x:String x:Key="Export_Hashing">Export: reading the build's files…</x:String>
+    <x:String x:Key="Export_Lookup">Export: checking {0} file(s) against Modrinth…</x:String>
+    <x:String x:Key="Export_Writing">Export: writing the modpack…</x:String>
+    <x:String x:Key="Export_Done">Modpack saved: {0} by Modrinth address, {1} inside the file ({2})</x:String>
+    <x:String x:Key="Export_Failed">Could not export the build: {0}</x:String>
 </ResourceDictionary>

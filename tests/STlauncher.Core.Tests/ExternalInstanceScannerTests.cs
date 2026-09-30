@@ -242,6 +242,7 @@ public class ExternalInstanceScannerTests : IDisposable
         Assert.DoesNotContain(roots, r => r.Path.Contains("Unrelated", StringComparison.OrdinalIgnoreCase));
 
         var found = ExternalInstanceScanner.ScanAll(roots).Single();
+        Assert.Equal("PineconeMC", found.LauncherName);
         Assert.Equal("Survival", found.Name);
         Assert.Equal("1.21.1", found.VersionId);
         Assert.Equal(LoaderKind.NeoForge, found.Loader);
@@ -262,6 +263,7 @@ public class ExternalInstanceScannerTests : IDisposable
         var found = ExternalInstanceScanner.ScanAll(ExternalInstanceScanner.DiscoverMultiMcFamily(downloads)).Single();
 
         Assert.Equal("Pack", found.Name);
+        Assert.Null(found.LauncherName);
         Assert.Equal(ExternalLauncherKind.Prism, found.Source);
         Assert.EndsWith("minecraft", found.GameDirectory);
     }

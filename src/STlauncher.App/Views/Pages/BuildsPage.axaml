@@ -184,6 +184,7 @@
                                               Command="{Binding OpenGameFolderCommand}"/>
                                     <MenuItem Header="{DynamicResource Builds_AddCopy}"
                                               Command="{Binding DuplicateInstanceCommand}"/>
+                                    <MenuItem Header="{DynamicResource Builds_Export}" Click="OnExportModpackClick"/>
                                     <Separator/>
                                     <MenuItem Header="{DynamicResource Game_DeleteInstance}"
                                               Command="{Binding DeleteInstanceCommand}"/>
@@ -222,19 +223,23 @@
 
                     <!-- ======== Mods of the build ======== -->
                     <Grid IsVisible="{Binding IsBuildMods}" RowDefinitions="Auto,Auto,Auto,Auto,*" RowSpacing="10" controls:Reveal.OnVisible="True">
-                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                        <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
                             <!-- Search on the left, the two actions on the right; the slices wrap on their own row below. -->
                             <TextBox Text="{Binding ModsFilter}" Watermark="{DynamicResource Mods_FilterPlaceholder}"
                                      MaxWidth="360" HorizontalAlignment="Left" VerticalAlignment="Center"/>
                             <!-- Adding lives where the mods are, and opens the catalog on mods. -->
-                            <Button Grid.Column="1" Classes="ghost small" Foreground="{DynamicResource GoldBrush}"
+                            <!-- Several mods at once: rows grow a tick box and a bar of actions appears. -->
+                            <Button Grid.Column="1" Classes="ghost small" Classes.active="{Binding IsModSelectMode}"
+                                    Content="{DynamicResource Mods_Select}"
+                                    Command="{Binding ToggleModSelectModeCommand}"/>
+                            <Button Grid.Column="2" Classes="ghost small" Foreground="{DynamicResource GoldBrush}"
                                     Command="{Binding OpenCatalogForModsCommand}">
                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                     <PathIcon Data="{StaticResource IconPlus}" Classes="small"/>
                                     <TextBlock Text="{DynamicResource Mods_AddButton}" FontWeight="SemiBold"/>
                                 </StackPanel>
                             </Button>
-                            <Button Grid.Column="2" Classes="ghost small" ToolTip.Tip="{DynamicResource Builds_More}" MinWidth="36">
+                            <Button Grid.Column="3" Classes="ghost small" ToolTip.Tip="{DynamicResource Builds_More}" MinWidth="36">
                                 <TextBlock Text="&#x22EF;" FontSize="16" VerticalAlignment="Center"/>
                                 <Button.Flyout>
                                     <MenuFlyout Placement="BottomEdgeAlignedRight">
@@ -259,7 +264,8 @@
                             </Button>
                         </Grid>
 
-                        <Grid Grid.Row="1" ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                        <StackPanel Grid.Row="1" Spacing="8">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                             <WrapPanel ItemSpacing="6" LineSpacing="6" VerticalAlignment="Center">
                                 <Button Classes="chip" Classes.active="{Binding IsScopeAll}"
                                         Command="{Binding SelectModsScopeCommand}" CommandParameter="All">
@@ -290,9 +296,47 @@
                                     </StackPanel>
                                 </Button>
                                                         </WrapPanel>
-                            <TextBlock Grid.Column="1" Text="{Binding InstalledModsSummary}" Classes="faint"
-                                       VerticalAlignment="Center" HorizontalAlignment="Right" TextWrapping="Wrap"/>
+                            <!-- The order of the list, remembered between starts. -->
+                            <Button Grid.Column="1" Classes="ghost small" VerticalAlignment="Top">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Text="{Binding ModsSortLabel}"/>
+                                    <PathIcon Data="{StaticResource IconChevronDown}" Classes="small"/>
+                                </StackPanel>
+                                <Button.Flyout>
+                                    <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                        <MenuItem Header="{DynamicResource Mods_SortDefault}"
+                                                  Command="{Binding SelectModsSortCommand}" CommandParameter="Default"/>
+                                        <MenuItem Header="{DynamicResource Mods_SortName}"
+                                                  Command="{Binding SelectModsSortCommand}" CommandParameter="Name"/>
+                                        <MenuItem Header="{DynamicResource Mods_SortSize}"
+                                                  Command="{Binding SelectModsSortCommand}" CommandParameter="Size"/>
+                                        <MenuItem Header="{DynamicResource Mods_SortAdded}"
+                                                  Command="{Binding SelectModsSortCommand}" CommandParameter="Added"/>
+                                    </MenuFlyout>
+                                </Button.Flyout>
+                            </Button>
                         </Grid>
+
+                        <!-- What to do with the ticked mods. Deleting asks twice. -->
+                        <Border Classes="panel" Padding="12,8" IsVisible="{Binding IsModSelectMode}">
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                                <TextBlock Text="{Binding SelectedModsLabel}" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                <WrapPanel Grid.Column="1" ItemSpacing="6" LineSpacing="6" HorizontalAlignment="Right">
+                                    <Button Classes="ghost small" Content="{DynamicResource Mods_SelectVisible}"
+                                            Command="{Binding SelectVisibleModsCommand}"/>
+                                    <Button Classes="ghost small" Content="{DynamicResource Mods_BulkEnable}"
+                                            Command="{Binding EnableSelectedModsCommand}" IsEnabled="{Binding HasSelectedMods}"/>
+                                    <Button Classes="ghost small" Content="{DynamicResource Mods_BulkDisable}"
+                                            Command="{Binding DisableSelectedModsCommand}" IsEnabled="{Binding HasSelectedMods}"/>
+                                    <Button Classes="ghost small" Content="{Binding BulkDeleteLabel}"
+                                            Foreground="{DynamicResource DangerBrush}"
+                                            Command="{Binding DeleteSelectedModsCommand}" IsEnabled="{Binding HasSelectedMods}"/>
+                                    <Button Classes="plain small" Content="{DynamicResource Common_Done}"
+                                            Command="{Binding ToggleModSelectModeCommand}"/>
+                                </WrapPanel>
+                            </Grid>
+                        </Border>
+                        </StackPanel>
 
                         <!-- The pre-launch check, in full. -->
                         <Border Grid.Row="2" Classes="panel" Padding="14,10" IsVisible="{Binding HasBuildIssues}">
@@ -362,37 +406,49 @@
                                         <DataTemplate x:DataType="vm:InstalledModItem">
                                             <Border Classes="panel mod-row" Classes.off="{Binding !Enabled}" Classes.new="{Binding IsNew}" IsVisible="{Binding !IsHidden}"
                                                     Padding="12,8" VerticalAlignment="Stretch">
-                                                <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="10">
+                                                <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto" ColumnSpacing="10">
+                                                    <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center" MinWidth="0" Padding="0"
+                                                              IsVisible="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).IsModSelectMode}"/>
                                                     <!-- The switch shows the state and changes it:
                                                          one button labelled "On/Off" did neither. -->
-                                                    <ToggleSwitch IsChecked="{Binding Enabled, Mode=OneWay}"
+                                                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding Enabled, Mode=OneWay}"
                                                                   OnContent="" OffContent=""
                                                                   MinWidth="0" VerticalAlignment="Center"
                                                                   Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).ToggleModCommand}"
                                                                   CommandParameter="{Binding}"/>
-                                                    <!-- A grid, not a stack: a stack never limits the name, so a long
-                                                         file name ran under the size instead of trimming. -->
-                                                    <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="8" VerticalAlignment="Center">
-                                                        <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center" HorizontalAlignment="Left"
-                                                                   TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding FileName}"/>
-                                                        <Border Grid.Column="1" Classes="tag" IsVisible="{Binding IsCatalog}" VerticalAlignment="Center"
-                                                                ToolTip.Tip="{DynamicResource Mods_CatalogPinnedHint}">
-                                                            <TextBlock Text="{DynamicResource Builds_TagCatalog}"/>
-                                                        </Border>
-                                                    </Grid>
+                                                    <!-- The mod's own icon from inside the jar; a cube until it is read, or when there is none. -->
+                                                    <Border Grid.Column="2" Width="32" Height="32" CornerRadius="7" ClipToBounds="True"
+                                                            Background="{DynamicResource ElevatedBrush}" VerticalAlignment="Center">
+                                                        <Panel>
+                                                            <PathIcon Data="{StaticResource IconBuilds}" Classes="small muted" IsVisible="{Binding !HasIcon}"/>
+                                                            <Image Source="{Binding Icon}" IsVisible="{Binding HasIcon}" Stretch="UniformToFill"/>
+                                                        </Panel>
+                                                    </Border>
+                                                    <!-- Title on top, version and size under it. A grid, not a stack:
+                                                         a stack never limits the name, so a long one ran under the buttons. -->
+                                                    <StackPanel Grid.Column="3" Spacing="1" VerticalAlignment="Center">
+                                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                                            <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center" HorizontalAlignment="Left"
+                                                                       TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding FileName}"/>
+                                                            <Border Grid.Column="1" Classes="tag" IsVisible="{Binding IsCatalog}" VerticalAlignment="Center"
+                                                                    ToolTip.Tip="{DynamicResource Mods_CatalogPinnedHint}">
+                                                                <TextBlock Text="{DynamicResource Builds_TagCatalog}"/>
+                                                            </Border>
+                                                        </Grid>
+                                                        <TextBlock Text="{Binding MetaLine}" Classes="faint" FontSize="11.5"
+                                                                   TextTrimming="CharacterEllipsis"/>
+                                                    </StackPanel>
                                                     <!-- A newer version exists; the button is the whole offer. -->
-                                                    <Button Grid.Column="2" Classes="small" IsVisible="{Binding HasUpdate}"
+                                                    <Button Grid.Column="4" Classes="small" IsVisible="{Binding HasUpdate}"
                                                             Foreground="{DynamicResource GoldBrush}"
                                                             ToolTip.Tip="{DynamicResource Mods_UpdateOne}"
                                                             Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).UpdateModCommand}"
                                                             CommandParameter="{Binding}">
                                                         <TextBlock Text="{Binding UpdateLabel}" FontWeight="SemiBold"/>
                                                     </Button>
-                                                    <ProgressBar Grid.Column="2" IsIndeterminate="True" Width="40" Height="3"
+                                                    <ProgressBar Grid.Column="4" IsIndeterminate="True" Width="40" Height="3"
                                                                  VerticalAlignment="Center" IsVisible="{Binding IsUpdating}"/>
-                                                    <TextBlock Grid.Column="3" Classes="faint" VerticalAlignment="Center"
-                                                               Text="{Binding Size, Converter={x:Static conv:FileSizeConverter.Instance}}"/>
-                                                    <Button Grid.Column="4" Classes="plain small icon-danger"
+                                                    <Button Grid.Column="5" Classes="plain small icon-danger"
                                                             ToolTip.Tip="{DynamicResource Mods_Delete}"
                                                             Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).UninstallModCommand}"
                                                             CommandParameter="{Binding}">

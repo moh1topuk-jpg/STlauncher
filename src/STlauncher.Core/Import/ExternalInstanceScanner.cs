@@ -663,6 +663,7 @@ public static class ExternalInstanceScanner
     private static IReadOnlyList<ExternalInstance> ScanInstanceFolders(string root, ExternalLauncherKind kind)
     {
         var result = new List<ExternalInstance>();
+        var launcherName = ForkName(root, kind);
 
         foreach (var directory in SafeDirectories(root))
         {
@@ -670,11 +671,58 @@ public static class ExternalInstanceScanner
 
             if (found is not null)
             {
-                result.Add(found);
+                result.Add(launcherName is null ? found : found with { LauncherName = launcherName });
             }
         }
 
         return Sort(result);
+    }
+
+    /// <summary>
+    /// The name of the folder an instances folder sits in, when that folder is a launcher
+    /// the kind does not already name: "PineconeMC" next to Prism's files. A portable
+    /// "PrismLauncher-Windows-MSVC-Portable-9.4" is still just Prism.
+    /// </summary>
+    private static string? ForkName(string root, ExternalLauncherKind kind)
+    {
+        if (kind is not (ExternalLauncherKind.Prism or ExternalLauncherKind.PolyMc or ExternalLauncherKind.MultiMc or ExternalLauncherKind.Unknown))
+        {
+            return null;
+        }
+
+        try
+        {
+            var trimmed = root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+            if (!string.Equals(Path.GetFileName(trimmed), "instances", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            var parent = Path.GetDirectoryName(trimmed);
+            var name = Path.GetFileName(parent ?? string.Empty);
+
+            // An instance folder moved elsewhere sits in a folder that is not the launcher;
+            // the launcher's own folder is the one with its .cfg in it.
+            if (string.IsNullOrWhiteSpace(name) || parent is null || !Directory.EnumerateFiles(parent, "*.cfg").Any())
+            {
+                return null;
+            }
+
+            foreach (var known in new[] { "PrismLauncher", "Prism Launcher", "PolyMC", "MultiMC" })
+            {
+                if (name.StartsWith(known, StringComparison.OrdinalIgnoreCase))
+                {
+                    return null;
+                }
+            }
+
+            return name;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
     }
 
     /// <summary>

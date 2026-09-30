@@ -28,6 +28,9 @@ public sealed record ModMetadata(
     string? MinecraftRange,
     IReadOnlyList<string> Provides);
 
+/// <summary>The title, version and icon a jar carries for itself. Any of them may be missing.</summary>
+public sealed record ModDisplayInfo(string? Name, string? Version, byte[]? Icon);
+
 public static class ModMetadataReader
 {
     /// <summary>Ids the loader or the game itself provide; asking for them is never a missing mod.</summary>
@@ -379,6 +382,189 @@ public static class ModMetadataReader
         JsonValueKind.Array => string.Join(" || ", element.EnumerateArray().Where(e => e.ValueKind == JsonValueKind.String).Select(e => e.GetString())),
         _ => null
     };
+
+    /// <summary>
+    /// What to show for a jar in the mod list instead of its file name: the mod's own
+    /// title, version and icon, from fabric.mod.json, quilt.mod.json or mods.toml. Null
+    /// when the jar says nothing about itself - a plain library, or not a mod at all.
+    /// </summary>
+    public static ModDisplayInfo? ReadDisplay(string jarPath, int maxIconBytes = 512 * 1024)
+    {
+        try
+        {
+            using var archive = ZipFile.OpenRead(jarPath);
+            string? name = null;
+            string? version = null;
+            string? iconPath = null;
+
+            if (archive.GetEntry("fabric.mod.json") is { } fabric)
+            {
+                try
+                {
+                    using var doc = ParseJson(fabric);
+                    name = TextOf(doc.RootElement, "name");
+                    version = TextOf(doc.RootElement, "version");
+                    iconPath = IconPathOf(doc.RootElement);
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            if (name is null && archive.GetEntry("quilt.mod.json") is { } quilt)
+            {
+                try
+                {
+                    using var doc = ParseJson(quilt);
+
+                    if (doc.RootElement.ValueKind == JsonValueKind.Object &&
+                        doc.RootElement.TryGetProperty("quilt_loader", out var loader) && loader.ValueKind == JsonValueKind.Object)
+                    {
+                        version = TextOf(loader, "version");
+
+                        if (loader.TryGetProperty("metadata", out var metadata) && metadata.ValueKind == JsonValueKind.Object)
+                        {
+                            name = TextOf(metadata, "name");
+                            iconPath = IconPathOf(metadata);
+                        }
+                    }
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            if (name is null &&
+                (archive.GetEntry("META-INF/neoforge.mods.toml") ?? archive.GetEntry("META-INF/mods.toml")) is { } toml)
+            {
+                try
+                {
+                    string text;
+
+                    using (var reader = new StreamReader(toml.Open()))
+                    {
+                        text = reader.ReadToEnd();
+                    }
+
+                    var mod = SplitSections(text).FirstOrDefault(s => TomlMod.IsMatch(s.Header));
+
+                    if (mod.Header is not null)
+                    {
+                        var values = KeyValues(mod.Body);
+                        name = values.TryGetValue("displayName", out var dn) ? dn : null;
+                        version = values.TryGetValue("version", out var ver) ? ver : null;
+                        iconPath = values.TryGetValue("logoFile", out var logo) ? logo : null;
+                    }
+
+                    if (iconPath is null)
+                    {
+                        var match = Regex.Match(text, "^\\s*logoFile\\s*=\\s*[\"']([^\"']+)[\"']", RegexOptions.Multiline);
+                        iconPath = match.Success ? match.Groups[1].Value : null;
+                    }
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            // "${version}" and "${file.jarVersion}" are build placeholders nobody filled in;
+            // the jar's manifest usually has the real number.
+            if (version is not null && version.Contains("${", StringComparison.Ordinal))
+            {
+                version = ManifestVersion(archive);
+            }
+
+            byte[]? icon = null;
+
+            if (!string.IsNullOrWhiteSpace(iconPath))
+            {
+                var entry = archive.GetEntry(iconPath!.Replace('\\', '/').TrimStart('.', '/'));
+
+                if (entry is not null && entry.Length > 0 && entry.Length <= maxIconBytes)
+                {
+                    using var stream = entry.Open();
+                    using var buffer = new MemoryStream();
+                    stream.CopyTo(buffer);
+                    icon = buffer.ToArray();
+                }
+            }
+
+            name = string.IsNullOrWhiteSpace(name) ? null : name!.Trim();
+            version = string.IsNullOrWhiteSpace(version) ? null : version!.Trim();
+
+            return name is null && version is null && icon is null ? null : new ModDisplayInfo(name, version, icon);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    private static string? TextOf(JsonElement element, string property)
+        => element.ValueKind == JsonValueKind.Object &&
+           element.TryGetProperty(property, out var value) &&
+           value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : null;
+
+    /// <summary>"icon" is a path, or a map of sizes to paths; the largest size is the one worth having.</summary>
+    private static string? IconPathOf(JsonElement element)
+    {
+        if (element.ValueKind != JsonValueKind.Object || !element.TryGetProperty("icon", out var icon))
+        {
+            return null;
+        }
+
+        if (icon.ValueKind == JsonValueKind.String)
+        {
+            return icon.GetString();
+        }
+
+        if (icon.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        string? best = null;
+        var bestSize = -1;
+
+        foreach (var entry in icon.EnumerateObject())
+        {
+            if (entry.Value.ValueKind == JsonValueKind.String &&
+                int.TryParse(entry.Name, out var size) && size > bestSize)
+            {
+                (best, bestSize) = (entry.Value.GetString(), size);
+            }
+        }
+
+        return best;
+    }
+
+    private static string? ManifestVersion(ZipArchive archive)
+    {
+        try
+        {
+            if (archive.GetEntry("META-INF/MANIFEST.MF") is not { } manifest)
+            {
+                return null;
+            }
+
+            using var reader = new StreamReader(manifest.Open());
+
+            while (reader.ReadLine() is { } line)
+            {
+                if (line.StartsWith("Implementation-Version:", StringComparison.OrdinalIgnoreCase))
+                {
+                    return line["Implementation-Version:".Length..].Trim();
+                }
+            }
+        }
+        catch (Exception)
+        {
+        }
+
+        return null;
+    }
 
     private static JsonDocument ParseJson(ZipArchiveEntry entry)
     {

@@ -200,6 +200,12 @@ public partial class MainWindowViewModel
     [RelayCommand]
     private void RefreshMods()
     {
+        if (_deferModRefresh)
+        {
+            // A loop over many mods is running; it rebuilds the list once when it is done.
+            return;
+        }
+
         try
         {
             ReconcileInstalledMods();
@@ -213,11 +219,15 @@ public partial class MainWindowViewModel
                     string.Equals(m.FileName, mod.FileName, StringComparison.OrdinalIgnoreCase) &&
                     string.Equals(m.Folder ?? ModManager.ModsFolderName, mod.Folder, StringComparison.OrdinalIgnoreCase));
 
-                var item = new InstalledModItem(mod, record);
+                var item = new InstalledModItem(mod, record) { Added = ModFileStamp(mod.Path) };
                 RestoreKnownUpdate(item);
                 item.IsNew = _freshModFiles.Contains(mod.FileName);
+                item.PropertyChanged += OnModItemChanged;
                 InstalledMods.Add(item);
             }
+
+            ApplyModsSort();
+            RaiseModSelection();
 
             var mods = InstalledMods.Where(m => m.IsMod).ToList();
             var enabled = mods.Count(m => m.Enabled);
@@ -248,10 +258,24 @@ public partial class MainWindowViewModel
             ScheduleBuildCheck();
             OnPropertyChanged(nameof(CanUseSafeMode));
             RefreshBrowserInstallState();
+            _ = LoadModDetailsAsync();
         }
         catch (Exception ex)
         {
             Status = Localize("Error_ReadMods", "Failed to read mods: {0}", ex.Message);
+        }
+    }
+
+    /// <summary>When the file landed in the folder: its creation time, which a copy or a download sets to now.</summary>
+    private static DateTime ModFileStamp(string path)
+    {
+        try
+        {
+            return System.IO.File.GetCreationTimeUtc(path);
+        }
+        catch (Exception)
+        {
+            return DateTime.MinValue;
         }
     }
 

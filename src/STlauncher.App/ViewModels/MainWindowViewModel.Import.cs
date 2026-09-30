@@ -156,7 +156,7 @@ public partial class MainWindowViewModel
             _importableBuilds = found;
 
             var launchers = usable
-                .Select(i => SourceLabel(i.Source))
+                .Select(i => SourceLabel(i))
                 .Where(l => l.Length > 0)
                 .Distinct()
                 .Take(3)
@@ -290,7 +290,7 @@ public partial class MainWindowViewModel
                 ? item with { Problem = ExternalInstanceProblem.AlreadyImported }
                 : item;
 
-            var candidate = new ImportCandidate(instance, SourceLabel(instance.Source), ProblemLabel(instance.Problem));
+            var candidate = new ImportCandidate(instance, SourceLabel(instance), ProblemLabel(instance.Problem));
 
             // Ticking a build changes what the copy will cost, and that number is the
             // whole basis for choosing between the two modes.
@@ -418,6 +418,10 @@ public partial class MainWindowViewModel
                 System.IO.Path.GetFullPath(candidate.GameDirectory).TrimEnd(System.IO.Path.DirectorySeparatorChar),
                 StringComparison.OrdinalIgnoreCase) &&
             string.Equals(i.ProfileVersionId ?? i.VersionId, candidate.VersionId, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>The launcher's own name for a fork found by its files, the kind's name otherwise.</summary>
+    private static string SourceLabel(ExternalInstance instance)
+        => instance.LauncherName is { Length: > 0 } name ? name : SourceLabel(instance.Source);
 
     private static string SourceLabel(ExternalLauncherKind kind) => kind switch
     {
