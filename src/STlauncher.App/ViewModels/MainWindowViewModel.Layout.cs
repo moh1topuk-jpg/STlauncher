@@ -84,9 +84,12 @@ public partial class MainWindowViewModel
 
     public int ModsCountAll => InstalledMods.Count(m => m.IsMod);
 
-    public int ModsCountCatalog => InstalledMods.Count(m => m.IsMod && m.IsCatalog);
+    // The three slices do not overlap and add up to "all": a switched-off mod is in
+    // "switched off" only. It used to sit in its origin slice as well, so the numbers on
+    // the chips added up to more than the build has.
+    public int ModsCountCatalog => InstalledMods.Count(m => m.IsMod && m.IsCatalog && m.Enabled);
 
-    public int ModsCountOwn => InstalledMods.Count(m => m.IsMod && !m.IsCatalog);
+    public int ModsCountOwn => InstalledMods.Count(m => m.IsMod && !m.IsCatalog && m.Enabled);
 
     public int ModsCountDisabled => InstalledMods.Count(m => m.IsMod && !m.Enabled);
 
@@ -101,8 +104,8 @@ public partial class MainWindowViewModel
     /// <summary>True when a row belongs to the slice the player picked.</summary>
     private bool IsInModsScope(InstalledModItem mod) => ModsScope switch
     {
-        ModsScope.Catalog => mod.IsCatalog,
-        ModsScope.Own => !mod.IsCatalog,
+        ModsScope.Catalog => mod.IsCatalog && mod.Enabled,
+        ModsScope.Own => !mod.IsCatalog && mod.Enabled,
         ModsScope.Disabled => !mod.Enabled,
         _ => true
     };

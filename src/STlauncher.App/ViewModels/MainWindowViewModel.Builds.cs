@@ -63,8 +63,10 @@ public partial class MainWindowViewModel
         {
             var mods = System.IO.Path.Combine(_instances.GameDirectory(instance), "mods");
 
+            // Switched-off mods count too: the mods tab lists them, and two numbers for
+            // one folder read as a bug.
             return System.IO.Directory.Exists(mods)
-                ? System.IO.Directory.EnumerateFiles(mods, "*.jar").Count()
+                ? System.IO.Directory.EnumerateFiles(mods).Count(STlauncher.Core.Mods.ModManager.IsModFile)
                 : 0;
         }
         catch (Exception)

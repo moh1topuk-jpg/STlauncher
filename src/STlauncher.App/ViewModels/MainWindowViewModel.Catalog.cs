@@ -228,6 +228,19 @@ public partial class MainWindowViewModel
 
             InstalledModsSummary = summary;
 
+            if (SelectedInstance is { } current)
+            {
+                var changed = current.DetectedModCount != mods.Count;
+                current.DetectedModCount = mods.Count;
+
+                if (changed)
+                {
+                    RefreshBuildListItem(current);
+                }
+            }
+
+            OnPropertyChanged(nameof(BuildModCount));
+            OnPropertyChanged(nameof(BuildModCountLabel));
             OnPropertyChanged(nameof(HasNoInstalledMods));
 
             RefreshPacks();

@@ -155,7 +155,7 @@
                             <TextBlock Text="{Binding SelectedInstance.Loader}" Classes="muted"/>
                             <TextBlock Text="•" Classes="faint"/>
                             <TextBlock Classes="gold" FontSize="12"
-                                       Text="{Binding BuildModCount, Converter={x:Static conv:ModCountConverter.Instance}}"/>
+                                       Text="{Binding BuildModCountLabel}"/>
                             <TextBlock Text="•" Classes="faint"/>
                             <TextBlock Text="{Binding BuildStateLabel}" Classes="muted"/>
                         </StackPanel>

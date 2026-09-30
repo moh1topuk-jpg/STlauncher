@@ -918,4 +918,5 @@
     <x:String x:Key="Mods_DropFailed">Could not add the files: {0}</x:String>
     <x:String x:Key="Mods_DropBusy">Wait for the current install to finish, then drop again</x:String>
     <x:String x:Key="Mods_AddedMarked">Added: {0}. Outlined in the mod list.</x:String>
+    <x:String x:Key="Mods_OffCount">{0} off</x:String>
 </ResourceDictionary>

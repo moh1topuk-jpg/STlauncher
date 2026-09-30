@@ -918,4 +918,5 @@
     <x:String x:Key="Mods_DropFailed">Не удалось добавить файлы: {0}</x:String>
     <x:String x:Key="Mods_DropBusy">Дождитесь окончания текущей установки и перетащите снова</x:String>
     <x:String x:Key="Mods_AddedMarked">Добавлено: {0}. Выделено в списке модов.</x:String>
+    <x:String x:Key="Mods_OffCount">выключено {0}</x:String>
 </ResourceDictionary>

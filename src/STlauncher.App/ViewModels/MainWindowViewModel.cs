@@ -315,6 +315,23 @@ public partial class MainWindowViewModel : ViewModelBase
     public int BuildModCount => SelectedInstance?.ModCount ?? 0;
 
     /// <summary>
+    /// "109 mods" in the build's header, with "20 off" after it when some are switched off.
+    /// The same number the mods tab shows, from the same list.
+    /// </summary>
+    public string BuildModCountLabel
+    {
+        get
+        {
+            var text = (string)Converters.ModCountConverter.Instance.Convert(BuildModCount, typeof(string), null, System.Globalization.CultureInfo.CurrentCulture);
+            var off = InstalledMods.Count(m => m.IsMod && !m.Enabled);
+
+            return off > 0 && InstalledMods.Count == BuildModCount
+                ? text + " · " + Localize("Mods_OffCount", "{0} off", off)
+                : text;
+        }
+    }
+
+    /// <summary>
     /// The selected build starts from its own profile, brought over from another launcher.
     /// Its version and loader are what that profile says; changing them here would do
     /// nothing, so the settings show them read-only.
@@ -962,6 +979,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         OnPropertyChanged(nameof(BuildModCount));
+        OnPropertyChanged(nameof(BuildModCountLabel));
         OnPropertyChanged(nameof(IsProfileBuild));
         OnPropertyChanged(nameof(IsNotProfileBuild));
         OnPropertyChanged(nameof(ProfileBuildHint));

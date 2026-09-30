@@ -575,6 +575,7 @@ public partial class MainWindowViewModel
 
         SyncInstance();
         OnPropertyChanged(nameof(BuildModCount));
+        OnPropertyChanged(nameof(BuildModCountLabel));
         return versionMissing;
     }
 

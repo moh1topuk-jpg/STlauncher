@@ -96,9 +96,14 @@ public sealed class Instance
     [JsonPropertyName("playSessions")]
     public List<PlaySession> PlaySessions { get; set; } = new();
 
-    /// <summary>Catalog mods the build installs before launch. Not serialized.</summary>
+    /// <summary>
+    /// Mods in the build, switched off ones included: the files in its folder. The catalog
+    /// list stands in only until the first install, when the folder is still empty. It used
+    /// to win always, so a catalog build with the player's own mods on top showed the
+    /// catalog's number in one place and the folder's in another. Not serialized.
+    /// </summary>
     [JsonIgnore]
-    public int ModCount => EnabledCatalogItems.Count > 0 ? EnabledCatalogItems.Count : DetectedModCount;
+    public int ModCount => DetectedModCount > 0 ? DetectedModCount : EnabledCatalogItems.Count;
 
     /// <summary>
     /// Mod files found in the build's folder. Filled in by whoever can look at the disk;
