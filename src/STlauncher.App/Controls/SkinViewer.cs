@@ -10,6 +10,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using STlauncher.App.Services;
 using STlauncher.App.ViewModels;
+using STlauncher.Core.Emotes;
 
 namespace STlauncher.App.Controls;
 
@@ -29,7 +30,9 @@ namespace STlauncher.App.Controls;
 /// Movement is the same boxes turned about their joints before the camera turns the
 /// whole figure: a shoulder, a hip, the neck. A pose is six such turns and a lift; a
 /// clip is a pose as a function of time; and one clip fades into the next, so nothing
-/// snaps.
+/// snaps. An Emotecraft emote from the build is one more clip: its keyframes sampled
+/// into a pose, with the joints moved as well as turned. The figure has no elbows or
+/// knees, so an emote's bends are left out.
 /// </remarks>
 public sealed class SkinViewer : Control
 {
@@ -46,10 +49,20 @@ public sealed class SkinViewer : Control
     public static readonly DirectProperty<SkinViewer, string> PoseNameProperty =
         AvaloniaProperty.RegisterDirect<SkinViewer, string>(nameof(PoseName), viewer => viewer.PoseName);
 
+    /// <summary>The emotes of the build being played: the figure takes turns between these and its own poses.</summary>
+    public static readonly StyledProperty<IReadOnlyList<Emote>?> EmotesProperty =
+        AvaloniaProperty.Register<SkinViewer, IReadOnlyList<Emote>?>(nameof(Emotes));
+
     private static readonly Vector3 Light = Normalize(new Vector3(-0.4, 0.8, 0.6));
 
     /// <summary>How long one clip takes to give way to the next.</summary>
     private const double BlendSeconds = 0.45;
+
+    /// <summary>A looping emote is watched for whole passes until this long has gone by.</summary>
+    private const double LoopWatchSeconds = 6;
+
+    /// <summary>No emote holds the stage longer than this, however long its file says it is.</summary>
+    private const double MaxEmoteSeconds = 16;
 
     private readonly DispatcherTimer _timer;
     private readonly Stopwatch _clock = Stopwatch.StartNew();
@@ -68,6 +81,8 @@ public sealed class SkinViewer : Control
     private Pose _blendFrom = Pose.Rest;
     private double _blendStarted = double.NegativeInfinity;
     private int _nextFeature;
+    private bool _emoteIsNext;
+    private int _lastEmote = -1;
     private string _poseName = string.Empty;
 
     static SkinViewer()
@@ -152,13 +167,64 @@ public sealed class SkinViewer : Control
         }
     }
 
+    public IReadOnlyList<Emote>? Emotes
+    {
+        get => GetValue(EmotesProperty);
+        set => SetValue(EmotesProperty, value);
+    }
+
+    /// <summary>The figure's own poses, standing first: the resource key of each name, and the name in English.</summary>
+    public static IEnumerable<(string Key, string Fallback)> BuiltInPoses => Clips.Select(clip => (clip.Key, clip.Fallback));
+
     /// <summary>Skips to the next clip that is not plain standing. The button beside the figure.</summary>
     public void NextPose()
     {
-        var features = Clips.Skip(1).ToList();
-        StartClip(features[_nextFeature % features.Count]);
-        _nextFeature++;
+        StartClip(NextFeature());
         InvalidateVisual();
+    }
+
+    /// <summary>Goes straight to one of the figure's own poses, by the key of its name.</summary>
+    public void PlayPose(string key)
+    {
+        if (Clips.FirstOrDefault(clip => clip.Key == key) is { } clip)
+        {
+            StartClip(clip);
+            InvalidateVisual();
+        }
+    }
+
+    /// <summary>Plays an emote once (a looping one, for a few passes), then goes back to taking turns.</summary>
+    public void PlayEmote(Emote emote)
+    {
+        StartClip(ClipOf(emote));
+        InvalidateVisual();
+    }
+
+    /// <summary>
+    /// What to show after standing: the figure's own poses in order and, while the build
+    /// has emotes, one of those every other time, never the same one twice running.
+    /// </summary>
+    private MotionClip NextFeature()
+    {
+        var emotes = Emotes;
+
+        if (emotes is { Count: > 0 } && _emoteIsNext)
+        {
+            _emoteIsNext = false;
+
+            var pick = _random.Next(emotes.Count);
+
+            if (pick == _lastEmote)
+            {
+                pick = (pick + 1) % emotes.Count;
+            }
+
+            _lastEmote = pick;
+            return ClipOf(emotes[pick]);
+        }
+
+        _emoteIsNext = true;
+        return Clips[1 + _nextFeature++ % (Clips.Length - 1)];
     }
 
     private void Tick()
@@ -216,9 +282,7 @@ public sealed class SkinViewer : Control
             // Standing between every two things worth watching, for a different while each time.
             if (ReferenceEquals(_clip, Clips[0]))
             {
-                var features = Clips.Skip(1).ToList();
-                StartClip(features[_nextFeature % features.Count]);
-                _nextFeature++;
+                StartClip(NextFeature());
             }
             else
             {
@@ -241,8 +305,9 @@ public sealed class SkinViewer : Control
         UpdatePoseName();
     }
 
+    /// <summary>An emote goes by the name its file gives it; the figure's own poses are translated.</summary>
     private void UpdatePoseName()
-        => PoseName = MainWindowViewModel.Localize(_clip.Key, _clip.Fallback);
+        => PoseName = _clip.Key.Length == 0 ? _clip.Fallback : MainWindowViewModel.Localize(_clip.Key, _clip.Fallback);
 
     private Pose CurrentPose(double now)
     {
@@ -359,12 +424,25 @@ public sealed class SkinViewer : Control
     /// with the body, turned with the whole figure, and brought down so the camera's own
     /// turn goes about the middle.
     /// </summary>
-    private static Vector3 Place(Vector3 point, Vector3 pivot, Joint joint, Pose pose)
+    private static Vector3 Place(Vector3 point, Vector3 pivot, Joint joint, in Pose pose)
     {
         var local = Turn(new Vector3(point.X - pivot.X, point.Y - pivot.Y, point.Z - pivot.Z), joint);
-        var x = local.X + pivot.X;
-        var y = local.Y + pivot.Y + pose.Lift;
-        var z = local.Z + pivot.Z;
+        var x = local.X + pivot.X + joint.Dx;
+        var y = local.Y + pivot.Y + joint.Dy;
+        var z = local.Z + pivot.Z + joint.Dz;
+
+        // An emote can turn the whole figure over and carry it off its spot.
+        var root = pose.Root;
+
+        if (root != default)
+        {
+            var turned = Turn(new Vector3(x, y - RootHeight, z), root);
+            x = turned.X + root.Dx;
+            y = turned.Y + RootHeight + root.Dy;
+            z = turned.Z + root.Dz;
+        }
+
+        y += pose.Lift;
 
         var c = Math.Cos(pose.Swing);
         var s = Math.Sin(pose.Swing);
@@ -373,9 +451,9 @@ public sealed class SkinViewer : Control
     }
 
     /// <summary>A direction under the same turns, for the light.</summary>
-    private static Vector3 PlaceNormal(Vector3 normal, Joint joint, Pose pose)
+    private static Vector3 PlaceNormal(Vector3 normal, Joint joint, in Pose pose)
     {
-        var local = Turn(normal, joint);
+        var local = Turn(Turn(normal, joint), pose.Root);
         var c = Math.Cos(pose.Swing);
         var s = Math.Sin(pose.Swing);
 
@@ -493,17 +571,24 @@ public sealed class SkinViewer : Control
         LeftLeg
     }
 
-    /// <summary>The turn of one joint, radians. A limb hanging down swings forward on a negative Rx.</summary>
-    private readonly record struct Joint(double Rx = 0, double Ry = 0, double Rz = 0)
+    /// <summary>
+    /// The turn of one joint, radians, and how far the joint itself has moved, in model
+    /// pixels. A limb hanging down swings forward on a negative Rx. Only emotes move joints.
+    /// </summary>
+    private readonly record struct Joint(double Rx = 0, double Ry = 0, double Rz = 0, double Dx = 0, double Dy = 0, double Dz = 0)
     {
-        public static Joint Lerp(Joint a, Joint b, double t)
-            => new(a.Rx + (b.Rx - a.Rx) * t, a.Ry + (b.Ry - a.Ry) * t, a.Rz + (b.Rz - a.Rz) * t);
+        public static Joint Lerp(Joint a, Joint b, double t) => new(
+            a.Rx + (b.Rx - a.Rx) * t, a.Ry + (b.Ry - a.Ry) * t, a.Rz + (b.Rz - a.Rz) * t,
+            a.Dx + (b.Dx - a.Dx) * t, a.Dy + (b.Dy - a.Dy) * t, a.Dz + (b.Dz - a.Dz) * t);
     }
 
-    /// <summary>The whole figure at one instant: six joints, how high it is off the ground, and its own turn.</summary>
+    /// <summary>
+    /// The whole figure at one instant: six joints, how high it is off the ground, its
+    /// own turn, and - in an emote - the turn and travel of the figure as one piece.
+    /// </summary>
     private readonly record struct Pose(
         Joint Head, Joint Body, Joint RightArm, Joint LeftArm, Joint RightLeg, Joint LeftLeg,
-        double Lift = 0, double Swing = 0)
+        double Lift = 0, double Swing = 0, Joint Root = default)
     {
         public static readonly Pose Rest = new(default, default, default, default, default, default);
 
@@ -525,7 +610,8 @@ public sealed class SkinViewer : Control
             Joint.Lerp(a.RightLeg, b.RightLeg, t),
             Joint.Lerp(a.LeftLeg, b.LeftLeg, t),
             a.Lift + (b.Lift - a.Lift) * t,
-            a.Swing + (b.Swing - a.Swing) * t);
+            a.Swing + (b.Swing - a.Swing) * t,
+            Joint.Lerp(a.Root, b.Root, t));
     }
 
     /// <summary>A named movement: the pose at each moment of it, and how long it is worth watching.</summary>
@@ -606,6 +692,124 @@ public sealed class SkinViewer : Control
         RightLeg: default,
         LeftLeg: default,
         Lift: Math.Sin(t * 1.6) * 0.12);
+
+    // ===================== Emotes =====================
+
+    /// <summary>The height the game turns the whole player about: 0.7 of a block, in model pixels.</summary>
+    private const double RootHeight = 11.2;
+
+    /// <summary>An emote as a clip: named by its file, and as long as it is worth watching.</summary>
+    private static MotionClip ClipOf(Emote emote)
+    {
+        var seconds = Math.Max(emote.Seconds, 0.5);
+
+        if (emote.IsLoop && seconds < LoopWatchSeconds)
+        {
+            // Whole passes, so the last one is not cut off mid-step.
+            seconds += Math.Ceiling((LoopWatchSeconds - seconds) / emote.LoopSeconds) * emote.LoopSeconds;
+        }
+
+        return new MotionClip(string.Empty, emote.Name, Math.Min(seconds, MaxEmoteSeconds), t => FromEmote(emote, t));
+    }
+
+    /// <summary>
+    /// The emote's frame in this figure's terms. The game's model has y pointing down
+    /// and faces -z, this one has y up and faces +z: the same figure turned half-way
+    /// round its x axis, which keeps pitch and flips yaw and roll. The player as a whole
+    /// is turned in the world instead, y up but still facing -z, so there pitch and roll
+    /// flip and yaw stays; and its travel is in blocks, sixteen pixels each.
+    /// </summary>
+    private static Pose FromEmote(Emote emote, double seconds)
+    {
+        var frame = emote.Sample(seconds * Emote.TicksPerSecond);
+
+        return new Pose(
+            Head: Limb(frame.Head),
+            Body: Chest(frame.Torso),
+            RightArm: Limb(frame.RightArm),
+            LeftArm: Limb(frame.LeftArm),
+            RightLeg: Limb(frame.RightLeg),
+            LeftLeg: Limb(frame.LeftLeg),
+            Root: FromGame(-frame.Body.Pitch, frame.Body.Yaw, -frame.Body.Roll) with
+            {
+                Dx = -frame.Body.X * 16,
+                Dy = Rise(frame.Body.Y * 16),
+                Dz = -frame.Body.Z * 16
+            });
+    }
+
+    /// <summary>How far above its spot the figure can go before it would leave the stage, in model pixels.</summary>
+    private const double StageHeadroom = 14;
+
+    /// <summary>
+    /// The game has the whole sky for a jump; the stage has a ceiling. A small hop is
+    /// left as it is, and a leap a block and a half high flattens out under the top of
+    /// the stage instead of carrying the figure out of the window.
+    /// </summary>
+    private static double Rise(double up) => up <= 0 ? up : StageHeadroom * Math.Tanh(up / StageHeadroom);
+
+    private static Joint Limb(EmotePartState part)
+        => FromGame(part.Pitch, -part.Yaw, -part.Roll) with { Dx = part.X, Dy = -part.Y, Dz = -part.Z };
+
+    /// <summary>
+    /// The game hangs the chest from the neck, this figure stands it on the waist. A turn
+    /// about the one is the same turn about the other plus a shift: where the turn would
+    /// have carried the waist.
+    /// </summary>
+    private static Joint Chest(EmotePartState part)
+    {
+        var joint = Limb(part);
+
+        if (joint.Rx == 0 && joint.Ry == 0 && joint.Rz == 0)
+        {
+            return joint;
+        }
+
+        var waist = Turn(new Vector3(0, -12, 0), joint);
+        return joint with { Dx = joint.Dx + waist.X, Dy = joint.Dy + waist.Y + 12, Dz = joint.Dz + waist.Z };
+    }
+
+    /// <summary>
+    /// The game turns a part about x, then y, then z; <see cref="Turn"/> goes z, x, y.
+    /// The same rotation has angles in either order, and these are the ones for ours:
+    /// read off the rotation matrix the game's three turns make.
+    /// </summary>
+    private static Joint FromGame(double x, double y, double z)
+    {
+        // A turn about one axis is the same in any order, and most of what emotes do is
+        // that: no need to send a full flip through an arcsine.
+        if (y == 0 && z == 0)
+        {
+            return new Joint(Rx: x);
+        }
+
+        if (x == 0 && z == 0)
+        {
+            return new Joint(Ry: y);
+        }
+
+        if (x == 0 && y == 0)
+        {
+            return new Joint(Rz: z);
+        }
+
+        var (sx, cx) = Math.SinCos(x);
+        var (sy, cy) = Math.SinCos(y);
+        var (sz, cz) = Math.SinCos(z);
+
+        var m12 = sz * sy * cx - cz * sx;
+
+        // Looking straight along the y axis the other two turns become one; it is given to y.
+        if (Math.Abs(m12) > 0.99999)
+        {
+            return new Joint(Rx: m12 < 0 ? Math.PI / 2 : -Math.PI / 2, Ry: Math.Atan2(sy, cz * cy));
+        }
+
+        return new Joint(
+            Rx: Math.Asin(-m12),
+            Ry: Math.Atan2(cz * sy * cx + sz * sx, cy * cx),
+            Rz: Math.Atan2(sz * cy, sz * sy * sx + cz * cx));
+    }
 
     // ===================== The model =====================
 
