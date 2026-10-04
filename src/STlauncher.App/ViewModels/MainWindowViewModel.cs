@@ -96,7 +96,8 @@ public partial class MainWindowViewModel : ViewModelBase
         GameLauncher gameLauncher,
         DiscordPresenceService discord,
         UsageReporter usage,
-        STlauncher.Core.Diagnostics.NetworkDiagnostics network)
+        STlauncher.Core.Diagnostics.NetworkDiagnostics network,
+        HostingServices hosting)
     {
         _network = network;
         _versions = versions;
@@ -126,6 +127,9 @@ public partial class MainWindowViewModel : ViewModelBase
         _gameLauncher = gameLauncher;
         _discord = discord;
         _usage = usage;
+
+        // My server: see MainWindowViewModel.Host.cs.
+        AttachHosting(hosting);
     }
 
     public ObservableCollection<Instance> Instances { get; } = new();
@@ -813,7 +817,9 @@ public partial class MainWindowViewModel : ViewModelBase
                 ExtraGameArgs = SplitArguments(SelectedInstance?.ExtraGameArgs),
                 JavaPath = SelectedJavaChoice?.Path,
                 ForceUpdate = ForceUpdate,
-                ServerAddress = joinServer && !string.IsNullOrWhiteSpace(ServerAddress) ? ServerAddress : null,
+                // A friend's server, when "Play" was pressed on it, goes before the build's own.
+                ServerAddress = _friendJoinAddress
+                                ?? (joinServer && !string.IsNullOrWhiteSpace(ServerAddress) ? ServerAddress : null),
                 ServerListName = ServerName,
                 // Not written into a linked build's folder: that servers.dat belongs to the
                 // other launcher, and quietly adding a server to it is exactly the kind of

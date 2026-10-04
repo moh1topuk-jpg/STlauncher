@@ -6,5 +6,8 @@ public enum ShellSection
     Builds,
     Server,
     Console,
-    Settings
+    Settings,
+
+    // My server: the player's own server for friends, and the friends' servers.
+    Host
 }

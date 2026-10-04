@@ -102,6 +102,15 @@ public static class LauncherHost
             BaseUrl = AppSettings.DefaultCurseForgeUrl
         });
 
+        // My server: hosting a server for friends, and the friends' servers a player joins.
+        services.AddSingleton<STlauncher.Core.Hosting.HostedServerStore>();
+        services.AddSingleton<STlauncher.Core.Hosting.ServerInstaller>();
+        services.AddSingleton<STlauncher.Core.Hosting.ServerJava>();
+        services.AddSingleton<STlauncher.Core.Hosting.ServerRunner>();
+        services.AddSingleton<STlauncher.Core.Friends.PlayitAgent>();
+        services.AddSingleton<STlauncher.Core.Friends.FriendServerStore>();
+        services.AddSingleton<HostingServices>();
+
         services.AddTransient<MainWindowViewModel>();
 
         return services.BuildServiceProvider();

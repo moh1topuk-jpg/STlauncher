@@ -64,10 +64,41 @@ public partial class App : Application
                 window.Activate();
             }
 
+            // My server: a running server lives inside the launcher, so every way out of it
+            // asks first. The view model puts the question on screen and says "hold".
+            void Quit()
+            {
+                if (viewModel.HoldCloseForHosting())
+                {
+                    ShowWindow();
+                    return;
+                }
+
+                desktop.Shutdown();
+            }
+
+            window.Closing += (_, e) =>
+            {
+                // Only a close of the window itself can be held. When the whole application
+                // is going down the answer would be ignored; the exit handler below stops
+                // the server in that case.
+                if (e.CloseReason == WindowCloseReason.WindowClosing && viewModel.HoldCloseForHosting())
+                {
+                    e.Cancel = true;
+
+                    // Out of the tray if the launcher was hiding there for the game; a
+                    // window already on screen is left as the player arranged it.
+                    if (!window.IsVisible || tray.IsVisible)
+                    {
+                        ShowWindow();
+                    }
+                }
+            };
+
             void HideToTray()
             {
                 // Out of the taskbar, into the tray: still one click away, not in the way.
-                RefreshTrayMenu(tray, ShowWindow, desktop);
+                RefreshTrayMenu(tray, ShowWindow, Quit);
                 tray.IsVisible = true;
                 window.Hide();
             }
@@ -121,6 +152,10 @@ public partial class App : Application
             // Discord shows the last presence until the client says goodbye.
             desktop.Exit += (_, _) => _services.GetRequiredService<DiscordPresenceService>().Dispose();
 
+            // My server: an exit that asked nobody (a restart after moving the data, Windows
+            // shutting down) still stops the server in order, so the world is saved.
+            desktop.Exit += (_, _) => viewModel.StopHostingForExit(TimeSpan.FromSeconds(40));
+
             desktop.MainWindow = window;
         }
 
@@ -147,13 +182,13 @@ public partial class App : Application
     }
 
     /// <summary>Rebuilt on every hide so the labels follow the interface language.</summary>
-    private static void RefreshTrayMenu(TrayIcon tray, Action show, IClassicDesktopStyleApplicationLifetime desktop)
+    private static void RefreshTrayMenu(TrayIcon tray, Action show, Action quit)
     {
         var showItem = new NativeMenuItem(MainWindowViewModel.Localize("Tray_Show", "Show the launcher"));
         showItem.Click += (_, _) => show();
 
         var quitItem = new NativeMenuItem(MainWindowViewModel.Localize("Tray_Quit", "Quit the launcher"));
-        quitItem.Click += (_, _) => desktop.Shutdown();
+        quitItem.Click += (_, _) => quit();
 
         tray.Menu = new NativeMenu { Items = { showItem, new NativeMenuItemSeparator(), quitItem } };
     }

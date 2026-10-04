@@ -24,4 +24,9 @@
     <ProjectReference Include="..\..\src\STlauncher.Core\STlauncher.Core.csproj" />
   </ItemGroup>
 
+  <!-- A server for friends: the relay runs in-process in the end-to-end tests. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\STlauncher.Relay\STlauncher.Relay.csproj" />
+  </ItemGroup>
+
 </Project>

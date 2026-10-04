@@ -95,6 +95,14 @@
                                 <TextBlock Text="{DynamicResource Nav_Builds}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
+                        <!-- My server: the player's own server for friends. -->
+                        <Button Classes="rail" Classes.active="{Binding IsHostSection}"
+                                Command="{Binding SelectSectionCommand}" CommandParameter="Host">
+                            <StackPanel Spacing="5" HorizontalAlignment="Center">
+                                <PathIcon Data="{StaticResource IconHost}"/>
+                                <TextBlock Text="{DynamicResource Nav_Host}" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
                         <Button Classes="rail" Classes.active="{Binding IsServerSection}"
                                 Command="{Binding SelectSectionCommand}" CommandParameter="Server">
                             <StackPanel Spacing="5" HorizontalAlignment="Center">
@@ -182,6 +190,8 @@
                     <pages:ServerPage IsVisible="{Binding IsServerSection}" controls:Reveal.OnVisible="True"/>
                     <pages:ConsolePage IsVisible="{Binding IsConsoleSection}" controls:Reveal.OnVisible="True"/>
                     <pages:SettingsPage IsVisible="{Binding IsSettingsSection}" controls:Reveal.OnVisible="True"/>
+                    <!-- My server -->
+                    <pages:HostPage IsVisible="{Binding IsHostSection}" controls:Reveal.OnVisible="True"/>
                 </Panel>
 
                 <!-- Status line: quiet by default, a progress bar only while loading. -->
@@ -238,6 +248,24 @@
             <TextBlock Grid.Row="2" Text="{Binding LightboxTitle}" Classes="faint" HorizontalAlignment="Center" Margin="0,10,0,0"/>
         </Grid>
     </Panel>
+
+    <!-- My server: closing the launcher would stop a running server, so it asks first.
+         Above every page, because the window can be closed from any of them. -->
+    <Border Background="{DynamicResource OverlayScrimBrush}" IsVisible="{Binding IsHostCloseOpen}" controls:Reveal.OnVisible="True">
+        <Border Classes="card" Width="480" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="24">
+            <StackPanel Spacing="14">
+                <TextBlock Text="{Binding HostCloseTitle}" Classes="h2" TextWrapping="Wrap"/>
+                <TextBlock Text="{Binding HostCloseText}" Classes="muted" FontSize="13" LineHeight="19" TextWrapping="Wrap"/>
+                <ProgressBar IsIndeterminate="True" Height="3" IsVisible="{Binding IsHostClosing}"/>
+                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                    <Button Classes="ghost" Content="{DynamicResource Host_CloseCancel}"
+                            Command="{Binding CancelHostCloseCommand}" IsEnabled="{Binding !IsHostClosing}"/>
+                    <Button Classes="primary" Content="{Binding HostCloseAction}"
+                            Command="{Binding ConfirmHostCloseCommand}" IsEnabled="{Binding !IsHostClosing}"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </Border>
 
     <!-- The start: sparks, the mark, and the screen showing through when the build is ready. -->
     <views:SplashOverlay Name="Splash" IsReady="{Binding IsStartupReady}"/>
