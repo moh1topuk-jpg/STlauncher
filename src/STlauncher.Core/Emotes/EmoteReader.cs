@@ -180,8 +180,17 @@ public static class EmoteReader
     private static readonly (string Name, EmoteAxis Axis)[] AxisNames =
     {
         ("x", EmoteAxis.X), ("y", EmoteAxis.Y), ("z", EmoteAxis.Z),
-        ("pitch", EmoteAxis.Pitch), ("yaw", EmoteAxis.Yaw), ("roll", EmoteAxis.Roll)
+        ("pitch", EmoteAxis.Pitch), ("yaw", EmoteAxis.Yaw), ("roll", EmoteAxis.Roll),
+        ("bend", EmoteAxis.Bend), ("axis", EmoteAxis.BendAxis)
     };
+
+    /// <summary>The order the binary form keeps a part's axes in; the direction of a bend comes before the bend.</summary>
+    private static readonly EmoteAxis[] BinaryAxes =
+    {
+        EmoteAxis.X, EmoteAxis.Y, EmoteAxis.Z, EmoteAxis.Pitch, EmoteAxis.Yaw, EmoteAxis.Roll
+    };
+
+    private static readonly EmoteAxis[] BinaryBendAxes = { EmoteAxis.BendAxis, EmoteAxis.Bend };
 
     /// <summary>
     /// The part behind a name in a file, or null for what the figure does not have: the
@@ -380,7 +389,7 @@ public static class EmoteReader
         // Inside the binary the names are already the newer ones: "torso" is the chest.
         var part = PartOf(name, version: 3);
 
-        foreach (var (_, axis) in AxisNames)
+        foreach (var axis in BinaryAxes)
         {
             ReadTrack(ref reader, builder, part, axis, version, keyframeSize);
         }
@@ -391,10 +400,16 @@ public static class EmoteReader
             _ => part is not null || unknownPartsBend
         };
 
-        // The bend and its direction, then the scale: read past, the figure has neither.
-        var skipped = (bends ? 2 : 0) + (version >= 3 ? 3 : 0);
+        if (bends)
+        {
+            foreach (var axis in BinaryBendAxes)
+            {
+                ReadTrack(ref reader, builder, part, axis, version, keyframeSize);
+            }
+        }
 
-        for (var i = 0; i < skipped; i++)
+        // The scale: read past, the figure has none.
+        for (var i = 0; i < (version >= 3 ? 3 : 0); i++)
         {
             ReadTrack(ref reader, builder, null, EmoteAxis.X, version, keyframeSize);
         }

@@ -31,8 +31,13 @@ namespace STlauncher.App.Controls;
 /// whole figure: a shoulder, a hip, the neck. A pose is six such turns and a lift; a
 /// clip is a pose as a function of time; and one clip fades into the next, so nothing
 /// snaps. An Emotecraft emote from the build is one more clip: its keyframes sampled
-/// into a pose, with the joints moved as well as turned. The figure has no elbows or
-/// knees, so an emote's bends are left out.
+/// into a pose, with the joints moved as well as turned.
+///
+/// Emotes also bend: an arm at the elbow, a leg at the knee, the chest at the waist. The
+/// mod deforms a mesh for that; boxes do not deform, so a bent part is drawn as its two
+/// halves, one of them turned about the hinge in the middle, and a thin slice between
+/// them that closes the wedge the turn opens on the outside. A part that is not bent is
+/// still the one box it always was.
 /// </remarks>
 public sealed class SkinViewer : Control
 {
@@ -85,6 +90,9 @@ public sealed class SkinViewer : Control
     private bool _emoteIsNext;
     private int _lastEmote = -1;
     private string _poseName = string.Empty;
+
+    /// <summary>The parts of the frame being drawn, kept between frames so the list is not made anew each time.</summary>
+    private readonly List<Piece> _pieces = new();
 
     static SkinViewer()
     {
@@ -398,16 +406,29 @@ public sealed class SkinViewer : Control
         // faces was not - at an oblique angle the inner side of an arm, a long thin face,
         // averaged out "behind" the front of the body and was painted over it. Within a
         // part the visible faces cannot overlap, and an outer layer is drawn right after
-        // the part it wraps.
-        var parts = Model(skin)
-            .Select(part =>
-            {
-                var joint = pose.For(part.Kind);
-                return (Part: part, Joint: joint, Depth: Rotate(Place(part.Centre, part.Pivot, joint, pose)).Z);
-            })
-            .OrderBy(p => p.Depth);
+        // the part it wraps. The halves of a bent part are parts of their own here: a
+        // forearm can be in front of the chest while the upper arm is beside it.
+        _pieces.Clear();
 
-        foreach (var (part, joint, _) in parts)
+        foreach (var part in Model(skin, pose))
+        {
+            _pieces.Add(new Piece(part, Rotate(Place(part.Centre, part, pose)).Z, _pieces.Count));
+        }
+
+        // The slice that fills a joint shares its side faces' planes with the two halves,
+        // and they must be painted over it, never it over them: it goes down just before
+        // whichever half goes first. The model lists it right ahead of them.
+        for (var i = 0; i + 2 < _pieces.Count; i++)
+        {
+            if (_pieces[i].Part.FillsJoint)
+            {
+                _pieces[i] = _pieces[i] with { Depth = Math.Min(_pieces[i + 1].Depth, _pieces[i + 2].Depth) };
+            }
+        }
+
+        _pieces.Sort(BackToFront);
+
+        foreach (var (part, _, _) in _pieces)
         {
             foreach (var box in new[] { part.Base, part.Overlay })
             {
@@ -418,7 +439,7 @@ public sealed class SkinViewer : Control
 
                 foreach (var face in box.Faces())
                 {
-                    var projected = Project(face, part.Pivot, joint, pose, scale, centre);
+                    var projected = Project(face, part, pose, scale, centre);
 
                     if (projected is null)
                     {
@@ -458,12 +479,29 @@ public sealed class SkinViewer : Control
     /// with the body, turned with the whole figure, and brought down so the camera's own
     /// turn goes about the middle.
     /// </summary>
-    private static Vector3 Place(Vector3 point, Vector3 pivot, Joint joint, in Pose pose)
+    private static Vector3 Place(Vector3 point, Part part, in Pose pose)
     {
+        // The half beyond an elbow or a knee folds first, while the part still hangs straight.
+        if (part.Hinge is { } hinge)
+        {
+            point = hinge.Move(point);
+        }
+
+        var pivot = part.Pivot;
+        var joint = pose.For(part.Kind);
         var local = Turn(new Vector3(point.X - pivot.X, point.Y - pivot.Y, point.Z - pivot.Z), joint);
         var x = local.X + pivot.X + joint.Dx;
         var y = local.Y + pivot.Y + joint.Dy;
         var z = local.Z + pivot.Z + joint.Dz;
+
+        // The head and the arms ride on the half of the chest that a bend at the waist turns.
+        if (part.Lean is { } lean)
+        {
+            var leant = lean.Move(new Vector3(x, y, z));
+            x = leant.X;
+            y = leant.Y;
+            z = leant.Z;
+        }
 
         // An emote can turn the whole figure over and carry it off its spot.
         var root = pose.Root;
@@ -485,9 +523,21 @@ public sealed class SkinViewer : Control
     }
 
     /// <summary>A direction under the same turns, for the light.</summary>
-    private static Vector3 PlaceNormal(Vector3 normal, Joint joint, in Pose pose)
+    private static Vector3 PlaceNormal(Vector3 normal, Part part, in Pose pose)
     {
-        var local = Turn(Turn(normal, joint), pose.Root);
+        if (part.Hinge is { } hinge)
+        {
+            normal = hinge.Turn(normal);
+        }
+
+        normal = Turn(normal, pose.For(part.Kind));
+
+        if (part.Lean is { } lean)
+        {
+            normal = lean.Turn(normal);
+        }
+
+        var local = Turn(normal, pose.Root);
         var c = Math.Cos(pose.Swing);
         var s = Math.Sin(pose.Swing);
 
@@ -521,9 +571,9 @@ public sealed class SkinViewer : Control
         return v;
     }
 
-    private ProjectedFace? Project(Face face, Vector3 pivot, Joint joint, Pose pose, double scale, Point centre)
+    private ProjectedFace? Project(Face face, Part part, Pose pose, double scale, Point centre)
     {
-        var p = face.Corners.Select(c => Rotate(Place(c, pivot, joint, pose))).ToArray();
+        var p = face.Corners.Select(c => Rotate(Place(c, part, pose))).ToArray();
 
         // Orthographic: x right, y up, z towards the viewer.
         Point Screen(Vector3 v) => new(centre.X + v.X * scale, centre.Y - v.Y * scale);
@@ -570,7 +620,7 @@ public sealed class SkinViewer : Control
             s[0].X - ax * t.X - bx * t.Y,
             s[0].Y - ay * t.X - by * t.Y);
 
-        var normal = Rotate(PlaceNormal(face.Normal, joint, pose));
+        var normal = Rotate(PlaceNormal(face.Normal, part, pose));
         var lit = Math.Max(0, Dot(normal, Light));
         var shade = (1 - lit) * 0.45;
 
@@ -609,11 +659,20 @@ public sealed class SkinViewer : Control
     /// The turn of one joint, radians, and how far the joint itself has moved, in model
     /// pixels. A limb hanging down swings forward on a negative Rx. Only emotes move joints.
     /// </summary>
-    private readonly record struct Joint(double Rx = 0, double Ry = 0, double Rz = 0, double Dx = 0, double Dy = 0, double Dz = 0)
+    /// <remarks>
+    /// Bx and Bz are the bend in the middle of the part - the elbow, the knee, the waist -
+    /// as an arrow lying along the hinge, as long as the angle in radians. Kept as an
+    /// arrow and not as an angle and a direction so that one pose fades into another
+    /// straight: half-way to "bent forward" is bent forward half as much, not bent sideways.
+    /// </remarks>
+    private readonly record struct Joint(
+        double Rx = 0, double Ry = 0, double Rz = 0, double Dx = 0, double Dy = 0, double Dz = 0,
+        double Bx = 0, double Bz = 0)
     {
         public static Joint Lerp(Joint a, Joint b, double t) => new(
             a.Rx + (b.Rx - a.Rx) * t, a.Ry + (b.Ry - a.Ry) * t, a.Rz + (b.Rz - a.Rz) * t,
-            a.Dx + (b.Dx - a.Dx) * t, a.Dy + (b.Dy - a.Dy) * t, a.Dz + (b.Dz - a.Dz) * t);
+            a.Dx + (b.Dx - a.Dx) * t, a.Dy + (b.Dy - a.Dy) * t, a.Dz + (b.Dz - a.Dz) * t,
+            a.Bx + (b.Bx - a.Bx) * t, a.Bz + (b.Bz - a.Bz) * t);
     }
 
     /// <summary>
@@ -759,7 +818,7 @@ public sealed class SkinViewer : Control
 
         return new Pose(
             Head: Limb(frame.Head),
-            Body: Chest(frame.Torso),
+            Body: Chest(frame.Torso, frame.Body),
             RightArm: Limb(frame.RightArm),
             LeftArm: Limb(frame.LeftArm),
             RightLeg: Limb(frame.RightLeg),
@@ -782,17 +841,47 @@ public sealed class SkinViewer : Control
     /// </summary>
     private static double Rise(double up) => up <= 0 ? up : StageHeadroom * Math.Tanh(up / StageHeadroom);
 
+    /// <summary>
+    /// The hinge of a bend is the game's x axis turned about the part's length by the
+    /// bend's direction, (cos, 0, sin); seen from this figure's side, z is the other way.
+    /// </summary>
     private static Joint Limb(EmotePartState part)
-        => FromGame(part.Pitch, -part.Yaw, -part.Roll) with { Dx = part.X, Dy = -part.Y, Dz = -part.Z };
+    {
+        var joint = FromGame(part.Pitch, -part.Yaw, -part.Roll) with { Dx = part.X, Dy = -part.Y, Dz = -part.Z };
+
+        if (part.Bend == 0)
+        {
+            return joint;
+        }
+
+        var bend = WholeTurnsOff(part.Bend);
+        var (sin, cos) = Math.SinCos(part.BendAxis);
+        return joint with { Bx = bend * cos, Bz = -bend * sin };
+    }
+
+    /// <summary>The same angle between half a turn back and half a turn on: the mod bends by no more.</summary>
+    private static double WholeTurnsOff(double angle) => Math.IEEERemainder(angle, Math.PI * 2);
 
     /// <summary>
     /// The game hangs the chest from the neck, this figure stands it on the waist. A turn
     /// about the one is the same turn about the other plus a shift: where the turn would
     /// have carried the waist.
     /// </summary>
-    private static Joint Chest(EmotePartState part)
+    /// <remarks>
+    /// The chest bends by what the file gives the chest and the whole body together, and
+    /// its hinge is turned the other way round from a limb's: the mod cuts the chest from
+    /// the opposite end, so that it is the shoulders that move.
+    /// </remarks>
+    private static Joint Chest(EmotePartState part, EmotePartState body)
     {
-        var joint = Limb(part);
+        var joint = Limb(part with { Bend = 0 });
+        var bend = WholeTurnsOff(part.Bend + body.Bend);
+
+        if (bend != 0)
+        {
+            var (sin, cos) = Math.SinCos(part.BendAxis + body.BendAxis);
+            joint = joint with { Bx = bend * cos, Bz = bend * sin };
+        }
 
         if (joint.Rx == 0 && joint.Ry == 0 && joint.Rz == 0)
         {
@@ -864,33 +953,44 @@ public sealed class SkinViewer : Control
     /// A textured box in the standard skin layout: the six faces unfold from the texture
     /// origin (u, v) the way every skin editor draws them.
     /// </summary>
+    /// <remarks>
+    /// <c>FromRow</c> and <c>ToRow</c> cut a piece out of the box's height, in pixel rows
+    /// counted down from its top: half of a part that bends. An end that is a cut has no
+    /// cap and is not inflated - there is more of the same part beyond it.
+    /// </remarks>
     private sealed record Box(
         double X, double Y, double Z,
         double Width, double Height, double Depth,
         double U, double V,
         double Inflate = 0,
-        bool Mirror = false)
+        bool Mirror = false,
+        double? FromRow = null,
+        double? ToRow = null)
     {
         public IEnumerable<Face> Faces()
         {
+            var fromRow = FromRow ?? 0;
+            var toRow = ToRow ?? Height;
+
             var x0 = X - Inflate;
             var x1 = X + Width + Inflate;
-            var y0 = Y - Inflate;
-            var y1 = Y + Height + Inflate;
+            var y0 = ToRow is null ? Y - Inflate : Y + Height - toRow;
+            var y1 = FromRow is null ? Y + Height + Inflate : Y + Height - fromRow;
             var z0 = Z - Inflate;
             var z1 = Z + Depth + Inflate;
 
             var w = Width;
-            var h = Height;
+            var h = toRow - fromRow;
             var d = Depth;
+            var v = V + d + fromRow;
 
             // Texture layout: top and bottom above, then right, front, left, back in a row.
             var top = new Rect(U + d, V, w, d);
             var bottom = new Rect(U + d + w, V, w, d);
-            var right = new Rect(U, V + d, d, h);
-            var front = new Rect(U + d, V + d, w, h);
-            var left = new Rect(U + d + w, V + d, d, h);
-            var back = new Rect(U + 2 * d + w, V + d, w, h);
+            var right = new Rect(U, v, d, h);
+            var front = new Rect(U + d, v, w, h);
+            var left = new Rect(U + d + w, v, d, h);
+            var back = new Rect(U + 2 * d + w, v, w, h);
 
             if (Mirror)
             {
@@ -905,18 +1005,170 @@ public sealed class SkinViewer : Control
             yield return new Face(new[] { new Vector3(x1, y1, z0), new Vector3(x0, y1, z0), new Vector3(x0, y0, z0), new Vector3(x1, y0, z0) }, new Vector3(0, 0, -1), back);
             yield return new Face(new[] { new Vector3(x1, y1, z1), new Vector3(x1, y1, z0), new Vector3(x1, y0, z0), new Vector3(x1, y0, z1) }, new Vector3(1, 0, 0), left);
             yield return new Face(new[] { new Vector3(x0, y1, z0), new Vector3(x0, y1, z1), new Vector3(x0, y0, z1), new Vector3(x0, y0, z0) }, new Vector3(-1, 0, 0), right);
-            yield return new Face(new[] { new Vector3(x0, y1, z0), new Vector3(x1, y1, z0), new Vector3(x1, y1, z1), new Vector3(x0, y1, z1) }, new Vector3(0, 1, 0), top);
-            yield return new Face(new[] { new Vector3(x0, y0, z1), new Vector3(x1, y0, z1), new Vector3(x1, y0, z0), new Vector3(x0, y0, z0) }, new Vector3(0, -1, 0), bottom);
+            if (FromRow is null)
+            {
+                yield return new Face(new[] { new Vector3(x0, y1, z0), new Vector3(x1, y1, z0), new Vector3(x1, y1, z1), new Vector3(x0, y1, z1) }, new Vector3(0, 1, 0), top);
+            }
+
+            if (ToRow is null)
+            {
+                yield return new Face(new[] { new Vector3(x0, y0, z1), new Vector3(x1, y0, z1), new Vector3(x1, y0, z0), new Vector3(x0, y0, z0) }, new Vector3(0, -1, 0), bottom);
+            }
+        }
+
+        public Box Rows(double? from, double? to) => this with { FromRow = from, ToRow = to };
+    }
+
+    /// <summary>
+    /// What a bend does to the points beyond it: a turn about a line through
+    /// <c>Pivot</c> that lies across the part, along (Ax, 0, Az).
+    /// </summary>
+    /// <remarks>
+    /// <c>Squash</c> and <c>Stretch</c> are for the slice that fills a joint, and one for
+    /// everything else: before the turn the slice is made narrower across the hinge and
+    /// as tall as the gap it has to close.
+    /// </remarks>
+    private readonly record struct Hinge(Vector3 Pivot, double Ax, double Az, double Sin, double Cos, double Squash = 1, double Stretch = 1)
+    {
+        public Vector3 Move(Vector3 point)
+        {
+            var x = point.X - Pivot.X;
+            var y = point.Y - Pivot.Y;
+            var z = point.Z - Pivot.Z;
+
+            if (Squash != 1 || Stretch != 1)
+            {
+                var across = (z * Ax - x * Az) * (Squash - 1);
+                x -= Az * across;
+                z += Ax * across;
+                y *= Stretch;
+            }
+
+            var turned = Turn(new Vector3(x, y, z));
+            return new Vector3(turned.X + Pivot.X, turned.Y + Pivot.Y, turned.Z + Pivot.Z);
+        }
+
+        /// <summary>A direction under the turn alone.</summary>
+        public Vector3 Turn(Vector3 v)
+        {
+            var along = (v.X * Ax + v.Z * Az) * (1 - Cos);
+
+            return new Vector3(
+                v.X * Cos - Az * v.Y * Sin + Ax * along,
+                v.Y * Cos + (Az * v.X - Ax * v.Z) * Sin,
+                v.Z * Cos + Ax * v.Y * Sin + Az * along);
         }
     }
 
-    /// <summary>A body part: the box, the outer layer wrapped around it on a modern skin, and the joint it turns about.</summary>
+    /// <summary>
+    /// A body part: the box, the outer layer wrapped around it on a modern skin, and the
+    /// joint it turns about. Half of a bent part is a part too, with the hinge it has
+    /// folded on; <c>Lean</c> is the fold of the chest, for what rides on the shoulders.
+    /// </summary>
     private sealed record Part(Box Base, Box? Overlay, PartKind Kind, Vector3 Pivot)
     {
-        public Vector3 Centre => new(Base.X + Base.Width / 2, Base.Y + Base.Height / 2, Base.Z + Base.Depth / 2);
+        public Hinge? Hinge { get; init; }
+
+        public Hinge? Lean { get; init; }
+
+        /// <summary>True for the slice between the two halves of a bent part.</summary>
+        public bool FillsJoint { get; init; }
+
+        public Vector3 Centre
+        {
+            get
+            {
+                var from = Base.FromRow ?? 0;
+                var to = Base.ToRow ?? Base.Height;
+                return new Vector3(Base.X + Base.Width / 2, Base.Y + Base.Height - (from + to) / 2, Base.Z + Base.Depth / 2);
+            }
+        }
     }
 
-    /// <summary>The player: head, body, two arms, two legs, each with its outer layer and its joint.</summary>
+    /// <summary>A part with how far back it is in this frame, and its place in the model for parts equally far.</summary>
+    private readonly record struct Piece(Part Part, double Depth, int Order);
+
+    private static readonly Comparison<Piece> BackToFront = (a, b) =>
+    {
+        var byDepth = a.Depth.CompareTo(b.Depth);
+        return byDepth != 0 ? byDepth : a.Order.CompareTo(b.Order);
+    };
+
+    /// <summary>Below this a bend is no bend, as in the mod: the part stays one box.</summary>
+    private const double SmallestBend = 0.0001;
+
+    /// <summary>Where the chest folds: the middle of its box, six pixels under the neck, as in the mod.</summary>
+    private static readonly Vector3 ChestMiddle = new(0, 18, 0);
+
+    /// <summary>The fold a joint's bend makes about the middle of its part, or none.</summary>
+    private static Hinge? Fold(Joint joint, Vector3 middle)
+    {
+        var angle = Math.Sqrt(joint.Bx * joint.Bx + joint.Bz * joint.Bz);
+
+        if (angle < SmallestBend)
+        {
+            return null;
+        }
+
+        var (sin, cos) = Math.SinCos(angle);
+        return new Hinge(middle, joint.Bx / angle, joint.Bz / angle, sin, cos);
+    }
+
+    /// <summary>
+    /// The player as posed: every part, and each part that the pose bends as its two
+    /// halves with the slice that fills the joint listed ahead of them.
+    /// </summary>
+    private static IEnumerable<Part> Model(PlayerSkin skin, Pose pose)
+    {
+        var lean = Fold(pose.Body, ChestMiddle);
+
+        foreach (var part in Model(skin))
+        {
+            var box = part.Base;
+            var middle = box.Height / 2;
+            var chest = part.Kind == PartKind.Body;
+            var rides = part.Kind is PartKind.Head or PartKind.RightArm or PartKind.LeftArm ? lean : null;
+            var bent = chest ? lean
+                : part.Kind == PartKind.Head ? null
+                : Fold(pose.For(part.Kind), new Vector3(box.X + box.Width / 2, box.Y + middle, box.Z + box.Depth / 2));
+
+            if (bent is not { } fold)
+            {
+                yield return rides is null ? part : part with { Lean = rides };
+                continue;
+            }
+
+            // The turn opens a wedge on the outer side of the joint: as wide, at the
+            // skin, as the part reaches out from the hinge. The slice between the halves
+            // is turned half-way, drawn in until its outer face runs from the edge of
+            // one half to the edge of the other, and made as tall as that: the elbow
+            // comes out cut off at a slant, with no gap, and nothing sticks out of it.
+            var sinHalf = Math.Sqrt(Math.Max(0, (1 - fold.Cos) / 2));
+            var cosHalf = Math.Sqrt(Math.Max(0, (1 + fold.Cos) / 2));
+            var inflate = part.Overlay?.Inflate ?? 0;
+            var reach = (box.Width / 2 + inflate) * Math.Abs(fold.Az) + (box.Depth / 2 + inflate) * Math.Abs(fold.Ax);
+            var fill = fold with { Sin = sinHalf, Cos = cosHalf, Squash = cosHalf, Stretch = reach * sinHalf };
+
+            // It is the chest's upper half that moves, a limb's lower one.
+            yield return new Part(box.Rows(middle - 1, middle + 1), part.Overlay?.Rows(middle - 1, middle + 1), part.Kind, part.Pivot)
+            {
+                Hinge = fill, Lean = rides, FillsJoint = true
+            };
+            yield return new Part(box.Rows(null, middle), part.Overlay?.Rows(null, middle), part.Kind, part.Pivot)
+            {
+                Hinge = chest ? fold : null, Lean = rides
+            };
+            yield return new Part(box.Rows(middle, null), part.Overlay?.Rows(middle, null), part.Kind, part.Pivot)
+            {
+                Hinge = chest ? null : fold, Lean = rides
+            };
+        }
+    }
+
+    /// <summary>
+    /// The player: head, body, two arms, two legs, each with its outer layer and its
+    /// joint. The body comes before the arms: what it bends by, they lean by.
+    /// </summary>
     private static IEnumerable<Part> Model(PlayerSkin skin)
     {
         var arm = skin.IsSlim ? 3 : 4;
