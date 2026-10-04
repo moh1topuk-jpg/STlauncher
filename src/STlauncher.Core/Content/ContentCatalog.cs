@@ -134,6 +134,17 @@ public sealed class ContentCatalog
 
         return null;
     }
+
+    // A server for friends.
+
+    /// <summary>
+    /// Where the relay for "a server for friends" listens, as "host:port" (see
+    /// docs/relay.md). Empty means there is no relay: friends can still be reached
+    /// through a port mapping or a public address. The invite carries the address the
+    /// host used, so a guest never needs this field.
+    /// </summary>
+    [JsonPropertyName("friendsRelay")]
+    public string? FriendsRelay { get; set; }
 }
 
 public sealed class CatalogBuild

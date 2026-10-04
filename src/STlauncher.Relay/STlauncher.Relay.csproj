@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The relay for "a server for friends". It runs on the owner's VPS, not on a player's
+    machine, so it shares nothing with the launcher: no project references and no
+    packages, which keeps the published single file small. How to publish and run it
+    is in docs/relay.md.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>stlauncher-relay</AssemblyName>
+    <RootNamespace>STlauncher.Relay</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+</Project>
