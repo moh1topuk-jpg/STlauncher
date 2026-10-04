@@ -21,7 +21,11 @@ public sealed record ModpackOverride(string Path, string SourcePath);
 /// </summary>
 public static class ModpackWriter
 {
-    /// <summary>The only hosts the format lets an index point at.</summary>
+    /// <summary>
+    /// The only hosts the format lets an index point at. CurseForge's CDN is not one of
+    /// them, and other launchers refuse a pack that names it - so a file installed from
+    /// CurseForge and not found on Modrinth travels inside the pack, under overrides.
+    /// </summary>
     private static readonly string[] AllowedHosts =
     {
         "cdn.modrinth.com", "github.com", "raw.githubusercontent.com", "gitlab.com"

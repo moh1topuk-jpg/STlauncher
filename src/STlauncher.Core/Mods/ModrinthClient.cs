@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using STlauncher.Core.Instances;
 using STlauncher.Core.Loaders;
 
 namespace STlauncher.Core.Mods;
@@ -16,7 +17,11 @@ namespace STlauncher.Core.Mods;
 /// </summary>
 public sealed record ModCategory(string Name, string Header)
 {
-    public string Display => string.IsNullOrWhiteSpace(Name) ? Header : Humanize(Name);
+    /// <summary>The source's own label, when it has one: CurseForge names its categories, Modrinth does not.</summary>
+    public string? Title { get; init; }
+
+    public string Display => !string.IsNullOrWhiteSpace(Title) ? Title!
+        : string.IsNullOrWhiteSpace(Name) ? Header : Humanize(Name);
 
     private static string Humanize(string name)
     {
@@ -47,6 +52,12 @@ public sealed record ModProject(
 
     /// <summary>"mod", "resourcepack", "shader" - what folder the file belongs in.</summary>
     public string ProjectType { get; init; } = ProjectTypes.Mod;
+
+    /// <summary>Where the project came from. See <see cref="IModSource"/>.</summary>
+    public ModSource Source { get; init; } = ModSource.Modrinth;
+
+    /// <summary>The project's page on the source's site, when the source gives one (CurseForge does).</summary>
+    public string? PageUrl { get; init; }
 }
 
 /// <summary>Modrinth project types the launcher browses. Values are what the API uses.</summary>
@@ -82,6 +93,12 @@ public sealed record ModSearchResult(
 {
     /// <summary>Modrinth category names ("optimization", "utility"); the loaders are filtered out.</summary>
     public IReadOnlyList<string> Categories { get; init; } = Array.Empty<string>();
+
+    /// <summary>Which source this hit is from, so one list can hold both and install from the right one.</summary>
+    public ModSource Source { get; init; } = ModSource.Modrinth;
+
+    /// <summary>The project's page on the source's site, when the source gives one (CurseForge does).</summary>
+    public string? PageUrl { get; init; }
 }
 
 /// <summary>Another project a version needs, or works with. Only "required" is acted on.</summary>
@@ -113,6 +130,15 @@ public sealed record ModVersion(
     /// <summary>The project this version belongs to. Filled in by the hash lookups.</summary>
     public string? ProjectId { get; init; }
 
+    public ModSource Source { get; init; } = ModSource.Modrinth;
+
+    /// <summary>
+    /// The page a person can take this file from by hand. CurseForge sets it: a file whose
+    /// author switched off third-party downloads comes with an empty <see cref="ModFile.Url"/>,
+    /// and this is what the player is offered instead.
+    /// </summary>
+    public string? PageUrl { get; init; }
+
     public ModFile? PrimaryFile => Files.FirstOrDefault(f => f.Primary) ?? Files.FirstOrDefault();
 
     /// <summary>
@@ -124,11 +150,13 @@ public sealed record ModVersion(
         => ModrinthClient.SelectFile(this, gameVersion, loader);
 }
 
-public sealed class ModrinthClient
+public sealed class ModrinthClient : IModSource
 {
     private const string BaseUrl = "https://api.modrinth.com/v2";
 
     private readonly HttpClient _http;
+
+    public ModSource Source => ModSource.Modrinth;
 
     public ModrinthClient(HttpClient http)
     {

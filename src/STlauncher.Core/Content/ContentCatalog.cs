@@ -73,6 +73,14 @@ public sealed class ContentCatalog
     [JsonPropertyName("reportUrl")]
     public string? ReportUrl { get; set; }
 
+    /// <summary>
+    /// Where the launcher asks CurseForge through the owner's key (see docs/curseforge.md).
+    /// The launcher ships with the mirror's /cf; this overrides it without a release, and
+    /// an empty value switches CurseForge off for everyone.
+    /// </summary>
+    [JsonPropertyName("curseForgeUrl")]
+    public string? CurseForgeUrl { get; set; }
+
     /// <summary>Every update mirror the catalog names, single field first.</summary>
     public IEnumerable<string> AllUpdateFeeds()
     {

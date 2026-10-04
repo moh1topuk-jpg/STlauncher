@@ -27,6 +27,10 @@
  * Bindings expected:
  *   Variable  REPO   "moh1topuk-jpg/STlauncher"
  *   Secret    TOKEN  optional; only needed if the repository is private
+ *
+ * Two more things live here because this is the one address every launcher knows:
+ * support reports (POST /report) and the CurseForge proxy (/cf/...). Each is described
+ * where its code starts and stays switched off until its secrets are set.
  */
 
 const API = 'https://api.github.com';
@@ -50,6 +54,35 @@ const CATALOG_CACHE_SECONDS = 60;
  */
 const REPORT_MAX_BYTES = 8 * 1024 * 1024;
 
+/**
+ * CurseForge, the launcher's second mod source. Its API wants a key on every call, and a
+ * key cannot ship inside an open-source launcher - so the launcher asks this worker, and
+ * the worker asks CurseForge with the key added. Only the handful of calls the launcher
+ * makes are let through, only for Minecraft, and answers are kept at the edge for a few
+ * minutes so a page of search results costs the key one request, not one per player.
+ *
+ *   GET  /cf/ping   200 when the key is set and CurseForge accepts it, 503 otherwise
+ *                   (the launcher hides CurseForge until this answers 200)
+ *   GET  /cf/v1/... the calls listed in curseforgeRoute()
+ *   POST /cf/v1/fingerprints/432   which CurseForge files a set of jars are
+ *
+ * Bindings (see docs/curseforge.md):
+ *   Secret   CF_API_KEY   the API key from console.curseforge.com
+ */
+const CF_API = 'https://api.curseforge.com';
+
+/** Minecraft. Nothing else is served: the key is the owner's, not a public gateway. */
+const CF_GAME_ID = 432;
+
+/** Mods, resource packs, shaders - the three tabs of the launcher's browser. */
+const CF_CLASSES = ['6', '12', '6552'];
+
+/** Search pages and file lists move slowly; five minutes is fresh enough to install from. */
+const CF_CACHE_SECONDS = 300;
+
+/** A mods folder is a few hundred jars at the very most. */
+const CF_MAX_FINGERPRINTS = 1000;
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -58,6 +91,10 @@ export default {
     if (name === 'report') {
       // A GET answers 200 so the launcher can tell this mirror takes reports before showing the button.
       return request.method === 'POST' ? report(request, env) : text('post a report here');
+    }
+
+    if (name.startsWith('cf/')) {
+      return curseforge(request, env, url, name.slice('cf/'.length));
     }
 
     if (request.method !== 'GET' && request.method !== 'HEAD') {
@@ -276,5 +313,231 @@ async function report(request, env) {
   }
 
   return text('delivered');
+}
+
+/** The CurseForge proxy. `path` is what follows /cf/ in the address. */
+async function curseforge(request, env, url, path) {
+  if (!env.CF_API_KEY) {
+    return text('curseforge is not set up on this mirror', 503);
+  }
+
+  try {
+    if (path === 'ping') {
+      // A key that is set but refused would show the launcher a source that cannot answer,
+      // so the probe asks CurseForge one small cached question with it.
+      const probe = await curseforgeFetch(`${CF_API}/v1/games/${CF_GAME_ID}`, env);
+      return probe.ok ? text('ok') : text(`curseforge refused the key (HTTP ${probe.status})`, 503);
+    }
+
+    // The launcher always says who it is; a script that found the address does not.
+    if (!request.headers.get('x-stlauncher')) {
+      return text('forbidden', 403);
+    }
+
+    if (request.method === 'POST') {
+      return path === `v1/fingerprints/${CF_GAME_ID}`
+        ? await curseforgeFingerprints(request, env)
+        : text('not found', 404);
+    }
+
+    if (request.method !== 'GET') {
+      return text('method not allowed', 405);
+    }
+
+    const route = curseforgeRoute(path, url.searchParams);
+
+    if (!route) {
+      return text('not found', 404);
+    }
+
+    // A mod id says nothing about its game, so the mod itself is asked first. The answer
+    // sits in the edge cache, which makes the next call about the same mod free.
+    if (route.modId && !(await isMinecraftMod(route.modId, env))) {
+      return text('not found', 404);
+    }
+
+    return curseforgeAnswer(await curseforgeFetch(route.target, env), CF_CACHE_SECONDS);
+  } catch (error) {
+    console.log(`curseforge failed: ${error}`);
+    return text('curseforge unavailable', 502);
+  }
+}
+
+/**
+ * Maps a launcher request to the CurseForge call it stands for, or null when it is not
+ * one of the launcher's. The query is rebuilt from known parameters in a fixed order:
+ * nothing unexpected travels on the owner's key, and the same question always lands on
+ * the same cache entry.
+ */
+function curseforgeRoute(path, query) {
+  const pick = (name, pattern) => {
+    const value = query.get(name);
+    return value !== null && pattern.test(value) ? value : null;
+  };
+
+  const build = (base, pairs) => {
+    const out = new URLSearchParams();
+
+    for (const [key, value] of pairs) {
+      if (value !== null && value !== '') {
+        out.set(key, value);
+      }
+    }
+
+    const tail = out.toString();
+    return `${CF_API}/${base}${tail ? '?' + tail : ''}`;
+  };
+
+  const paging = () => [
+    ['index', pick('index', /^\d{1,4}$/) ?? '0'],
+    ['pageSize', String(Math.min(Math.max(Number(pick('pageSize', /^\d{1,3}$/) ?? 20), 1), 50))],
+  ];
+
+  const gameVersion = () => pick('gameVersion', /^[0-9A-Za-z][0-9A-Za-z. _-]{0,31}$/);
+  const loader = () => pick('modLoaderType', /^[0-6]$/);
+  const classId = query.get('classId');
+
+  if (path === 'v1/mods/search') {
+    if (!CF_CLASSES.includes(classId)) {
+      return null;
+    }
+
+    return {
+      target: build('v1/mods/search', [
+        ['gameId', String(CF_GAME_ID)],
+        ['classId', classId],
+        ['categoryId', pick('categoryId', /^\d{1,9}$/)],
+        ['gameVersion', gameVersion()],
+        ['modLoaderType', loader()],
+        ['searchFilter', (query.get('searchFilter') ?? '').trim().slice(0, 100)],
+        ['slug', pick('slug', /^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/)],
+        ['sortField', pick('sortField', /^([1-9]|1[0-2])$/)],
+        ['sortOrder', pick('sortOrder', /^(asc|desc)$/)],
+        ...paging(),
+      ]),
+    };
+  }
+
+  if (path === 'v1/categories') {
+    return CF_CLASSES.includes(classId)
+      ? { target: build('v1/categories', [['gameId', String(CF_GAME_ID)], ['classId', classId]]) }
+      : null;
+  }
+
+  // /v1/mods/<id>, its description, its files, one file, and that file's download address.
+  const mod = /^v1\/mods\/(\d{1,10})(\/description|\/files(?:\/\d{1,10}(?:\/download-url)?)?)?$/.exec(path);
+
+  if (!mod) {
+    return null;
+  }
+
+  const modId = mod[1];
+
+  if (mod[2] === '/files') {
+    return {
+      modId,
+      target: build(`v1/mods/${modId}/files`, [
+        ['gameVersion', gameVersion()],
+        ['modLoaderType', loader()],
+        ...paging(),
+      ]),
+    };
+  }
+
+  return { modId, target: `${CF_API}/${path}` };
+}
+
+function curseforgeFetch(target, env) {
+  return fetch(target, {
+    headers: {
+      accept: 'application/json',
+      'x-api-key': env.CF_API_KEY,
+      'user-agent': 'STlauncher-update-mirror',
+    },
+    cf: { cacheEverything: true, cacheTtl: CF_CACHE_SECONDS },
+  });
+}
+
+/**
+ * Mod ids already checked, for as long as this instance of the worker lives. A mod never
+ * changes its game, so remembering it saves the lookup even where the edge cache does not.
+ */
+const minecraftMods = new Map();
+
+/** True when the mod is a Minecraft one. */
+async function isMinecraftMod(modId, env) {
+  if (minecraftMods.has(modId)) {
+    return minecraftMods.get(modId);
+  }
+
+  const response = await curseforgeFetch(`${CF_API}/v1/mods/${modId}`, env);
+
+  // Not remembered: a refusal may be CurseForge having a bad minute.
+  if (!response.ok) {
+    return false;
+  }
+
+  const body = await response.json();
+  const answer = body?.data?.gameId === CF_GAME_ID;
+
+  if (minecraftMods.size >= 5000) {
+    minecraftMods.clear();
+  }
+
+  minecraftMods.set(modId, answer);
+  return answer;
+}
+
+/** Which CurseForge files a set of jars are. The body is rebuilt from numbers, never forwarded as sent. */
+async function curseforgeFingerprints(request, env) {
+  let body;
+  try {
+    body = await request.json();
+  } catch (error) {
+    return text('bad request', 400);
+  }
+
+  const list = Array.isArray(body?.fingerprints) ? body.fingerprints : [];
+  const valid = list.length > 0 &&
+    list.length <= CF_MAX_FINGERPRINTS &&
+    list.every(n => Number.isInteger(n) && n >= 0 && n <= 0xffffffff);
+
+  if (!valid) {
+    return text('bad request', 400);
+  }
+
+  const upstream = await fetch(`${CF_API}/v1/fingerprints/${CF_GAME_ID}`, {
+    method: 'POST',
+    headers: {
+      accept: 'application/json',
+      'content-type': 'application/json',
+      'x-api-key': env.CF_API_KEY,
+      'user-agent': 'STlauncher-update-mirror',
+    },
+    body: JSON.stringify({ fingerprints: list }),
+  });
+
+  return curseforgeAnswer(upstream, 0);
+}
+
+/** CurseForge's JSON on success; otherwise a plain status the launcher can tell apart. */
+function curseforgeAnswer(upstream, cacheSeconds) {
+  // 403 on a download address is the author's "no third-party downloads", not a fault.
+  if (upstream.status === 403 || upstream.status === 404) {
+    return text(upstream.status === 403 ? 'forbidden' : 'not found', upstream.status);
+  }
+
+  if (!upstream.ok) {
+    return text(`upstream ${upstream.status}`, 502);
+  }
+
+  return new Response(upstream.body, {
+    status: 200,
+    headers: {
+      'content-type': 'application/json; charset=utf-8',
+      'cache-control': cacheSeconds > 0 ? `public, max-age=${cacheSeconds}` : 'no-store',
+      'access-control-allow-origin': '*',
+    },
+  });
 }
 
