@@ -89,7 +89,4 @@ public sealed class HostedServer
 
     [JsonPropertyName("friendsDirect")]
     public bool FriendsDirect { get; set; }
-
-    [JsonPropertyName("friendsPublic")]
-    public bool FriendsPublic { get; set; }
 }

@@ -312,7 +312,7 @@ public sealed class FriendsHostSession : IAsyncDisposable
         Update(s => s with { Direct = FriendsWayState.Off, DirectFailure = UpnpFailure.None, DirectAddress = null, DirectVerified = false });
     }
 
-    /// <summary>Records the public address (from <see cref="PlayitAgent"/>) for the invite. Null or malformed clears it.</summary>
+    /// <summary>Records the public address for the invite. Null or malformed clears it.</summary>
     public void SetPublicAddress(string? address)
     {
         var normalized = HostPort.TryNormalize(address, out var value) ? value : null;

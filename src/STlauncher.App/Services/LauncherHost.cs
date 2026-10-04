@@ -107,7 +107,6 @@ public static class LauncherHost
         services.AddSingleton<STlauncher.Core.Hosting.ServerInstaller>();
         services.AddSingleton<STlauncher.Core.Hosting.ServerJava>();
         services.AddSingleton<STlauncher.Core.Hosting.ServerRunner>();
-        services.AddSingleton<STlauncher.Core.Friends.PlayitAgent>();
         services.AddSingleton<STlauncher.Core.Friends.FriendServerStore>();
         services.AddSingleton<HostingServices>();
 

@@ -125,7 +125,6 @@ public class FriendServerStoreTests
         var server = store.Create("Friends", "1.21.1");
         server.HostKey = RelayKeys.NewHostKey();
         server.FriendsRelay = true;
-        server.FriendsPublic = true;
         store.Save(server);
 
         var read = store.List().Single();
@@ -133,6 +132,5 @@ public class FriendServerStoreTests
         Assert.Equal(server.HostKey, read.HostKey);
         Assert.True(read.FriendsRelay);
         Assert.False(read.FriendsDirect);
-        Assert.True(read.FriendsPublic);
     }
 }

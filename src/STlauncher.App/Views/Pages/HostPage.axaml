@@ -465,7 +465,6 @@
                                                     <Panel>
                                                         <PathIcon Data="{StaticResource IconUsers}" Classes="gold" IsVisible="{Binding IsRelay}"/>
                                                         <PathIcon Data="{StaticResource IconDirect}" Classes="gold" IsVisible="{Binding IsDirect}"/>
-                                                        <PathIcon Data="{StaticResource IconGlobe}" Classes="gold" IsVisible="{Binding IsPublic}"/>
                                                     </Panel>
                                                 </Border>
                                                 <TextBlock Grid.Column="1" Text="{Binding Title}" Classes="h3" FontSize="15"
@@ -515,19 +514,6 @@
                                                 </Grid>
                                             </Border>
 
-                                            <!-- A page to open on playit.gg; the address itself is shown, not hidden behind the button. -->
-                                            <StackPanel Spacing="5" IsVisible="{Binding HasLink}">
-                                                <TextBlock Text="{Binding LinkUrl}" Classes="mono" FontSize="11.5"
-                                                           Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
-                                                <Button Classes="ghost small" HorizontalAlignment="Left"
-                                                        Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).OpenHostWayLinkCommand}"
-                                                        CommandParameter="{Binding}">
-                                                    <StackPanel Orientation="Horizontal" Spacing="6">
-                                                        <PathIcon Data="{StaticResource IconOpenExternal}" Classes="small"/>
-                                                        <TextBlock Text="{Binding LinkLabel}"/>
-                                                    </StackPanel>
-                                                </Button>
-                                            </StackPanel>
                                         </StackPanel>
                                     </Border>
                                 </DataTemplate>

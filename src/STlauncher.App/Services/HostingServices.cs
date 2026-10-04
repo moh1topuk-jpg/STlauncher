@@ -14,14 +14,12 @@ public sealed class HostingServices
         ServerInstaller installer,
         ServerJava java,
         ServerRunner runner,
-        PlayitAgent playit,
         FriendServerStore friends)
     {
         Store = store;
         Installer = installer;
         Java = java;
         Runner = runner;
-        Playit = playit;
         Friends = friends;
     }
 
@@ -33,8 +31,6 @@ public sealed class HostingServices
 
     /// <summary>One for the whole launcher: it is what knows which servers are running.</summary>
     public ServerRunner Runner { get; }
-
-    public PlayitAgent Playit { get; }
 
     public FriendServerStore Friends { get; }
 }

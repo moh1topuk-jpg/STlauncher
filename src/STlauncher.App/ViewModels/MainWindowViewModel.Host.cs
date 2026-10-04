@@ -43,8 +43,7 @@ public sealed record HostWorldChoice(string Display, string? FolderName, long Si
 public enum HostWayKind
 {
     Relay,
-    Direct,
-    Public
+    Direct
 }
 
 /// <summary>One way friends can reach the server: its switch, what it does and where it stands.</summary>
@@ -60,8 +59,6 @@ public partial class HostWayItem : ObservableObject
     public bool IsRelay => Kind == HostWayKind.Relay;
 
     public bool IsDirect => Kind == HostWayKind.Direct;
-
-    public bool IsPublic => Kind == HostWayKind.Public;
 
     [ObservableProperty]
     private string _title = string.Empty;
@@ -97,14 +94,6 @@ public partial class HostWayItem : ObservableObject
     [NotifyPropertyChangedFor(nameof(HasAddress))]
     private string _address = string.Empty;
 
-    /// <summary>A page the player has to open to finish setting the way up.</summary>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasLink))]
-    private string _linkUrl = string.Empty;
-
-    [ObservableProperty]
-    private string _linkLabel = string.Empty;
-
     public bool IsOff => State == FriendsWayState.Off;
 
     public bool IsWorking => State == FriendsWayState.Working;
@@ -114,8 +103,6 @@ public partial class HostWayItem : ObservableObject
     public bool IsFailed => State == FriendsWayState.Failed;
 
     public bool HasAddress => Address.Length > 0;
-
-    public bool HasLink => LinkUrl.Length > 0;
 }
 
 /// <summary>
@@ -140,8 +127,6 @@ public partial class MainWindowViewModel
     private FriendsHostSession? _hostSession;
 
     private CancellationTokenSource? _hostDirectCts;
-    private bool _hostPlayitInstalling;
-    private string _hostPlayitProgress = string.Empty;
 
     private readonly ConcurrentQueue<string> _hostPendingLines = new();
     private DispatcherTimer? _hostConsoleTimer;
@@ -156,7 +141,6 @@ public partial class MainWindowViewModel
         HostWays.Add(new HostWayItem(HostWayKind.Relay));
         HostWays.Add(new HostWayItem(HostWayKind.Direct));
 
-        hosting.Playit.StatusChanged += _ => Dispatcher.UIThread.Post(RefreshHostWays);
 
         // Subscribed before the window's own handler, so by the time the window is asked
         // to close this already knows the launcher itself asked for it (the game ended).
@@ -193,13 +177,6 @@ public partial class MainWindowViewModel
             _hostLoaded = true;
             LoadHostServers();
             LoadFriendServers();
-
-            // A playit agent left behind by a session that never got to stop it (a crash,
-            // an older launcher) is ended before the page says the public way is off.
-            if (!_hosting.Playit.IsRunning)
-            {
-                _ = _hosting.Playit.StopAsync();
-            }
         }
 
         // The catalog, which names the relay, may have arrived since the last look.
@@ -1826,15 +1803,6 @@ public partial class MainWindowViewModel
             AppendConsole($"[host] closing the ways: {ex.Message}");
         }
 
-        try
-        {
-            await _hosting.Playit.StopAsync();
-        }
-        catch (Exception ex)
-        {
-            AppendConsole($"[host] playit: {ex.Message}");
-        }
-
         RefreshHostWays();
     }
 
@@ -1858,77 +1826,6 @@ public partial class MainWindowViewModel
         RefreshHostWays();
     }
 
-    /// <param name="askedNow">
-    /// The player has just flipped the switch, having read what it downloads. A switch
-    /// remembered from an earlier day starts the agent that is already here, but never
-    /// downloads it again on its own.
-    /// </param>
-    private async Task StartHostPublicAsync(HostedServer server, bool askedNow)
-    {
-        var playit = _hosting.Playit;
-
-        if (playit.Download is null)
-        {
-            return;
-        }
-
-        if (!playit.IsInstalled)
-        {
-            if (!askedNow)
-            {
-                server.FriendsPublic = false;
-                SaveHostServer(server);
-                RefreshHostWays();
-                return;
-            }
-
-            _hostPlayitInstalling = true;
-            _hostPlayitProgress = string.Empty;
-            RefreshHostWays();
-
-            bool installed;
-
-            try
-            {
-                var size = playit.Download.Size;
-                var progress = new Progress<long>(bytes =>
-                {
-                    _hostPlayitProgress = Localize("Host_PublicInstalling", "Downloading playit: {0} of {1}", FormatSize(bytes), FormatSize(size));
-                    RefreshHostWays();
-                });
-
-                installed = await playit.InstallAsync(progress);
-            }
-            catch (Exception ex)
-            {
-                installed = false;
-                AppendConsole($"[host] playit: {ex}");
-            }
-            finally
-            {
-                _hostPlayitInstalling = false;
-            }
-
-            if (!installed)
-            {
-                // Off again, with the reason left in the status line of the way.
-                server.FriendsPublic = false;
-                SaveHostServer(server);
-                RefreshHostWays();
-                return;
-            }
-        }
-
-        // Still wanted, and still for a server that is up: the download may have taken a while.
-        if (server.FriendsPublic && _hostSession is not null &&
-            _hostProcess is { HasExited: false } process && ReferenceEquals(process.Server, server))
-        {
-            await Task.Run(() => playit.Start(server.Port));
-        }
-
-        RefreshHostWays();
-    }
-
     // Concurrent on purpose: asking the router takes seconds, and the other two switches
     // must not go dead while one of them is at work.
     [RelayCommand(AllowConcurrentExecutions = true)]
@@ -1946,11 +1843,8 @@ public partial class MainWindowViewModel
             case HostWayKind.Relay:
                 server.FriendsRelay = on;
                 break;
-            case HostWayKind.Direct:
-                server.FriendsDirect = on;
-                break;
             default:
-                server.FriendsPublic = on;
+                server.FriendsDirect = on;
                 break;
         }
 
@@ -1988,33 +1882,6 @@ public partial class MainWindowViewModel
 
                     break;
 
-                case HostWayKind.Public:
-                    if (RelayLocation.Resolve(_loadedCatalog) is not null)
-                    {
-                        if (session is null)
-                        {
-                            break;
-                        }
-
-                        if (on)
-                        {
-                            session.StartPublic();
-                        }
-                        else
-                        {
-                            await session.StopPublicAsync();
-                        }
-                    }
-                    else if (on)
-                    {
-                        await StartHostPublicAsync(server, askedNow: true);
-                    }
-                    else
-                    {
-                        await _hosting.Playit.StopAsync();
-                    }
-
-                    break;
             }
         }
         catch (Exception ex)
@@ -2048,7 +1915,6 @@ public partial class MainWindowViewModel
         relayWay.Title = Localize("Host_WayRelay", "Friends only");
         relayWay.Description = Localize("Host_WayRelayText", "Friends with STlauncher join by the invite. Nothing to set up: the connection goes through a relay server, no ports to open.");
         relayWay.Address = string.Empty;
-        relayWay.LinkUrl = string.Empty;
 
         if (relay is null)
         {
@@ -2097,7 +1963,6 @@ public partial class MainWindowViewModel
         directWay.Warning = Localize("Host_WayDirectWarning", "Open ports are required. This works only when your provider gives you a public IP address and the router has UPnP on, or port {0} is forwarded by hand. Otherwise friends will not get through: use the invite way.", port);
         directWay.CanSwitch = server is not null;
         directWay.IsOn = server?.FriendsDirect == true;
-        directWay.LinkUrl = string.Empty;
         directWay.Address = string.Empty;
 
         if (!directWay.IsOn)
@@ -2140,150 +2005,7 @@ public partial class MainWindowViewModel
             }
         }
 
-        // The public-address way (the relay's own port, or playit.gg) is not offered: on an
-        // offline-mode server anyone who learns the address can come in under a listed
-        // nickname. The code below stays for the day accounts can be verified.
-        if (HostWays.Count < 3)
-        {
-            return;
-        }
-
-        // ---- A public address through playit.gg ----
-        var publicWay = HostWays[2];
-        var playit = _hosting.Playit;
-        var agent = playit.Status;
-
-        publicWay.Title = Localize("Host_WayPublic", "A public address");
-        publicWay.Address = string.Empty;
-        publicWay.LinkUrl = string.Empty;
-        publicWay.LinkLabel = string.Empty;
-
-        if (relay is not null)
-        {
-            // The relay gives the address itself: nothing to download, no account anywhere.
-            publicWay.Description = Localize("Host_WayPublicRelayText", "An address anyone on the list can join by, even without STlauncher: they type it into Minecraft. The connection goes through the go-between server; nothing is downloaded and no account is needed.");
-            publicWay.CanSwitch = server is not null;
-            publicWay.IsOn = server?.FriendsPublic == true;
-
-            if (!publicWay.IsOn)
-            {
-                publicWay.State = FriendsWayState.Off;
-                publicWay.StatusText = off;
-            }
-            else if (status is null)
-            {
-                publicWay.State = FriendsWayState.Off;
-                publicWay.StatusText = pending;
-            }
-            else
-            {
-                publicWay.State = status.Public == FriendsWayState.Off ? FriendsWayState.Working : status.Public;
-                publicWay.Address = status.PublicAddress ?? string.Empty;
-                publicWay.StatusText = status.Public switch
-                {
-                    FriendsWayState.Ready => Localize("Host_PublicReady", "Ready: this address can be given to any player on the list"),
-                    FriendsWayState.Failed when status.PublicFailure == RelayFailure.None => Localize("Host_PublicRelayNone", "The go-between server has no free public address right now. Friends with STlauncher can still join by the invite."),
-                    _ => status.PublicFailure switch
-                    {
-                        RelayFailure.RelayUnreachable => Localize("Host_RelayUnreachable", "The relay {0} does not answer. The launcher keeps trying.", relay),
-                        RelayFailure.RelayBusy => Localize("Host_RelayBusy", "The relay is at its limit right now. The launcher keeps trying."),
-                        RelayFailure.Rejected => Localize("Host_RelayRejected", "The relay refused the connection: the launcher may need an update."),
-                        _ => Localize("Host_PublicRelayWorking", "Getting an address…")
-                    }
-                };
-            }
-
-            return;
-        }
-
-        if (playit.Download is not { } download)
-        {
-            publicWay.Description = Localize("Host_WayPublicTextPlain", "A lasting address anyone can join by, even without STlauncher. Works through playit.gg.");
-            publicWay.CanSwitch = false;
-            publicWay.IsOn = false;
-            publicWay.State = FriendsWayState.Off;
-            publicWay.StatusText = Localize("Host_WayPublicUnsupported", "playit.gg has no program for this system.");
-        }
-        else
-        {
-            publicWay.Description = playit.IsInstalled
-                ? Localize("Host_WayPublicTextInstalled", "A lasting address anyone can join by, even without STlauncher. Works through playit.gg: the playit program is already downloaded. A free playit.gg account is needed.")
-                : Localize("Host_WayPublicTextDownload", "A lasting address anyone can join by, even without STlauncher. Works through playit.gg: switching it on downloads the playit program {0} from {1}, {2}. A free playit.gg account is needed.", download.Version, HostOfUrl(download.Url), FormatSize(download.Size));
-
-            publicWay.CanSwitch = server is not null && !_hostPlayitInstalling;
-            publicWay.IsOn = server?.FriendsPublic == true;
-
-            if (_hostPlayitInstalling)
-            {
-                publicWay.State = FriendsWayState.Working;
-                publicWay.StatusText = _hostPlayitProgress.Length > 0
-                    ? _hostPlayitProgress
-                    : Localize("Host_PublicInstalling", "Downloading playit: {0} of {1}", FormatSize(0), FormatSize(download.Size));
-            }
-            else if (!publicWay.IsOn)
-            {
-                // A way that switched itself back off says why.
-                publicWay.State = agent.Failure == PlayitFailure.None ? FriendsWayState.Off : FriendsWayState.Failed;
-                publicWay.StatusText = agent.Failure == PlayitFailure.None ? off : DescribePlayitFailure(agent.Failure);
-            }
-            else if (status is null)
-            {
-                publicWay.State = FriendsWayState.Off;
-                publicWay.StatusText = pending;
-            }
-            else
-            {
-                switch (agent.State)
-                {
-                    case PlayitState.Running:
-                        publicWay.State = FriendsWayState.Ready;
-                        publicWay.Address = agent.PublicAddress ?? string.Empty;
-                        publicWay.StatusText = Localize("Host_PublicReady", "Ready: this address can be given to any player on the list");
-                        break;
-
-                    case PlayitState.WaitingForClaim:
-                        publicWay.State = FriendsWayState.Working;
-                        publicWay.StatusText = Localize("Host_PublicClaim", "Open the link and approve the agent in your playit.gg account");
-                        publicWay.LinkUrl = agent.ClaimUrl ?? string.Empty;
-                        publicWay.LinkLabel = Localize("Host_PublicClaimLink", "Open playit.gg");
-                        break;
-
-                    case PlayitState.WaitingForTunnel:
-                        publicWay.State = FriendsWayState.Working;
-                        publicWay.StatusText = Localize("Host_PublicTunnel", "The account is linked. Add a “Minecraft Java” tunnel to port {0} on the site - the address will show up here.", port);
-                        publicWay.LinkUrl = agent.ManageUrl ?? string.Empty;
-                        publicWay.LinkLabel = Localize("Host_PublicTunnelLink", "Open the tunnel settings");
-                        break;
-
-                    case PlayitState.Failed:
-                        publicWay.State = FriendsWayState.Failed;
-                        publicWay.StatusText = DescribePlayitFailure(agent.Failure);
-                        break;
-
-                    default:
-                        publicWay.State = agent.Failure == PlayitFailure.None ? FriendsWayState.Working : FriendsWayState.Failed;
-                        publicWay.StatusText = agent.Failure == PlayitFailure.None
-                            ? Localize("Host_PublicStarting", "Starting playit…")
-                            : DescribePlayitFailure(agent.Failure);
-                        break;
-                }
-            }
-        }
-
-        // The invite carries the public address only while the tunnel really is up.
-        _hostSession?.SetPublicAddress(agent.State == PlayitState.Running ? agent.PublicAddress : null);
     }
-
-    private static string DescribePlayitFailure(PlayitFailure failure) => failure switch
-    {
-        PlayitFailure.UnsupportedPlatform => Localize("Host_WayPublicUnsupported", "playit.gg has no program for this system."),
-        PlayitFailure.DownloadFailed => Localize("Host_PublicDownloadFailed", "The playit program could not be downloaded: GitHub does not answer."),
-        PlayitFailure.HashMismatch => Localize("Host_PublicHashMismatch", "The downloaded playit file is not the one expected. It was not run."),
-        PlayitFailure.StartFailed => Localize("Host_PublicStartFailed", "Windows would not start the playit program."),
-        PlayitFailure.ClaimRejected => Localize("Host_PublicClaimRejected", "The link was declined on playit.gg."),
-        PlayitFailure.Exited => Localize("Host_PublicExited", "The playit program closed by itself. Switch the way off and on again."),
-        _ => Localize("Host_WayOff", "Off")
-    };
 
     private static string HostOfUrl(string url)
         => Uri.TryCreate(url, UriKind.Absolute, out var uri) ? uri.Host : url;
@@ -2304,16 +2026,6 @@ public partial class MainWindowViewModel
         catch (Exception ex)
         {
             Status = Localize("Error_Ui", "Something went wrong: {0}", ex.Message);
-        }
-    }
-
-    /// <summary>Opens the page a way asks for. Only a web address goes to the browser, whatever the agent printed.</summary>
-    [RelayCommand]
-    private void OpenHostWayLink(HostWayItem? way)
-    {
-        if (way is not null && way.LinkUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-        {
-            OpenUrl(way.LinkUrl);
         }
     }
 
@@ -2415,7 +2127,7 @@ public partial class MainWindowViewModel
     private string _hostCloseAction = string.Empty;
 
     /// <summary>True while a server of the player's is up, or anything opened for it still is.</summary>
-    private bool HasRunningHost => _hosting.Runner.Running.Count > 0 || _hostSession is not null || _hosting.Playit.IsRunning;
+    private bool HasRunningHost => _hosting.Runner.Running.Count > 0 || _hostSession is not null;
 
     /// <summary>
     /// Asked by the window when something wants to close it. True means "not yet": the
@@ -2529,14 +2241,6 @@ public partial class MainWindowViewModel
             {
                 await session.StopAsync().ConfigureAwait(false);
             }
-        }
-        catch (Exception)
-        {
-        }
-
-        try
-        {
-            await _hosting.Playit.StopAsync().ConfigureAwait(false);
         }
         catch (Exception)
         {
