@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -197,9 +198,29 @@ public sealed class ServerRunner
 
         try
         {
-            var listener = new TcpListener(IPAddress.Any, port) { ExclusiveAddressUse = true };
-            listener.Start();
-            listener.Stop();
+            // Looked up, not tried. A listening socket of the launcher's own, even one
+            // closed a moment later, makes Windows ask the player whether the launcher
+            // may accept connections - a question about the wrong program, asked by a
+            // page that was only opened.
+            return IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpListeners().All(e => e.Port != port);
+        }
+        catch (Exception ex) when (ex is NetworkInformationException or PlatformNotSupportedException or NotImplementedException)
+        {
+            return CanBind(port);
+        }
+    }
+
+    /// <summary>For a system that will not list its listeners: the port is bound but never listened on.</summary>
+    private static bool CanBind(int port)
+    {
+        try
+        {
+            using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
+            {
+                ExclusiveAddressUse = true
+            };
+
+            socket.Bind(new IPEndPoint(IPAddress.Any, port));
             return true;
         }
         catch (SocketException)

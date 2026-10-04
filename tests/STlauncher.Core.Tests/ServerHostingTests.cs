@@ -874,7 +874,9 @@ public class ServerRunnerTests
 
         store.AcceptEula(server, playerAccepted: true);
 
-        using (var taken = new System.Net.Sockets.TcpListener(IPAddress.Any, 0))
+        // On the loopback address: a listener on every address would make Windows ask
+        // whether the test host may accept connections.
+        using (var taken = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0))
         {
             taken.Start();
             server.Port = ((IPEndPoint)taken.LocalEndpoint).Port;
