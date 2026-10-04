@@ -1184,6 +1184,9 @@
     <x:String x:Key="Host_PublicClaimLink">Open playit.gg</x:String>
     <x:String x:Key="Host_PublicTunnel">The account is linked. Add a “Minecraft Java” tunnel to port {0} on the site - the address will show up here.</x:String>
     <x:String x:Key="Host_PublicTunnelLink">Open the tunnel settings</x:String>
+    <x:String x:Key="Host_WayPublicRelayText">An address anyone on the list can join by, even without STlauncher: they type it into Minecraft. The connection goes through the go-between server; nothing is downloaded and no account is needed.</x:String>
+    <x:String x:Key="Host_PublicRelayNone">The go-between server has no free public address right now. Friends with STlauncher can still join by the invite.</x:String>
+    <x:String x:Key="Host_PublicRelayWorking">Getting an address…</x:String>
     <x:String x:Key="Host_PublicReady">Ready: this address can be given to any player on the list</x:String>
     <x:String x:Key="Host_PublicDownloadFailed">The playit program could not be downloaded: GitHub does not answer.</x:String>
     <x:String x:Key="Host_PublicHashMismatch">The downloaded playit file is not the one expected. It was not run.</x:String>

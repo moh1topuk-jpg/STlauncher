@@ -38,14 +38,22 @@ public sealed class RelayHost : IAsyncDisposable
     private Task? _loop;
     private RelayHostState _state = RelayHostState.Stopped;
     private RelayFailure _failure = RelayFailure.None;
+    private readonly bool _wantPublic;
     private int _active;
+    private int _publicPort;
 
     /// <param name="hostKey">
     /// The key of an earlier session, to reopen the same room so invites already sent
     /// keep working. Null or malformed makes a fresh one.
     /// </param>
-    public RelayHost(RelayEndpoint relay, int serverPort, string? hostKey = null, RelayClientOptions? options = null)
+    /// <param name="wantPublic">
+    /// Ask the relay for a public port: an address anyone can type into Minecraft, no
+    /// launcher needed. The relay may have none to give; <see cref="PublicPort"/> says.
+    /// </param>
+    public RelayHost(RelayEndpoint relay, int serverPort, string? hostKey = null, RelayClientOptions? options = null, bool wantPublic = false)
     {
+        _wantPublic = wantPublic;
+
         Relay = relay ?? throw new ArgumentNullException(nameof(relay));
 
         if (serverPort is < 1 or > 65535)
@@ -92,6 +100,9 @@ public sealed class RelayHost : IAsyncDisposable
             }
         }
     }
+
+    /// <summary>The port on the relay that leads to this server, or 0 when there is none.</summary>
+    public int PublicPort => Volatile.Read(ref _publicPort);
 
     /// <summary>Friends' connections being carried right now.</summary>
     public int ActiveConnections => Volatile.Read(ref _active);
@@ -188,13 +199,22 @@ public sealed class RelayHost : IAsyncDisposable
             using var client = await RelayWire.DialAsync(Relay, _options.ConnectTimeout, token).ConfigureAwait(false);
             var stream = client.GetStream();
 
-            var answer = await RelayWire.AskAsync(stream, "HOST " + HostKey, _options.AnswerTimeout, token).ConfigureAwait(false);
+            var answer = await RelayWire.AskAsync(stream, _wantPublic ? "HOST " + HostKey + " PUBLIC" : "HOST " + HostKey, _options.AnswerTimeout, token).ConfigureAwait(false);
+            var port = 0;
 
-            if (answer != "OK")
+            // "OK <port>" is a room with a public address.
+            if (answer is not null && answer.StartsWith("OK ", StringComparison.Ordinal) &&
+                int.TryParse(answer.AsSpan(3), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var given) &&
+                given is > 0 and <= 65535)
+            {
+                port = given;
+            }
+            else if (answer != "OK")
             {
                 return (RelayWire.FailureOf(answer), false);
             }
 
+            Volatile.Write(ref _publicPort, port);
             online = true;
             SetState(RelayHostState.Online, RelayFailure.None);
 

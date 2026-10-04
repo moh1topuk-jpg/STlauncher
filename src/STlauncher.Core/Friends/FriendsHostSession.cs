@@ -36,6 +36,15 @@ public sealed record FriendsHostStatus(
     string? RoomKey,
     string? PublicAddress)
 {
+    /// <summary>The public address given by the relay itself: off, being asked for, there, or not to be had.</summary>
+    public FriendsWayState Public { get; init; }
+
+    /// <summary>
+    /// Why <see cref="Public"/> failed. None with a failed state means the relay answered
+    /// but has no public port to give.
+    /// </summary>
+    public RelayFailure PublicFailure { get; init; }
+
     /// <summary>
     /// What goes into an invite right now. The relay is included while it is only being
     /// reconnected: the invite is read later than it is written, and the room keeps its key.
@@ -68,6 +77,7 @@ public sealed class FriendsHostSession : IAsyncDisposable
     private readonly object _gate = new();
 
     private RelayHost? _host;
+    private RelayHost? _publicHost;
     private UpnpPortMapper? _mapper;
     private FriendsHostStatus _status;
 
@@ -157,6 +167,56 @@ public sealed class FriendsHostSession : IAsyncDisposable
         }
 
         Update(s => s with { Relay = FriendsWayState.Off, RelayFailure = _relay is null ? RelayFailure.NotConfigured : RelayFailure.None, RoomKey = null });
+    }
+
+    /// <summary>
+    /// Asks the relay for a public address: "relay-host:port", which anyone can type into
+    /// Minecraft with no launcher and no account anywhere. Returns false when no relay is
+    /// configured. The address arrives in <see cref="FriendsHostStatus.PublicAddress"/>.
+    /// </summary>
+    public bool StartPublic()
+    {
+        if (_relay is null)
+        {
+            Update(s => s with { Public = FriendsWayState.Failed, PublicFailure = RelayFailure.NotConfigured });
+            return false;
+        }
+
+        RelayHost host;
+
+        lock (_gate)
+        {
+            if (_publicHost is not null)
+            {
+                return true;
+            }
+
+            host = _publicHost = new RelayHost(_relay, ServerPort, RelayKeys.PublicHostKeyFor(HostKey), _options, wantPublic: true);
+        }
+
+        host.StateChanged += _ => OnPublicChanged(host);
+        host.Start();
+        OnPublicChanged(host);
+        return true;
+    }
+
+    public async Task StopPublicAsync()
+    {
+        RelayHost? host;
+
+        lock (_gate)
+        {
+            host = _publicHost;
+            _publicHost = null;
+        }
+
+        if (host is null)
+        {
+            return;
+        }
+
+        await host.StopAsync().ConfigureAwait(false);
+        Update(s => s with { Public = FriendsWayState.Off, PublicFailure = RelayFailure.None, PublicAddress = null });
     }
 
     /// <summary>
@@ -266,6 +326,7 @@ public sealed class FriendsHostSession : IAsyncDisposable
     public async Task StopAsync()
     {
         await StopRelayAsync().ConfigureAwait(false);
+        await StopPublicAsync().ConfigureAwait(false);
         await CloseDirectAsync().ConfigureAwait(false);
 
         UpnpPortMapper? mapper;
@@ -315,6 +376,45 @@ public sealed class FriendsHostSession : IAsyncDisposable
         };
 
         Update(s => s with { Relay = state, RelayFailure = host.LastFailure, RoomKey = host.RoomKey });
+    }
+
+    private void OnPublicChanged(RelayHost host)
+    {
+        lock (_gate)
+        {
+            if (!ReferenceEquals(host, _publicHost))
+            {
+                return;
+            }
+        }
+
+        var port = host.PublicPort;
+
+        switch (host.State)
+        {
+            case RelayHostState.Online when port > 0:
+                Update(s => s with { Public = FriendsWayState.Ready, PublicFailure = RelayFailure.None, PublicAddress = HostPort.Format(_relay!.Host, port) });
+                break;
+
+            case RelayHostState.Online:
+                // The relay is there but hands out no public ports, or all are taken.
+                Update(s => s with { Public = FriendsWayState.Failed, PublicFailure = RelayFailure.None, PublicAddress = null });
+                break;
+
+            case RelayHostState.Failed:
+                Update(s => s with { Public = FriendsWayState.Failed, PublicFailure = host.LastFailure, PublicAddress = null });
+                break;
+
+            case RelayHostState.Stopped:
+                Update(s => s with { Public = FriendsWayState.Off, PublicFailure = RelayFailure.None, PublicAddress = null });
+                break;
+
+            default:
+                // Reconnecting keeps the address in the invite: the port follows from the
+                // key, so the room comes back where it was.
+                Update(s => s with { Public = FriendsWayState.Working, PublicFailure = host.LastFailure });
+                break;
+        }
     }
 
     private FriendsHostStatus Update(Func<FriendsHostStatus, FriendsHostStatus> change)

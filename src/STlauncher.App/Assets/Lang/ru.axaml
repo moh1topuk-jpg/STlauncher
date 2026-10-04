@@ -1184,6 +1184,9 @@
     <x:String x:Key="Host_PublicClaimLink">Открыть playit.gg</x:String>
     <x:String x:Key="Host_PublicTunnel">Аккаунт привязан. Добавьте на сайте туннель «Minecraft Java» на порт {0} — адрес появится здесь.</x:String>
     <x:String x:Key="Host_PublicTunnelLink">Открыть настройки туннеля</x:String>
+    <x:String x:Key="Host_WayPublicRelayText">Адрес, по которому зайдёт любой игрок из списка, даже без STlauncher: его вводят прямо в Minecraft. Соединение идёт через сервер-посредник, ничего скачивать и нигде регистрироваться не нужно.</x:String>
+    <x:String x:Key="Host_PublicRelayNone">У сервера-посредника сейчас нет свободного публичного адреса. Друзья с STlauncher по-прежнему зайдут по приглашению.</x:String>
+    <x:String x:Key="Host_PublicRelayWorking">Получаем адрес…</x:String>
     <x:String x:Key="Host_PublicReady">Готово: этот адрес можно дать любому игроку из списка</x:String>
     <x:String x:Key="Host_PublicDownloadFailed">Не удалось скачать программу playit: GitHub не отвечает.</x:String>
     <x:String x:Key="Host_PublicHashMismatch">Скачанный файл playit не тот, что ожидался. Он не был запущен.</x:String>

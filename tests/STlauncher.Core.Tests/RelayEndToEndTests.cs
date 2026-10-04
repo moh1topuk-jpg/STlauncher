@@ -483,6 +483,48 @@ public class RelayEndToEndTests
     }
 
     [Fact]
+    public async Task A_public_address_from_the_relay_leads_a_plain_client_to_the_server()
+    {
+        var port = FreePort();
+        await using var relay = StartRelay(o => { o.PublicPortFrom = port; o.PublicPortCount = 1; });
+        await using var server = new StatusServer("public hello");
+
+        await using var session = new FriendsHostSession(server.Port, EndpointOf(relay), null, Quick());
+        Assert.True(session.StartPublic());
+        await Until(() => session.Status.Public == FriendsWayState.Ready);
+
+        // No launcher on this side: the address is pinged the way Minecraft would.
+        Assert.Equal("127.0.0.1:" + port, session.Status.PublicAddress);
+        Assert.Equal("127.0.0.1:" + port, session.Status.Endpoints.Public);
+
+        var answer = await ServerPinger.PingAsync("127.0.0.1", port, TimeSpan.FromSeconds(5));
+        Assert.Equal("public hello", answer!.Motd);
+
+        // The one port is taken, so a second server gets none and says so.
+        await using var second = new FriendsHostSession(server.Port, EndpointOf(relay), null, Quick());
+        Assert.True(second.StartPublic());
+        await Until(() => second.Status.Public == FriendsWayState.Failed);
+        Assert.Equal(RelayFailure.None, second.Status.PublicFailure);
+        Assert.Null(second.Status.PublicAddress);
+
+        // Switched off, the address stops answering and the port is free again.
+        await session.StopPublicAsync();
+        Assert.Null(session.Status.PublicAddress);
+        await Until(() => relay.Stats.Rooms == 1);
+    }
+
+    [Fact]
+    public async Task A_relay_without_public_ports_gives_none()
+    {
+        await using var relay = StartRelay(o => o.PublicPortFrom = 0);
+        await using var session = new FriendsHostSession(25565, EndpointOf(relay), null, Quick());
+
+        Assert.True(session.StartPublic());
+        await Until(() => session.Status.Public == FriendsWayState.Failed);
+        Assert.Null(session.Status.PublicAddress);
+    }
+
+    [Fact]
     public async Task Without_a_relay_the_session_says_so_and_a_dead_invite_leads_nowhere()
     {
         await using var session = new FriendsHostSession(25565, null);

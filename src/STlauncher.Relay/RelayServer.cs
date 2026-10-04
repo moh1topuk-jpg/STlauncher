@@ -50,6 +50,9 @@ public sealed class RelayServer : IAsyncDisposable
     /// <summary>How many rooms each address holds; read and written under the lock on <see cref="_rooms"/>.</summary>
     private readonly Dictionary<IPAddress, int> _roomsByOwner = new();
 
+    /// <summary>Public ports in use, guarded by the <see cref="_rooms"/> lock.</summary>
+    private readonly HashSet<int> _publicPorts = new();
+
     private readonly ConcurrentDictionary<Socket, byte> _sockets = new();
     private readonly IpGate _gate;
 
@@ -293,7 +296,11 @@ public sealed class RelayServer : IAsyncDisposable
             switch (parts[0])
             {
                 case "HOST" when parts.Length == 2:
-                    await ServeHostAsync(socket, address, parts[1]).ConfigureAwait(false);
+                    await ServeHostAsync(socket, address, parts[1], wantPublic: false).ConfigureAwait(false);
+                    break;
+
+                case "HOST" when parts.Length == 3 && parts[2] == "PUBLIC":
+                    await ServeHostAsync(socket, address, parts[1], wantPublic: true).ConfigureAwait(false);
                     break;
 
                 case "JOIN" when parts.Length == 2:
@@ -326,7 +333,7 @@ public sealed class RelayServer : IAsyncDisposable
         }
     }
 
-    private async Task ServeHostAsync(Socket socket, IPAddress address, string hostKeyText)
+    private async Task ServeHostAsync(Socket socket, IPAddress address, string hostKeyText, bool wantPublic)
     {
         if (!TryKey(hostKeyText, out var hostKey))
         {
@@ -379,7 +386,11 @@ public sealed class RelayServer : IAsyncDisposable
 
         try
         {
-            if (!await SendControlAsync(room, socket, "OK").ConfigureAwait(false))
+            // "OK <port>" when the room has a public address, plain "OK" when it asked for
+            // none or there is none to give: the host then simply has no public way.
+            var publicPort = wantPublic ? OpenPublic(room, roomKey) : 0;
+
+            if (!await SendControlAsync(room, socket, publicPort > 0 ? "OK " + publicPort.ToString(CultureInfo.InvariantCulture) : "OK").ConfigureAwait(false))
             {
                 return;
             }
@@ -451,10 +462,22 @@ public sealed class RelayServer : IAsyncDisposable
             return;
         }
 
+        await BridgeGuestAsync(guest, room, speaksProtocol: true).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Brings a guest and the room's host together. A guest that came through the room's
+    /// public port is a plain Minecraft client: it is told nothing in the relay's own
+    /// words, a refusal is simply the connection closing.
+    /// </summary>
+    private async Task BridgeGuestAsync(Socket guest, Room room, bool speaksProtocol)
+    {
+        Task Say(string line) => speaksProtocol ? SendLineAsync(guest, line) : Task.CompletedTask;
+
         if (Interlocked.Increment(ref room.Guests) > _options.MaxGuestsPerRoom)
         {
             Interlocked.Decrement(ref room.Guests);
-            await SendLineAsync(guest, "ERR FULL").ConfigureAwait(false);
+            await Say("ERR FULL").ConfigureAwait(false);
             return;
         }
 
@@ -470,7 +493,7 @@ public sealed class RelayServer : IAsyncDisposable
             {
                 if (!await SendControlAsync(room, null, "OPEN " + connId).ConfigureAwait(false))
                 {
-                    await SendLineAsync(guest, "ERR NOHOST").ConfigureAwait(false);
+                    await Say("ERR NOHOST").ConfigureAwait(false);
                     return;
                 }
 
@@ -478,17 +501,17 @@ public sealed class RelayServer : IAsyncDisposable
             }
             catch (TimeoutException)
             {
-                await SendLineAsync(guest, "ERR TIMEOUT").ConfigureAwait(false);
+                await Say("ERR TIMEOUT").ConfigureAwait(false);
                 return;
             }
             catch (OperationCanceledException)
             {
-                await SendLineAsync(guest, "ERR NOHOST").ConfigureAwait(false);
+                await Say("ERR NOHOST").ConfigureAwait(false);
                 return;
             }
 
             if (!await SendLineAsync(host, "OK").ConfigureAwait(false) ||
-                !await SendLineAsync(guest, "OK").ConfigureAwait(false))
+                (speaksProtocol && !await SendLineAsync(guest, "OK").ConfigureAwait(false)))
             {
                 return;
             }
@@ -513,6 +536,170 @@ public sealed class RelayServer : IAsyncDisposable
             pending.Host.TrySetCanceled();
             pending.Done.TrySetResult();
             Interlocked.Decrement(ref room.Guests);
+        }
+    }
+
+    /// <summary>
+    /// Gives the room a port of its own and starts taking connections on it. The port
+    /// follows from the room key, so a host that comes back gets the address it had and
+    /// what it told its friends stays true. Returns 0 when public addresses are off or
+    /// every port is taken.
+    /// </summary>
+    private int OpenPublic(Room room, string roomKey)
+    {
+        var count = _options.PublicPortFrom <= 0 ? 0 : Math.Min(_options.PublicPortCount, 65536 - _options.PublicPortFrom);
+
+        if (count <= 0)
+        {
+            return 0;
+        }
+
+        Socket? listener = null;
+        var port = 0;
+
+        lock (_rooms)
+        {
+            if (room.PublicPort > 0)
+            {
+                return room.PublicPort;
+            }
+
+            if (room.Closed.IsCancellationRequested)
+            {
+                return 0;
+            }
+
+            var first = (int)(Convert.ToUInt32(roomKey[..8], 16) % (uint)count);
+
+            for (var i = 0; i < count && listener is null; i++)
+            {
+                var candidate = _options.PublicPortFrom + ((first + i) % count);
+
+                if (_publicPorts.Contains(candidate))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    listener = Listen(_options.Bind, candidate);
+                    port = candidate;
+                }
+                catch (SocketException)
+                {
+                    // Taken by something else on the machine: the next one.
+                }
+            }
+
+            if (listener is null)
+            {
+                return 0;
+            }
+
+            _publicPorts.Add(port);
+            room.PublicPort = port;
+        }
+
+        _ = Task.Run(() => PublicAcceptLoopAsync(room, listener, port));
+        return port;
+    }
+
+    private async Task PublicAcceptLoopAsync(Room room, Socket listener, int port)
+    {
+        var token = room.Closed.Token;
+
+        try
+        {
+            while (!token.IsCancellationRequested)
+            {
+                Socket socket;
+
+                try
+                {
+                    socket = await listener.AcceptAsync(token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+                catch (ObjectDisposedException)
+                {
+                    break;
+                }
+                catch (SocketException)
+                {
+                    try
+                    {
+                        await Task.Delay(50, token).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
+
+                    continue;
+                }
+
+                IPAddress address;
+
+                try
+                {
+                    address = Normalize(((IPEndPoint)socket.RemoteEndPoint!).Address);
+                }
+                catch (Exception)
+                {
+                    Close(socket);
+                    continue;
+                }
+
+                // The same doors as on the main port: a public address is found by
+                // scanners within minutes.
+                if (Volatile.Read(ref _connections) >= _options.MaxConnections)
+                {
+                    Close(socket);
+                    continue;
+                }
+
+                var gateKey = GateKey(address);
+
+                if (!_gate.TryEnter(gateKey))
+                {
+                    Close(socket);
+                    continue;
+                }
+
+                Interlocked.Increment(ref _connections);
+                _sockets.TryAdd(socket, 0);
+                _ = Task.Run(() => ServePublicAsync(socket, room, gateKey));
+            }
+        }
+        finally
+        {
+            Close(listener);
+
+            lock (_rooms)
+            {
+                _publicPorts.Remove(port);
+            }
+        }
+    }
+
+    private async Task ServePublicAsync(Socket socket, Room room, IPAddress gateKey)
+    {
+        try
+        {
+            socket.NoDelay = true;
+            await BridgeGuestAsync(socket, room, speaksProtocol: false).ConfigureAwait(false);
+        }
+        catch (Exception)
+        {
+        }
+        finally
+        {
+            _sockets.TryRemove(socket, out _);
+            Close(socket);
+            _gate.Leave(gateKey);
+            Interlocked.Decrement(ref _connections);
         }
     }
 
@@ -915,6 +1102,9 @@ public sealed class RelayServer : IAsyncDisposable
 
         public volatile Socket Control;
         public int Guests;
+
+        /// <summary>The room's public port, or 0. Set once, under the rooms lock.</summary>
+        public volatile int PublicPort;
 
         public ConcurrentDictionary<string, Pending> Pending { get; } = new(StringComparer.Ordinal);
         public SemaphoreSlim WriteLock { get; } = new(1, 1);

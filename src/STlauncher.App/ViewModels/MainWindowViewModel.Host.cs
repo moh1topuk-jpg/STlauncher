@@ -1802,7 +1802,12 @@ public partial class MainWindowViewModel
 
         if (server.FriendsPublic)
         {
-            _ = StartHostPublicAsync(server, askedNow: false);
+            // With a relay the address comes from it at once; playit.gg is what is left
+            // for a launcher that has no relay to ask.
+            if (!session.StartPublic())
+            {
+                _ = StartHostPublicAsync(server, askedNow: false);
+            }
         }
 
         RefreshHostWays();
@@ -1988,7 +1993,23 @@ public partial class MainWindowViewModel
                     break;
 
                 case HostWayKind.Public:
-                    if (on)
+                    if (RelayLocation.Resolve(_loadedCatalog) is not null)
+                    {
+                        if (session is null)
+                        {
+                            break;
+                        }
+
+                        if (on)
+                        {
+                            session.StartPublic();
+                        }
+                        else
+                        {
+                            await session.StopPublicAsync();
+                        }
+                    }
+                    else if (on)
                     {
                         await StartHostPublicAsync(server, askedNow: true);
                     }
@@ -2131,6 +2152,44 @@ public partial class MainWindowViewModel
         publicWay.Address = string.Empty;
         publicWay.LinkUrl = string.Empty;
         publicWay.LinkLabel = string.Empty;
+
+        if (relay is not null)
+        {
+            // The relay gives the address itself: nothing to download, no account anywhere.
+            publicWay.Description = Localize("Host_WayPublicRelayText", "An address anyone on the list can join by, even without STlauncher: they type it into Minecraft. The connection goes through the go-between server; nothing is downloaded and no account is needed.");
+            publicWay.CanSwitch = server is not null;
+            publicWay.IsOn = server?.FriendsPublic == true;
+
+            if (!publicWay.IsOn)
+            {
+                publicWay.State = FriendsWayState.Off;
+                publicWay.StatusText = off;
+            }
+            else if (status is null)
+            {
+                publicWay.State = FriendsWayState.Off;
+                publicWay.StatusText = pending;
+            }
+            else
+            {
+                publicWay.State = status.Public == FriendsWayState.Off ? FriendsWayState.Working : status.Public;
+                publicWay.Address = status.PublicAddress ?? string.Empty;
+                publicWay.StatusText = status.Public switch
+                {
+                    FriendsWayState.Ready => Localize("Host_PublicReady", "Ready: this address can be given to any player on the list"),
+                    FriendsWayState.Failed when status.PublicFailure == RelayFailure.None => Localize("Host_PublicRelayNone", "The go-between server has no free public address right now. Friends with STlauncher can still join by the invite."),
+                    _ => status.PublicFailure switch
+                    {
+                        RelayFailure.RelayUnreachable => Localize("Host_RelayUnreachable", "The relay {0} does not answer. The launcher keeps trying.", relay),
+                        RelayFailure.RelayBusy => Localize("Host_RelayBusy", "The relay is at its limit right now. The launcher keeps trying."),
+                        RelayFailure.Rejected => Localize("Host_RelayRejected", "The relay refused the connection: the launcher may need an update."),
+                        _ => Localize("Host_PublicRelayWorking", "Getting an address…")
+                    }
+                };
+            }
+
+            return;
+        }
 
         if (playit.Download is not { } download)
         {

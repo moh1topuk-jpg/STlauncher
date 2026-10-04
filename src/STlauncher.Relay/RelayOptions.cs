@@ -72,6 +72,16 @@ public sealed class RelayOptions
     /// <summary>How long PROBE tries to connect back before answering UNREACHABLE.</summary>
     public TimeSpan ProbeTimeout { get; set; } = TimeSpan.FromSeconds(3);
 
+    /// <summary>
+    /// The first of the ports handed out as public addresses: a host that asks for one gets
+    /// "relay-host:port", and whoever connects there is carried to its server with no
+    /// launcher on their side. Zero turns public addresses off.
+    /// </summary>
+    public int PublicPortFrom { get; set; } = 25600;
+
+    /// <summary>How many ports after <see cref="PublicPortFrom"/> may be handed out.</summary>
+    public int PublicPortCount { get; set; } = 100;
+
     /// <summary>How often the counters are printed. Zero turns that off.</summary>
     public TimeSpan StatsInterval { get; set; } = TimeSpan.FromMinutes(10);
 
@@ -93,6 +103,8 @@ public sealed class RelayOptions
         new("max-per-ip", 1, 100_000, "open connections per address (48)", (o, v) => o.MaxConnectionsPerIp = v),
         new("max-attempts", 1, 1_000_000, "new connections per address per minute (120)", (o, v) => o.MaxAttemptsPerMinute = v),
         new("max-connections", 1, 1_000_000, "open connections in total (2000)", (o, v) => o.MaxConnections = v),
+        new("public-port-from", 0, 65535, "first port given out as a public address, 0 for none (25600)", (o, v) => o.PublicPortFrom = v),
+        new("public-port-count", 1, 10_000, "how many public ports may be given out (100)", (o, v) => o.PublicPortCount = v),
         new("probe-timeout", 1, 30, "seconds PROBE tries to connect back (3)", (o, v) => o.ProbeTimeout = TimeSpan.FromSeconds(v)),
         new("stats-minutes", 0, 1440, "minutes between counter lines, 0 for none (10)", (o, v) => o.StatsInterval = TimeSpan.FromMinutes(v))
     };

@@ -78,6 +78,22 @@ public static class RelayKeys
         return Convert.ToHexString(hash, 0, KeyLength / 2).ToLowerInvariant();
     }
 
+    /// <summary>
+    /// The host key of the server's second room, the one with a public port. Kept apart
+    /// from the invite room so that switching the public address on or off never drops
+    /// the friends who came by invite, and derived so there is only one secret to save.
+    /// </summary>
+    public static string PublicHostKeyFor(string hostKey)
+    {
+        if (!IsKey(hostKey))
+        {
+            throw new ArgumentException("A host key is 32 hex digits.", nameof(hostKey));
+        }
+
+        var hash = SHA256.HashData(System.Text.Encoding.ASCII.GetBytes("public:" + hostKey.ToLowerInvariant()));
+        return Convert.ToHexString(hash, 0, KeyLength / 2).ToLowerInvariant();
+    }
+
     public static bool IsKey(string? text)
     {
         if (text is null || text.Length != KeyLength)
