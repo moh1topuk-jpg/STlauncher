@@ -89,8 +89,16 @@ export default {
     const name = decodeURIComponent(url.pathname.replace(/^\/+/, ''));
 
     if (name === 'report') {
-      // A GET answers 200 so the launcher can tell this mirror takes reports before showing the button.
-      return request.method === 'POST' ? report(request, env) : text('post a report here');
+      // A GET answers 200 so the launcher can tell this mirror takes reports before showing
+      // the button, and 503 while the bot's secrets are missing: a button that can only
+      // fail is worse than none.
+      if (request.method === 'POST') {
+        return report(request, env);
+      }
+
+      return env.TG_BOT_TOKEN && env.TG_CHAT_ID
+        ? text('post a report here')
+        : text('reports are not set up on this mirror', 503);
     }
 
     if (name.startsWith('cf/')) {
