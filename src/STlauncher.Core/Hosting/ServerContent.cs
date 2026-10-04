@@ -71,6 +71,9 @@ public static partial class ServerContent
     /// <summary>Where a replaced world goes inside the server's folder.</summary>
     public const string ReplacedFolderName = ".replaced";
 
+    /// <summary>Added to the world folder's name while a copy is being made beside it.</summary>
+    public const string CopyingSuffix = ".copying";
+
     private const string DisabledSuffix = ".disabled";
 
     [GeneratedRegex(@"^\s*clientSideOnly\s*=\s*true\b", RegexOptions.Multiline | RegexOptions.IgnoreCase)]
@@ -214,23 +217,22 @@ public static partial class ServerContent
         }
 
         var target = WorldDirectory(serverDirectory);
-        string? previous = null;
+        var occupied = Directory.Exists(target) && Directory.EnumerateFileSystemEntries(target).Any();
 
-        if (Directory.Exists(target) && Directory.EnumerateFileSystemEntries(target).Any())
+        if (occupied && !replaceExisting)
         {
-            if (!replaceExisting)
-            {
-                return new WorldCopyResult(WorldCopyStatus.DestinationExists, target);
-            }
+            return new WorldCopyResult(WorldCopyStatus.DestinationExists, target);
+        }
 
-            var replaced = Path.Combine(serverDirectory, ReplacedFolderName);
-            Directory.CreateDirectory(replaced);
+        // Copied beside the world's place and moved in whole. A copy cut short - the disk
+        // full, a file locked, the launcher closed - must never be left looking like a
+        // world: the server would start on it and build the missing regions anew, over
+        // what the player had made. What is found here was left by exactly such a copy.
+        var staging = target + CopyingSuffix;
 
-            previous = Path.Combine(
-                replaced,
-                Path.GetFileName(target) + "-" + DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture));
-
-            Directory.Move(target, previous);
+        if (Directory.Exists(staging))
+        {
+            Directory.Delete(staging, recursive: true);
         }
 
         var files = 0;
@@ -248,7 +250,7 @@ public static partial class ServerContent
                 continue;
             }
 
-            var destination = Path.Combine(target, relative);
+            var destination = Path.Combine(staging, relative);
             Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
             File.Copy(file, destination, overwrite: false);
 
@@ -256,6 +258,27 @@ public static partial class ServerContent
             bytes += new FileInfo(destination).Length;
             bytesCopied?.Report(bytes);
         }
+
+        // Only now, with the whole copy on disk, does the server's earlier world step aside.
+        string? previous = null;
+
+        if (occupied)
+        {
+            var replaced = Path.Combine(serverDirectory, ReplacedFolderName);
+            Directory.CreateDirectory(replaced);
+
+            previous = Path.Combine(
+                replaced,
+                Path.GetFileName(target) + "-" + DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture));
+
+            Directory.Move(target, previous);
+        }
+        else if (Directory.Exists(target))
+        {
+            Directory.Delete(target);
+        }
+
+        Directory.Move(staging, target);
 
         return new WorldCopyResult(WorldCopyStatus.Copied, target, files, bytes, previous);
     }

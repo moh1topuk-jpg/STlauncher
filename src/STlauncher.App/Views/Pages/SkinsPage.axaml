@@ -285,43 +285,54 @@
         <!-- ================= Editor ================= -->
         <Grid IsVisible="{Binding IsSkinEditorOpen}" RowDefinitions="Auto,*" RowSpacing="14" Margin="28,20,28,16">
 
-            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto" ColumnSpacing="10">
-                <Button Classes="glass-icon" Command="{Binding CloseSkinEditorCommand}"
-                        ToolTip.Tip="{DynamicResource Skins_BackToLibrary}">
-                    <PathIcon Data="{StaticResource IconSkinBack}" Classes="small"/>
-                </Button>
+            <StackPanel Spacing="10">
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto" ColumnSpacing="10">
+                    <Button Classes="glass-icon" Command="{Binding CloseSkinEditorCommand}"
+                            ToolTip.Tip="{DynamicResource Skins_BackToLibrary}">
+                        <PathIcon Data="{StaticResource IconSkinBack}" Classes="small"/>
+                    </Button>
 
-                <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
-                    <TextBlock Text="{DynamicResource Skins_EditorLabel}" Classes="label"/>
-                    <TextBlock Text="{Binding EditorTitle}" Classes="h2" FontSize="20" TextTrimming="CharacterEllipsis"/>
-                </StackPanel>
-
-                <Border Grid.Column="2" Classes="pill small" VerticalAlignment="Center">
-                    <StackPanel Orientation="Horizontal" Spacing="7">
-                        <Border Width="7" Height="7" CornerRadius="4" VerticalAlignment="Center"
-                                Background="{DynamicResource SuccessBrush}" IsVisible="{Binding !IsSkinEditorDirty}"/>
-                        <Border Width="7" Height="7" CornerRadius="4" VerticalAlignment="Center"
-                                Background="{DynamicResource WarningBrush}" IsVisible="{Binding IsSkinEditorDirty}"/>
-                        <TextBlock Text="{Binding EditorStateLabel}" VerticalAlignment="Center"/>
+                    <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
+                        <TextBlock Text="{DynamicResource Skins_EditorLabel}" Classes="label"/>
+                        <TextBlock Text="{Binding EditorTitle}" Classes="h2" FontSize="20" TextTrimming="CharacterEllipsis"/>
                     </StackPanel>
+
+                    <Border Grid.Column="2" Classes="pill small" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="7">
+                            <Border Width="7" Height="7" CornerRadius="4" VerticalAlignment="Center"
+                                    Background="{DynamicResource SuccessBrush}" IsVisible="{Binding !IsSkinEditorDirty}"/>
+                            <Border Width="7" Height="7" CornerRadius="4" VerticalAlignment="Center"
+                                    Background="{DynamicResource WarningBrush}" IsVisible="{Binding IsSkinEditorDirty}"/>
+                            <TextBlock Text="{Binding EditorStateLabel}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Button Grid.Column="3" Classes="glass-icon" Command="{Binding UndoSkinCommand}"
+                            IsEnabled="{Binding CanUndoSkin}" ToolTip.Tip="{DynamicResource Skins_Undo}">
+                        <PathIcon Data="{StaticResource IconSkinUndo}" Classes="small"/>
+                    </Button>
+                    <Button Grid.Column="4" Classes="glass-icon" Command="{Binding RedoSkinCommand}"
+                            IsEnabled="{Binding CanRedoSkin}" ToolTip.Tip="{DynamicResource Skins_Redo}">
+                        <PathIcon Data="{StaticResource IconSkinRedo}" Classes="small"/>
+                    </Button>
+                    <Button Grid.Column="5" Classes="primary" Height="40" Padding="18,0"
+                            Command="{Binding SaveSkinCommand}" ToolTip.Tip="{DynamicResource Skins_SaveHint}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <PathIcon Data="{StaticResource IconSkinSave}" Classes="small"/>
+                            <TextBlock Text="{DynamicResource Skins_Save}" Foreground="{DynamicResource TextOnAccentBrush}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </Grid>
+
+                <!-- A save that did not happen is said here: the library's notice is behind the editor. -->
+                <Border Classes="card glass" Padding="14,12" IsVisible="{Binding HasSkinEditorProblem}">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                        <PathIcon Data="{StaticResource IconWarning}" Foreground="{DynamicResource WarningBrush}"
+                                  VerticalAlignment="Top" Margin="0,2,0,0"/>
+                        <TextBlock Grid.Column="1" Text="{Binding SkinEditorProblem}" TextWrapping="Wrap" LineHeight="19"/>
+                    </Grid>
                 </Border>
-
-                <Button Grid.Column="3" Classes="glass-icon" Command="{Binding UndoSkinCommand}"
-                        IsEnabled="{Binding CanUndoSkin}" ToolTip.Tip="{DynamicResource Skins_Undo}">
-                    <PathIcon Data="{StaticResource IconSkinUndo}" Classes="small"/>
-                </Button>
-                <Button Grid.Column="4" Classes="glass-icon" Command="{Binding RedoSkinCommand}"
-                        IsEnabled="{Binding CanRedoSkin}" ToolTip.Tip="{DynamicResource Skins_Redo}">
-                    <PathIcon Data="{StaticResource IconSkinRedo}" Classes="small"/>
-                </Button>
-                <Button Grid.Column="5" Classes="primary" Height="40" Padding="18,0"
-                        Command="{Binding SaveSkinCommand}" ToolTip.Tip="{DynamicResource Skins_SaveHint}">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <PathIcon Data="{StaticResource IconSkinSave}" Classes="small"/>
-                        <TextBlock Text="{DynamicResource Skins_Save}" Foreground="{DynamicResource TextOnAccentBrush}" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </Button>
-            </Grid>
+            </StackPanel>
 
             <Grid Grid.Row="1" Name="EditorBody" ColumnDefinitions="252,*,Auto" ColumnSpacing="14"
                   SizeChanged="OnEditorSizeChanged">
@@ -495,6 +506,12 @@
                 <StackPanel Spacing="14">
                     <TextBlock Text="{DynamicResource Skins_UnsavedTitle}" FontSize="17" FontWeight="SemiBold"/>
                     <TextBlock Text="{DynamicResource Skins_UnsavedText}" Classes="muted wrap" FontSize="13" LineHeight="19"/>
+                    <!-- "Save and leave" did not save: the question stays, with the reason. -->
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" IsVisible="{Binding HasSkinEditorProblem}">
+                        <PathIcon Data="{StaticResource IconWarning}" Foreground="{DynamicResource WarningBrush}"
+                                  VerticalAlignment="Top" Margin="0,2,0,0"/>
+                        <TextBlock Grid.Column="1" Text="{Binding SkinEditorProblem}" TextWrapping="Wrap" FontSize="13" LineHeight="19"/>
+                    </Grid>
                     <WrapPanel ItemSpacing="8" LineSpacing="8" HorizontalAlignment="Right">
                         <Button Classes="ghost" Content="{DynamicResource Skins_UnsavedStay}"
                                 Command="{Binding StayInSkinEditorCommand}"/>

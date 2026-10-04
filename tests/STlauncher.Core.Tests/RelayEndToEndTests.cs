@@ -331,6 +331,38 @@ public class RelayEndToEndTests
     }
 
     [Fact]
+    public async Task One_address_holds_only_so_many_rooms()
+    {
+        await using var relay = StartRelay(o => o.MaxRoomsPerIp = 2);
+
+        var (first, firstAnswer) = await Ask(relay.Port, "HOST " + RelayKeys.NewHostKey());
+        var (second, secondAnswer) = await Ask(relay.Port, "HOST " + RelayKeys.NewHostKey());
+        var (third, thirdAnswer) = await Ask(relay.Port, "HOST " + RelayKeys.NewHostKey());
+
+        using (second)
+        using (third)
+        {
+            Assert.Equal("OK", firstAnswer);
+            Assert.Equal("OK", secondAnswer);
+
+            // Not "full": the relay has rooms, this address has had its share of them.
+            Assert.Equal("ERR LIMIT", thirdAnswer);
+            Assert.Equal(2, relay.Stats.Rooms);
+
+            // A room given back is a room that can be taken again.
+            first.Dispose();
+            await Until(() => relay.Stats.Rooms == 1);
+
+            var (fourth, fourthAnswer) = await Ask(relay.Port, "HOST " + RelayKeys.NewHostKey());
+
+            using (fourth)
+            {
+                Assert.Equal("OK", fourthAnswer);
+            }
+        }
+    }
+
+    [Fact]
     public async Task A_silent_tunnel_is_closed_after_the_idle_time()
     {
         await using var relay = StartRelay(o => o.IdleTimeout = TimeSpan.FromMilliseconds(400));

@@ -39,6 +39,10 @@ public sealed class SkinEntry
 /// The index is the list; a PNG it does not mention is left alone, and an entry whose
 /// PNG has gone is simply not shown. Nothing here decodes an image: the bytes come in
 /// already checked and go to disk as they are.
+///
+/// The index is also the one file whose loss would cost the player every name at once,
+/// so it is never written unless it was read first: an index that cannot be read makes
+/// every change throw, and one that is damaged is set aside and rebuilt from the files.
 /// </remarks>
 public sealed class SkinLibrary
 {
@@ -52,6 +56,9 @@ public sealed class SkinLibrary
     }
 
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+
+    /// <summary>An id is this many lowercase hex digits, and the PNG is named after it.</summary>
+    private const int IdLength = 12;
 
     private readonly object _gate = new();
     private readonly string _indexPath;
@@ -70,12 +77,32 @@ public sealed class SkinLibrary
 
     public string PathOf(string id) => Path.Combine(Folder, id + ".png");
 
+    /// <summary>
+    /// False while the index is on disk but could not be read: what <see cref="List"/>
+    /// gave then is "not known yet", not "no skins", and is worth asking for again.
+    /// </summary>
+    public bool IsRead
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return LoadForReading() is not null;
+            }
+        }
+    }
+
     /// <summary>The skins whose files are there, the newest first.</summary>
     public IReadOnlyList<SkinEntry> List()
     {
         lock (_gate)
         {
-            return Load().Skins
+            if (LoadForReading() is not { } index)
+            {
+                return Array.Empty<SkinEntry>();
+            }
+
+            return index.Skins
                 .Where(entry => File.Exists(PathOf(entry.Id)))
                 .OrderByDescending(entry => entry.AddedAt)
                 .ToList();
@@ -91,7 +118,7 @@ public sealed class SkinLibrary
 
         lock (_gate)
         {
-            var entry = Load().Skins.FirstOrDefault(e => e.Id == id);
+            var entry = LoadForReading()?.Skins.FirstOrDefault(e => e.Id == id);
             return entry is not null && File.Exists(PathOf(entry.Id)) ? entry : null;
         }
     }
@@ -103,7 +130,7 @@ public sealed class SkinLibrary
         {
             lock (_gate)
             {
-                return Find(Load().Worn);
+                return Find(LoadForReading()?.Worn);
             }
         }
     }
@@ -126,7 +153,7 @@ public sealed class SkinLibrary
             var index = Load();
             var entry = new SkinEntry
             {
-                Id = Guid.NewGuid().ToString("N")[..12],
+                Id = Guid.NewGuid().ToString("N")[..IdLength],
                 Name = UniqueName(index, name, exceptId: null),
                 SkinModel = model,
                 AddedAt = addedAt ?? DateTimeOffset.Now
@@ -260,6 +287,12 @@ public sealed class SkinLibrary
         }
     }
 
+    /// <summary>
+    /// The index, read once and kept. Throws when the file is there and cannot be read:
+    /// held by an antivirus or a sync client, a cloud placeholder that is offline. That
+    /// is not an empty library, so nothing is kept and the next call reads again - and,
+    /// since every change starts here, nothing is saved over a list that was never read.
+    /// </summary>
     private IndexFile Load()
     {
         if (_index is not null)
@@ -267,28 +300,101 @@ public sealed class SkinLibrary
             return _index;
         }
 
-        try
+        IndexFile? index = null;
+
+        if (File.Exists(_indexPath))
         {
-            if (File.Exists(_indexPath))
+            var text = File.ReadAllText(_indexPath);
+
+            try
             {
-                _index = JsonSerializer.Deserialize<IndexFile>(File.ReadAllText(_indexPath), JsonOptions);
+                index = JsonSerializer.Deserialize<IndexFile>(text, JsonOptions);
+            }
+            catch (JsonException)
+            {
+                index = Rebuild();
             }
         }
-        catch (JsonException)
-        {
-            // An unreadable index is an empty library, not a crash; the PNGs stay where they are.
-        }
-        catch (IOException)
-        {
-        }
 
-        _index ??= new IndexFile();
-        _index.Skins ??= new List<SkinEntry>();
+        index ??= new IndexFile();
+        index.Skins ??= new List<SkinEntry>();
 
         // An id is a file name. One that is anything but letters and digits did not come
         // from here, and must never be followed out of the folder.
-        _index.Skins.RemoveAll(entry => entry is null || string.IsNullOrEmpty(entry.Id) || !entry.Id.All(char.IsAsciiLetterOrDigit));
-        return _index;
+        index.Skins.RemoveAll(entry => entry is null || string.IsNullOrEmpty(entry.Id) || !entry.Id.All(char.IsAsciiLetterOrDigit));
+        return _index = index;
+    }
+
+    /// <summary>
+    /// For looking, not for changing: an index that cannot be read right now shows as an
+    /// empty library instead of an error, and is read again at the next look.
+    /// </summary>
+    private IndexFile? LoadForReading()
+    {
+        try
+        {
+            return Load();
+        }
+        catch (IOException)
+        {
+            return null;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// The index is there and is not JSON any more. Saving the next change over it would
+    /// leave every skin a file the launcher never lists again, so the damaged file is set
+    /// aside as <c>index.json.bad</c> and the list is put together from the skins
+    /// themselves. Their names and models were in the index and are gone; the pictures,
+    /// which are what the player made, are all back on the page.
+    /// </summary>
+    private IndexFile Rebuild()
+    {
+        var index = new IndexFile();
+
+        try
+        {
+            File.Copy(_indexPath, _indexPath + ".bad", overwrite: true);
+        }
+        catch (IOException)
+        {
+            // The copy is a courtesy to whoever wants to mend the file by hand.
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
+
+        try
+        {
+            foreach (var file in new DirectoryInfo(Folder).EnumerateFiles("*.png").OrderBy(f => f.LastWriteTimeUtc))
+            {
+                var id = Path.GetFileNameWithoutExtension(file.Name);
+
+                // Only what Add names its files: a picture somebody put here by hand is not adopted.
+                if (id.Length == IdLength && id.All(char.IsAsciiHexDigitLower))
+                {
+                    index.Skins.Add(new SkinEntry
+                    {
+                        Id = id,
+                        Name = UniqueName(index, "Skin", exceptId: null),
+                        AddedAt = file.LastWriteTimeUtc
+                    });
+                }
+            }
+        }
+        catch (IOException)
+        {
+            // Whatever was found so far is still more than nothing.
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
+
+        return index;
     }
 
     private void Save()

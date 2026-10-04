@@ -430,6 +430,11 @@ public sealed class PlayitAgent : IAsyncDisposable
             {
                 process.Start();
                 started = true;
+
+                // Into the launcher's job, as the servers are: a launcher that crashes, is
+                // ended from the task manager or restarts for an update must not leave a
+                // tunnel from the internet open with nobody to switch it off.
+                Hosting.ChildProcessGuard.Attach(process);
             }
             catch (Exception ex)
             {
@@ -485,6 +490,10 @@ public sealed class PlayitAgent : IAsyncDisposable
 
         if (process is null)
         {
+            // Nothing of this session's - but an agent left by an earlier one would go on
+            // forwarding the public address while the switch on the screen says "off".
+            // Off the caller's thread: ending a leftover waits for it to go.
+            await Task.Run(StopLeftover).ConfigureAwait(false);
             return;
         }
 
@@ -809,6 +818,16 @@ public sealed class PlayitAgent : IAsyncDisposable
                 return;
             }
 
+            // StopAsync looks for a leftover too, and a start may be going on beside it:
+            // the agent this session has just started and written down is not one.
+            lock (_gate)
+            {
+                if (_process is not null && _process.Id == id)
+                {
+                    return;
+                }
+            }
+
             using var leftover = Process.GetProcessById(id);
 
             if (string.Equals(leftover.MainModule?.FileName, ExecutablePath, StringComparison.OrdinalIgnoreCase))
@@ -822,7 +841,11 @@ public sealed class PlayitAgent : IAsyncDisposable
             // No such process any more, or not ours to look at: either way not a leftover.
         }
 
-        TryDelete(PidPath);
+        // With an agent of this session running the file is, or is about to be, its own.
+        if (!IsRunning)
+        {
+            TryDelete(PidPath);
+        }
     }
 
     private void WritePid(Process process)

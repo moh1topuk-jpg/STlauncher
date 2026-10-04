@@ -450,4 +450,66 @@ public class SkinTests
         File.Delete(library.PathOf(entry.Id));
         Assert.Empty(library.List());
     }
+
+    [Fact]
+    public void Library_ADamagedIndexIsSetAside_AndTheSkinsStayListed()
+    {
+        var folder = TempFolder();
+        var first = new SkinLibrary(folder);
+        var knight = first.Add("Knight", SkinModel.Slim, new byte[] { 1 });
+        var mage = first.Add("Mage", SkinModel.Classic, new byte[] { 2 });
+
+        // A picture somebody put into the folder by hand is not one of the library's.
+        File.WriteAllBytes(Path.Combine(folder, "holiday.png"), new byte[] { 3 });
+
+        var indexPath = Path.Combine(folder, "index.json");
+        File.WriteAllText(indexPath, "{ \"skins\": [ { \"id\": \"" + knight.Id + "\", \"added\": \"yesterday\" } ] }");
+
+        var reopened = new SkinLibrary(folder);
+
+        Assert.Equal(
+            new[] { knight.Id, mage.Id }.OrderBy(id => id),
+            reopened.List().Select(e => e.Id).OrderBy(id => id));
+        Assert.Contains("yesterday", File.ReadAllText(indexPath + ".bad"));
+
+        // The next change is saved over a list that has everything in it, not over nothing.
+        var third = reopened.Add("Rogue", SkinModel.Classic, new byte[] { 4 });
+
+        Assert.Equal(
+            new[] { knight.Id, mage.Id, third.Id }.OrderBy(id => id),
+            new SkinLibrary(folder).List().Select(e => e.Id).OrderBy(id => id));
+    }
+
+    [Fact]
+    public void Library_AnIndexThatCannotBeReadIsNeverSavedOver()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            // Holding a file so that nobody else can read it is a Windows way of failing.
+            return;
+        }
+
+        var folder = TempFolder();
+        var first = new SkinLibrary(folder);
+        first.Add("Knight", SkinModel.Slim, new byte[] { 1 });
+        first.Add("Mage", SkinModel.Classic, new byte[] { 2 });
+
+        var library = new SkinLibrary(folder);
+
+        using (new FileStream(Path.Combine(folder, "index.json"), FileMode.Open, FileAccess.Read, FileShare.None))
+        {
+            // Looking shows nothing and breaks nothing; changing refuses.
+            Assert.False(library.IsRead);
+            Assert.Empty(library.List());
+            Assert.Null(library.Worn);
+            Assert.ThrowsAny<IOException>(() => library.Add("Rogue", SkinModel.Classic, new byte[] { 3 }));
+        }
+
+        // Nothing was kept from the failed read, and nothing was written over the list.
+        Assert.True(library.IsRead);
+        Assert.Equal(2, library.List().Count);
+
+        library.Add("Rogue", SkinModel.Classic, new byte[] { 3 });
+        Assert.Equal(3, new SkinLibrary(folder).List().Count);
+    }
 }

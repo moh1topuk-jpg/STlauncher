@@ -661,6 +661,7 @@
     <x:String x:Key="Settings_DataFolderHint">Builds, worlds, game versions and Java live here. Moving to another disk copies everything and restarts the launcher; the old folder is cleared only after the copy succeeds.</x:String>
     <x:String x:Key="DataFolder_Busy">Wait for the game and downloads to finish first</x:String>
     <x:String x:Key="DataFolder_Same">That is the current folder</x:String>
+    <x:String x:Key="DataFolder_UnsavedSkin">The skin editor has a drawing that is not saved. Save it or discard it there first.</x:String>
     <x:String x:Key="DataFolder_Moving">Moving {0} to {1}…</x:String>
     <x:String x:Key="DataFolder_MovingPart">Moving: {0}…</x:String>
     <x:String x:Key="DataFolder_Done">Moved {0} file(s). Restarting the launcher…</x:String>
@@ -1008,6 +1009,8 @@
     <x:String x:Key="Mods_BlockedFile">the author of "{0}" allows downloads only from the mod's page on CurseForge</x:String>
     <x:String x:Key="Mods_ReviewBlocked">"{0}" can only be downloaded from the mod's page: the button on the right opens it</x:String>
     <x:String x:Key="Mods_ReviewFirst">"{0}" needs other mods: the list is on the right, "Add to build" installs them all</x:String>
+    <x:String x:Key="Mods_DepsIncomplete">Could not find out everything this mod needs, so it is not added yet. Click the mod again in a moment.</x:String>
+    <x:String x:Key="Mods_LeftToThePlayer">"{0}" is added, but it also needs: {1}. That is only given out on the mod's own page: download the file there and drag it into the launcher window.</x:String>
     <x:String x:Key="Count_MillionsShort">{0}M</x:String>
     <x:String x:Key="Count_ThousandsShort">{0}K</x:String>
 
@@ -1113,7 +1116,7 @@
     <x:String x:Key="Host_Send">Send the command</x:String>
     <x:String x:Key="Host_CommandNoServer">The server is not running - there is nobody to carry the command out</x:String>
     <x:String x:Key="Host_Whitelist">Who may join</x:String>
-    <x:String x:Key="Host_WhitelistHint">Only players on this list can join. A nickname is written exactly as in the friend's launcher: capital and small letters differ.</x:String>
+    <x:String x:Key="Host_WhitelistHint">Only players on this list can join. A nickname is written exactly as in the friend's launcher: capital and small letters differ. A nickname is not a password: the server lets in whoever joins under a listed one, so give the address only to people you trust.</x:String>
     <x:String x:Key="Host_WhitelistAdd">A friend's nickname</x:String>
     <x:String x:Key="Host_WhitelistAddButton">Add</x:String>
     <x:String x:Key="Host_WhitelistRemoveTip">Take off the list</x:String>
@@ -1202,6 +1205,7 @@
     <x:String x:Key="Host_CloseTitle">The server is still running</x:String>
     <x:String x:Key="Host_CloseText">The server “{0}” is running. Closing the launcher stops it: the world is saved, the players are disconnected and the addresses opened for friends are closed.</x:String>
     <x:String x:Key="Host_CloseConfirm">Stop and close</x:String>
+    <x:String x:Key="Host_CloseConfirmUpdate">Stop and update</x:String>
     <x:String x:Key="Host_CloseTunnelTitle">You are on a friend's server</x:String>
     <x:String x:Key="Host_CloseTextTunnel">The game is connected to the friend's server through the launcher. Closing the launcher breaks that connection.</x:String>
     <x:String x:Key="Host_CloseConfirmTunnel">Close anyway</x:String>
@@ -1324,6 +1328,7 @@
     <x:String x:Key="Skins_SaveHint">Save to the library (Ctrl+S)</x:String>
     <x:String x:Key="Skins_SaveFailed">The skin could not be saved: {0}</x:String>
     <x:String x:Key="Skins_SaveGone">This skin is no longer in the library, so there is nowhere to save it.</x:String>
+    <x:String x:Key="Skins_LibraryUnreadable">The list of your skins could not be read right now: another program may be holding the file. The skins themselves are safe. Open this page again in a moment.</x:String>
     <x:String x:Key="Skins_Tool">TOOL</x:String>
     <x:String x:Key="Skins_ToolPencil">Pencil</x:String>
     <x:String x:Key="Skins_ToolEraser">Eraser</x:String>

@@ -112,6 +112,9 @@ public class ServerPropertiesTests
         Assert.False(properties.GetBool(ServerProperties.OnlineModeKey, true));
         Assert.True(properties.GetBool(ServerProperties.WhitelistKey, false));
         Assert.True(properties.GetBool(ServerProperties.EnforceWhitelistKey, false));
+
+        // The list is by nickname, so the answer to a ping must not hand the nicknames out.
+        Assert.True(properties.GetBool(ServerProperties.HideOnlinePlayersKey, false));
         Assert.Equal(25570, properties.GetInt(ServerProperties.PortKey, 0));
         Assert.Equal("Дача", properties.Get(ServerProperties.MotdKey));
         Assert.Equal("spaced value", properties.Get("some-mod-key"));
@@ -527,6 +530,37 @@ public class ServerContentTests
         }
 
         Assert.Equal(WorldCopyStatus.Copied, ServerContent.CopyWorld(instance, "Open", server).Status);
+    }
+
+    [Fact]
+    public void CopyWorld_CutShort_LeavesNothingThatLooksLikeAWorld()
+    {
+        var (instance, server) = NewPair();
+        var save = Path.Combine(instance, "saves", "Big");
+        Directory.CreateDirectory(Path.Combine(save, "region"));
+        File.WriteAllText(Path.Combine(save, "level.dat"), "level");
+        File.WriteAllText(Path.Combine(save, "region", "r.0.0.mca"), "chunks");
+
+        if (OperatingSystem.IsWindows())
+        {
+            // A file that cannot be read stops the copy part way, as a full disk would.
+            using (new FileStream(Path.Combine(save, "region", "r.0.0.mca"), FileMode.Open, FileAccess.Read, FileShare.None))
+            {
+                Assert.ThrowsAny<IOException>(() => ServerContent.CopyWorld(instance, "Big", server));
+            }
+
+            // level.dat did get across, but not into the world's place: the server has no world.
+            Assert.False(ServerContent.HasWorld(server));
+            Assert.False(Directory.Exists(Path.Combine(server, "world")));
+        }
+
+        // The next attempt is a whole copy, not "already there".
+        var again = ServerContent.CopyWorld(instance, "Big", server);
+
+        Assert.Equal(WorldCopyStatus.Copied, again.Status);
+        Assert.Equal(2, again.Files);
+        Assert.Equal("chunks", File.ReadAllText(Path.Combine(server, "world", "region", "r.0.0.mca")));
+        Assert.False(Directory.Exists(Path.Combine(server, "world" + ServerContent.CopyingSuffix)));
     }
 }
 

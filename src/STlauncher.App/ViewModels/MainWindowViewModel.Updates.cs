@@ -343,6 +343,21 @@ public partial class MainWindowViewModel
                 await _updates.DownloadAsync(progress);
             }
 
+            // The restart ends this process on the spot: no window closes, so nothing that
+            // asks on closing gets to ask. A server of the player's, or a friend's tunnel,
+            // lives in this process - the same question first, and the update goes on
+            // from its answer once everything is stopped in order. A drawing in the skin
+            // editor that was never saved is asked about too; the button is pressed again
+            // once that is settled.
+            if (HoldCloseForSkinEditor() || HoldCloseForHosting(forUpdate: true))
+            {
+                UpdateBannerText = Localize("Update_ReadyBanner", "Update {0} is ready to install", version);
+                UpdateBannerAction = Localize("Update_InstallAndRestart", "Install and restart");
+                UpdateStatus = UpdateBannerText;
+                CanRestartToUpdate = true;
+                return;
+            }
+
             UpdateBannerText = Localize("Update_Restarting", "Restarting to finish the update…");
             UpdateStatus = UpdateBannerText;
 

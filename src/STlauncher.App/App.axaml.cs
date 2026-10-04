@@ -66,9 +66,11 @@ public partial class App : Application
 
             // My server: a running server lives inside the launcher, so every way out of it
             // asks first. The view model puts the question on screen and says "hold".
+            // The skin editor: a drawing that was never saved is asked about in the same way.
+            // Shutdown() closes the window without asking it, so the tray's "Quit" asks here.
             void Quit()
             {
-                if (viewModel.HoldCloseForHosting())
+                if (viewModel.HoldCloseForHosting() || viewModel.HoldCloseForSkinEditor())
                 {
                     ShowWindow();
                     return;

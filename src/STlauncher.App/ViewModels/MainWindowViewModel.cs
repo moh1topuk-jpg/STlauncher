@@ -947,6 +947,7 @@ public partial class MainWindowViewModel : ViewModelBase
         if (!_applyingInstance)
         {
             OnPropertyChanged(nameof(IsBuildConfigured));
+            CloseProjectIfBuildChanged();
             _ = LoadLoaderVersionsAsync();
             ScheduleBrowserReload();
         }
@@ -959,6 +960,7 @@ public partial class MainWindowViewModel : ViewModelBase
         if (!_applyingInstance)
         {
             OnPropertyChanged(nameof(IsBuildConfigured));
+            CloseProjectIfBuildChanged();
             _ = LoadLoaderVersionsAsync();
             ScheduleBrowserReload();
         }
@@ -1000,6 +1002,10 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             _applyingInstance = false;
         }
+
+        // A mod's panel left open was worked out for the build that was selected before:
+        // its version, and the list of what "Add" would bring, are not this build's.
+        CloseProjectIfBuildChanged();
 
         OnPropertyChanged(nameof(BuildModCount));
         OnPropertyChanged(nameof(BuildModCountLabel));

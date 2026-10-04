@@ -24,6 +24,7 @@ public sealed class ServerProperties
     public const string EnforceWhitelistKey = "enforce-whitelist";
     public const string LevelNameKey = "level-name";
     public const string MaxPlayersKey = "max-players";
+    public const string HideOnlinePlayersKey = "hide-online-players";
 
     /// <summary>The folder the game keeps the world in unless <c>level-name</c> says otherwise.</summary>
     public const string DefaultLevelName = "world";
@@ -155,6 +156,13 @@ public sealed class ServerProperties
         Set(OnlineModeKey, false);
         Set(WhitelistKey, true);
         Set(EnforceWhitelistKey, true);
+
+        // In offline mode a nickname on the list is all a player is known by, and the
+        // server's answer to a ping names whoever is online. Anybody can ping an address
+        // that is open to the internet, so the names are kept out of that answer; the
+        // count of players is still given. Servers before 1.18 do not know the key and
+        // leave it alone.
+        Set(HideOnlinePlayersKey, true);
         Set(PortKey, port);
         Set(MotdKey, serverName ?? string.Empty);
     }

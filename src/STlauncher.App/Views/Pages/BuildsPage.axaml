@@ -1265,7 +1265,17 @@
                                                                                    HorizontalAlignment="Right"/>
                                                                         <TextBlock Text="{Binding StateLabel}" FontSize="11.5" HorizontalAlignment="Right"
                                                                                    TextTrimming="CharacterEllipsis"
-                                                                                   Foreground="{DynamicResource GoldBrush}"/>
+                                                                                   Foreground="{DynamicResource GoldBrush}"
+                                                                                   IsVisible="{Binding !OffersPage}"/>
+                                                                        <!-- A needed mod the launcher may not fetch: the words open its page. -->
+                                                                        <Button Classes="plain small" Padding="0" HorizontalAlignment="Right" Cursor="Hand"
+                                                                                IsVisible="{Binding OffersPage}"
+                                                                                ToolTip.Tip="{DynamicResource Mods_OpenModPage}"
+                                                                                Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).OpenUrlCommand}"
+                                                                                CommandParameter="{Binding PageUrl}">
+                                                                            <TextBlock Text="{Binding StateLabel}" FontSize="11.5" TextDecorations="Underline"
+                                                                                       Foreground="{DynamicResource GoldBrush}"/>
+                                                                        </Button>
                                                                     </StackPanel>
                                                                 </Grid>
                                                             </DataTemplate>
@@ -1273,6 +1283,10 @@
                                                     </ItemsControl>
                                                     <TextBlock Text="{Binding OpenedProjectTotalLabel}" FontSize="12" FontWeight="SemiBold"
                                                                TextWrapping="Wrap" IsVisible="{Binding HasOpenedProjectTotal}"/>
+                                                    <!-- The list above may be short of a file: "Add" waits for a whole one. -->
+                                                    <TextBlock Text="{DynamicResource Mods_DepsIncomplete}" FontSize="12" TextWrapping="Wrap"
+                                                               LineHeight="17" Foreground="{DynamicResource GoldBrush}"
+                                                               IsVisible="{Binding IsOpenedProjectListIncomplete}"/>
                                                 </StackPanel>
                                             </Border>
 
@@ -1353,7 +1367,7 @@
                                             <Button Classes="ghost" Padding="11,8" Content="{DynamicResource Mods_OtherVersions}"
                                                     Command="{Binding ToggleOtherVersionsCommand}" IsEnabled="{Binding HasOpenedProjectVersion}"/>
                                             <Button Grid.Column="1" Classes="primary" Padding="8" HorizontalAlignment="Stretch"
-                                                    IsVisible="{Binding CanInstallOpenedProject}" IsEnabled="{Binding HasOpenedProjectVersion}"
+                                                    IsVisible="{Binding CanInstallOpenedProject}" IsEnabled="{Binding CanAddOpenedProject}"
                                                     Content="{DynamicResource Mods_AddToBuild}" Command="{Binding InstallOpenedProjectCommand}"/>
                                             <Button Grid.Column="1" Classes="danger" Padding="8" HorizontalAlignment="Stretch"
                                                     IsVisible="{Binding OpenedProjectInstalled}"

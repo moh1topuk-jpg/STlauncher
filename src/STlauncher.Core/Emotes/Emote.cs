@@ -358,6 +358,7 @@ internal sealed class EmoteBuilder
     private const int MaxKeyframes = 400_000;
 
     private readonly List<EmoteKeyframe>?[] _tracks = new List<EmoteKeyframe>?[7 * 6];
+    private readonly bool[] _outOfOrder = new bool[7 * 6];
     private int _count;
 
     public int BeginTick { get; set; }
@@ -384,18 +385,18 @@ internal sealed class EmoteBuilder
             throw new InvalidDataException("Too many keyframes.");
         }
 
-        var track = _tracks[(int)part * 6 + (int)axis] ??= new List<EmoteKeyframe>();
+        var index = (int)part * 6 + (int)axis;
+        var track = _tracks[index] ??= new List<EmoteKeyframe>();
 
-        // Files list a part's keyframes in order nearly always; when one does not, each
-        // goes after the others of its tick, which is where the mod puts it.
-        var at = track.Count;
-
-        while (at > 0 && track[at - 1].Tick > tick)
+        // Files list a part's keyframes in order nearly always. One that does not is put
+        // in order once, in Build: sorting as they arrive would make a file written
+        // backwards cost the square of its length.
+        if (track.Count > 0 && track[^1].Tick > tick)
         {
-            at--;
+            _outOfOrder[index] = true;
         }
 
-        track.Insert(at, new EmoteKeyframe(tick, value, easing));
+        track.Add(new EmoteKeyframe(tick, value, easing));
     }
 
     /// <summary>The emote, or null when the mod itself would refuse the file.</summary>
@@ -417,6 +418,10 @@ internal sealed class EmoteBuilder
             name, author, description,
             Math.Clamp(BeginTick, 0, EndTick), EndTick, stop,
             IsLoop, IsLoop ? ReturnTick : 0, EaseBeforeKeyframe,
-            _tracks.Select(track => track is { Count: > 0 } ? track.ToArray() : null).ToArray());
+            _tracks.Select((track, index) => track is not { Count: > 0 } ? null
+                // A stable sort: each keyframe stays after the earlier ones of its tick,
+                // which is where the mod puts it.
+                : _outOfOrder[index] ? track.OrderBy(key => key.Tick).ToArray()
+                : track.ToArray()).ToArray());
     }
 }

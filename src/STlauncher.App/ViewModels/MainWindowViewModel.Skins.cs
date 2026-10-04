@@ -178,6 +178,15 @@ public partial class MainWindowViewModel
 
         try
         {
+            // The list is on disk and could not be read - held by another program, say.
+            // That is not an empty library: it is said so, and read again at the next look.
+            if (!_skins.Library.IsRead)
+            {
+                _skinLibraryLoaded = false;
+                SaySkins(Localize("Skins_LibraryUnreadable", "The list of your skins could not be read right now: another program may be holding the file. The skins themselves are safe. Open this page again in a moment."), problem: true);
+                return;
+            }
+
             var wornId = _skins.Library.Worn?.Id;
 
             foreach (var entry in _skins.Library.List())
@@ -683,6 +692,17 @@ public partial class MainWindowViewModel
     [ObservableProperty]
     private bool _isSkinUnsavedPromptOpen;
 
+    /// <summary>
+    /// Why the last save from the editor did not happen. Shown in the editor itself and in
+    /// the question about unsaved changes: the page's own notice sits on the library,
+    /// which the editor covers.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSkinEditorProblem))]
+    private string _skinEditorProblem = string.Empty;
+
+    public bool HasSkinEditorProblem => SkinEditorProblem.Length > 0;
+
     public bool CanUndoSkin => EditorDocument?.CanUndo == true;
 
     public bool CanRedoSkin => EditorDocument?.CanRedo == true;
@@ -897,13 +917,15 @@ public partial class MainWindowViewModel
             return false;
         }
 
+        SkinEditorProblem = string.Empty;
+
         try
         {
             document.EndStroke();
 
             if (!_skins.Library.Update(id, SkinPng.Encode(document.Image), document.Model))
             {
-                SaySkins(Localize("Skins_SaveGone", "This skin is no longer in the library, so there is nowhere to save it."), problem: true);
+                SkinEditorProblem = Localize("Skins_SaveGone", "This skin is no longer in the library, so there is nowhere to save it.");
                 return false;
             }
 
@@ -934,7 +956,10 @@ public partial class MainWindowViewModel
         }
         catch (Exception ex)
         {
-            SaySkins(Localize("Skins_SaveFailed", "The skin could not be saved: {0}", ex.Message), problem: true);
+            // Said where the player is. The library's notice is behind the editor, and a
+            // save that fails without a word looks like a button that does nothing.
+            SkinEditorProblem = Localize("Skins_SaveFailed", "The skin could not be saved: {0}", ex.Message);
+            AppendConsole($"[skins] save: {ex}");
             return false;
         }
     }
@@ -954,16 +979,31 @@ public partial class MainWindowViewModel
         CloseEditorDocument();
     }
 
+    /// <summary>
+    /// Asked by whatever is about to end the launcher - the window being closed, "Quit" in
+    /// the tray, the restart into an update. True means "not yet": there is a drawing that
+    /// was never saved, so the editor comes to the front with its question on the screen.
+    /// </summary>
+    public bool HoldCloseForSkinEditor()
+    {
+        if (!IsSkinEditorOpen || !IsSkinEditorDirty)
+        {
+            return false;
+        }
+
+        Section = ShellSection.Skins;
+        CloseSkinEditor();
+        return true;
+    }
+
     [RelayCommand]
     private void SaveAndCloseSkinEditor()
     {
+        // A save that failed leaves the question where it is, with the reason in it: the
+        // only other way out of the editor throws the drawing away.
         if (TrySaveSkin())
         {
             CloseEditorDocument();
-        }
-        else
-        {
-            IsSkinUnsavedPromptOpen = false;
         }
     }
 
@@ -977,6 +1017,7 @@ public partial class MainWindowViewModel
     {
         IsSkinUnsavedPromptOpen = false;
         IsSkinEditorOpen = false;
+        SkinEditorProblem = string.Empty;
         _skinPreviewTimer?.Stop();
 
         if (EditorDocument is { } document)

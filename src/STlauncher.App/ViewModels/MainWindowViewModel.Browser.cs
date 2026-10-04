@@ -176,6 +176,12 @@ public sealed record ModDependencyItem(string Title, bool Installed, bool Requir
     /// <summary>A CurseForge file its author keeps to the site: the launcher cannot bring it.</summary>
     public bool Blocked { get; init; }
 
+    /// <summary>Where the player gets a blocked file by hand.</summary>
+    public string? PageUrl { get; init; }
+
+    /// <summary>The state under the name is a link: the mod is missing and only its page has it.</summary>
+    public bool OffersPage => !Installed && Blocked && !string.IsNullOrEmpty(PageUrl);
+
     public string StateLabel => Installed
         ? MainWindowViewModel.Localize("Mods_DepInstalled", "in the build")
         : Blocked
@@ -695,7 +701,9 @@ public partial class MainWindowViewModel
 
         // Asked before anything is written: a mod whose own file cannot be fetched must
         // not leave its dependencies behind in the build.
-        if (fromCurseForge && await IsBlockedAsync(version))
+        var blocked = fromCurseForge && await IsBlockedAsync(version);
+
+        if (blocked && depth == 0)
         {
             throw new InvalidOperationException(
                 Localize("Mods_BlockedFile", "the author of {0} allows downloads only from the mod's page on CurseForge", title));
@@ -703,6 +711,7 @@ public partial class MainWindowViewModel
 
         if (depth == 0)
         {
+            _modsLeftToThePlayer.Clear();
             await MaybeBackupAsync(BackupTrigger.BeforeModChange);
         }
 
@@ -735,6 +744,18 @@ public partial class MainWindowViewModel
 
                 await InstallProjectWithDependenciesAsync(pick, project.Slug, project.Title, project.IconUrl, depth + 1, project.ProjectType);
             }
+        }
+
+        // A needed mod that only its page gives out. Failing here used to leave the build
+        // with half of what was asked for, and no way to finish: a file added by hand is
+        // not known by its project, so the next try stopped at the same place. What this
+        // mod needs has come; the mod that was asked for still comes; this one file is
+        // named for the player to fetch.
+        if (blocked)
+        {
+            _modsLeftToThePlayer.Add(title);
+            AppendConsole($"[mods] {slug}: only from its page, left for the player ({version.PageUrl})");
+            return;
         }
 
         var folder = ProjectTypes.FolderFor(projectType);
@@ -782,6 +803,11 @@ public partial class MainWindowViewModel
 
         RefreshMods();
         Status = Localize("Status_InstalledFile", "Installed {0}", file.FileName);
+
+        if (depth == 0)
+        {
+            ReportModsLeftToThePlayer(title);
+        }
     }
 
     /// <summary>Takes a Modrinth project out of the build by its slug.</summary>

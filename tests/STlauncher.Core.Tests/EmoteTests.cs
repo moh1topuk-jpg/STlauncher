@@ -103,6 +103,39 @@ public class EmoteTests
     }
 
     [Fact]
+    public void Json_MovesWrittenOutOfOrder_ComeOutByTick()
+    {
+        const string json = """
+            {
+              "name": "Backwards",
+              "emote": {
+                "endTick": 40, "degrees": false,
+                "moves": [
+                  { "tick": 30, "head": { "yaw": 3 } },
+                  { "tick": 10, "head": { "yaw": 1 } },
+                  { "tick": 30, "head": { "yaw": 4 } },
+                  { "tick": 20, "head": { "yaw": 2 } }
+                ]
+              }
+            }
+            """;
+
+        var yaw = EmoteReader.TryRead(Utf8(json), "backwards")!.Keyframes(EmotePart.Head, EmoteAxis.Yaw);
+
+        // By tick, and the two that share a tick in the order the file has them.
+        Assert.Equal(new[] { 10, 20, 30, 30 }, yaw.Select(k => k.Tick));
+        Assert.Equal(new[] { 1f, 2f, 3f, 4f }, yaw.Select(k => k.Value));
+
+        // A long file written from the last tick to the first is put in order once, at
+        // the end. Kept in order one keyframe at a time, it cost the square of its length.
+        const int count = 60_000;
+        var moves = string.Join(",", Enumerable.Range(0, count).Reverse().Select(tick => "{\"tick\":" + tick + ",\"head\":{\"yaw\":1}}"));
+        var lengthy = EmoteReader.TryRead(Utf8("{\"emote\":{\"endTick\":" + count + ",\"degrees\":false,\"moves\":[" + moves + "]}}"), "lengthy")!;
+
+        Assert.Equal(Enumerable.Range(0, count), lengthy.Keyframes(EmotePart.Head, EmoteAxis.Yaw).Select(k => k.Tick));
+    }
+
+    [Fact]
     public void Sample_EasesInHoldsAndEasesOut()
     {
         var emote = EmoteReader.TryRead(Utf8(Wave), "waving")!;

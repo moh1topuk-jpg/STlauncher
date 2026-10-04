@@ -222,6 +222,35 @@ public partial class MainWindowViewModel
 
     private string _projectOriginalDescription = string.Empty;
 
+    /// <summary>
+    /// Counts openings and closings of the panel. A card clicked while another is still
+    /// loading starts a second load beside the first (the command does not wait for
+    /// itself), and whatever an earlier one still brings is for a panel that has moved on.
+    /// </summary>
+    private int _projectRun;
+
+    /// <summary>True while the newest opening is still asking: nothing is installed from a half-filled panel.</summary>
+    private bool _projectLoading;
+
+    /// <summary>The build, game version and loader the panel's version and its list were worked out for.</summary>
+    private (string? Build, string? Version, LoaderKind Loader) _projectTarget;
+
+    private (string? Build, string? Version, LoaderKind Loader) CurrentProjectTarget()
+        => (SelectedInstance?.Id, SelectedVersion?.Id, SelectedLoader);
+
+    /// <summary>
+    /// The panel's version, the list of what comes with it and the total belong to one
+    /// build. With another build, game version or loader on screen they describe an
+    /// install that is not the one "Add" would do, so the panel closes instead of offering it.
+    /// </summary>
+    private void CloseProjectIfBuildChanged()
+    {
+        if (IsProjectOpen && _projectTarget != CurrentProjectTarget())
+        {
+            CloseProject();
+        }
+    }
+
     public ObservableCollection<ModVersion> OpenedProjectVersions { get; } = new();
 
     public ObservableCollection<Bitmap> OpenedProjectGallery { get; } = new();
@@ -233,6 +262,7 @@ public partial class MainWindowViewModel
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(OpenedProjectFileLabel))]
     [NotifyPropertyChangedFor(nameof(HasOpenedProjectVersion))]
+    [NotifyPropertyChangedFor(nameof(CanAddOpenedProject))]
     private ModVersion? _openedProjectPreferred;
 
     partial void OnOpenedProjectChanged(ModProject? value)
@@ -287,24 +317,40 @@ public partial class MainWindowViewModel
     [RelayCommand]
     private async Task InstallOpenedProjectAsync()
     {
-        if (OpenedProject is null || OpenedProjectPreferred is null || IsProjectBusy)
+        if (OpenedProject is null || OpenedProjectPreferred is null || IsProjectBusy || _projectLoading ||
+            IsOpenedProjectListIncomplete)
         {
             return;
         }
+
+        // Every way the build changes closes the panel; this is for the one that was missed.
+        if (_projectTarget != CurrentProjectTarget())
+        {
+            CloseProject();
+            return;
+        }
+
+        // Kept: another card may be opened while the files are coming.
+        var project = OpenedProject;
+        var version = OpenedProjectPreferred;
 
         try
         {
             IsProjectBusy = true;
             _installBatch.Clear();
-            await InstallProjectWithDependenciesAsync(
-                OpenedProjectPreferred, OpenedProject.Slug, OpenedProject.Title, OpenedProject.IconUrl);
+            await InstallProjectWithDependenciesAsync(version, project.Slug, project.Title, project.IconUrl);
             RefreshBrowserInstallState();
             RefreshHiddenItems();
-            await RefreshOpenedProjectDependenciesAsync(OpenedProjectPreferred, OpenedProject.Title);
+
+            if (ReferenceEquals(OpenedProjectPreferred, version))
+            {
+                await RefreshOpenedProjectDependenciesAsync(version, project.Title);
+            }
 
             // The panel stays open, so the list is not opened on the new mods; they are
             // outlined there, and the status line names every file that came.
             RevealFreshMods(_installBatch.ToList(), focus: null);
+            ReportModsLeftToThePlayer(project.Title);
         }
         catch (Exception ex)
         {
@@ -314,7 +360,7 @@ public partial class MainWindowViewModel
         }
         finally
         {
-            IsProjectBusy = false;
+            IsProjectBusy = _projectLoading;
         }
     }
 
@@ -333,7 +379,7 @@ public partial class MainWindowViewModel
         }
         finally
         {
-            IsProjectBusy = false;
+            IsProjectBusy = _projectLoading;
         }
     }
 
@@ -341,13 +387,14 @@ public partial class MainWindowViewModel
     {
         OpenedProjectDependencies.Clear();
         OpenedProjectTotalLabel = string.Empty;
+        IsOpenedProjectListIncomplete = false;
 
         if (version is null)
         {
             return;
         }
 
-        var items = await ResolveDependenciesAsync(version, title);
+        var (items, complete) = await ResolveDependenciesAsync(version, title);
 
         // The panel may have moved on to another mod while the answers were coming.
         if (!ReferenceEquals(version, OpenedProjectPreferred))
@@ -362,6 +409,7 @@ public partial class MainWindowViewModel
             OpenedProjectDependencies.Add(item);
         }
 
+        IsOpenedProjectListIncomplete = !complete;
         RefreshOpenedProjectTotal();
     }
 
@@ -373,6 +421,10 @@ public partial class MainWindowViewModel
             return;
         }
 
+        // From here on only this opening may write to the panel: after every answer it
+        // checks that no other card was clicked, and the panel not closed, in the meantime.
+        var run = ++_projectRun;
+
         foreach (var other in ModBrowserItems)
         {
             other.IsSelected = ReferenceEquals(other, item);
@@ -380,6 +432,8 @@ public partial class MainWindowViewModel
 
         try
         {
+            _projectLoading = true;
+            _projectTarget = CurrentProjectTarget();
             IsProjectBusy = true;
             IsProjectOpen = true;
             ShowOtherVersions = false;
@@ -391,6 +445,7 @@ public partial class MainWindowViewModel
             OpenedProjectDependencies.Clear();
             OpenedProjectTotalLabel = string.Empty;
             IsOpenedProjectBlocked = false;
+            IsOpenedProjectListIncomplete = false;
             OpenedProjectDescription = item.Result.Description;
 
             // Nothing else announces it, and the build may have changed since the panel was last open.
@@ -399,14 +454,34 @@ public partial class MainWindowViewModel
             var source = SourceFor(item.Result.Source);
 
             // The list already has the logo cached, so show it immediately.
-            OpenedProjectIcon = await _images.GetAsync(item.Result.IconUrl).ConfigureAwait(true);
+            var icon = await _images.GetAsync(item.Result.IconUrl).ConfigureAwait(true);
+
+            if (run != _projectRun)
+            {
+                return;
+            }
+
+            OpenedProjectIcon = icon;
 
             var project = await source.GetProjectAsync(item.Result.ProjectId).ConfigureAwait(true);
+
+            if (run != _projectRun)
+            {
+                return;
+            }
+
             OpenedProject = project;
 
             if (project?.IconUrl is { Length: > 0 } iconUrl && OpenedProjectIcon is null)
             {
-                OpenedProjectIcon = await _images.GetAsync(iconUrl).ConfigureAwait(true);
+                icon = await _images.GetAsync(iconUrl).ConfigureAwait(true);
+
+                if (run != _projectRun)
+                {
+                    return;
+                }
+
+                OpenedProjectIcon = icon;
             }
 
             if (project?.Body is { Length: > 0 } body)
@@ -421,23 +496,41 @@ public partial class MainWindowViewModel
                 .GetVersionsAsync(item.Result.ProjectId, SelectedVersion?.Id, LoaderFor(BrowserKind))
                 .ConfigureAwait(true);
 
+            if (run != _projectRun)
+            {
+                return;
+            }
+
             foreach (var version in versions)
             {
                 OpenedProjectVersions.Add(version);
             }
 
-            OpenedProjectPreferred = ModrinthClient.SelectPreferred(versions);
+            var preferred = ModrinthClient.SelectPreferred(versions);
+            OpenedProjectPreferred = preferred;
 
             // Said before the button is offered: a file its author keeps to the site is
             // opened in the browser, not installed.
-            IsOpenedProjectBlocked = await IsBlockedAsync(OpenedProjectPreferred);
+            var blocked = await IsBlockedAsync(preferred);
+
+            if (run != _projectRun)
+            {
+                return;
+            }
+
+            IsOpenedProjectBlocked = blocked;
 
             OnPropertyChanged(nameof(OpenedProjectInstalled));
             OnPropertyChanged(nameof(OpenedProjectNotInstalled));
             RaiseOpenedProjectActions();
             OnPropertyChanged(nameof(OpenedProjectByline));
 
-            await RefreshOpenedProjectDependenciesAsync(OpenedProjectPreferred, item.Result.Title);
+            await RefreshOpenedProjectDependenciesAsync(preferred, item.Result.Title);
+
+            if (run != _projectRun)
+            {
+                return;
+            }
 
             if (project is not null)
             {
@@ -446,7 +539,12 @@ public partial class MainWindowViewModel
                     var image = await _images.GetAsync(url).ConfigureAwait(true);
 
                     // The project may have been closed or swapped while the image loaded.
-                    if (image is not null && ReferenceEquals(OpenedProject, project))
+                    if (run != _projectRun)
+                    {
+                        return;
+                    }
+
+                    if (image is not null)
                     {
                         OpenedProjectGallery.Add(image);
                         _galleryUrls.Add(index < project.GalleryFull.Count ? project.GalleryFull[index] : url);
@@ -462,13 +560,27 @@ public partial class MainWindowViewModel
         }
         finally
         {
-            IsProjectBusy = false;
+            // An earlier opening must not announce the panel ready while the newest is still filling it.
+            if (run == _projectRun)
+            {
+                _projectLoading = false;
+                IsProjectBusy = false;
+            }
         }
     }
 
     [RelayCommand]
     private void CloseProject()
     {
+        // A load still on its way is for a panel that is gone.
+        _projectRun++;
+
+        if (_projectLoading)
+        {
+            _projectLoading = false;
+            IsProjectBusy = false;
+        }
+
         IsProjectOpen = false;
         OpenedProject = null;
         OpenedProjectIcon = null;
@@ -478,6 +590,7 @@ public partial class MainWindowViewModel
         OpenedProjectDependencies.Clear();
         OpenedProjectTotalLabel = string.Empty;
         IsOpenedProjectBlocked = false;
+        IsOpenedProjectListIncomplete = false;
 
         foreach (var item in ModBrowserItems)
         {
@@ -501,12 +614,20 @@ public partial class MainWindowViewModel
             return;
         }
 
+        var run = _projectRun;
+
         try
         {
             IsProjectBusy = true;
             var translated = await _translations.TranslateAsync(
                 _projectOriginalDescription,
                 _localization.Current);
+
+            // Another mod's panel is not the place for this one's description.
+            if (run != _projectRun)
+            {
+                return;
+            }
 
             if (!string.IsNullOrWhiteSpace(translated))
             {
@@ -520,7 +641,7 @@ public partial class MainWindowViewModel
         }
         finally
         {
-            IsProjectBusy = false;
+            IsProjectBusy = _projectLoading;
         }
     }
 
@@ -531,10 +652,23 @@ public partial class MainWindowViewModel
             ? null
             : ModrinthClient.SelectFile(version, SelectedVersion?.Id, LoaderFor(BrowserKind));
 
-        if (file is null || IsProjectBusy || (version!.Source != ModSource.CurseForge && string.IsNullOrEmpty(file.Url)))
+        if (file is null || IsProjectBusy || _projectLoading ||
+            (version!.Source != ModSource.CurseForge && string.IsNullOrEmpty(file.Url)))
         {
             return;
         }
+
+        // The list of versions was asked for one build; it is not installed into another.
+        if (_projectTarget != CurrentProjectTarget())
+        {
+            CloseProject();
+            return;
+        }
+
+        // Kept: the versions are this mod's, whatever card is opened while the file comes.
+        var project = OpenedProject;
+        var run = _projectRun;
+        var title = project?.Title ?? file.FileName;
 
         try
         {
@@ -544,27 +678,31 @@ public partial class MainWindowViewModel
             // gives out must not cost the player the one that works.
             if (await IsBlockedAsync(version))
             {
-                Status = Localize("Mods_BlockedFile", "the author of {0} allows downloads only from the mod's page on CurseForge", OpenedProject?.Title ?? file.FileName);
+                Status = Localize("Mods_BlockedFile", "the author of {0} allows downloads only from the mod's page on CurseForge", title);
                 return;
             }
 
             // Another version of an installed mod replaces it rather than sits beside it.
-            if (OpenedProject is not null && IsProjectInstalled(OpenedProject.Slug))
+            if (project is not null && IsProjectInstalled(project.Slug))
             {
-                await UninstallProjectAsync(OpenedProject.Slug);
+                await UninstallProjectAsync(project.Slug);
             }
 
             await InstallProjectWithDependenciesAsync(
                 version!,
-                OpenedProject?.Slug ?? string.Empty,
-                OpenedProject?.Title ?? file.FileName,
-                OpenedProject?.IconUrl);
+                project?.Slug ?? string.Empty,
+                title,
+                project?.IconUrl);
 
-            OpenedProjectPreferred = version;
-            IsOpenedProjectBlocked = false;
+            if (run == _projectRun)
+            {
+                OpenedProjectPreferred = version;
+                IsOpenedProjectBlocked = false;
+                ShowOtherVersions = false;
+            }
+
             RefreshBrowserInstallState();
             RefreshHiddenItems();
-            ShowOtherVersions = false;
         }
         catch (Exception ex)
         {
@@ -573,7 +711,7 @@ public partial class MainWindowViewModel
         }
         finally
         {
-            IsProjectBusy = false;
+            IsProjectBusy = _projectLoading;
         }
     }
 

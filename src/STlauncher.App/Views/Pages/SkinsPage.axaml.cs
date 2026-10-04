@@ -130,14 +130,20 @@ public partial class SkinsPage : UserControl
     private void OnWindowClosing(object? sender, WindowClosingEventArgs e)
     {
         if (e.CloseReason != WindowCloseReason.WindowClosing ||
-            _viewModel is not { IsSkinEditorOpen: true, IsSkinEditorDirty: true } viewModel)
+            _viewModel is not { } viewModel || !viewModel.HoldCloseForSkinEditor())
         {
             return;
         }
 
         e.Cancel = true;
-        viewModel.Section = ShellSection.Skins;
-        viewModel.CloseSkinEditorCommand.Execute(null);
+
+        // The launcher closes itself when the game it hid for ends, and then the window
+        // is in the tray: a question nobody can see would only keep it there. A window
+        // already on screen is left as the player arranged it.
+        if (sender is Window { IsVisible: false })
+        {
+            viewModel.ShowFromTray();
+        }
     }
 
     // ===================== New skin, and files brought in =====================

@@ -59,6 +59,11 @@ public partial class MainWindowViewModel
             return;
         }
 
+        if (HoldMoveForSkinEditor())
+        {
+            return;
+        }
+
         var picked = await PickFolderAsync();
 
         if (string.IsNullOrWhiteSpace(picked))
@@ -74,11 +79,31 @@ public partial class MainWindowViewModel
     private Task ResetDataDirectoryAsync()
         => IsDefaultDataDirectory ? Task.CompletedTask : MoveDataToAsync(DataLocation.DefaultRoot);
 
+    /// <summary>
+    /// The move ends in a restart that asks nobody, and the skin library moves with the
+    /// rest: a drawing that was never saved is settled before any of it begins.
+    /// </summary>
+    private bool HoldMoveForSkinEditor()
+    {
+        if (!IsSkinEditorOpen || !IsSkinEditorDirty)
+        {
+            return false;
+        }
+
+        DataMoveStatus = Localize("DataFolder_UnsavedSkin", "The skin editor has a drawing that is not saved. Save it or discard it there first.");
+        return true;
+    }
+
     private async Task MoveDataToAsync(string target)
     {
         if (DataLocation.IsSame(target, _paths.Root))
         {
             DataMoveStatus = Localize("DataFolder_Same", "That is the current folder");
+            return;
+        }
+
+        if (HoldMoveForSkinEditor())
+        {
             return;
         }
 

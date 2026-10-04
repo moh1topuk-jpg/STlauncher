@@ -661,6 +661,7 @@
     <x:String x:Key="Settings_DataFolderHint">Здесь лежат сборки, миры, версии игры и Java. Перенос на другой диск копирует всё целиком и перезапускает лаунчер; старая папка очищается только после успешного копирования.</x:String>
     <x:String x:Key="DataFolder_Busy">Дождитесь, пока игра и загрузки закончат работу</x:String>
     <x:String x:Key="DataFolder_Same">Это и есть текущая папка</x:String>
+    <x:String x:Key="DataFolder_UnsavedSkin">В редакторе скинов есть несохранённый рисунок. Сначала сохраните его или откажитесь от изменений там.</x:String>
     <x:String x:Key="DataFolder_Moving">Переношу {0} в {1}…</x:String>
     <x:String x:Key="DataFolder_MovingPart">Переношу: {0}…</x:String>
     <x:String x:Key="DataFolder_Done">Перенесено файлов: {0}. Перезапускаю лаунчер…</x:String>
@@ -1008,6 +1009,8 @@
     <x:String x:Key="Mods_BlockedFile">автор «{0}» разрешил скачивать файл только со страницы мода на CurseForge</x:String>
     <x:String x:Key="Mods_ReviewBlocked">«{0}» скачивается только со страницы мода: кнопка справа её откроет</x:String>
     <x:String x:Key="Mods_ReviewFirst">Для «{0}» нужны другие моды: их список справа, «Добавить в сборку» поставит всё вместе</x:String>
+    <x:String x:Key="Mods_DepsIncomplete">Не удалось узнать всё, что нужно этому моду, поэтому он пока не добавляется. Нажмите на мод ещё раз чуть позже.</x:String>
+    <x:String x:Key="Mods_LeftToThePlayer">«{0}» добавлен, но ему ещё нужно: {1}. Это выдаётся только на странице самого мода: скачайте файл там и перетащите в окно лаунчера.</x:String>
     <x:String x:Key="Count_MillionsShort">{0} млн</x:String>
     <x:String x:Key="Count_ThousandsShort">{0} тыс.</x:String>
 
@@ -1113,7 +1116,7 @@
     <x:String x:Key="Host_Send">Отправить команду</x:String>
     <x:String x:Key="Host_CommandNoServer">Сервер не запущен — команду некому выполнить</x:String>
     <x:String x:Key="Host_Whitelist">Кому можно зайти</x:String>
-    <x:String x:Key="Host_WhitelistHint">Зайти смогут только игроки из этого списка. Ник пишется точно как в лаунчере друга: большие и маленькие буквы различаются.</x:String>
+    <x:String x:Key="Host_WhitelistHint">Зайти смогут только игроки из этого списка. Ник пишется точно как в лаунчере друга: большие и маленькие буквы различаются. Ник — не пароль: сервер пустит любого, кто зайдёт под ником из списка, поэтому давайте адрес только тем, кому доверяете.</x:String>
     <x:String x:Key="Host_WhitelistAdd">Ник друга</x:String>
     <x:String x:Key="Host_WhitelistAddButton">Добавить</x:String>
     <x:String x:Key="Host_WhitelistRemoveTip">Убрать из списка</x:String>
@@ -1202,6 +1205,7 @@
     <x:String x:Key="Host_CloseTitle">Сервер ещё работает</x:String>
     <x:String x:Key="Host_CloseText">Сервер «{0}» работает. Если закрыть лаунчер, он остановится: мир сохранится, игроков отключит, а адреса, открытые для друзей, закроются.</x:String>
     <x:String x:Key="Host_CloseConfirm">Остановить и закрыть</x:String>
+    <x:String x:Key="Host_CloseConfirmUpdate">Остановить и обновить</x:String>
     <x:String x:Key="Host_CloseTunnelTitle">Вы на сервере друга</x:String>
     <x:String x:Key="Host_CloseTextTunnel">Игра подключена к серверу друга через лаунчер. Если закрыть лаунчер, это соединение оборвётся.</x:String>
     <x:String x:Key="Host_CloseConfirmTunnel">Всё равно закрыть</x:String>
@@ -1324,6 +1328,7 @@
     <x:String x:Key="Skins_SaveHint">Сохранить в библиотеку (Ctrl+S)</x:String>
     <x:String x:Key="Skins_SaveFailed">Не удалось сохранить скин: {0}</x:String>
     <x:String x:Key="Skins_SaveGone">Этого скина больше нет в библиотеке, сохранить его некуда.</x:String>
+    <x:String x:Key="Skins_LibraryUnreadable">Список ваших скинов сейчас не удалось прочитать: возможно, файл занят другой программой. Сами скины целы. Откройте эту страницу ещё раз чуть позже.</x:String>
     <x:String x:Key="Skins_Tool">ИНСТРУМЕНТ</x:String>
     <x:String x:Key="Skins_ToolPencil">Карандаш</x:String>
     <x:String x:Key="Skins_ToolEraser">Ластик</x:String>

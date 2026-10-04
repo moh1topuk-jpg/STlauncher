@@ -187,6 +187,13 @@ public partial class MainWindowViewModel
             _hostLoaded = true;
             LoadHostServers();
             LoadFriendServers();
+
+            // A playit agent left behind by a session that never got to stop it (a crash,
+            // an older launcher) is ended before the page says the public way is off.
+            if (!_hosting.Playit.IsRunning)
+            {
+                _ = _hosting.Playit.StopAsync();
+            }
         }
 
         // The catalog, which names the relay, may have arrived since the last look.
@@ -1686,12 +1693,14 @@ public partial class MainWindowViewModel
             if (world is not null && _hostDraftWorld != world)
             {
                 var copying = new Progress<long>(bytes => HostBusyText = Localize("Host_BusyWorld", "Copying the world: {0}", FormatSize(bytes)));
-                var copied = await Task.Run(() => ServerContent.CopyWorld(gameDirectory, world, serverDirectory, replaceExisting: false, copying));
+                // A world already in the draft is not taken for this one: it is whatever an
+                // earlier attempt left - a copy that was cut short, or another world. It is
+                // set aside and the copy made afresh.
+                var copied = await Task.Run(() => ServerContent.CopyWorld(gameDirectory, world, serverDirectory, replaceExisting: true, copying));
 
                 switch (copied.Status)
                 {
                     case WorldCopyStatus.Copied:
-                    case WorldCopyStatus.DestinationExists:
                         _hostDraftWorld = world;
                         break;
 
@@ -2323,6 +2332,9 @@ public partial class MainWindowViewModel
     private bool _hostCloseConfirmed;
     private bool _closeAskedByLauncher;
 
+    /// <summary>The question on screen was put by "restart to update"; its "yes" goes on with the update.</summary>
+    private bool _hostCloseForUpdate;
+
     [ObservableProperty]
     private bool _isHostCloseOpen;
 
@@ -2345,12 +2357,17 @@ public partial class MainWindowViewModel
     /// Asked by the window when something wants to close it. True means "not yet": the
     /// question is on the screen and the window stays.
     /// </summary>
-    public bool HoldCloseForHosting()
+    /// <param name="forUpdate">
+    /// The update's restart is asking, not the window: "yes" then stops everything and
+    /// goes on with the update instead of closing the window.
+    /// </param>
+    public bool HoldCloseForHosting(bool forUpdate = false)
     {
         // The launcher closing itself after the game: the game is over, so a tunnel to a
         // friend's server has nobody left to carry.
         var byLauncher = _closeAskedByLauncher;
         _closeAskedByLauncher = false;
+        _hostCloseForUpdate = false;
 
         if (_hostCloseConfirmed)
         {
@@ -2370,7 +2387,9 @@ public partial class MainWindowViewModel
 
             HostCloseTitle = Localize("Host_CloseTitle", "The server is still running");
             HostCloseText = Localize("Host_CloseText", "The server “{0}” is running. Closing the launcher stops it: the world is saved, the players are disconnected and the addresses opened for friends are closed.", name);
-            HostCloseAction = Localize("Host_CloseConfirm", "Stop and close");
+            HostCloseAction = forUpdate
+                ? Localize("Host_CloseConfirmUpdate", "Stop and update")
+                : Localize("Host_CloseConfirm", "Stop and close");
         }
         else
         {
@@ -2379,6 +2398,7 @@ public partial class MainWindowViewModel
             HostCloseAction = Localize("Host_CloseConfirmTunnel", "Close anyway");
         }
 
+        _hostCloseForUpdate = forUpdate;
         IsHostCloseOpen = true;
         return true;
     }
@@ -2399,6 +2419,15 @@ public partial class MainWindowViewModel
         _hostCloseConfirmed = true;
         IsHostClosing = false;
         IsHostCloseOpen = false;
+
+        // Asked on the way into an update: the restart is what was being held.
+        if (_hostCloseForUpdate)
+        {
+            _hostCloseForUpdate = false;
+            await InstallUpdateAsync();
+            return;
+        }
+
         RequestCloseLauncher?.Invoke();
     }
 
@@ -2408,6 +2437,7 @@ public partial class MainWindowViewModel
         if (!IsHostClosing)
         {
             IsHostCloseOpen = false;
+            _hostCloseForUpdate = false;
         }
     }
 

@@ -23,6 +23,7 @@ public sealed class EmoteLibrary
     private const string LanguageFolder = "assets/emotecraft/lang/";
 
     private readonly object _gate = new();
+    private readonly object _reading = new();
     private readonly Dictionary<string, (string Stamp, IReadOnlyList<Emote> Emotes)> _cache =
         new(StringComparer.OrdinalIgnoreCase);
 
@@ -52,14 +53,28 @@ public sealed class EmoteLibrary
                 }
             }
 
-            var emotes = Read(files, locale);
-
-            lock (_gate)
+            // One read at a time. The home screen asks again on every visit, and a folder
+            // that is slow to read would otherwise be read by as many threads as there
+            // were visits; the ones that waited find the list already made.
+            lock (_reading)
             {
-                _cache[gameDirectory] = (stamp, emotes);
-            }
+                lock (_gate)
+                {
+                    if (_cache.TryGetValue(gameDirectory, out var cached) && cached.Stamp == stamp)
+                    {
+                        return cached.Emotes;
+                    }
+                }
 
-            return emotes;
+                var emotes = Read(files, locale);
+
+                lock (_gate)
+                {
+                    _cache[gameDirectory] = (stamp, emotes);
+                }
+
+                return emotes;
+            }
         }
         catch (Exception)
         {

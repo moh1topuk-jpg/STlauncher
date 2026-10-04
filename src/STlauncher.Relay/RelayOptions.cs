@@ -30,6 +30,14 @@ public sealed class RelayOptions
 
     public int MaxRooms { get; set; } = 200;
 
+    /// <summary>
+    /// Rooms one address may hold open at a time. A room costs its owner one idle
+    /// connection, so without this a handful of addresses could take every room there is
+    /// and leave none for anybody else. A few, not one: players behind one shared address
+    /// each host their own.
+    /// </summary>
+    public int MaxRoomsPerIp { get; set; } = 4;
+
     /// <summary>Connections of guests in one room at a time, waiting ones included.</summary>
     public int MaxGuestsPerRoom { get; set; } = 16;
 
@@ -75,6 +83,7 @@ public sealed class RelayOptions
         new("max-line", 64, 4096, "longest handshake line in bytes (256)", (o, v) => o.MaxLineLength = v),
         new("handshake-timeout", 1, 120, "seconds a connection has to send its first line (10)", (o, v) => o.HandshakeTimeout = TimeSpan.FromSeconds(v)),
         new("max-rooms", 1, 100_000, "rooms at a time (200)", (o, v) => o.MaxRooms = v),
+        new("max-rooms-per-ip", 1, 100_000, "rooms one address may hold at a time (4)", (o, v) => o.MaxRoomsPerIp = v),
         new("max-guests", 1, 1000, "guest connections per room (16)", (o, v) => o.MaxGuestsPerRoom = v),
         new("accept-timeout", 1, 120, "seconds a guest waits for the host (10)", (o, v) => o.AcceptTimeout = TimeSpan.FromSeconds(v)),
         new("idle-timeout", 5, 86_400, "seconds a silent tunnel stays open (120)", (o, v) => o.IdleTimeout = TimeSpan.FromSeconds(v)),

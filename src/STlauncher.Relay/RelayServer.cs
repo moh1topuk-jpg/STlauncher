@@ -46,6 +46,10 @@ public sealed class RelayServer : IAsyncDisposable
     private readonly Action<string>? _log;
     private readonly CancellationTokenSource _stop = new();
     private readonly Dictionary<string, Room> _rooms = new(StringComparer.Ordinal);
+
+    /// <summary>How many rooms each address holds; read and written under the lock on <see cref="_rooms"/>.</summary>
+    private readonly Dictionary<IPAddress, int> _roomsByOwner = new();
+
     private readonly ConcurrentDictionary<Socket, byte> _sockets = new();
     private readonly IpGate _gate;
 
@@ -113,6 +117,7 @@ public sealed class RelayServer : IAsyncDisposable
             }
 
             _rooms.Clear();
+            _roomsByOwner.Clear();
         }
 
         foreach (var socket in _sockets.Keys)
@@ -288,7 +293,7 @@ public sealed class RelayServer : IAsyncDisposable
             switch (parts[0])
             {
                 case "HOST" when parts.Length == 2:
-                    await ServeHostAsync(socket, parts[1]).ConfigureAwait(false);
+                    await ServeHostAsync(socket, address, parts[1]).ConfigureAwait(false);
                     break;
 
                 case "JOIN" when parts.Length == 2:
@@ -321,7 +326,7 @@ public sealed class RelayServer : IAsyncDisposable
         }
     }
 
-    private async Task ServeHostAsync(Socket socket, string hostKeyText)
+    private async Task ServeHostAsync(Socket socket, IPAddress address, string hostKeyText)
     {
         if (!TryKey(hostKeyText, out var hostKey))
         {
@@ -330,8 +335,10 @@ public sealed class RelayServer : IAsyncDisposable
         }
 
         var roomKey = RoomKeyFor(hostKey);
+        var owner = RoomOwner(address);
         Room? room;
         Socket? replaced = null;
+        var refusal = "ERR FULL";
 
         lock (_rooms)
         {
@@ -345,14 +352,26 @@ public sealed class RelayServer : IAsyncDisposable
             }
             else if (_rooms.Count < _options.MaxRooms)
             {
-                room = new Room(socket);
-                _rooms.Add(roomKey, room);
+                _roomsByOwner.TryGetValue(owner, out var held);
+
+                // Rooms are few and cost their owner next to nothing to keep: one address
+                // must not be able to sit on all of them.
+                if (held < _options.MaxRoomsPerIp)
+                {
+                    room = new Room(socket, owner);
+                    _rooms.Add(roomKey, room);
+                    _roomsByOwner[owner] = held + 1;
+                }
+                else
+                {
+                    refusal = "ERR LIMIT";
+                }
             }
         }
 
         if (room is null)
         {
-            await SendLineAsync(socket, "ERR FULL").ConfigureAwait(false);
+            await SendLineAsync(socket, refusal).ConfigureAwait(false);
             return;
         }
 
@@ -386,6 +405,19 @@ public sealed class RelayServer : IAsyncDisposable
                 if (ReferenceEquals(room.Control, socket))
                 {
                     removed = _rooms.Remove(roomKey);
+                }
+
+                // Counted against whoever opened the room, wherever its host has moved since.
+                if (removed && _roomsByOwner.TryGetValue(room.Owner, out var held))
+                {
+                    if (held > 1)
+                    {
+                        _roomsByOwner[room.Owner] = held - 1;
+                    }
+                    else
+                    {
+                        _roomsByOwner.Remove(room.Owner);
+                    }
                 }
             }
 
@@ -828,6 +860,23 @@ public sealed class RelayServer : IAsyncDisposable
         return new IPAddress(bytes);
     }
 
+    /// <summary>
+    /// What the rooms-per-address limit counts by. Wider than <see cref="GateKey"/> for
+    /// IPv6: a home line is commonly handed a /56, which is 256 of the /64s the connection
+    /// limits count by - and a room, unlike a connection, is one of only a few hundred.
+    /// </summary>
+    private static IPAddress RoomOwner(IPAddress address)
+    {
+        if (address.AddressFamily != AddressFamily.InterNetworkV6)
+        {
+            return address;
+        }
+
+        var bytes = address.GetAddressBytes();
+        Array.Clear(bytes, 7, 9);
+        return new IPAddress(bytes);
+    }
+
     private static string NewKey()
         => Convert.ToHexString(RandomNumberGenerator.GetBytes(KeyLength / 2)).ToLowerInvariant();
 
@@ -855,10 +904,14 @@ public sealed class RelayServer : IAsyncDisposable
 
     private sealed class Room
     {
-        public Room(Socket control)
+        public Room(Socket control, IPAddress owner)
         {
             Control = control;
+            Owner = owner;
         }
+
+        /// <summary>The address the room is counted against: the one that opened it.</summary>
+        public IPAddress Owner { get; }
 
         public volatile Socket Control;
         public int Guests;
