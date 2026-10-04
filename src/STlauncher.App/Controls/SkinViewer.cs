@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
@@ -8,11 +9,14 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using STlauncher.App.Services;
+using STlauncher.App.ViewModels;
 
 namespace STlauncher.App.Controls;
 
 /// <summary>
-/// The player model with the skin on it, turning slowly and draggable with the mouse.
+/// The player model with the skin on it: turning slowly in the small preview, alive on
+/// the home screen - standing, waving, looking around, sitting down - and draggable with
+/// the mouse in both.
 /// </summary>
 /// <remarks>
 /// There is no 3D API here, and none is needed: the model is nothing but boxes, and under
@@ -21,6 +25,11 @@ namespace STlauncher.App.Controls;
 /// is one DrawImage under a matrix, faces are drawn back to front, and those turned away
 /// are skipped. Lighting is a translucent shade over the faces that look away from the
 /// light. It runs on the ordinary drawing pipeline and costs nothing to set up.
+///
+/// Movement is the same boxes turned about their joints before the camera turns the
+/// whole figure: a shoulder, a hip, the neck. A pose is six such turns and a lift; a
+/// clip is a pose as a function of time; and one clip fades into the next, so nothing
+/// snaps.
 /// </remarks>
 public sealed class SkinViewer : Control
 {
@@ -30,18 +39,40 @@ public sealed class SkinViewer : Control
     public static readonly StyledProperty<bool> AutoRotateProperty =
         AvaloniaProperty.Register<SkinViewer, bool>(nameof(AutoRotate), true);
 
+    /// <summary>True on the home screen: the figure plays its clips instead of standing still.</summary>
+    public static readonly StyledProperty<bool> AnimatedProperty =
+        AvaloniaProperty.Register<SkinViewer, bool>(nameof(Animated));
+
+    public static readonly DirectProperty<SkinViewer, string> PoseNameProperty =
+        AvaloniaProperty.RegisterDirect<SkinViewer, string>(nameof(PoseName), viewer => viewer.PoseName);
+
     private static readonly Vector3 Light = Normalize(new Vector3(-0.4, 0.8, 0.6));
 
+    /// <summary>How long one clip takes to give way to the next.</summary>
+    private const double BlendSeconds = 0.45;
+
     private readonly DispatcherTimer _timer;
+    private readonly Stopwatch _clock = Stopwatch.StartNew();
+    private readonly Random _random = new();
+
     private double _yaw = 0.55;
     private double _pitch = 0.15;
     private double _spin = 0.008;
     private Point? _dragFrom;
     private double _idleTicks;
+    private int _skippedTicks;
+
+    private MotionClip _clip = Clips[0];
+    private double _clipStarted;
+    private double _clipLength = 6;
+    private Pose _blendFrom = Pose.Rest;
+    private double _blendStarted = double.NegativeInfinity;
+    private int _nextFeature;
+    private string _poseName = string.Empty;
 
     static SkinViewer()
     {
-        AffectsRender<SkinViewer>(SkinProperty);
+        AffectsRender<SkinViewer>(SkinProperty, AnimatedProperty);
     }
 
     public SkinViewer()
@@ -53,9 +84,25 @@ public sealed class SkinViewer : Control
         Cursor = new Cursor(StandardCursorType.Hand);
 
         _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) };
+
+        // The moving figure is redrawn thirty times a second; the cubic filter that makes
+        // a still one flawless is not worth that many times its price, and in motion
+        // nobody can tell.
+        PropertyChanged += (_, e) =>
+        {
+            if (e.Property == AnimatedProperty)
+            {
+                RenderOptions.SetBitmapInterpolationMode(this,
+                    Animated ? BitmapInterpolationMode.MediumQuality : BitmapInterpolationMode.HighQuality);
+            }
+        };
         _timer.Tick += (_, _) => Tick();
 
-        AttachedToVisualTree += (_, _) => _timer.Start();
+        AttachedToVisualTree += (_, _) =>
+        {
+            _timer.Start();
+            UpdatePoseName();
+        };
         DetachedFromVisualTree += (_, _) => _timer.Stop();
     }
 
@@ -69,6 +116,19 @@ public sealed class SkinViewer : Control
     {
         get => GetValue(AutoRotateProperty);
         set => SetValue(AutoRotateProperty, value);
+    }
+
+    public bool Animated
+    {
+        get => GetValue(AnimatedProperty);
+        set => SetValue(AnimatedProperty, value);
+    }
+
+    /// <summary>What the figure is doing now, in the interface language: "Waving".</summary>
+    public string PoseName
+    {
+        get => _poseName;
+        private set => SetAndRaise(PoseNameProperty, ref _poseName, value);
     }
 
     /// <summary>Turn about the vertical axis, radians. Settable so a test can look from any side.</summary>
@@ -92,8 +152,22 @@ public sealed class SkinViewer : Control
         }
     }
 
+    /// <summary>Skips to the next clip that is not plain standing. The button beside the figure.</summary>
+    public void NextPose()
+    {
+        var features = Clips.Skip(1).ToList();
+        StartClip(features[_nextFeature % features.Count]);
+        _nextFeature++;
+        InvalidateVisual();
+    }
+
     private void Tick()
     {
+        if (Animated)
+        {
+            TickAnimation();
+        }
+
         if (_dragFrom is not null)
         {
             return;
@@ -108,6 +182,81 @@ public sealed class SkinViewer : Control
             _pitch += (0.15 - _pitch) * 0.03;
             InvalidateVisual();
         }
+    }
+
+    /// <summary>
+    /// Thirty frames a second while the window is in front, five while it is behind
+    /// another, none while it is minimised or the page is not shown: the figure is
+    /// decoration, and decoration does not get to keep a laptop's fan running.
+    /// </summary>
+    private void TickAnimation()
+    {
+        if (!IsEffectivelyVisible || Bounds.Width <= 0)
+        {
+            return;
+        }
+
+        if (TopLevel.GetTopLevel(this) is Window window)
+        {
+            if (window.WindowState == WindowState.Minimized)
+            {
+                return;
+            }
+
+            if (!window.IsActive && ++_skippedTicks % 6 != 0)
+            {
+                return;
+            }
+        }
+
+        var now = _clock.Elapsed.TotalSeconds;
+
+        if (now - _clipStarted >= _clipLength)
+        {
+            // Standing between every two things worth watching, for a different while each time.
+            if (ReferenceEquals(_clip, Clips[0]))
+            {
+                var features = Clips.Skip(1).ToList();
+                StartClip(features[_nextFeature % features.Count]);
+                _nextFeature++;
+            }
+            else
+            {
+                StartClip(Clips[0]);
+            }
+        }
+
+        InvalidateVisual();
+    }
+
+    private void StartClip(MotionClip clip)
+    {
+        var now = _clock.Elapsed.TotalSeconds;
+
+        _blendFrom = CurrentPose(now);
+        _blendStarted = now;
+        _clip = clip;
+        _clipStarted = now;
+        _clipLength = ReferenceEquals(clip, Clips[0]) ? 5 + _random.NextDouble() * 4 : clip.Seconds;
+        UpdatePoseName();
+    }
+
+    private void UpdatePoseName()
+        => PoseName = MainWindowViewModel.Localize(_clip.Key, _clip.Fallback);
+
+    private Pose CurrentPose(double now)
+    {
+        var pose = _clip.At(now - _clipStarted);
+        var blend = (now - _blendStarted) / BlendSeconds;
+
+        if (blend >= 1)
+        {
+            return pose;
+        }
+
+        // Ease in and out, so a limb neither starts nor stops with a jerk.
+        var t = blend * blend * (3 - 2 * blend);
+        return Pose.Lerp(_blendFrom, pose, t);
     }
 
     protected override void OnPointerPressed(PointerPressedEventArgs e)
@@ -150,18 +299,23 @@ public sealed class SkinViewer : Control
 
         var scale = Math.Min(Bounds.Width / 24, Bounds.Height / 40);
         var centre = new Point(Bounds.Width / 2, Bounds.Height / 2);
+        var pose = Animated ? CurrentPose(_clock.Elapsed.TotalSeconds) : Pose.Rest;
 
         // Painter's algorithm by body part, not by face. The parts are convex boxes that
-        // never intersect, so ordering them by depth is exact; ordering single faces was
-        // not - at an oblique angle the inner side of an arm, a long thin face, averaged
-        // out "behind" the front of the body and was painted over it. Within a part the
-        // visible faces cannot overlap, and an outer layer is drawn right after the part
-        // it wraps.
+        // never intersect, so ordering them by depth is exact enough; ordering single
+        // faces was not - at an oblique angle the inner side of an arm, a long thin face,
+        // averaged out "behind" the front of the body and was painted over it. Within a
+        // part the visible faces cannot overlap, and an outer layer is drawn right after
+        // the part it wraps.
         var parts = Model(skin)
-            .Select(part => (Part: part, Depth: Rotate(part.Centre with { Y = part.Centre.Y - ModelMidHeight }).Z))
+            .Select(part =>
+            {
+                var joint = pose.For(part.Kind);
+                return (Part: part, Joint: joint, Depth: Rotate(Place(part.Centre, part.Pivot, joint, pose)).Z);
+            })
             .OrderBy(p => p.Depth);
 
-        foreach (var (part, _) in parts)
+        foreach (var (part, joint, _) in parts)
         {
             foreach (var box in new[] { part.Base, part.Overlay })
             {
@@ -172,7 +326,7 @@ public sealed class SkinViewer : Control
 
                 foreach (var face in box.Faces())
                 {
-                    var projected = Project(face, scale, centre);
+                    var projected = Project(face, part.Pivot, joint, pose, scale, centre);
 
                     if (projected is null)
                     {
@@ -200,9 +354,64 @@ public sealed class SkinViewer : Control
     /// <summary>Half the model's height: it turns about its middle, not its feet.</summary>
     private const double ModelMidHeight = 16;
 
-    private ProjectedFace? Project(Face face, double scale, Point centre)
+    /// <summary>
+    /// A point of a body part in the posed figure: turned about the part's joint, lifted
+    /// with the body, turned with the whole figure, and brought down so the camera's own
+    /// turn goes about the middle.
+    /// </summary>
+    private static Vector3 Place(Vector3 point, Vector3 pivot, Joint joint, Pose pose)
     {
-        var p = face.Corners.Select(c => Rotate(c with { Y = c.Y - ModelMidHeight })).ToArray();
+        var local = Turn(new Vector3(point.X - pivot.X, point.Y - pivot.Y, point.Z - pivot.Z), joint);
+        var x = local.X + pivot.X;
+        var y = local.Y + pivot.Y + pose.Lift;
+        var z = local.Z + pivot.Z;
+
+        var c = Math.Cos(pose.Swing);
+        var s = Math.Sin(pose.Swing);
+
+        return new Vector3(x * c + z * s, y - ModelMidHeight, -x * s + z * c);
+    }
+
+    /// <summary>A direction under the same turns, for the light.</summary>
+    private static Vector3 PlaceNormal(Vector3 normal, Joint joint, Pose pose)
+    {
+        var local = Turn(normal, joint);
+        var c = Math.Cos(pose.Swing);
+        var s = Math.Sin(pose.Swing);
+
+        return new Vector3(local.X * c + local.Z * s, local.Y, -local.X * s + local.Z * c);
+    }
+
+    /// <summary>About Z (out to the side), then X (forward and back), then Y (twist).</summary>
+    private static Vector3 Turn(Vector3 v, Joint joint)
+    {
+        if (joint.Rz != 0)
+        {
+            var c = Math.Cos(joint.Rz);
+            var s = Math.Sin(joint.Rz);
+            v = new Vector3(v.X * c - v.Y * s, v.X * s + v.Y * c, v.Z);
+        }
+
+        if (joint.Rx != 0)
+        {
+            var c = Math.Cos(joint.Rx);
+            var s = Math.Sin(joint.Rx);
+            v = new Vector3(v.X, v.Y * c - v.Z * s, v.Y * s + v.Z * c);
+        }
+
+        if (joint.Ry != 0)
+        {
+            var c = Math.Cos(joint.Ry);
+            var s = Math.Sin(joint.Ry);
+            v = new Vector3(v.X * c + v.Z * s, v.Y, -v.X * s + v.Z * c);
+        }
+
+        return v;
+    }
+
+    private ProjectedFace? Project(Face face, Vector3 pivot, Joint joint, Pose pose, double scale, Point centre)
+    {
+        var p = face.Corners.Select(c => Rotate(Place(c, pivot, joint, pose))).ToArray();
 
         // Orthographic: x right, y up, z towards the viewer.
         Point Screen(Vector3 v) => new(centre.X + v.X * scale, centre.Y - v.Y * scale);
@@ -249,7 +458,7 @@ public sealed class SkinViewer : Control
             s[0].X - ax * t.X - bx * t.Y,
             s[0].Y - ay * t.X - by * t.Y);
 
-        var normal = Rotate(face.Normal);
+        var normal = Rotate(PlaceNormal(face.Normal, joint, pose));
         var lit = Math.Max(0, Dot(normal, Light));
         var shade = (1 - lit) * 0.45;
 
@@ -271,6 +480,132 @@ public sealed class SkinViewer : Control
 
         return new Vector3(x, y, z);
     }
+
+    // ===================== Poses and clips =====================
+
+    private enum PartKind
+    {
+        Head,
+        Body,
+        RightArm,
+        LeftArm,
+        RightLeg,
+        LeftLeg
+    }
+
+    /// <summary>The turn of one joint, radians. A limb hanging down swings forward on a negative Rx.</summary>
+    private readonly record struct Joint(double Rx = 0, double Ry = 0, double Rz = 0)
+    {
+        public static Joint Lerp(Joint a, Joint b, double t)
+            => new(a.Rx + (b.Rx - a.Rx) * t, a.Ry + (b.Ry - a.Ry) * t, a.Rz + (b.Rz - a.Rz) * t);
+    }
+
+    /// <summary>The whole figure at one instant: six joints, how high it is off the ground, and its own turn.</summary>
+    private readonly record struct Pose(
+        Joint Head, Joint Body, Joint RightArm, Joint LeftArm, Joint RightLeg, Joint LeftLeg,
+        double Lift = 0, double Swing = 0)
+    {
+        public static readonly Pose Rest = new(default, default, default, default, default, default);
+
+        public Joint For(PartKind kind) => kind switch
+        {
+            PartKind.Head => Head,
+            PartKind.Body => Body,
+            PartKind.RightArm => RightArm,
+            PartKind.LeftArm => LeftArm,
+            PartKind.RightLeg => RightLeg,
+            _ => LeftLeg
+        };
+
+        public static Pose Lerp(Pose a, Pose b, double t) => new(
+            Joint.Lerp(a.Head, b.Head, t),
+            Joint.Lerp(a.Body, b.Body, t),
+            Joint.Lerp(a.RightArm, b.RightArm, t),
+            Joint.Lerp(a.LeftArm, b.LeftArm, t),
+            Joint.Lerp(a.RightLeg, b.RightLeg, t),
+            Joint.Lerp(a.LeftLeg, b.LeftLeg, t),
+            a.Lift + (b.Lift - a.Lift) * t,
+            a.Swing + (b.Swing - a.Swing) * t);
+    }
+
+    /// <summary>A named movement: the pose at each moment of it, and how long it is worth watching.</summary>
+    private sealed record MotionClip(string Key, string Fallback, double Seconds, Func<double, Pose> At);
+
+    /// <summary>The first is plain standing; the figure returns to it between the others.</summary>
+    private static readonly MotionClip[] Clips =
+    {
+        new("Pose_Idle", "Standing", 6, Idle),
+        new("Pose_Wave", "Waving", 4.2, t =>
+        {
+            var idle = Idle(t);
+            return idle with
+            {
+                LeftArm = new Joint(Rz: 2.55 + Math.Sin(t * 9) * 0.28),
+                Head = new Joint(Ry: 0.22, Rz: 0.07)
+            };
+        }),
+        new("Pose_Look", "Looking around", 4.5, t =>
+        {
+            var idle = Idle(t);
+            return idle with { Head = new Joint(Rx: Math.Sin(t * 0.9) * 0.12, Ry: Math.Sin(t * 1.5) * 0.75) };
+        }),
+        new("Pose_Walk", "Walking", 5, t =>
+        {
+            var step = Math.Sin(t * 6.2);
+            return new Pose(
+                Head: new Joint(Rx: 0.03),
+                Body: default,
+                RightArm: new Joint(Rx: step * 0.75),
+                LeftArm: new Joint(Rx: -step * 0.75),
+                RightLeg: new Joint(Rx: -step * 0.7),
+                LeftLeg: new Joint(Rx: step * 0.7),
+                Lift: Math.Abs(Math.Cos(t * 6.2)) * 0.35);
+        }),
+        new("Pose_Sit", "Sitting", 6, t => new Pose(
+            Head: new Joint(Rx: Math.Sin(t * 0.8) * 0.06, Ry: Math.Sin(t * 0.6) * 0.3),
+            Body: default,
+            RightArm: new Joint(Rx: -0.55, Rz: -0.08),
+            LeftArm: new Joint(Rx: -0.55, Rz: 0.08),
+            RightLeg: new Joint(Rx: -1.45, Rz: -0.12),
+            LeftLeg: new Joint(Rx: -1.45, Rz: 0.12),
+            Lift: -10)),
+        new("Pose_Cheer", "Cheering", 3.6, t =>
+        {
+            var shake = Math.Sin(t * 14) * 0.14;
+            return new Pose(
+                Head: new Joint(Rx: -0.18),
+                Body: default,
+                RightArm: new Joint(Rz: -2.75 + shake),
+                LeftArm: new Joint(Rz: 2.75 - shake),
+                RightLeg: new Joint(Rx: 0.12),
+                LeftLeg: new Joint(Rx: -0.12),
+                Lift: Math.Abs(Math.Sin(t * 6.5)) * 2.4);
+        }),
+        new("Pose_Dance", "Dancing", 5.5, t =>
+        {
+            var beat = Math.Sin(t * 5.4);
+            var half = Math.Sin(t * 2.7);
+            return new Pose(
+                Head: new Joint(Ry: beat * 0.25, Rz: half * 0.12),
+                Body: default,
+                RightArm: new Joint(Rx: -0.4 + beat * 0.5, Rz: -1.1 - half * 0.9),
+                LeftArm: new Joint(Rx: -0.4 - beat * 0.5, Rz: 1.1 - half * 0.9),
+                RightLeg: new Joint(Rx: Math.Max(0, beat) * -0.5),
+                LeftLeg: new Joint(Rx: Math.Max(0, -beat) * -0.5),
+                Lift: Math.Abs(beat) * 0.9,
+                Swing: half * 0.4);
+        })
+    };
+
+    /// <summary>Standing is not stillness: the arms hang a little out and sway, the head wanders, the chest rises.</summary>
+    private static Pose Idle(double t) => new(
+        Head: new Joint(Rx: Math.Sin(t * 0.45) * 0.05, Ry: Math.Sin(t * 0.6) * 0.22),
+        Body: default,
+        RightArm: new Joint(Rx: Math.Sin(t * 1.2) * 0.05, Rz: -0.06 - Math.Sin(t * 1.6) * 0.025),
+        LeftArm: new Joint(Rx: -Math.Sin(t * 1.2) * 0.05, Rz: 0.06 + Math.Sin(t * 1.6) * 0.025),
+        RightLeg: default,
+        LeftLeg: default,
+        Lift: Math.Sin(t * 1.6) * 0.12);
 
     // ===================== The model =====================
 
@@ -330,55 +665,69 @@ public sealed class SkinViewer : Control
             // from outside the box, matching the texture's orientation.
             yield return new Face(new[] { new Vector3(x0, y1, z1), new Vector3(x1, y1, z1), new Vector3(x1, y0, z1), new Vector3(x0, y0, z1) }, new Vector3(0, 0, 1), front);
             yield return new Face(new[] { new Vector3(x1, y1, z0), new Vector3(x0, y1, z0), new Vector3(x0, y0, z0), new Vector3(x1, y0, z0) }, new Vector3(0, 0, -1), back);
-            yield return new Face(new[] { new Vector3(x1, y1, z1), new Vector3(x1, y1, z0), new Vector3(x1, y0, z0), new Vector3(x1, y0, z1) }, new Vector3(1, 0, 0), Mirror ? left : left);
-            yield return new Face(new[] { new Vector3(x0, y1, z0), new Vector3(x0, y1, z1), new Vector3(x0, y0, z1), new Vector3(x0, y0, z0) }, new Vector3(-1, 0, 0), Mirror ? right : right);
+            yield return new Face(new[] { new Vector3(x1, y1, z1), new Vector3(x1, y1, z0), new Vector3(x1, y0, z0), new Vector3(x1, y0, z1) }, new Vector3(1, 0, 0), left);
+            yield return new Face(new[] { new Vector3(x0, y1, z0), new Vector3(x0, y1, z1), new Vector3(x0, y0, z1), new Vector3(x0, y0, z0) }, new Vector3(-1, 0, 0), right);
             yield return new Face(new[] { new Vector3(x0, y1, z0), new Vector3(x1, y1, z0), new Vector3(x1, y1, z1), new Vector3(x0, y1, z1) }, new Vector3(0, 1, 0), top);
             yield return new Face(new[] { new Vector3(x0, y0, z1), new Vector3(x1, y0, z1), new Vector3(x1, y0, z0), new Vector3(x0, y0, z0) }, new Vector3(0, -1, 0), bottom);
         }
     }
 
-    /// <summary>A body part: the box and, on a modern skin, the outer layer wrapped around it.</summary>
-    private sealed record Part(Box Base, Box? Overlay)
+    /// <summary>A body part: the box, the outer layer wrapped around it on a modern skin, and the joint it turns about.</summary>
+    private sealed record Part(Box Base, Box? Overlay, PartKind Kind, Vector3 Pivot)
     {
         public Vector3 Centre => new(Base.X + Base.Width / 2, Base.Y + Base.Height / 2, Base.Z + Base.Depth / 2);
     }
 
-    /// <summary>The player: head, body, two arms, two legs, each with its outer layer.</summary>
+    /// <summary>The player: head, body, two arms, two legs, each with its outer layer and its joint.</summary>
     private static IEnumerable<Part> Model(PlayerSkin skin)
     {
         var arm = skin.IsSlim ? 3 : 4;
+
+        // Joints: the neck, the shoulders two pixels below the top of the arm, the hips.
+        var neck = new Vector3(0, 24, 0);
+        var waist = new Vector3(0, 12, 0);
+        var rightShoulder = new Vector3(-4 - arm / 2.0, 22, 0);
+        var leftShoulder = new Vector3(4 + arm / 2.0, 22, 0);
+        var rightHip = new Vector3(-2, 12, 0);
+        var leftHip = new Vector3(2, 12, 0);
 
         // Model space: origin at the feet, y up, the player facing +z. Units are pixels.
         // Outer layers are slightly inflated so they sit over the base.
         yield return new Part(
             new Box(-4, 24, -4, 8, 8, 8, 0, 0),
-            new Box(-4, 24, -4, 8, 8, 8, 32, 0, Inflate: 0.5));                       // head + hat
+            new Box(-4, 24, -4, 8, 8, 8, 32, 0, Inflate: 0.5),
+            PartKind.Head, neck);                                                       // head + hat
 
         if (skin.IsLegacy)
         {
             // One arm and one leg in the texture; the other side is the same, mirrored.
-            yield return new Part(new Box(-4, 12, -2, 8, 12, 4, 16, 16), null);          // body
-            yield return new Part(new Box(-8, 12, -2, 4, 12, 4, 40, 16), null);          // right arm
-            yield return new Part(new Box(4, 12, -2, 4, 12, 4, 40, 16, Mirror: true), null); // left arm
-            yield return new Part(new Box(-4, 0, -2, 4, 12, 4, 0, 16), null);            // right leg
-            yield return new Part(new Box(0, 0, -2, 4, 12, 4, 0, 16, Mirror: true), null); // left leg
+            yield return new Part(new Box(-4, 12, -2, 8, 12, 4, 16, 16), null, PartKind.Body, waist);
+            yield return new Part(new Box(-8, 12, -2, 4, 12, 4, 40, 16), null, PartKind.RightArm, rightShoulder);
+            yield return new Part(new Box(4, 12, -2, 4, 12, 4, 40, 16, Mirror: true), null, PartKind.LeftArm, leftShoulder);
+            yield return new Part(new Box(-4, 0, -2, 4, 12, 4, 0, 16), null, PartKind.RightLeg, rightHip);
+            yield return new Part(new Box(0, 0, -2, 4, 12, 4, 0, 16, Mirror: true), null, PartKind.LeftLeg, leftHip);
             yield break;
         }
 
         yield return new Part(
             new Box(-4, 12, -2, 8, 12, 4, 16, 16),
-            new Box(-4, 12, -2, 8, 12, 4, 16, 32, Inflate: 0.25));                     // body + jacket
+            new Box(-4, 12, -2, 8, 12, 4, 16, 32, Inflate: 0.25),
+            PartKind.Body, waist);                                                      // body + jacket
         yield return new Part(
             new Box(-4 - arm, 12, -2, arm, 12, 4, 40, 16),
-            new Box(-4 - arm, 12, -2, arm, 12, 4, 40, 32, Inflate: 0.25));             // right arm + sleeve
+            new Box(-4 - arm, 12, -2, arm, 12, 4, 40, 32, Inflate: 0.25),
+            PartKind.RightArm, rightShoulder);                                          // right arm + sleeve
         yield return new Part(
             new Box(4, 12, -2, arm, 12, 4, 32, 48),
-            new Box(4, 12, -2, arm, 12, 4, 48, 48, Inflate: 0.25));                    // left arm + sleeve
+            new Box(4, 12, -2, arm, 12, 4, 48, 48, Inflate: 0.25),
+            PartKind.LeftArm, leftShoulder);                                            // left arm + sleeve
         yield return new Part(
             new Box(-4, 0, -2, 4, 12, 4, 0, 16),
-            new Box(-4, 0, -2, 4, 12, 4, 0, 32, Inflate: 0.25));                       // right leg + trouser
+            new Box(-4, 0, -2, 4, 12, 4, 0, 32, Inflate: 0.25),
+            PartKind.RightLeg, rightHip);                                               // right leg + trouser
         yield return new Part(
             new Box(0, 0, -2, 4, 12, 4, 16, 48),
-            new Box(0, 0, -2, 4, 12, 4, 0, 48, Inflate: 0.25));                        // left leg + trouser
+            new Box(0, 0, -2, 4, 12, 4, 0, 48, Inflate: 0.25),
+            PartKind.LeftLeg, leftHip);                                                 // left leg + trouser
     }
 }

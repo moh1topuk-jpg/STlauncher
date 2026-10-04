@@ -146,6 +146,24 @@ public sealed class ThemeService
                 EndPoint = new RelativePoint(0, 1, RelativeUnit.Relative),
                 GradientStops = { new GradientStop(hover, 0), new GradientStop(accent, 1) }
             },
+            ["HeroGlowBrush"] = new RadialGradientBrush
+            {
+                Center = new RelativePoint(0, 1, RelativeUnit.Relative),
+                GradientOrigin = new RelativePoint(0, 1, RelativeUnit.Relative),
+                RadiusX = new RelativeScalar(0.6, RelativeUnit.Relative),
+                RadiusY = new RelativeScalar(0.95, RelativeUnit.Relative),
+                GradientStops = { new GradientStop(WithAlpha(hover, light ? 0.2 : 0.4), 0), new GradientStop(WithAlpha(hover, 0), 1) }
+            },
+            ["StageAuraBrush"] = new RadialGradientBrush
+            {
+                GradientStops =
+                {
+                    new GradientStop(WithAlpha(lighter, light ? 0.25 : 0.33), 0),
+                    new GradientStop(WithAlpha(hover, light ? 0.1 : 0.13), 0.55),
+                    new GradientStop(WithAlpha(hover, 0), 1)
+                }
+            },
+            ["PedestalRimBrush"] = new SolidColorBrush(WithAlpha(lighter, light ? 0.5 : 0.4)),
             ["HeroShadow"] = BoxShadows.Parse($"0 6 22 0 {ToHex(WithAlpha(accent, 0.28))}"),
             ["HeroShadowHover"] = BoxShadows.Parse($"0 10 34 0 {ToHex(WithAlpha(accent, 0.45))}"),
 

@@ -41,8 +41,12 @@ public sealed class EmberField : Control
     private readonly DispatcherTimer _timer;
     private readonly System.Diagnostics.Stopwatch _clock = new();
 
-    /// <summary>The shortest gap between two drawn frames; 0 draws on every screen frame.</summary>
-    private const double MinFrameMs = 0;
+    /// <summary>
+    /// The shortest gap between two drawn frames. Every frame repaints the whole page above the
+    /// field, so a 144 Hz screen would pay for the page 144 times a second; embers drift slowly
+    /// and look the same at sixty.
+    /// </summary>
+    private const double MinFrameMs = 1000.0 / 60;
     private double _lastDrawMs;
     private bool _attached;
     private double _lastMs;

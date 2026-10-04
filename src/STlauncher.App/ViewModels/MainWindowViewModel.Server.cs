@@ -87,7 +87,11 @@ public partial class MainWindowViewModel
         ? Localize("Game_OnlineNow", "{0} online on {1}", ServerOnlineValue, ServerName)
         : Localize("Game_ServerQuiet", "{0} is not responding", ServerName);
 
-    partial void OnIsServerOnlineChanged(bool value) => OnPropertyChanged(nameof(OnlineNowLabel));
+    partial void OnIsServerOnlineChanged(bool value)
+    {
+        OnPropertyChanged(nameof(OnlineNowLabel));
+        OnPropertyChanged(nameof(ServerTileLine));
+    }
 
     /// <summary>"Online over 24 hours" / "over 7 days", above the chart.</summary>
     public string ChartTitle => MonitoringRange == MonitoringRange.Week
@@ -116,7 +120,11 @@ public partial class MainWindowViewModel
         }
     }
 
-    partial void OnServerOnlineValueChanged(string value) => OnPropertyChanged(nameof(OnlineNowLabel));
+    partial void OnServerOnlineValueChanged(string value)
+    {
+        OnPropertyChanged(nameof(OnlineNowLabel));
+        OnPropertyChanged(nameof(ServerTileLine));
+    }
 
     partial void OnIsBuildSyncBusyChanged(bool value)
     {

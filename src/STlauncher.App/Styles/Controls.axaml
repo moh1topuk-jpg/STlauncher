@@ -839,4 +839,153 @@
         <Setter Property="Background" Value="{DynamicResource DangerBrush}"/>
     </Style>
 
+
+    <!-- ===================== Home ===================== -->
+
+    <Style Selector="TextBlock.greeting">
+        <Setter Property="FontFamily" Value="{StaticResource DisplayFont}"/>
+        <Setter Property="FontSize" Value="32"/>
+        <Setter Property="FontWeight" Value="ExtraBold"/>
+        <Setter Property="LetterSpacing" Value="-0.8"/>
+    </Style>
+
+    <Style Selector="TextBlock.display.hero">
+        <Setter Property="FontSize" Value="34"/>
+        <Setter Property="LetterSpacing" Value="-0.9"/>
+    </Style>
+
+    <!-- The card the build to continue with sits in: glass, a glow from one corner. -->
+    <Style Selector="Border.hero-card">
+        <Setter Property="CornerRadius" Value="26"/>
+        <Setter Property="Background" Value="{DynamicResource HeroCardBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource GlassBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BoxShadow" Value="{DynamicResource HeroCardShadow}"/>
+    </Style>
+
+    <!-- A fact about the build, on glass. -->
+    <Style Selector="Border.chip">
+        <Setter Property="Padding" Value="10,4"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="Background" Value="{DynamicResource GlassChipBrush}"/>
+    </Style>
+    <Style Selector="Border.chip > TextBlock">
+        <Setter Property="FontSize" Value="12.5"/>
+    </Style>
+
+    <!-- A rounded note floating over the stage or beside a heading. -->
+    <Style Selector="Border.pill">
+        <Setter Property="Padding" Value="12,7"/>
+        <Setter Property="CornerRadius" Value="999"/>
+        <Setter Property="Background" Value="{DynamicResource PillBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource GlassBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+    <Style Selector="Border.pill.small">
+        <Setter Property="Padding" Value="10,4"/>
+    </Style>
+    <Style Selector="Border.pill TextBlock">
+        <Setter Property="FontSize" Value="12.5"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+    </Style>
+
+    <!-- Cards and panels that let the stage's light through. -->
+    <Style Selector="Border.card.glass">
+        <Setter Property="Background" Value="{DynamicResource CardGlassBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource GlassBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="18"/>
+    </Style>
+    <Style Selector="Border.panel.glass">
+        <Setter Property="Background" Value="{DynamicResource CardGlassBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource GlassBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="18"/>
+    </Style>
+
+    <!-- The plate under the figure: the name and what can be changed about it. -->
+    <Style Selector="Border.plate">
+        <Setter Property="Padding" Value="16,12,12,12"/>
+        <Setter Property="CornerRadius" Value="20"/>
+        <Setter Property="Background" Value="{DynamicResource PlateBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource GlassBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BoxShadow" Value="{DynamicResource PlateShadow}"/>
+    </Style>
+
+    <!-- A way to play other than the big button: a wide tile, tinted by what it leads to. -->
+    <Style Selector="Button.tile">
+        <Setter Property="Padding" Value="16,14"/>
+        <Setter Property="CornerRadius" Value="20"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+    </Style>
+    <Style Selector="Button.tile.gold /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource TileGoldBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource GlassBorderBrush}"/>
+    </Style>
+    <Style Selector="Button.tile.gold:pointerover /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource TileGoldBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource TileGoldHoverBrush}"/>
+    </Style>
+    <Style Selector="Button.tile.blue /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource TileBlueBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource GlassBorderBrush}"/>
+    </Style>
+    <Style Selector="Button.tile.blue:pointerover /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource TileBlueBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource TileBlueHoverBrush}"/>
+    </Style>
+
+    <!-- Another build on the home screen: pick it and it becomes the one to play. -->
+    <Style Selector="Button.build-chip">
+        <Setter Property="Padding" Value="11"/>
+        <Setter Property="CornerRadius" Value="16"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+    </Style>
+    <Style Selector="Button.build-chip /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource GlassBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource GlassBorderBrush}"/>
+    </Style>
+    <Style Selector="Button.build-chip:pointerover /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource GlassChipBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource GoldMutedBrush}"/>
+    </Style>
+    <Style Selector="Button.build-new">
+        <Setter Property="Padding" Value="14,11"/>
+        <Setter Property="CornerRadius" Value="16"/>
+        <Setter Property="BorderThickness" Value="1.5"/>
+        <Setter Property="VerticalAlignment" Value="Stretch"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+    </Style>
+    <Style Selector="Button.build-new /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushSubtle}"/>
+    </Style>
+    <Style Selector="Button.build-new:pointerover /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource GlassBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource GoldMutedBrush}"/>
+    </Style>
+
+    <!-- A small square button on glass: change the pose, edit the name. -->
+    <Style Selector="Button.glass-icon">
+        <Setter Property="Width" Value="40"/>
+        <Setter Property="Height" Value="40"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="CornerRadius" Value="12"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+    </Style>
+    <Style Selector="Button.glass-icon /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource PillBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource GlassBorderBrush}"/>
+    </Style>
+    <Style Selector="Button.glass-icon:pointerover /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource GlassChipBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource GoldMutedBrush}"/>
+    </Style>
+
 </Styles>

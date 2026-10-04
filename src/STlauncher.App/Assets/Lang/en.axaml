@@ -3,7 +3,7 @@
 
     <!-- Shell -->
     <x:String x:Key="App_Title">STlauncher</x:String>
-    <x:String x:Key="Nav_Game">Play</x:String>
+    <x:String x:Key="Nav_Game">Home</x:String>
     <x:String x:Key="Nav_Builds">Builds</x:String>
     <x:String x:Key="Nav_Server">Server</x:String>
     <x:String x:Key="Nav_Console">Console</x:String>
@@ -961,4 +961,26 @@
     <x:String x:Key="Code_Added">Build “{0}” added from the code</x:String>
     <x:String x:Key="Code_AddedPartial">Build “{0}” added. Not in the code, add by hand: {1}</x:String>
     <x:String x:Key="Code_Failed">Could not make the build code: {0}</x:String>
+    <!-- Home -->
+    <x:String x:Key="Home_Hello">Welcome back,</x:String>
+    <x:String x:Key="Home_Continue">Continue</x:String>
+    <x:String x:Key="Home_BuildSettings">Mods and build settings</x:String>
+    <x:String x:Key="Home_PlayOn">Play on {0}</x:String>
+    <x:String x:Key="Home_OnlineShort">{0} online</x:String>
+    <x:String x:Key="Home_ServerQuiet">not responding right now</x:String>
+    <x:String x:Key="Home_FriendBuild">A friend's build</x:String>
+    <x:String x:Key="Home_FriendBuildHint">Adds a build from the code in the clipboard</x:String>
+    <x:String x:Key="Home_YourBuilds">Your builds</x:String>
+    <x:String x:Key="Home_AllBuilds">all builds</x:String>
+    <x:String x:Key="Home_NewBuild">New build</x:String>
+    <x:String x:Key="Home_MySkin">My skin</x:String>
+    <x:String x:Key="Home_SkinFrom">Where the skin comes from</x:String>
+    <x:String x:Key="Home_NextPose">Next pose</x:String>
+    <x:String x:Key="Pose_Idle">Standing</x:String>
+    <x:String x:Key="Pose_Wave">Waving</x:String>
+    <x:String x:Key="Pose_Look">Looking around</x:String>
+    <x:String x:Key="Pose_Walk">Walking</x:String>
+    <x:String x:Key="Pose_Sit">Sitting</x:String>
+    <x:String x:Key="Pose_Cheer">Cheering</x:String>
+    <x:String x:Key="Pose_Dance">Dancing</x:String>
 </ResourceDictionary>

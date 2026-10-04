@@ -48,6 +48,7 @@ public partial class MainWindowViewModel
                              ?? OtherInstances.OrderByDescending(i => i.LastPlayedAt ?? DateTimeOffset.MinValue).FirstOrDefault();
 
         OnPropertyChanged(nameof(HasOtherInstances));
+        RefreshHomeBuilds();
         OnPropertyChanged(nameof(NewBuildCopySettingsLabel));
         OnPropertyChanged(nameof(CanCopyNewBuildSettings));
     }

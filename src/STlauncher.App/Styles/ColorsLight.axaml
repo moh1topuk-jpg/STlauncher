@@ -111,4 +111,79 @@
     <BoxShadows x:Key="HeroShadow">0 6 22 0 #47A3243F</BoxShadows>
     <BoxShadows x:Key="HeroShadowHover">0 10 34 0 #73A3243F</BoxShadows>
 
+
+    <!-- ===================== Home: the lit stage and the glass over it ===================== -->
+    <RadialGradientBrush x:Key="HomeGlowBrush" Center="84%,50%" GradientOrigin="84%,50%" RadiusX="46%" RadiusY="64%">
+        <GradientStop Offset="0" Color="#40E7A9B8"/>
+        <GradientStop Offset="0.5" Color="#1AE7A9B8"/>
+        <GradientStop Offset="1" Color="#00F3EEF0"/>
+    </RadialGradientBrush>
+
+    <LinearGradientBrush x:Key="HeroCardBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Offset="0" Color="#FFFFFF"/>
+        <GradientStop Offset="1" Color="#FBEFF3"/>
+    </LinearGradientBrush>
+    <BoxShadows x:Key="HeroCardShadow">0 10 24 0 #1F502030</BoxShadows>
+    <RadialGradientBrush x:Key="HeroGlowBrush" Center="0%,100%" GradientOrigin="0%,100%" RadiusX="60%" RadiusY="95%">
+        <GradientStop Offset="0" Color="#33C02E4C"/>
+        <GradientStop Offset="1" Color="#00C02E4C"/>
+    </RadialGradientBrush>
+    <RadialGradientBrush x:Key="HeroGoldGlowBrush" Center="80%,0%" GradientOrigin="80%,0%" RadiusX="70%" RadiusY="90%">
+        <GradientStop Offset="0" Color="#40E8C25A"/>
+        <GradientStop Offset="1" Color="#00E8C25A"/>
+    </RadialGradientBrush>
+    <SolidColorBrush x:Key="MosaicBrush" Color="#0D7E1B31"/>
+
+
+    <LinearGradientBrush x:Key="NickGradientBrush" StartPoint="0%,50%" EndPoint="100%,50%">
+        <GradientStop Offset="0" Color="#B8283F"/>
+        <GradientStop Offset="1" Color="#8A6100"/>
+    </LinearGradientBrush>
+
+    <SolidColorBrush x:Key="GlassBrush" Color="#B3FFFFFF"/>
+    <SolidColorBrush x:Key="GlassChipBrush" Color="#14301A24"/>
+    <SolidColorBrush x:Key="GlassBorderBrush" Color="#1F301A24"/>
+    <SolidColorBrush x:Key="PillBrush" Color="#CCFFFFFF"/>
+    <SolidColorBrush x:Key="PlateBrush" Color="#F2FFFFFF"/>
+    <BoxShadows x:Key="PlateShadow">0 8 18 0 #1F502030</BoxShadows>
+
+    <LinearGradientBrush x:Key="TileGoldBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Offset="0" Color="#FFF3D2"/>
+        <GradientStop Offset="0.7" Color="#FFFFFF"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="TileBlueBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Offset="0" Color="#DDEEFA"/>
+        <GradientStop Offset="0.7" Color="#FFFFFF"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="TileGoldHoverBrush" Color="#B08F2E"/>
+    <SolidColorBrush x:Key="TileBlueHoverBrush" Color="#3B7FC4"/>
+    <LinearGradientBrush x:Key="IconGoldBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Offset="0" Color="#F2D06B"/>
+        <GradientStop Offset="1" Color="#C7952A"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="IconBlueBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Offset="0" Color="#8CCBF2"/>
+        <GradientStop Offset="1" Color="#4A8FC9"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="StageConeBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Offset="0" Color="#66FFE9BE"/>
+        <GradientStop Offset="0.6" Color="#1FC02E4C"/>
+        <GradientStop Offset="1" Color="#00C02E4C"/>
+    </LinearGradientBrush>
+    <RadialGradientBrush x:Key="StageAuraBrush">
+        <GradientStop Offset="0" Color="#40E24A6B"/>
+        <GradientStop Offset="0.55" Color="#1AC02E4C"/>
+        <GradientStop Offset="1" Color="#00C02E4C"/>
+    </RadialGradientBrush>
+    <RadialGradientBrush x:Key="PedestalBrush" Center="50%,35%" GradientOrigin="50%,35%">
+        <GradientStop Offset="0" Color="#FFFFFF"/>
+        <GradientStop Offset="1" Color="#E4D4DB"/>
+    </RadialGradientBrush>
+    <SolidColorBrush x:Key="PedestalRimBrush" Color="#80C02E4C"/>
+    <RadialGradientBrush x:Key="PedestalShadowBrush">
+        <GradientStop Offset="0" Color="#59301A24"/>
+        <GradientStop Offset="1" Color="#00301A24"/>
+    </RadialGradientBrush>
+
 </ResourceDictionary>

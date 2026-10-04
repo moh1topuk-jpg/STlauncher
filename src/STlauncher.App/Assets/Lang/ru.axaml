@@ -3,7 +3,7 @@
 
     <!-- Shell -->
     <x:String x:Key="App_Title">STlauncher</x:String>
-    <x:String x:Key="Nav_Game">Игра</x:String>
+    <x:String x:Key="Nav_Game">Главная</x:String>
     <x:String x:Key="Nav_Builds">Сборки</x:String>
     <x:String x:Key="Nav_Server">Сервер</x:String>
     <x:String x:Key="Nav_Console">Консоль</x:String>
@@ -961,4 +961,26 @@
     <x:String x:Key="Code_Added">Сборка «{0}» добавлена из кода</x:String>
     <x:String x:Key="Code_AddedPartial">Сборка «{0}» добавлена. В код не вошло, добавьте вручную: {1}</x:String>
     <x:String x:Key="Code_Failed">Не удалось собрать код сборки: {0}</x:String>
+    <!-- Home -->
+    <x:String x:Key="Home_Hello">С возвращением,</x:String>
+    <x:String x:Key="Home_Continue">Продолжить</x:String>
+    <x:String x:Key="Home_BuildSettings">Моды и настройки сборки</x:String>
+    <x:String x:Key="Home_PlayOn">Играть на {0}</x:String>
+    <x:String x:Key="Home_OnlineShort">{0} онлайн</x:String>
+    <x:String x:Key="Home_ServerQuiet">сейчас не отвечает</x:String>
+    <x:String x:Key="Home_FriendBuild">Сборка от друга</x:String>
+    <x:String x:Key="Home_FriendBuildHint">Добавит сборку по коду из буфера обмена</x:String>
+    <x:String x:Key="Home_YourBuilds">Ваши сборки</x:String>
+    <x:String x:Key="Home_AllBuilds">все сборки</x:String>
+    <x:String x:Key="Home_NewBuild">Новая сборка</x:String>
+    <x:String x:Key="Home_MySkin">Мой скин</x:String>
+    <x:String x:Key="Home_SkinFrom">Откуда брать скин</x:String>
+    <x:String x:Key="Home_NextPose">Следующая поза</x:String>
+    <x:String x:Key="Pose_Idle">Стоит</x:String>
+    <x:String x:Key="Pose_Wave">Машет рукой</x:String>
+    <x:String x:Key="Pose_Look">Осматривается</x:String>
+    <x:String x:Key="Pose_Walk">Идёт</x:String>
+    <x:String x:Key="Pose_Sit">Сидит</x:String>
+    <x:String x:Key="Pose_Cheer">Радуется</x:String>
+    <x:String x:Key="Pose_Dance">Танцует</x:String>
 </ResourceDictionary>

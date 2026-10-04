@@ -84,7 +84,7 @@
                         <Button Classes="rail" Classes.active="{Binding IsGameSection}"
                                 Command="{Binding SelectSectionCommand}" CommandParameter="Game">
                             <StackPanel Spacing="5" HorizontalAlignment="Center">
-                                <PathIcon Data="{StaticResource IconPlay}"/>
+                                <PathIcon Data="{StaticResource IconHome}"/>
                                 <TextBlock Text="{DynamicResource Nav_Game}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
@@ -98,8 +98,10 @@
                         <Button Classes="rail" Classes.active="{Binding IsServerSection}"
                                 Command="{Binding SelectSectionCommand}" CommandParameter="Server">
                             <StackPanel Spacing="5" HorizontalAlignment="Center">
-                                <PathIcon Data="{StaticResource IconServer}"/>
-                                <TextBlock Text="{DynamicResource Nav_Server}" HorizontalAlignment="Center"/>
+                                <PathIcon Data="{StaticResource IconStar}"/>
+                                <!-- The server has a name; the tab wears it. -->
+                                <TextBlock Text="{Binding ServerName}" HorizontalAlignment="Center"
+                                           MaxWidth="64" TextTrimming="CharacterEllipsis"/>
                             </StackPanel>
                         </Button>
                         <Button Classes="rail" Classes.active="{Binding IsSettingsSection}"
