@@ -14,7 +14,10 @@ public enum ModSource
     Modrinth,
 
     /// <summary>Came from an imported modpack.</summary>
-    Modpack
+    Modpack,
+
+    /// <summary>Installed from CurseForge, through the mirror that holds the API key.</summary>
+    CurseForge
 }
 
 public sealed class InstalledModRecord
@@ -57,4 +60,19 @@ public sealed class InstalledModRecord
     /// </summary>
     [JsonPropertyName("disabledByUser")]
     public bool DisabledByUser { get; set; }
+
+    /// <summary>
+    /// The source's own id of the project where it is not the slug in <see cref="Id"/>:
+    /// CurseForge's numeric mod id. Together with <see cref="FileId"/> it names the exact
+    /// file, which is how a CurseForge mod is found again for updates and build codes.
+    /// Left out of the file for every other source.
+    /// </summary>
+    [JsonPropertyName("projectId")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? ProjectId { get; set; }
+
+    /// <summary>CurseForge's id of the installed file.</summary>
+    [JsonPropertyName("fileId")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? FileId { get; set; }
 }

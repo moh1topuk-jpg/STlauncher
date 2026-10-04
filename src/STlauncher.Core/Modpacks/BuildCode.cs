@@ -38,6 +38,18 @@ public static class BuildCode
 
     private const string ModrinthCdn = "https://cdn.modrinth.com/data/";
 
+    private const string CurseForgeCdn = "https://edge.forgecdn.net/files/";
+
+    /// <summary>
+    /// Where a code may send the launcher for a file: the hosts a .mrpack may name, and
+    /// CurseForge's CDN. The CDN is safe here for the same reason Modrinth's is - it
+    /// serves only what was uploaded to the site, and every file is checked against the
+    /// hash in the code. A .mrpack must not name it (see <see cref="ModpackWriter"/>),
+    /// but a code is this launcher's own format.
+    /// </summary>
+    public static bool IsAllowedDownload(string? url)
+        => ModpackWriter.IsAllowedDownload(url) || Mods.CurseForgeClient.IsCdnUrl(url);
+
     private static readonly JsonSerializerOptions Json = new()
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
@@ -135,7 +147,7 @@ public static class BuildCode
 
                 var url = Expand(entry[1]);
 
-                if (!ModpackWriter.IsAllowedDownload(url))
+                if (!IsAllowedDownload(url))
                 {
                     continue;
                 }
@@ -167,10 +179,14 @@ public static class BuildCode
     }
 
     private static string Shorten(string url)
-        => url.StartsWith(ModrinthCdn, StringComparison.OrdinalIgnoreCase) ? "m:" + url[ModrinthCdn.Length..] : url;
+        => url.StartsWith(ModrinthCdn, StringComparison.OrdinalIgnoreCase) ? "m:" + url[ModrinthCdn.Length..]
+            : url.StartsWith(CurseForgeCdn, StringComparison.OrdinalIgnoreCase) ? "c:" + url[CurseForgeCdn.Length..]
+            : url;
 
     private static string Expand(string url)
-        => url.StartsWith("m:", StringComparison.Ordinal) ? ModrinthCdn + url[2..] : url;
+        => url.StartsWith("m:", StringComparison.Ordinal) ? ModrinthCdn + url[2..]
+            : url.StartsWith("c:", StringComparison.Ordinal) ? CurseForgeCdn + url[2..]
+            : url;
 
     private sealed class Dto
     {

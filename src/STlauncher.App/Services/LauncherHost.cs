@@ -94,6 +94,14 @@ public static class LauncherHost
         services.AddSingleton<UsageReporter>();
         services.AddSingleton<SupportReportSender>();
 
+        // CurseForge: the second mod source, asked through the mirror that holds the API key.
+        services.AddSingleton(provider => new CurseForgeClient(
+            provider.GetRequiredService<HttpClient>(),
+            provider.GetRequiredService<DownloadClient>())
+        {
+            BaseUrl = AppSettings.DefaultCurseForgeUrl
+        });
+
         services.AddTransient<MainWindowViewModel>();
 
         return services.BuildServiceProvider();

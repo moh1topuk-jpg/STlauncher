@@ -36,6 +36,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly RemoteImageService _images;
     private readonly TranslationService _translations;
     private readonly ModrinthClient _modrinth;
+    private readonly CurseForgeClient _curseForge;
     private readonly ModManager _mods;
     private readonly ModpackInstaller _modpacks;
     private readonly ContentCatalogService _catalog;
@@ -76,6 +77,7 @@ public partial class MainWindowViewModel : ViewModelBase
         RemoteImageService images,
         TranslationService translations,
         ModrinthClient modrinth,
+        CurseForgeClient curseForge,
         ModManager mods,
         ModpackInstaller modpacks,
         ContentCatalogService catalog,
@@ -105,6 +107,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _images = images;
         _translations = translations;
         _modrinth = modrinth;
+        _curseForge = curseForge;
         _mods = mods;
         _modpacks = modpacks;
         _catalog = catalog;

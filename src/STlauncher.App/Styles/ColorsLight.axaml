@@ -186,4 +186,37 @@
         <GradientStop Offset="1" Color="#00301A24"/>
     </RadialGradientBrush>
 
+    <!-- ===================== Builds and the mod catalog ===================== -->
+    <!-- The same six colours as in the dark palette: they carry their own white text, so
+         they do not change with the ground they sit on. -->
+    <LinearGradientBrush x:Key="TintBrush0" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Offset="0" Color="#C02E4C"/>
+        <GradientStop Offset="1" Color="#7E1B31"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="TintBrush1" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Offset="0" Color="#3F7BD9"/>
+        <GradientStop Offset="1" Color="#24447A"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="TintBrush2" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Offset="0" Color="#4C9A6A"/>
+        <GradientStop Offset="1" Color="#235238"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="TintBrush3" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Offset="0" Color="#9D5BD2"/>
+        <GradientStop Offset="1" Color="#4B2068"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="TintBrush4" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Offset="0" Color="#C98627"/>
+        <GradientStop Offset="1" Color="#6B4514"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="TintBrush5" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Offset="0" Color="#2F8FBF"/>
+        <GradientStop Offset="1" Color="#1B4F6B"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="TintMosaicBrush" Color="#1FFFFFFF"/>
+
+    <SolidColorBrush x:Key="SourceBadgeBrush" Color="#A6000000"/>
+    <SolidColorBrush x:Key="ModrinthDotBrush" Color="#1BD96A"/>
+    <SolidColorBrush x:Key="CurseForgeDotBrush" Color="#F16436"/>
+
 </ResourceDictionary>

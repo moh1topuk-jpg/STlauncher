@@ -55,7 +55,7 @@ public partial class ModCategoryOption : ObservableObject
     private bool _isSelected;
 }
 
-/// <summary>A Modrinth search hit together with its lazily loaded logo and install state.</summary>
+/// <summary>A search hit from either source, together with its lazily loaded logo and install state.</summary>
 public partial class ModBrowserItem : ObservableObject
 {
     public ModBrowserItem(ModSearchResult result, bool installed)
@@ -64,13 +64,17 @@ public partial class ModBrowserItem : ObservableObject
         _installed = installed;
         _displayDescription = result.Description;
         DownloadsLabel = CompactCount(result.Downloads);
+        DownloadsShort = CompactCount(result.Downloads, withWord: false);
         Byline = string.IsNullOrWhiteSpace(result.Author)
             ? DownloadsLabel
             : $"{result.Author} · {DownloadsLabel}";
         CategoryLabels = result.Categories
             .Take(2)
-            .Select(c => MainWindowViewModel.Localize($"Category_{c}", c))
+            .Select(c => MainWindowViewModel.Localize($"Category_{c}", Humanize(c)))
             .ToList();
+        Initial = result.Title.FirstOrDefault(char.IsLetterOrDigit) is var letter && letter != default
+            ? char.ToUpperInvariant(letter).ToString()
+            : "?";
     }
 
     public ModSearchResult Result { get; }
@@ -80,10 +84,37 @@ public partial class ModBrowserItem : ObservableObject
 
     public string DownloadsLabel { get; }
 
+    /// <summary>"60 M" beside the author on a card, where "60 M downloads" pushes the name out.</summary>
+    public string DownloadsShort { get; }
+
     public IReadOnlyList<string> CategoryLabels { get; }
 
+    /// <summary>The letter on the icon tile until the logo arrives, and for a mod that has none.</summary>
+    public string Initial { get; }
+
+    /// <summary>"Modrinth" or "CurseForge", on the card once the catalog has two sources.</summary>
+    public string SourceLabel => MainWindowViewModel.SourceName(Result.Source);
+
+    public bool IsCurseForge => Result.Source == ModSource.CurseForge;
+
+    public bool IsModrinth => !IsCurseForge;
+
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasIcon))]
     private Bitmap? _icon;
+
+    public bool HasIcon => Icon is not null;
+
+    /// <summary>True while this card's "Add" is being carried out; the button gives way to a progress line.</summary>
+    [ObservableProperty]
+    private bool _isInstalling;
+
+    /// <summary>A category without a translation is a slug: "armor-weapons-tools" reads better as words.</summary>
+    private static string Humanize(string slug)
+    {
+        var words = slug.Replace('-', ' ').Replace('_', ' ').Trim();
+        return words.Length == 0 ? slug : char.ToUpperInvariant(words[0]) + words[1..];
+    }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(NotInstalled))]
@@ -103,33 +134,56 @@ public partial class ModBrowserItem : ObservableObject
     [ObservableProperty]
     private string _displayDescription;
 
-    /// <summary>60 000 000 → "60 M", 340 000 → "340 K", in the interface language.</summary>
-    public static string CompactCount(long count)
+    /// <summary>
+    /// 60 000 000 → "60 M downloads", 340 000 → "340 K downloads", in the interface
+    /// language; without the word where an icon beside the number says it.
+    /// </summary>
+    public static string CompactCount(long count, bool withWord = true)
     {
         if (count >= 1_000_000)
         {
             var millions = count / 1_000_000d;
-            return MainWindowViewModel.Localize("Count_Millions", "{0} M downloads",
-                millions >= 10 ? millions.ToString("F0", CultureInfo.CurrentCulture) : millions.ToString("F1", CultureInfo.CurrentCulture));
+            var text = millions >= 10 ? millions.ToString("F0", CultureInfo.CurrentCulture) : millions.ToString("F1", CultureInfo.CurrentCulture);
+
+            return withWord
+                ? MainWindowViewModel.Localize("Count_Millions", "{0} M downloads", text)
+                : MainWindowViewModel.Localize("Count_MillionsShort", "{0}M", text);
         }
 
         if (count >= 1_000)
         {
-            return MainWindowViewModel.Localize("Count_Thousands", "{0} K downloads", (count / 1_000).ToString(CultureInfo.CurrentCulture));
+            var text = (count / 1_000).ToString(CultureInfo.CurrentCulture);
+
+            return withWord
+                ? MainWindowViewModel.Localize("Count_Thousands", "{0} K downloads", text)
+                : MainWindowViewModel.Localize("Count_ThousandsShort", "{0}K", text);
         }
 
-        return MainWindowViewModel.Localize("Count_Plain", "{0} downloads", count);
+        return withWord
+            ? MainWindowViewModel.Localize("Count_Plain", "{0} downloads", count)
+            : count.ToString(CultureInfo.CurrentCulture);
     }
 }
 
 /// <summary>One dependency of the opened mod, with whether the build already has it.</summary>
 public sealed record ModDependencyItem(string Title, bool Installed, bool Required)
 {
+    /// <summary>Bytes of the file that would come along; zero when nothing would.</summary>
+    public long Size { get; init; }
+
+    public string SizeLabel { get; init; } = string.Empty;
+
+    /// <summary>A CurseForge file its author keeps to the site: the launcher cannot bring it.</summary>
+    public bool Blocked { get; init; }
+
     public string StateLabel => Installed
         ? MainWindowViewModel.Localize("Mods_DepInstalled", "in the build")
-        : Required
-            ? MainWindowViewModel.Localize("Mods_DepWillInstall", "will be added too")
-            : MainWindowViewModel.Localize("Mods_DepOptional", "optional");
+        : Blocked
+            ? MainWindowViewModel.Localize("Mods_DepBlocked", "only from its page")
+            : Required
+                ? MainWindowViewModel.Localize("Mods_DepWillInstall", "will be added too") +
+                  (SizeLabel.Length > 0 ? " · " + SizeLabel : string.Empty)
+                : MainWindowViewModel.Localize("Mods_DepOptional", "optional");
 }
 
 public partial class MainWindowViewModel
@@ -151,7 +205,7 @@ public partial class MainWindowViewModel
 
     partial void OnBuildTabChanged(BuildTab value)
     {
-        // The catalog is a detour, not a tab: it closes back to where it was opened from.
+        // The catalog is a detour among the tabs: its back button returns to the one it was opened from.
         if (value is not BuildTab.Catalog and not BuildTab.Settings)
         {
             _tabBeforeCatalog = value;
@@ -168,6 +222,13 @@ public partial class MainWindowViewModel
         if (value == BuildTab.Screenshots)
         {
             RefreshScreenshots();
+        }
+
+        // A mirror that could not be reached at start gets one more question when the
+        // catalog is opened; a mirror that answered is not asked again.
+        if (value == BuildTab.Catalog && !IsCurseForgeAvailable)
+        {
+            _ = ProbeCurseForgeAsync();
         }
     }
 
@@ -268,6 +329,10 @@ public partial class MainWindowViewModel
     [ObservableProperty]
     private string _browserSummary = string.Empty;
 
+    /// <summary>The last search came back with nothing: the page says so instead of standing empty.</summary>
+    [ObservableProperty]
+    private bool _isBrowserEmpty;
+
     [ObservableProperty]
     private int _browserPage = 1;
 
@@ -311,7 +376,7 @@ public partial class MainWindowViewModel
 
         try
         {
-            var categories = await _modrinth.GetCategoriesAsync(BrowserKind);
+            var categories = await LoadSourceCategoriesAsync();
 
             LoadSortOptions();
 
@@ -334,7 +399,7 @@ public partial class MainWindowViewModel
         }
         catch (Exception ex)
         {
-            AppendConsole($"[modrinth] categories failed: {ex.Message}");
+            AppendConsole($"[catalog] categories failed: {ex.Message}");
         }
 
         SelectedModSort ??= ModSortOptions.FirstOrDefault();
@@ -373,7 +438,7 @@ public partial class MainWindowViewModel
         => BrowserPage > 1 ? LoadBrowserPageAsync(BrowserPage - 1) : Task.CompletedTask;
 
     /// <summary>
-    /// Loads one page of the Modrinth browser. An empty query browses the whole category,
+    /// Loads one page of the catalog. An empty query browses the whole category,
     /// which is why the catalog has content without pressing the search button.
     /// </summary>
     private async Task LoadBrowserPageAsync(int page)
@@ -388,26 +453,25 @@ public partial class MainWindowViewModel
             ModBrowserItems.Clear();
             BrowserSummary = string.Empty;
             BrowserTotalPages = 1;
+            IsBrowserEmpty = false;
             return;
         }
+
+        var searching = EffectiveSource == BrowserSource.Modrinth
+            ? Localize("Status_SearchingMods", "Searching Modrinth…")
+            : Localize("Status_SearchingCatalog", "Searching the catalog…");
 
         try
         {
             IsBrowserBusy = true;
-            Status = Localize("Status_SearchingMods", "Searching Modrinth…");
+            IsBrowserEmpty = false;
+            Status = searching;
 
             var category = string.IsNullOrWhiteSpace(SelectedCategory?.Name) ? null : SelectedCategory!.Name;
             var offset = Math.Max(0, page - 1) * BrowserPageSize;
+            var merged = EffectiveSource == BrowserSource.All;
 
-            var result = await _modrinth.SearchAsync(
-                ModSearchQuery,
-                SelectedVersion!.Id,
-                SelectedLoader,
-                category,
-                SelectedModSort?.Value ?? "relevance",
-                BrowserPageSize,
-                offset,
-                projectType: BrowserKind);
+            var result = await SearchSourcesAsync(category, offset);
 
             BrowserPage = page;
             BrowserTotalPages = Math.Max(1, (int)Math.Ceiling(result.TotalHits / (double)BrowserPageSize));
@@ -423,22 +487,27 @@ public partial class MainWindowViewModel
             }
 
             RefreshHiddenItems();
+            IsBrowserEmpty = result.Items.Count == 0;
             OnPropertyChanged(nameof(CatalogScopeLabel));
 
             var from = result.Items.Count == 0 ? 0 : offset + 1;
             var to = offset + result.Items.Count;
 
-            BrowserSummary = Localize(
-                "Mods_ShownOfTotal",
-                "Shown {0}-{1} of {2}",
-                from,
-                to,
-                result.TotalHits);
+            // Two sources fill one page with up to twice the cards and count their totals
+            // apart, so "21-40 of 5000" would be a guess; the page says what it shows.
+            BrowserSummary = merged
+                ? Localize("Mods_ShownMerged", "Shown: {0}, from both sources", result.Items.Count)
+                : Localize(
+                    "Mods_ShownOfTotal",
+                    "Shown {0}-{1} of {2}",
+                    from,
+                    to,
+                    result.TotalHits);
 
             // The summary belongs to the catalog footer only; writing it to Status made
             // it show up in the always-visible status bar on every section. But the
             // "searching" line it replaced has to go too, or it stays up for good.
-            if (Status == Localize("Status_SearchingMods", "Searching Modrinth…"))
+            if (Status == searching)
             {
                 Status = string.Empty;
             }
@@ -534,12 +603,16 @@ public partial class MainWindowViewModel
             return;
         }
 
+        var review = false;
+
         try
         {
             IsBrowserBusy = true;
+            item.IsInstalling = true;
             Status = Localize("Status_ResolvingMod", "Resolving {0}…", item.Result.Title);
 
-            var versions = await _modrinth.GetVersionsAsync(item.Result.ProjectId, SelectedVersion?.Id, LoaderFor(BrowserKind));
+            var versions = await SourceFor(item.Result.Source)
+                .GetVersionsAsync(item.Result.ProjectId, SelectedVersion?.Id, LoaderFor(BrowserKind));
             var preferred = ModrinthClient.SelectPreferred(versions);
 
             if (preferred is null)
@@ -548,20 +621,28 @@ public partial class MainWindowViewModel
                 return;
             }
 
-            _installBatch.Clear();
+            // One press adds the mod that was pressed. Anything more than that - other mods
+            // it needs, or a file only its page gives out - is shown on the mod's panel
+            // first, and the install waits for the button there.
+            review = await IsBlockedAsync(preferred) || await BringsOtherModsAsync(preferred);
 
-            await InstallProjectWithDependenciesAsync(
-                preferred,
-                item.Result.Slug,
-                item.Result.Title,
-                item.Result.IconUrl,
-                projectType: BrowserKind);
+            if (!review)
+            {
+                _installBatch.Clear();
 
-            item.Installed = true;
-            RefreshHiddenItems();
+                await InstallProjectWithDependenciesAsync(
+                    preferred,
+                    item.Result.Slug,
+                    item.Result.Title,
+                    item.Result.IconUrl,
+                    projectType: BrowserKind);
 
-            // The mod itself is the last file installed: its dependencies came first.
-            RevealFreshMods(_installBatch.ToList(), _installBatch.LastOrDefault());
+                item.Installed = true;
+                RefreshHiddenItems();
+
+                // The mod itself is the last file installed: its dependencies came first.
+                RevealFreshMods(_installBatch.ToList(), _installBatch.LastOrDefault());
+            }
         }
         catch (Exception ex)
         {
@@ -571,7 +652,18 @@ public partial class MainWindowViewModel
         }
         finally
         {
+            item.IsInstalling = false;
             IsBrowserBusy = false;
+        }
+
+        // Out here, after the busy flags are down: the panel has its own.
+        if (review)
+        {
+            await OpenProjectAsync(item);
+
+            Status = IsOpenedProjectBlocked
+                ? Localize("Mods_ReviewBlocked", "{0} is only given out on its page: the button on the right opens it", item.Result.Title)
+                : Localize("Mods_ReviewFirst", "{0} needs other mods: the list is on the right, \"Add to build\" installs them all", item.Result.Title);
         }
     }
 
@@ -589,12 +681,24 @@ public partial class MainWindowViewModel
         string? projectType = null)
     {
         projectType ??= BrowserKind;
+        var fromCurseForge = version.Source == ModSource.CurseForge;
+        var source = SourceFor(version.Source);
         var file = ModrinthClient.SelectFile(version, SelectedVersion?.Id, LoaderFor(projectType));
 
-        if (file is null || string.IsNullOrEmpty(file.Url))
+        // A CurseForge file may come without an address and still be downloadable; that
+        // is settled below. For Modrinth no address means no file.
+        if (file is null || (!fromCurseForge && string.IsNullOrEmpty(file.Url)))
         {
             Status = Localize("Status_NoCompatibleFile", "No compatible file for this version and loader");
             return;
+        }
+
+        // Asked before anything is written: a mod whose own file cannot be fetched must
+        // not leave its dependencies behind in the build.
+        if (fromCurseForge && await IsBlockedAsync(version))
+        {
+            throw new InvalidOperationException(
+                Localize("Mods_BlockedFile", "the author of {0} allows downloads only from the mod's page on CurseForge", title));
         }
 
         if (depth == 0)
@@ -608,7 +712,7 @@ public partial class MainWindowViewModel
         {
             foreach (var dependency in version.Dependencies.Where(d => d.IsRequired && !string.IsNullOrEmpty(d.ProjectId)))
             {
-                var project = await _modrinth.GetProjectAsync(dependency.ProjectId!);
+                var project = await source.GetProjectAsync(dependency.ProjectId!);
 
                 if (project is null || IsProjectInstalled(project.Slug))
                 {
@@ -618,7 +722,7 @@ public partial class MainWindowViewModel
                 Status = Localize("Status_ResolvingDependency", "Adding {0}, which {1} needs…", project.Title, title);
 
                 // A shader's dependency is a mod (Iris); the folder follows the dependency.
-                var candidates = await _modrinth.GetVersionsAsync(project.Id, SelectedVersion?.Id, LoaderFor(project.ProjectType));
+                var candidates = await source.GetVersionsAsync(project.Id, SelectedVersion?.Id, LoaderFor(project.ProjectType));
                 var pick = dependency.VersionId is { } wanted
                     ? candidates.FirstOrDefault(v => v.Id == wanted) ?? ModrinthClient.SelectPreferred(candidates)
                     : ModrinthClient.SelectPreferred(candidates);
@@ -636,8 +740,26 @@ public partial class MainWindowViewModel
         var folder = ProjectTypes.FolderFor(projectType);
 
         Status = Localize("Status_InstallingFile", "Installing {0}…", file.FileName);
-        await _mods.InstallAsync(InstanceDirectory, folder, file.FileName, file.Url, file.Sha1, file.Size);
-        AppendConsole($"[mods] installed {folder}/{file.FileName} ({slug} {version.VersionNumber})");
+
+        if (fromCurseForge)
+        {
+            // The client fetches from CurseForge's own CDN only and checks the SHA-1 the API gave.
+            var outcome = await _curseForge.InstallAsync(version, InstanceDirectory, folder);
+
+            if (outcome.State != CurseForgeFileState.Ready || outcome.File is null)
+            {
+                throw new InvalidOperationException(
+                    Localize("Mods_BlockedFile", "the author of {0} allows downloads only from the mod's page on CurseForge", title));
+            }
+
+            file = outcome.File;
+        }
+        else
+        {
+            await _mods.InstallAsync(InstanceDirectory, folder, file.FileName, file.Url, file.Sha1, file.Size);
+        }
+
+        AppendConsole($"[mods] installed {folder}/{file.FileName} ({slug} {version.VersionNumber}, {SourceName(version.Source)})");
 
         if (string.Equals(folder, ModManager.ModsFolderName, StringComparison.OrdinalIgnoreCase) && SelectedInstance is not null)
         {
@@ -645,16 +767,18 @@ public partial class MainWindowViewModel
             _installBatch.Add(file.FileName);
         }
 
-        RecordInstalledMod(new InstalledModRecord
-        {
-            FileName = file.FileName,
-            Source = ModSource.Modrinth,
-            Id = slug,
-            Name = title,
-            IconUrl = iconUrl,
-            Version = version.VersionNumber,
-            Folder = folder
-        });
+        RecordInstalledMod(fromCurseForge
+            ? CurseForgeClient.RecordFor(version, file, slug, title, iconUrl, folder)
+            : new InstalledModRecord
+            {
+                FileName = file.FileName,
+                Source = ModSource.Modrinth,
+                Id = slug,
+                Name = title,
+                IconUrl = iconUrl,
+                Version = version.VersionNumber,
+                Folder = folder
+            });
 
         RefreshMods();
         Status = Localize("Status_InstalledFile", "Installed {0}", file.FileName);
@@ -772,6 +896,7 @@ public partial class MainWindowViewModel
 
         OnPropertyChanged(nameof(OpenedProjectInstalled));
         OnPropertyChanged(nameof(OpenedProjectNotInstalled));
+        RaiseOpenedProjectActions();
     }
 
     /// <summary>Drops records whose file is no longer on disk.</summary>
@@ -818,7 +943,7 @@ public partial class MainWindowViewModel
     {
         var target = _localization.Current;
 
-        // Modrinth descriptions are English; translating to English is a no-op.
+        // Both sources describe mods in English; translating to English is a no-op.
         if (string.Equals(target, "en", StringComparison.OrdinalIgnoreCase))
         {
             return;

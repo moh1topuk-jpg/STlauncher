@@ -989,4 +989,25 @@
     <x:String x:Key="Emotes_Poses">Позы</x:String>
     <x:String x:Key="Emotes_FromBuild">Эмоции из сборки</x:String>
     <x:String x:Key="Emotes_None">Эмоции появятся здесь, когда в сборке будет мод Emotecraft.</x:String>
+
+    <!-- Builds and the mod catalog -->
+    <x:String x:Key="Builds_FromCodeShort">Из кода сборки</x:String>
+    <x:String x:Key="Builds_ShareHint">Поделиться сборкой: её код копируется одной строкой, отправьте его другу</x:String>
+    <x:String x:Key="Mods_NothingShown">Под этот поиск и фильтр не подошёл ни один мод сборки</x:String>
+    <x:String x:Key="Catalog_SourceAll">Все</x:String>
+    <x:String x:Key="Catalog_SourceHint">Где искать: на Modrinth, на CurseForge или сразу на обоих</x:String>
+    <x:String x:Key="Catalog_Empty">Ничего не нашлось. Попробуйте другое слово или другую категорию.</x:String>
+    <x:String x:Key="Status_SearchingCatalog">Поиск в каталоге…</x:String>
+    <x:String x:Key="Mods_ShownMerged">Показано: {0}, из обоих источников</x:String>
+    <x:String x:Key="Mods_From">Откуда</x:String>
+    <x:String x:Key="Mods_OpenOnSource">Открыть на {0}</x:String>
+    <x:String x:Key="Mods_OpenModPage">Открыть страницу мода</x:String>
+    <x:String x:Key="Mods_DepBlocked">только со страницы мода</x:String>
+    <x:String x:Key="Mods_InstallTotal">Скачается файлов: {0}, всего {1}</x:String>
+    <x:String x:Key="Mods_BlockedNote">Автор разрешил скачивать этот файл только со страницы мода на CurseForge. Откройте страницу, скачайте файл и перетащите его в окно лаунчера.</x:String>
+    <x:String x:Key="Mods_BlockedFile">автор «{0}» разрешил скачивать файл только со страницы мода на CurseForge</x:String>
+    <x:String x:Key="Mods_ReviewBlocked">«{0}» скачивается только со страницы мода: кнопка справа её откроет</x:String>
+    <x:String x:Key="Mods_ReviewFirst">Для «{0}» нужны другие моды: их список справа, «Добавить в сборку» поставит всё вместе</x:String>
+    <x:String x:Key="Count_MillionsShort">{0} млн</x:String>
+    <x:String x:Key="Count_ThousandsShort">{0} тыс.</x:String>
 </ResourceDictionary>

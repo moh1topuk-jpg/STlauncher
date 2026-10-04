@@ -1007,4 +1007,214 @@
         <Setter Property="BorderBrush" Value="{DynamicResource GoldMutedBrush}"/>
     </Style>
 
+    <!-- ===================== Builds and the mod catalog =====================
+         The same glass as on the home screen. Nothing here casts a blurred shadow: a build
+         shows a hundred of these rows and a catalog page forty cards. -->
+
+    <!-- The track a row of segments sits in: the build's tabs, the catalog's source. -->
+    <Style Selector="Border.segments">
+        <Setter Property="Padding" Value="3"/>
+        <Setter Property="CornerRadius" Value="12"/>
+        <Setter Property="Background" Value="{DynamicResource GlassBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource GlassBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="HorizontalAlignment" Value="Left"/>
+    </Style>
+    <!-- A touch tighter than a segment elsewhere: five tabs and the three sources share one
+         line of the default window. -->
+    <Style Selector="Border.segments Button.segment">
+        <Setter Property="CornerRadius" Value="9"/>
+        <Setter Property="Padding" Value="11,7"/>
+        <Setter Property="FontSize" Value="12.5"/>
+    </Style>
+    <Style Selector="Border.segments Button.segment.active /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource GlassChipBrush}"/>
+    </Style>
+
+    <!-- A TextBlock or an icon written out inside a button takes the page's colours, not
+         the button's. In the dark theme the two are nearly the same; in the light one that
+         is dark ink on an accent fill. These put the button's colour back. Child selectors
+         only: a descendant one would reach into a menu opened from the button. -->
+    <Style Selector="Button.segment > StackPanel > TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+    </Style>
+    <Style Selector="Button.segment.active > StackPanel > TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+    </Style>
+    <Style Selector="Button.chip.active > StackPanel > TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource TextOnAccentBrush}"/>
+    </Style>
+    <Style Selector="Button.primary > StackPanel > TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource TextOnAccentBrush}"/>
+    </Style>
+    <Style Selector="Button.primary > StackPanel > PathIcon">
+        <Setter Property="Foreground" Value="{DynamicResource TextOnAccentBrush}"/>
+    </Style>
+    <Style Selector="Button.primary > TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource TextOnAccentBrush}"/>
+    </Style>
+
+    <!-- The same for the quiet remove button: its cross is grey until aimed at, then red. -->
+    <Style Selector="Button.icon-danger > PathIcon">
+        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+    </Style>
+    <Style Selector="Button.icon-danger:pointerover > PathIcon">
+        <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
+    </Style>
+
+    <!-- A search field: the icon and the words share one outlined box. -->
+    <Style Selector="Border.field">
+        <Setter Property="Height" Value="40"/>
+        <Setter Property="Padding" Value="12,0"/>
+        <Setter Property="CornerRadius" Value="11"/>
+        <Setter Property="Background" Value="{DynamicResource GlassBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource GlassBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+    <Style Selector="Border.field:focus-within">
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}"/>
+    </Style>
+
+    <!-- The text box inside such a field draws nothing of its own, in any state. -->
+    <Style Selector="TextBox.bare">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="MinHeight" Value="0"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+    <Style Selector="TextBox.bare:pointerover /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+    <Style Selector="TextBox.bare:focus /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+
+    <!-- One thing the build holds - a mod, a pack, a shader - as a roomy row on glass. -->
+    <Style Selector="Border.mod-line">
+        <Setter Property="Padding" Value="12,10"/>
+        <Setter Property="CornerRadius" Value="14"/>
+        <Setter Property="Background" Value="{DynamicResource CardGlassBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource GlassBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.16"/>
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Border.mod-line:pointerover">
+        <Setter Property="BorderBrush" Value="{DynamicResource GoldMutedBrush}"/>
+    </Style>
+    <Style Selector="Border.mod-line.selected">
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}"/>
+    </Style>
+    <!-- Switched off: still in the list, visibly off. -->
+    <Style Selector="Border.mod-line.off">
+        <Setter Property="Opacity" Value="0.55"/>
+    </Style>
+    <!-- Just added: outlined for a while, so it can be found in a long list. -->
+    <Style Selector="Border.mod-line.new">
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}"/>
+        <Setter Property="BorderThickness" Value="1.5"/>
+    </Style>
+
+    <!-- A mod in the catalog: a large card under a strip of its own colour. -->
+    <Style Selector="Border.mod-tile">
+        <Setter Property="CornerRadius" Value="18"/>
+        <Setter Property="Background" Value="{DynamicResource CardGlassBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource GlassBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.16"/>
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Border.mod-tile:pointerover">
+        <Setter Property="BorderBrush" Value="{DynamicResource GoldMutedBrush}"/>
+    </Style>
+    <Style Selector="Border.mod-tile.selected">
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}"/>
+    </Style>
+
+    <!-- The first letter of a title, standing in for a logo. -->
+    <Style Selector="TextBlock.tile-letter">
+        <Setter Property="FontFamily" Value="{StaticResource DisplayFont}"/>
+        <Setter Property="FontSize" Value="20"/>
+        <Setter Property="FontWeight" Value="ExtraBold"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextOnAccentBrush}"/>
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <!-- "Modrinth" or "CurseForge" on a card's strip. -->
+    <Style Selector="Border.source-badge">
+        <Setter Property="Padding" Value="8,3"/>
+        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="Background" Value="{DynamicResource SourceBadgeBrush}"/>
+    </Style>
+    <Style Selector="Border.source-badge TextBlock">
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextOnAccentBrush}"/>
+    </Style>
+
+    <!-- A card's one action, and what stands in its place once the mod is in the build. -->
+    <Style Selector="Button.add">
+        <Setter Property="Height" Value="32"/>
+        <Setter Property="Padding" Value="13,0"/>
+        <Setter Property="CornerRadius" Value="10"/>
+        <Setter Property="FontSize" Value="12.5"/>
+    </Style>
+    <Style Selector="Button.add > StackPanel > TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource TextOnAccentBrush}"/>
+        <Setter Property="FontSize" Value="12.5"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+    <Style Selector="Border.in-build">
+        <Setter Property="Height" Value="32"/>
+        <Setter Property="Padding" Value="12,0"/>
+        <Setter Property="CornerRadius" Value="10"/>
+        <Setter Property="Background" Value="{DynamicResource InstalledTagBrush}"/>
+    </Style>
+    <Style Selector="Border.in-build TextBlock">
+        <Setter Property="FontSize" Value="12.5"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{DynamicResource InstalledTagTextBrush}"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <!-- "Play" in a build's header: the home screen's big button, at a size a header holds. -->
+    <Style Selector="Button.play">
+        <Setter Property="Height" Value="44"/>
+        <Setter Property="Padding" Value="20,0"/>
+        <Setter Property="CornerRadius" Value="14"/>
+        <Setter Property="FontFamily" Value="{StaticResource DisplayFont}"/>
+        <Setter Property="FontSize" Value="15"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextOnAccentBrush}"/>
+    </Style>
+    <Style Selector="Button.play > StackPanel > TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource TextOnAccentBrush}"/>
+    </Style>
+    <Style Selector="Button.play > StackPanel > PathIcon">
+        <Setter Property="Foreground" Value="{DynamicResource TextOnAccentBrush}"/>
+    </Style>
+    <Style Selector="Button.play /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource HeroGradientBrush}"/>
+        <Setter Property="BoxShadow" Value="{DynamicResource HeroShadow}"/>
+    </Style>
+    <Style Selector="Button.play:pointerover /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource HeroGradientBrush}"/>
+        <Setter Property="BoxShadow" Value="{DynamicResource HeroShadowHover}"/>
+    </Style>
+    <Style Selector="Button.play:pressed /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource HeroGradientBrush}"/>
+        <Setter Property="BoxShadow" Value="{DynamicResource HeroShadow}"/>
+    </Style>
+
 </Styles>

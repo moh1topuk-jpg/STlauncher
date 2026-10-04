@@ -31,6 +31,12 @@ public sealed class AppSettings
     /// <summary>The installer through the mirror - the "download by hand" link that works when GitHub does not.</summary>
     public const string InstallerMirrorUrl = "https://showtime-updates.moh1topuk.workers.dev/STlauncher-win-Setup.exe";
 
+    /// <summary>
+    /// CurseForge through the mirror, which holds the API key; the catalog's curseForgeUrl
+    /// overrides it. Nothing shows CurseForge until this answers /ping. See docs/curseforge.md.
+    /// </summary>
+    public const string DefaultCurseForgeUrl = "https://showtime-updates.moh1topuk.workers.dev/cf";
+
     /// <summary>Previously shipped default. Treated as "not customised" and upgraded.</summary>
     public const string LegacyCatalogUrl = "https://mc.showtime.su/launcher/catalog.json";
 
