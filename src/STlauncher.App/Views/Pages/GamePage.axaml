@@ -25,21 +25,22 @@
                 <!-- ======== What to play ======== -->
                 <StackPanel Grid.Column="0" Spacing="16" VerticalAlignment="Top">
 
-                    <!-- A greeting, and the week's hours. -->
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
-                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9" VerticalAlignment="Bottom">
+                    <!-- A greeting, and the week's hours. The name is never cut for the sake of the
+                         hours: when the two do not fit on one line, the pill goes under the greeting. -->
+                    <WrapPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="9" Margin="0,0,14,0" VerticalAlignment="Center">
                             <TextBlock Text="{DynamicResource Home_Hello}" Classes="greeting"/>
-                            <TextBlock Grid.Column="1" Text="{Binding Username}" Classes="greeting"
-                                       Foreground="{DynamicResource NickGradientBrush}" TextTrimming="CharacterEllipsis"/>
-                        </Grid>
-                        <Border Grid.Column="1" Classes="pill" VerticalAlignment="Bottom" IsVisible="{Binding HasPlaytime}"
+                            <TextBlock Text="{Binding Username}" Classes="greeting"
+                                       Foreground="{DynamicResource NickGradientBrush}"/>
+                        </StackPanel>
+                        <Border Classes="pill" VerticalAlignment="Center" Margin="0,4,0,4" IsVisible="{Binding HasPlaytime}"
                                 ToolTip.Tip="{Binding PlaytimeAllLabel}">
                             <StackPanel Orientation="Horizontal" Spacing="7">
                                 <PathIcon Data="{StaticResource IconClock}" Classes="small gold"/>
                                 <TextBlock Text="{Binding PlaytimeLabel}" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Border>
-                    </Grid>
+                    </WrapPanel>
 
                     <!-- The build to continue with: one card, one big button. -->
                     <Border Classes="hero-card">
