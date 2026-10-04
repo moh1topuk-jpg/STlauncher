@@ -20,12 +20,20 @@
 [CmdletBinding()]
 param(
     [string[]]$Runtimes = @('linux-x64', 'win-x64'),
-    [string]$Output = (Join-Path (Split-Path $PSScriptRoot -Parent) 'artifacts\relay')
+    [string]$Output
 )
 
 $ErrorActionPreference = 'Stop'
 
-$project = Join-Path (Split-Path $PSScriptRoot -Parent) 'src\STlauncher.Relay\STlauncher.Relay.csproj'
+# Windows PowerShell 5.1 leaves $PSScriptRoot empty inside the param block when the
+# script is started with -File, so the default output folder is worked out here.
+$root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
+
+if (-not $Output) {
+    $Output = Join-Path $root 'artifacts\relay'
+}
+
+$project = Join-Path $root 'src\STlauncher.Relay\STlauncher.Relay.csproj'
 
 foreach ($runtime in $Runtimes) {
     $target = Join-Path $Output $runtime
