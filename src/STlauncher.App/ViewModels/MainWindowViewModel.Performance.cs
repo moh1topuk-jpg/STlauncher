@@ -83,9 +83,13 @@ public partial class MainWindowViewModel
     {
         var installed = 0;
 
+        // The build the preset was applied to: the whole set goes into it, even if
+        // another build is opened before the last mod has come.
+        var target = CurrentInstallTarget();
+
         foreach (var (slug, title) in OptimizationMods)
         {
-            if (IsProjectInstalled(slug))
+            if (IsProjectInstalled(target.Instance, slug))
             {
                 continue;
             }
@@ -97,7 +101,7 @@ public partial class MainWindowViewModel
                 continue;
             }
 
-            var versions = await _modrinth.GetVersionsAsync(project.Id, SelectedVersion?.Id, LoaderFor(ProjectTypes.Mod));
+            var versions = await _modrinth.GetVersionsAsync(project.Id, target.GameVersion, LoaderFor(ProjectTypes.Mod, target.Loader));
             var pick = ModrinthClient.SelectPreferred(versions);
 
             if (pick is null)
@@ -107,11 +111,11 @@ public partial class MainWindowViewModel
             }
 
             PresetStatus = Localize("Perf_Installing", "Adding {0}…", title);
-            await InstallProjectWithDependenciesAsync(pick, project.Slug, project.Title, project.IconUrl, 0, ProjectTypes.Mod);
+            await InstallProjectWithDependenciesAsync(pick, project.Slug, project.Title, project.IconUrl, 0, ProjectTypes.Mod, target);
             installed++;
         }
 
-        if (installed > 0)
+        if (installed > 0 && IsSelectedBuild(target))
         {
             RefreshMods();
         }
