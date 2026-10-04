@@ -164,6 +164,12 @@ public partial class MainWindowViewModel : ViewModelBase
     public string SkinSourceLabel => PlayerSkin switch
     {
         null => string.Empty,
+
+        // Skins: a skin from the player's own library, or the reminder that none is worn yet.
+        { Source: Services.SkinService.LibrarySource } => Localize("Skins_FromLibrary", "Skin from your library: {0}", WornSkinName),
+        { IsDefault: true } when SelectedSkinSource == Services.SkinSource.Library
+            => Localize("Skins_LibraryNoneWorn", "No library skin is worn yet. Open Skins and press Wear on one."),
+
         { IsDefault: true } when SelectedSkinSource != Services.SkinSource.Auto
             => Localize("Skin_NoneAt", "{0} has no skin for this name", SkinSourceName(SelectedSkinSource)),
         { IsDefault: true } => Localize("Skin_NotFound", "No skin found for this name at Mojang, TLauncher or ely.by"),
@@ -197,6 +203,10 @@ public partial class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsSkinSourceMojang));
         OnPropertyChanged(nameof(IsSkinSourceTLauncher));
         OnPropertyChanged(nameof(IsSkinSourceElyBy));
+
+        // Skins: the library as a source, and which card says "worn".
+        OnPropertyChanged(nameof(IsSkinSourceLibrary));
+        RefreshWornSkinFlags();
     }
 
     [RelayCommand]
@@ -1087,6 +1097,7 @@ public partial class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsServerSection));
         OnPropertyChanged(nameof(IsConsoleSection));
         OnPropertyChanged(nameof(IsSettingsSection));
+        OnPropertyChanged(nameof(IsSkinsSection));   // Skins
 
         // Opening the page should show the current online count, not whatever the last
         // five-minute tick left behind.

@@ -219,4 +219,10 @@
     <SolidColorBrush x:Key="ModrinthDotBrush" Color="#1BD96A"/>
     <SolidColorBrush x:Key="CurseForgeDotBrush" Color="#F16436"/>
 
+    <!-- ===================== Skins: the editor's canvas ===================== -->
+    <SolidColorBrush x:Key="SkinPaperBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="SkinPaperAltBrush" Color="#E9E0E5"/>
+    <SolidColorBrush x:Key="SkinOutlineBrush" Color="#73301A24"/>
+    <SolidColorBrush x:Key="SkinGridBrush" Color="#38161014"/>
+
 </ResourceDictionary>

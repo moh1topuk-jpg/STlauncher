@@ -9,5 +9,8 @@ public enum ShellSection
     Settings,
 
     // My server: the player's own server for friends, and the friends' servers.
-    Host
+    Host,
+
+    // Skins: the library and the editor.
+    Skins
 }

@@ -45,4 +45,11 @@ public partial class GamePage : UserControl
             Stage.PlayEmote(emote);
         }
     }
+
+    /// <summary>Skins: the link in the "My skin" flyout. The flyout is closed first, or it would hang over the new page.</summary>
+    private void OnOpenSkinsClick(object? sender, RoutedEventArgs e)
+    {
+        MySkinButton.Flyout?.Hide();
+        (DataContext as STlauncher.App.ViewModels.MainWindowViewModel)?.OpenSkinsCommand.Execute(null);
+    }
 }

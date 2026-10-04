@@ -602,11 +602,11 @@
                             </Button>
 
                             <!-- Which skin system to look in; a player can have one in several. -->
-                            <Button Grid.Column="2" Classes="primary small" Height="40" Padding="16,0" VerticalAlignment="Center"
+                            <Button Grid.Column="2" Name="MySkinButton" Classes="primary small" Height="40" Padding="16,0" VerticalAlignment="Center"
                                     Content="{DynamicResource Home_MySkin}">
                                 <Button.Flyout>
                                     <controls:RevealFlyout Placement="TopEdgeAlignedRight">
-                                        <StackPanel Spacing="10" Width="300">
+                                        <StackPanel Spacing="10" Width="364">
                                             <TextBlock Text="{DynamicResource Home_SkinFrom}" Classes="label"/>
                                             <Border Classes="panel" Padding="3" HorizontalAlignment="Left">
                                                 <StackPanel Orientation="Horizontal" Spacing="2">
@@ -618,10 +618,20 @@
                                                             Command="{Binding SelectSkinSourceCommand}" CommandParameter="TLauncher"/>
                                                     <Button Classes="segment small" Classes.active="{Binding IsSkinSourceElyBy}" Content="ely.by"
                                                             Command="{Binding SelectSkinSourceCommand}" CommandParameter="ElyBy"/>
+                                                    <!-- Skins: a file from the player's own library. -->
+                                                    <Button Classes="segment small" Classes.active="{Binding IsSkinSourceLibrary}" Content="{DynamicResource Skins_SourceOwn}"
+                                                            Command="{Binding SelectSkinSourceCommand}" CommandParameter="Library"/>
                                                 </StackPanel>
                                             </Border>
                                             <TextBlock Text="{Binding SkinSourceLabel}" Classes="faint" TextWrapping="Wrap"/>
                                             <TextBlock Text="{DynamicResource Game_ViewerHint}" Classes="faint" TextWrapping="Wrap"/>
+                                            <!-- Skins: the way to the library and the editor. -->
+                                            <Button Classes="ghost small" HorizontalAlignment="Stretch" Click="OnOpenSkinsClick">
+                                                <StackPanel Orientation="Horizontal" Spacing="7">
+                                                    <PathIcon Data="{StaticResource IconSkins}" Classes="small"/>
+                                                    <TextBlock Text="{DynamicResource Skins_OpenFromHome}" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Button>
                                         </StackPanel>
                                     </controls:RevealFlyout>
                                 </Button.Flyout>

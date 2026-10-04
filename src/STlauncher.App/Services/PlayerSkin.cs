@@ -60,6 +60,82 @@ public sealed class PlayerSkin
 
     public bool IsSlim { get; }
 
+    private byte[]? _alpha;
+
+    /// <summary>
+    /// True when nothing at all is drawn in this part of the texture. The viewer asks
+    /// before shading a face of the outer layer: a shadow laid over a hat that is not
+    /// there shows as a grey box around the head, plain to see on a light background.
+    /// </summary>
+    public bool IsBlank(Rect area)
+    {
+        _alpha ??= ReadAlpha();
+
+        var width = Texture.PixelSize.Width;
+        var height = Texture.PixelSize.Height;
+
+        for (var y = Math.Max(0, (int)area.Y); y < Math.Min(height, (int)area.Bottom); y++)
+        {
+            for (var x = Math.Max(0, (int)area.X); x < Math.Min(width, (int)area.Right); x++)
+            {
+                if (_alpha[y * width + x] != 0)
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>The alpha of every pixel, read once. Unreadable means "treat it all as drawn".</summary>
+    private byte[] ReadAlpha()
+    {
+        var width = Texture.PixelSize.Width;
+        var height = Texture.PixelSize.Height;
+        var alpha = new byte[width * height];
+
+        try
+        {
+            var stride = width * 4;
+            var bytes = new byte[stride * height];
+            var handle = GCHandle.Alloc(bytes, GCHandleType.Pinned);
+
+            try
+            {
+                Texture.CopyPixels(new PixelRect(0, 0, width, height), handle.AddrOfPinnedObject(), bytes.Length, stride);
+            }
+            finally
+            {
+                handle.Free();
+            }
+
+            // Alpha is the fourth byte in both of the layouts a decoded texture comes in.
+            for (var i = 0; i < alpha.Length; i++)
+            {
+                alpha[i] = bytes[i * 4 + 3];
+            }
+        }
+        catch (Exception)
+        {
+            Array.Fill(alpha, (byte)255);
+        }
+
+        return alpha;
+    }
+
+    /// <summary>
+    /// Frees the textures now rather than whenever the collector gets to them. Only for a
+    /// skin nothing else shows: the editor's preview is replaced many times a second while
+    /// the player draws, and each one carries a megabyte of enlarged pixels.
+    /// </summary>
+    public void Release()
+    {
+        _enlarged?.Dispose();
+        _enlarged = null;
+        Texture.Dispose();
+    }
+
     /// <summary>
     /// The slim model leaves the fourth column of each arm unused, so those columns are
     /// transparent in a slim texture: two 2×4 patches on the arm tops and two 2×12 strips

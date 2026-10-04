@@ -95,6 +95,14 @@
                                 <TextBlock Text="{DynamicResource Nav_Builds}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
+                        <!-- Skins: the library and the editor. -->
+                        <Button Classes="rail" Classes.active="{Binding IsSkinsSection}"
+                                Command="{Binding SelectSectionCommand}" CommandParameter="Skins">
+                            <StackPanel Spacing="5" HorizontalAlignment="Center">
+                                <PathIcon Data="{StaticResource IconSkins}"/>
+                                <TextBlock Text="{DynamicResource Nav_Skins}" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
                         <!-- My server: the player's own server for friends. -->
                         <Button Classes="rail" Classes.active="{Binding IsHostSection}"
                                 Command="{Binding SelectSectionCommand}" CommandParameter="Host">
@@ -153,7 +161,7 @@
                             <controls:SkinFace Skin="{Binding PlayerSkin}" Width="28" Height="28" CornerRadius="6"/>
                             <Button.Flyout>
                                 <controls:RevealFlyout Placement="RightEdgeAlignedBottom">
-                                    <StackPanel Spacing="12" Width="300">
+                                    <StackPanel Spacing="12" Width="364">
                                         <controls:SkinViewer Skin="{Binding PlayerSkin}" Height="260"/>
                                         <StackPanel Spacing="2" HorizontalAlignment="Center">
                                             <TextBlock Text="{Binding Username}" Classes="h3" HorizontalAlignment="Center"/>
@@ -170,10 +178,13 @@
                                                         Command="{Binding SelectSkinSourceCommand}" CommandParameter="TLauncher"/>
                                                 <Button Classes="segment small" Classes.active="{Binding IsSkinSourceElyBy}" Content="ely.by"
                                                         Command="{Binding SelectSkinSourceCommand}" CommandParameter="ElyBy"/>
+                                                <!-- Skins: a file from the player's own library. -->
+                                                <Button Classes="segment small" Classes.active="{Binding IsSkinSourceLibrary}" Content="{DynamicResource Skins_SourceOwn}"
+                                                        Command="{Binding SelectSkinSourceCommand}" CommandParameter="Library"/>
                                             </StackPanel>
                                         </Border>
                                         <TextBlock Text="{DynamicResource Game_ViewerHint}" Classes="faint" HorizontalAlignment="Center"/>
-                                                <TextBlock Text="{Binding SkinSourceLabel}" Classes="faint" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="280"/>
+                                                <TextBlock Text="{Binding SkinSourceLabel}" Classes="faint" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="340"/>
                                     </StackPanel>
                                 </controls:RevealFlyout>
                             </Button.Flyout>
@@ -190,6 +201,8 @@
                     <pages:ServerPage IsVisible="{Binding IsServerSection}" controls:Reveal.OnVisible="True"/>
                     <pages:ConsolePage IsVisible="{Binding IsConsoleSection}" controls:Reveal.OnVisible="True"/>
                     <pages:SettingsPage IsVisible="{Binding IsSettingsSection}" controls:Reveal.OnVisible="True"/>
+                    <!-- Skins -->
+                    <pages:SkinsPage IsVisible="{Binding IsSkinsSection}" controls:Reveal.OnVisible="True"/>
                     <!-- My server -->
                     <pages:HostPage IsVisible="{Binding IsHostSection}" controls:Reveal.OnVisible="True"/>
                 </Panel>

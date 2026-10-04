@@ -74,6 +74,7 @@ public sealed class SkinViewer : Control
     private Point? _dragFrom;
     private double _idleTicks;
     private int _skippedTicks;
+    private bool _attached;
 
     private MotionClip _clip = Clips[0];
     private double _clipStarted;
@@ -110,15 +111,41 @@ public sealed class SkinViewer : Control
                 RenderOptions.SetBitmapInterpolationMode(this,
                     Animated ? BitmapInterpolationMode.MediumQuality : BitmapInterpolationMode.HighQuality);
             }
+
+            if (e.Property == AnimatedProperty || e.Property == AutoRotateProperty)
+            {
+                SyncTimer();
+            }
         };
         _timer.Tick += (_, _) => Tick();
 
         AttachedToVisualTree += (_, _) =>
         {
-            _timer.Start();
+            _attached = true;
+            SyncTimer();
             UpdatePoseName();
         };
-        DetachedFromVisualTree += (_, _) => _timer.Stop();
+        DetachedFromVisualTree += (_, _) =>
+        {
+            _attached = false;
+            _timer.Stop();
+        };
+    }
+
+    /// <summary>
+    /// A figure that neither turns by itself nor plays its clips has nothing to tick for:
+    /// the skin library shows a dozen of them, and a dozen idle timers are still timers.
+    /// </summary>
+    private void SyncTimer()
+    {
+        if (_attached && (AutoRotate || Animated))
+        {
+            _timer.Start();
+        }
+        else
+        {
+            _timer.Stop();
+        }
     }
 
     public PlayerSkin? Skin
@@ -394,6 +421,13 @@ public sealed class SkinViewer : Control
                     var projected = Project(face, part.Pivot, joint, pose, scale, centre);
 
                     if (projected is null)
+                    {
+                        continue;
+                    }
+
+                    // An outer-layer face with nothing drawn on it is not there: no
+                    // texture to put down, and above all no shade to lay over nothing.
+                    if (ReferenceEquals(box, part.Overlay) && skin.IsBlank(face.Texture))
                     {
                         continue;
                     }
