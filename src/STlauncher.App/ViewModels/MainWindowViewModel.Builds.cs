@@ -235,6 +235,13 @@ public partial class MainWindowViewModel
     [NotifyPropertyChangedFor(nameof(HasOpenedProjectVersion))]
     private ModVersion? _openedProjectPreferred;
 
+    partial void OnOpenedProjectChanged(ModProject? value)
+    {
+        OnPropertyChanged(nameof(OpenedProjectSourceLabel));
+        OnPropertyChanged(nameof(OpenProjectPageLabel));
+        RaiseOpenedProjectActions();
+    }
+
     public bool HasOpenedProjectVersion => OpenedProjectPreferred is not null;
 
     /// <summary>"0.8.12 · 1.4 MB" for the version above.</summary>
@@ -273,10 +280,7 @@ public partial class MainWindowViewModel
     [RelayCommand]
     private void OpenProjectPage()
     {
-        if (OpenedProject is not null)
-        {
-            OpenUrl($"https://modrinth.com/mod/{OpenedProject.Slug}");
-        }
+        OpenUrl(OpenedProjectPageUrl());
     }
 
     /// <summary>"Add" on the details panel: the preferred version, dependencies included.</summary>
@@ -291,11 +295,16 @@ public partial class MainWindowViewModel
         try
         {
             IsProjectBusy = true;
+            _installBatch.Clear();
             await InstallProjectWithDependenciesAsync(
                 OpenedProjectPreferred, OpenedProject.Slug, OpenedProject.Title, OpenedProject.IconUrl);
             RefreshBrowserInstallState();
             RefreshHiddenItems();
             await RefreshOpenedProjectDependenciesAsync(OpenedProjectPreferred, OpenedProject.Title);
+
+            // The panel stays open, so the list is not opened on the new mods; they are
+            // outlined there, and the status line names every file that came.
+            RevealFreshMods(_installBatch.ToList(), focus: null);
         }
         catch (Exception ex)
         {
@@ -331,29 +340,29 @@ public partial class MainWindowViewModel
     private async Task RefreshOpenedProjectDependenciesAsync(ModVersion? version, string title)
     {
         OpenedProjectDependencies.Clear();
+        OpenedProjectTotalLabel = string.Empty;
 
         if (version is null)
         {
             return;
         }
 
-        foreach (var dependency in version.Dependencies.Where(d => !string.IsNullOrEmpty(d.ProjectId)).Take(5))
-        {
-            try
-            {
-                var project = await _modrinth.GetProjectAsync(dependency.ProjectId!).ConfigureAwait(true);
+        var items = await ResolveDependenciesAsync(version, title);
 
-                if (project is not null)
-                {
-                    OpenedProjectDependencies.Add(new ModDependencyItem(
-                        project.Title, IsProjectInstalled(project.Slug), dependency.IsRequired));
-                }
-            }
-            catch (Exception ex)
-            {
-                AppendConsole($"[modrinth] dependency of {title}: {ex.Message}");
-            }
+        // The panel may have moved on to another mod while the answers were coming.
+        if (!ReferenceEquals(version, OpenedProjectPreferred))
+        {
+            return;
         }
+
+        OpenedProjectDependencies.Clear();
+
+        foreach (var item in items)
+        {
+            OpenedProjectDependencies.Add(item);
+        }
+
+        RefreshOpenedProjectTotal();
     }
 
     [RelayCommand]
@@ -380,12 +389,19 @@ public partial class MainWindowViewModel
             OpenedProjectVersions.Clear();
             ResetGallery();
             OpenedProjectDependencies.Clear();
+            OpenedProjectTotalLabel = string.Empty;
+            IsOpenedProjectBlocked = false;
             OpenedProjectDescription = item.Result.Description;
+
+            // Nothing else announces it, and the build may have changed since the panel was last open.
+            OnPropertyChanged(nameof(VersionForLabel));
+
+            var source = SourceFor(item.Result.Source);
 
             // The list already has the logo cached, so show it immediately.
             OpenedProjectIcon = await _images.GetAsync(item.Result.IconUrl).ConfigureAwait(true);
 
-            var project = await _modrinth.GetProjectAsync(item.Result.ProjectId).ConfigureAwait(true);
+            var project = await source.GetProjectAsync(item.Result.ProjectId).ConfigureAwait(true);
             OpenedProject = project;
 
             if (project?.IconUrl is { Length: > 0 } iconUrl && OpenedProjectIcon is null)
@@ -401,7 +417,7 @@ public partial class MainWindowViewModel
             _projectOriginalDescription = OpenedProjectDescription;
             IsProjectTranslated = false;
 
-            var versions = await _modrinth
+            var versions = await source
                 .GetVersionsAsync(item.Result.ProjectId, SelectedVersion?.Id, LoaderFor(BrowserKind))
                 .ConfigureAwait(true);
 
@@ -411,8 +427,14 @@ public partial class MainWindowViewModel
             }
 
             OpenedProjectPreferred = ModrinthClient.SelectPreferred(versions);
+
+            // Said before the button is offered: a file its author keeps to the site is
+            // opened in the browser, not installed.
+            IsOpenedProjectBlocked = await IsBlockedAsync(OpenedProjectPreferred);
+
             OnPropertyChanged(nameof(OpenedProjectInstalled));
             OnPropertyChanged(nameof(OpenedProjectNotInstalled));
+            RaiseOpenedProjectActions();
             OnPropertyChanged(nameof(OpenedProjectByline));
 
             await RefreshOpenedProjectDependenciesAsync(OpenedProjectPreferred, item.Result.Title);
@@ -436,7 +458,7 @@ public partial class MainWindowViewModel
         }
         catch (Exception ex)
         {
-            AppendConsole($"[modrinth] project failed: {ex.Message}");
+            AppendConsole($"[catalog] project failed: {ex.Message}");
         }
         finally
         {
@@ -454,6 +476,8 @@ public partial class MainWindowViewModel
         OpenedProjectVersions.Clear();
         ResetGallery();
         OpenedProjectDependencies.Clear();
+        OpenedProjectTotalLabel = string.Empty;
+        IsOpenedProjectBlocked = false;
 
         foreach (var item in ModBrowserItems)
         {
@@ -507,7 +531,7 @@ public partial class MainWindowViewModel
             ? null
             : ModrinthClient.SelectFile(version, SelectedVersion?.Id, LoaderFor(BrowserKind));
 
-        if (file is null || string.IsNullOrEmpty(file.Url) || IsProjectBusy)
+        if (file is null || IsProjectBusy || (version!.Source != ModSource.CurseForge && string.IsNullOrEmpty(file.Url)))
         {
             return;
         }
@@ -515,6 +539,14 @@ public partial class MainWindowViewModel
         try
         {
             IsProjectBusy = true;
+
+            // Checked before the installed version is taken out: a version only its page
+            // gives out must not cost the player the one that works.
+            if (await IsBlockedAsync(version))
+            {
+                Status = Localize("Mods_BlockedFile", "the author of {0} allows downloads only from the mod's page on CurseForge", OpenedProject?.Title ?? file.FileName);
+                return;
+            }
 
             // Another version of an installed mod replaces it rather than sits beside it.
             if (OpenedProject is not null && IsProjectInstalled(OpenedProject.Slug))
@@ -529,6 +561,7 @@ public partial class MainWindowViewModel
                 OpenedProject?.IconUrl);
 
             OpenedProjectPreferred = version;
+            IsOpenedProjectBlocked = false;
             RefreshBrowserInstallState();
             RefreshHiddenItems();
             ShowOtherVersions = false;

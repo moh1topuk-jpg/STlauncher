@@ -118,9 +118,16 @@ public class UiResourceTests
             var text = File.ReadAllText(file);
             sources.Add(file);
 
+            // A page may keep templates of its own in its Resources. Those count for that
+            // page alone: a key defined in one file and asked for in another is still missing.
+            var own = KeyRegex.Matches(text).Select(m => m.Groups[1].Value).ToHashSet(StringComparer.Ordinal);
+
             foreach (Match match in ResourceRegex.Matches(text))
             {
-                used.Add(match.Groups[1].Value);
+                if (!own.Contains(match.Groups[1].Value))
+                {
+                    used.Add(match.Groups[1].Value);
+                }
             }
         }
 

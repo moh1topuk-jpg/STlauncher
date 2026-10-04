@@ -185,6 +185,8 @@ public partial class MainWindowViewModel
                 InstalledMods.Move(current, i);
             }
         }
+
+        RebuildModRows();
     }
 
     // ===================== Several at once =====================

@@ -108,6 +108,7 @@ public partial class MainWindowViewModel
             }
 
             ConfigureDiscord();
+            ConfigureCurseForge(_loadedCatalog?.CurseForgeUrl);
 
             var summary = Localize(
                 "Catalog_Summary",
@@ -264,6 +265,9 @@ public partial class MainWindowViewModel
         catch (Exception ex)
         {
             Status = Localize("Error_ReadMods", "Failed to read mods: {0}", ex.Message);
+
+            // Whatever the list holds now is what the page must show, not the lines from before.
+            RebuildModRows();
         }
     }
 

@@ -983,4 +983,24 @@
     <x:String x:Key="Pose_Sit">Sitting</x:String>
     <x:String x:Key="Pose_Cheer">Cheering</x:String>
     <x:String x:Key="Pose_Dance">Dancing</x:String>
+    <!-- Builds and the mod catalog -->
+    <x:String x:Key="Builds_FromCodeShort">From a build code</x:String>
+    <x:String x:Key="Builds_ShareHint">Share the build: its code is copied as one line of text, send it to a friend</x:String>
+    <x:String x:Key="Mods_NothingShown">No mod of this build matches the search and the filter</x:String>
+    <x:String x:Key="Catalog_SourceAll">All</x:String>
+    <x:String x:Key="Catalog_SourceHint">Where to look: Modrinth, CurseForge, or both at once</x:String>
+    <x:String x:Key="Catalog_Empty">Nothing found. Try another word or another category.</x:String>
+    <x:String x:Key="Status_SearchingCatalog">Searching the catalog…</x:String>
+    <x:String x:Key="Mods_ShownMerged">Shown: {0}, from both sources</x:String>
+    <x:String x:Key="Mods_From">From</x:String>
+    <x:String x:Key="Mods_OpenOnSource">Open on {0}</x:String>
+    <x:String x:Key="Mods_OpenModPage">Open the mod's page</x:String>
+    <x:String x:Key="Mods_DepBlocked">only from its page</x:String>
+    <x:String x:Key="Mods_InstallTotal">Files to download: {0}, {1} in all</x:String>
+    <x:String x:Key="Mods_BlockedNote">The author allows this file to be downloaded only from the mod's page on CurseForge. Open the page, download the file and drag it into the launcher window.</x:String>
+    <x:String x:Key="Mods_BlockedFile">the author of "{0}" allows downloads only from the mod's page on CurseForge</x:String>
+    <x:String x:Key="Mods_ReviewBlocked">"{0}" can only be downloaded from the mod's page: the button on the right opens it</x:String>
+    <x:String x:Key="Mods_ReviewFirst">"{0}" needs other mods: the list is on the right, "Add to build" installs them all</x:String>
+    <x:String x:Key="Count_MillionsShort">{0}M</x:String>
+    <x:String x:Key="Count_ThousandsShort">{0}K</x:String>
 </ResourceDictionary>

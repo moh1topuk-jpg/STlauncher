@@ -29,6 +29,7 @@ public partial class BuildsPage : UserControl
             if (_viewModel is not null)
             {
                 _viewModel.RevealModRequested -= RevealMod;
+                _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
             }
 
             _viewModel = DataContext as MainWindowViewModel;
@@ -36,8 +37,22 @@ public partial class BuildsPage : UserControl
             if (_viewModel is not null)
             {
                 _viewModel.RevealModRequested += RevealMod;
+                _viewModel.PropertyChanged += OnViewModelPropertyChanged;
             }
         };
+    }
+
+    /// <summary>
+    /// Another mod opened in the details panel starts from the top: what "Add" will bring
+    /// is written there, and the panel would otherwise stay where the last mod was left.
+    /// </summary>
+    private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(MainWindowViewModel.OpenedProject) &&
+            this.FindControl<ScrollViewer>("ProjectScroll") is { } scroll)
+        {
+            scroll.Offset = default;
+        }
     }
 
     // ===================== Files dragged in =====================
@@ -93,8 +108,10 @@ public partial class BuildsPage : UserControl
     // ===================== Scroll to a fresh mod =====================
 
     /// <summary>
-    /// Brings the row into view once the list has laid itself out; the tab may have just
-    /// switched, so this waits for a layout pass rather than measuring an invisible panel.
+    /// Brings the mod's line into view once the list has laid itself out; the tab may have
+    /// just switched, so this waits for a layout pass rather than measuring an invisible
+    /// panel. The list keeps only the lines on screen, so the line is asked for by its
+    /// number: its card may not exist yet.
     /// </summary>
     private void RevealMod(string fileName)
     {
@@ -105,16 +122,7 @@ public partial class BuildsPage : UserControl
                 return;
             }
 
-            var index = -1;
-
-            for (var i = 0; i < _viewModel.InstalledMods.Count; i++)
-            {
-                if (string.Equals(_viewModel.InstalledMods[i].FileName, fileName, StringComparison.OrdinalIgnoreCase))
-                {
-                    index = i;
-                    break;
-                }
-            }
+            var index = _viewModel.ModRowIndexOf(fileName);
 
             if (index < 0)
             {
@@ -122,11 +130,23 @@ public partial class BuildsPage : UserControl
             }
 
             items.UpdateLayout();
-            items.ContainerFromIndex(index)?.BringIntoView();
+            items.ScrollIntoView(index);
         }, Avalonia.Threading.DispatcherPriority.Background);
     }
 
-    /// <summary>Opens the project card when a mod row is clicked.</summary>
+    /// <summary>
+    /// Mod cards per line from the width there is: two while each still has room for a
+    /// title and its buttons, one in a narrow window.
+    /// </summary>
+    private void OnModsSizeChanged(object? sender, SizeChangedEventArgs e)
+    {
+        if (DataContext is MainWindowViewModel viewModel)
+        {
+            viewModel.ModColumns = e.NewSize.Width >= 700 ? 2 : 1;
+        }
+    }
+
+    /// <summary>Opens the project card when a mod card is clicked.</summary>
     private void OnModRowPressed(object? sender, PointerPressedEventArgs e)
     {
         if (sender is not Control { DataContext: ModBrowserItem item } ||
@@ -135,8 +155,8 @@ public partial class BuildsPage : UserControl
             return;
         }
 
-        // Clicks on the row's own buttons belong to those buttons.
-        if (e.Source is Button || e.Source is TextBlock { TemplatedParent: Button })
+        // Clicks on the card's own button belong to that button.
+        if (e.Source is Button || e.Source is Visual visual && visual.FindAncestorOfType<Button>() is not null)
         {
             return;
         }
@@ -164,15 +184,17 @@ public partial class BuildsPage : UserControl
     }
 
     /// <summary>
-    /// Cards per row from the width there is: one below 560px, two to 840, three above.
-    /// XAML has no width queries, so the count is set here whenever the area resizes.
+    /// Cards per row from the width there is: one below 450px, two to 740, three above.
+    /// The numbers leave a card room for its title beside the logo; with the details panel
+    /// open the default window still shows two. XAML has no width queries, so the count is
+    /// set here whenever the area resizes.
     /// </summary>
     private void OnBrowserSizeChanged(object? sender, SizeChangedEventArgs e)
     {
         if (this.FindControl<ItemsControl>("BrowserItems")?.ItemsPanelRoot is Avalonia.Controls.Primitives.UniformGrid grid)
         {
             var width = e.NewSize.Width;
-            grid.Columns = width >= 840 ? 3 : width >= 560 ? 2 : 1;
+            grid.Columns = width >= 740 ? 3 : width >= 450 ? 2 : 1;
         }
     }
 

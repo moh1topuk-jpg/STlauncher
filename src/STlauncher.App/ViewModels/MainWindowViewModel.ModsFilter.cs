@@ -29,6 +29,7 @@ public partial class MainWindowViewModel
         OnPropertyChanged(nameof(HasOwnModsEnabled));
         OnPropertyChanged(nameof(HasOwnModsDisabled));
         RaiseModsScopeCounts();
+        RebuildModRows();
     }
 
     public bool HasOwnModsEnabled => InstalledMods.Any(m => m.IsMod && m.Enabled && !m.IsCatalog);

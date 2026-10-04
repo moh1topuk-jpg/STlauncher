@@ -39,7 +39,7 @@ public partial class InstalledModItem : ObservableObject
     /// record made for a dropped or imported file holds the file name, which is no title.
     /// </summary>
     public string DisplayName
-        => Record is { Name.Length: > 0, Source: ModSource.Catalog or ModSource.Modrinth } titled ? titled.Name!
+        => Record is { Name.Length: > 0, Source: ModSource.Catalog or ModSource.Modrinth or ModSource.CurseForge } titled ? titled.Name!
             : MetaName is { Length: > 0 } meta ? meta
             : Record?.Name is { Length: > 0 } name ? name
             : Mod.DisplayName;
