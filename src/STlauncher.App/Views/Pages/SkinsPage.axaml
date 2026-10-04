@@ -64,6 +64,30 @@
                             </StackPanel>
                         </Button>
 
+                        <Button Classes="ghost" Height="40" Padding="14,0" ToolTip.Tip="{DynamicResource Skins_ByNickHint}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <PathIcon Data="{StaticResource IconSearch}" Classes="small"/>
+                                <TextBlock Text="{DynamicResource Skins_ByNick}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <Button.Flyout>
+                                <controls:RevealFlyout Placement="BottomEdgeAlignedLeft">
+                                    <StackPanel Spacing="10" Width="300">
+                                        <TextBlock Text="{DynamicResource Skins_ByNickTitle}" Classes="label"/>
+                                        <TextBlock Text="{DynamicResource Skins_ByNickHint}" Classes="faint wrap" LineHeight="17"/>
+                                        <TextBox Text="{Binding SkinNickQuery}" Watermark="{DynamicResource Skins_ByNickWatermark}" MaxLength="32">
+                                            <TextBox.KeyBindings>
+                                                <KeyBinding Gesture="Enter" Command="{Binding AddSkinByNickCommand}"/>
+                                            </TextBox.KeyBindings>
+                                        </TextBox>
+                                        <Button Classes="primary" HorizontalAlignment="Stretch" Height="38"
+                                                Command="{Binding AddSkinByNickCommand}" IsEnabled="{Binding !IsFindingSkin}">
+                                            <TextBlock Text="{DynamicResource Skins_ByNickAdd}" Foreground="{DynamicResource TextOnAccentBrush}"/>
+                                        </Button>
+                                    </StackPanel>
+                                </controls:RevealFlyout>
+                            </Button.Flyout>
+                        </Button>
+
                         <Button Classes="ghost" Height="40" Padding="14,0"
                                 Command="{Binding SaveCurrentSkinCommand}" IsEnabled="{Binding CanSaveCurrentSkin}"
                                 ToolTip.Tip="{DynamicResource Skins_SaveCurrentHint}">

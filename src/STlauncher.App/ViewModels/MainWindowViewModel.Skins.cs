@@ -361,6 +361,58 @@ public partial class MainWindowViewModel
         }
     }
 
+    /// <summary>The nickname typed into "by nickname".</summary>
+    [ObservableProperty]
+    private string _skinNickQuery = string.Empty;
+
+    [ObservableProperty]
+    private bool _isFindingSkin;
+
+    /// <summary>
+    /// Takes the skin another player wears, by nickname, into the library: the nearest
+    /// thing to a catalog that needs no site of ours. The skin is looked up where the
+    /// launcher already looks for the player's own (a licensed account, TLauncher, Ely.by).
+    /// </summary>
+    [RelayCommand]
+    private async Task AddSkinByNick()
+    {
+        var nick = SkinNickQuery.Trim();
+
+        if (nick.Length == 0 || IsFindingSkin)
+        {
+            return;
+        }
+
+        IsFindingSkin = true;
+
+        try
+        {
+            var skin = await _skins.GetSkinAsync(nick, SkinSource.Auto);
+
+            if (skin.IsDefault || SkinPng.FromBitmap(skin.Texture) is not { } image)
+            {
+                SaySkins(Localize("Skins_NickNotFound", "No skin was found for «{0}»: there is no such player, or they wear the default one.", nick), problem: true);
+                return;
+            }
+
+            var entry = _skins.Library.Add(nick, skin.IsSlim ? SkinModel.Slim : SkinModel.Classic, SkinPng.Encode(image));
+
+            if (ShowLibraryEntry(entry) is not null)
+            {
+                SkinNickQuery = string.Empty;
+                SaySkins(Localize("Skins_NickAdded", "The skin of «{0}» is now in the library.", entry.Name));
+            }
+        }
+        catch (Exception ex)
+        {
+            ReportUiFailure(ex);
+        }
+        finally
+        {
+            IsFindingSkin = false;
+        }
+    }
+
     /// <summary>A fresh copy of the default skin, opened in the editor straight away.</summary>
     [RelayCommand]
     private void NewSkin(string? model)

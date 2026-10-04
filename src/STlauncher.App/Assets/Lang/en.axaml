@@ -1256,6 +1256,13 @@
     <x:String x:Key="Skins_AddPngHint">Choose skin files on this computer. The files are copied into the library; the originals stay where they are.</x:String>
     <x:String x:Key="Skins_PickTitle">Choose skin files</x:String>
     <x:String x:Key="Skins_PickType">Minecraft skin (PNG)</x:String>
+    <x:String x:Key="Skins_ByNick">By nickname</x:String>
+    <x:String x:Key="Skins_ByNickTitle">ANOTHER PLAYER'S SKIN</x:String>
+    <x:String x:Key="Skins_ByNickHint">Type a nickname: the launcher finds the skin that player wears (a licensed account, TLauncher or Ely.by) and adds it to the library.</x:String>
+    <x:String x:Key="Skins_ByNickWatermark">Player's nickname</x:String>
+    <x:String x:Key="Skins_ByNickAdd">Find and add</x:String>
+    <x:String x:Key="Skins_NickNotFound">No skin was found for «{0}»: there is no such player, or they wear the default one.</x:String>
+    <x:String x:Key="Skins_NickAdded">The skin of «{0}» is now in the library.</x:String>
     <x:String x:Key="Skins_SaveCurrent">Save the current skin</x:String>
     <x:String x:Key="Skins_SaveCurrentHint">Copy the skin your figure wears now into the library: the one found by your nickname at Mojang, TLauncher or ely.by.</x:String>
     <x:String x:Key="Skins_SavedCurrent">The skin from your figure is now in the library as "{0}".</x:String>

@@ -1256,6 +1256,13 @@
     <x:String x:Key="Skins_AddPngHint">Выбрать файлы скинов на компьютере. Файлы копируются в библиотеку, оригиналы остаются на месте.</x:String>
     <x:String x:Key="Skins_PickTitle">Выберите файлы скинов</x:String>
     <x:String x:Key="Skins_PickType">Скин Minecraft (PNG)</x:String>
+    <x:String x:Key="Skins_ByNick">По нику</x:String>
+    <x:String x:Key="Skins_ByNickTitle">СКИН ДРУГОГО ИГРОКА</x:String>
+    <x:String x:Key="Skins_ByNickHint">Введите ник: лаунчер найдёт скин, который носит этот игрок (лицензия, TLauncher или Ely.by), и добавит его в библиотеку.</x:String>
+    <x:String x:Key="Skins_ByNickWatermark">Ник игрока</x:String>
+    <x:String x:Key="Skins_ByNickAdd">Найти и добавить</x:String>
+    <x:String x:Key="Skins_NickNotFound">Скин для «{0}» не найден: такого игрока нет или он носит стандартный.</x:String>
+    <x:String x:Key="Skins_NickAdded">Скин игрока «{0}» теперь в библиотеке.</x:String>
     <x:String x:Key="Skins_SaveCurrent">Сохранить текущий скин</x:String>
     <x:String x:Key="Skins_SaveCurrentHint">Скопировать в библиотеку скин, который сейчас на вашей фигурке: тот, что найден по нику в Mojang, TLauncher или на ely.by.</x:String>
     <x:String x:Key="Skins_SavedCurrent">Скин с вашей фигурки теперь в библиотеке под названием «{0}».</x:String>
