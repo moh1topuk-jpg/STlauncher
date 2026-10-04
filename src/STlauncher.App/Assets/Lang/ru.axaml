@@ -1296,8 +1296,10 @@
     <x:String x:Key="Skins_OpenFromHome">Библиотека скинов и редактор</x:String>
     <x:String x:Key="Skins_FromLibrary">Скин из вашей библиотеки: {0}</x:String>
     <x:String x:Key="Skins_LibraryNoneWorn">Скин из библиотеки ещё не выбран. Откройте раздел «Скины» и нажмите «Надеть».</x:String>
-    <x:String x:Key="Skins_PublishTitle">ПОКАЗАТЬ ДРУГИМ ИГРОКАМ</x:String>
-    <x:String x:Key="Skins_PublishIntro">Загрузить скин на сайт за вас лаунчер не может. Кнопка сохранит PNG в папку skins\publish, скопирует путь к файлу, покажет его в Проводнике и откроет страницу загрузки в браузере.</x:String>
+    <x:String x:Key="Skins_PublishButton">Установить в игру</x:String>
+    <x:String x:Key="Skins_PublishMicrosoft">Аккаунт Microsoft (лицензия)</x:String>
+    <x:String x:Key="Skins_PublishMsHint">Файл готов, путь к нему в буфере обмена. На открывшейся странице minecraft.net войдите в аккаунт Microsoft, нажмите «Загрузить скин» и выберите файл (в окне выбора вставьте путь — Ctrl+V).</x:String>
+    <x:String x:Key="Skins_PublishIntro">Скин ставится на сайте того сервиса, через который вас видят другие игроки. Лаунчер сохранит PNG в папку skins/publish, скопирует путь к файлу, покажет его в Проводнике и откроет нужную страницу.</x:String>
     <x:String x:Key="Skins_PublishElyHint">Файл готов, путь к нему в буфере обмена. На открывшейся странице ely.by войдите в аккаунт, выберите файл (в окне выбора вставьте путь — Ctrl+V), загрузите его и наденьте скин на свой аккаунт.</x:String>
     <x:String x:Key="Skins_PublishTlHint">Файл готов, путь к нему в буфере обмена. На открывшейся странице TLauncher войдите в аккаунт, нажмите «Загрузить скин» и выберите файл (в окне выбора вставьте путь — Ctrl+V).</x:String>
     <x:String x:Key="Skins_PublishFailed">Не удалось подготовить файл: {0}</x:String>

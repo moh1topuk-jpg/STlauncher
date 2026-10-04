@@ -238,34 +238,31 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- Showing the skin to other players: the launcher prepares, the player uploads.
-                         Said plainly first: wearing a skin here changes nothing in the game. -->
-                    <Border Classes="card glass" Padding="16">
-                        <StackPanel Spacing="10">
-                            <TextBlock Text="{DynamicResource Skins_PublishTitle}" Classes="label"/>
-                            <TextBlock Text="{DynamicResource Skins_HonestNote}" Classes="muted wrap" LineHeight="18"/>
-                            <TextBlock Text="{DynamicResource Skins_PublishIntro}" Classes="faint wrap" LineHeight="18"/>
-                            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                                <Button Classes="ghost" HorizontalAlignment="Stretch" Height="38"
-                                        Command="{Binding PublishSkinCommand}" CommandParameter="ElyBy">
-                                    <StackPanel Orientation="Horizontal" Spacing="7">
-                                        <PathIcon Data="{StaticResource IconOpenExternal}" Classes="small"/>
-                                        <TextBlock Text="Ely.by" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-                                <Button Grid.Column="1" Classes="ghost" HorizontalAlignment="Stretch" Height="38"
-                                        Command="{Binding PublishSkinCommand}" CommandParameter="TLauncher">
-                                    <StackPanel Orientation="Horizontal" Spacing="7">
-                                        <PathIcon Data="{StaticResource IconOpenExternal}" Classes="small"/>
-                                        <TextBlock Text="TLauncher" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-                            </Grid>
-                            <Border Classes="panel" Padding="12" IsVisible="{Binding HasSkinPublishHint}">
-                                <TextBlock Text="{Binding SkinPublishHint}" TextWrapping="Wrap" LineHeight="19"/>
-                            </Border>
-                        </StackPanel>
-                    </Border>
+                    <!-- Putting the skin on an account is done on the service's own site, as everywhere:
+                         one quiet button with the three places behind it, so the editor stays the point. -->
+                    <StackPanel Spacing="8">
+                        <Button Classes="ghost" HorizontalAlignment="Stretch" Height="38"
+                                ToolTip.Tip="{DynamicResource Skins_PublishIntro}">
+                            <StackPanel Orientation="Horizontal" Spacing="7">
+                                <PathIcon Data="{StaticResource IconOpenExternal}" Classes="small"/>
+                                <TextBlock Text="{DynamicResource Skins_PublishButton}" VerticalAlignment="Center"/>
+                                <PathIcon Data="{StaticResource IconChevronDown}" Classes="small"/>
+                            </StackPanel>
+                            <Button.Flyout>
+                                <MenuFlyout Placement="TopEdgeAlignedLeft">
+                                    <MenuItem Header="{DynamicResource Skins_PublishMicrosoft}"
+                                              Command="{Binding PublishSkinCommand}" CommandParameter="Microsoft"/>
+                                    <MenuItem Header="Ely.by"
+                                              Command="{Binding PublishSkinCommand}" CommandParameter="ElyBy"/>
+                                    <MenuItem Header="TLauncher"
+                                              Command="{Binding PublishSkinCommand}" CommandParameter="TLauncher"/>
+                                </MenuFlyout>
+                            </Button.Flyout>
+                        </Button>
+                        <Border Classes="panel" Padding="12" IsVisible="{Binding HasSkinPublishHint}">
+                            <TextBlock Text="{Binding SkinPublishHint}" TextWrapping="Wrap" LineHeight="19"/>
+                        </Border>
+                    </StackPanel>
                 </StackPanel>
             </Grid>
         </ScrollViewer>

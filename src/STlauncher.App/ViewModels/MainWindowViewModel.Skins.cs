@@ -76,6 +76,9 @@ public sealed partial class SkinItem : ObservableObject
 public partial class MainWindowViewModel
 {
     /// <summary>Ely.by's "upload a skin" page; it asks to sign in when nobody is.</summary>
+    /// <summary>The skin page of a Microsoft account's Minecraft: Java Edition profile.</summary>
+    private const string MicrosoftSkinUrl = "https://www.minecraft.net/msaprofile/mygames/editskin";
+
     private const string ElyByUploadUrl = "https://ely.by/skins/add";
 
     /// <summary>TLauncher's account page, where "Upload skin" lives. The Russian site is a separate address.</summary>
@@ -599,6 +602,7 @@ public partial class MainWindowViewModel
         }
 
         var toEly = string.Equals(service, "ElyBy", StringComparison.OrdinalIgnoreCase);
+        var toMicrosoft = string.Equals(service, "Microsoft", StringComparison.OrdinalIgnoreCase);
 
         try
         {
@@ -610,9 +614,11 @@ public partial class MainWindowViewModel
 
             await CopyToClipboardAsync(path);
             RevealInFileManager(path);
-            OpenUrl(toEly ? ElyByUploadUrl : Language == "ru" ? TLauncherProfileUrlRu : TLauncherProfileUrl);
+            OpenUrl(toMicrosoft ? MicrosoftSkinUrl : toEly ? ElyByUploadUrl : Language == "ru" ? TLauncherProfileUrlRu : TLauncherProfileUrl);
 
-            SkinPublishHint = toEly
+            SkinPublishHint = toMicrosoft
+                ? Localize("Skins_PublishMsHint", "On the minecraft.net page that opened: sign in with your Microsoft account, choose «Upload skin» and pick the file (its path is in the clipboard - paste it with Ctrl+V into the file dialog).")
+                : toEly
                 ? Localize("Skins_PublishElyHint", "On the ely.by page that opened: sign in, choose the file (its path is in the clipboard - paste it with Ctrl+V into the file dialog), upload it and put the skin on your account.")
                 : Localize("Skins_PublishTlHint", "On the TLauncher page that opened: sign in, press «Upload skin» and choose the file (its path is in the clipboard - paste it with Ctrl+V into the file dialog).");
         }

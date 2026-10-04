@@ -1296,8 +1296,10 @@
     <x:String x:Key="Skins_OpenFromHome">Skin library and editor</x:String>
     <x:String x:Key="Skins_FromLibrary">Skin from your library: {0}</x:String>
     <x:String x:Key="Skins_LibraryNoneWorn">No library skin is worn yet. Open Skins and press Wear on one.</x:String>
-    <x:String x:Key="Skins_PublishTitle">SHOW IT TO OTHER PLAYERS</x:String>
-    <x:String x:Key="Skins_PublishIntro">The launcher cannot upload a skin to a site for you. The button saves the PNG to the skins\publish folder, copies the path to the file, shows it in Explorer and opens the upload page in your browser.</x:String>
+    <x:String x:Key="Skins_PublishButton">Put it on in the game</x:String>
+    <x:String x:Key="Skins_PublishMicrosoft">Microsoft account (licensed)</x:String>
+    <x:String x:Key="Skins_PublishMsHint">The file is ready and its path is in the clipboard. On the minecraft.net page that opened, sign in with your Microsoft account, press 'Upload skin' and choose the file (paste the path with Ctrl+V in the file dialog).</x:String>
+    <x:String x:Key="Skins_PublishIntro">A skin is put on at the site of the service other players see you through. The launcher saves the PNG to the skins/publish folder, copies the path to the file, shows it in Explorer and opens the right page.</x:String>
     <x:String x:Key="Skins_PublishElyHint">The file is ready and its path is in the clipboard. On the ely.by page that opened, sign in, choose the file (paste the path with Ctrl+V in the file dialog), upload it and put the skin on your account.</x:String>
     <x:String x:Key="Skins_PublishTlHint">The file is ready and its path is in the clipboard. On the TLauncher page that opened, sign in, press "Upload skin" and choose the file (paste the path with Ctrl+V in the file dialog).</x:String>
     <x:String x:Key="Skins_PublishFailed">The file could not be prepared: {0}</x:String>
