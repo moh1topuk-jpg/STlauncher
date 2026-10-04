@@ -5,6 +5,7 @@
              xmlns:sys="using:System"
              xmlns:conv="using:STlauncher.App.Converters"
              xmlns:controls="using:STlauncher.App.Controls"
+             xmlns:emotes="using:STlauncher.Core.Emotes"
              x:Class="STlauncher.App.Views.Pages.GamePage"
              x:DataType="vm:MainWindowViewModel">
 
@@ -499,16 +500,69 @@
                                  Fill="{DynamicResource PedestalShadowBrush}"/>
 
                         <controls:SkinViewer Name="Stage" Skin="{Binding PlayerSkin}" Animated="True" AutoRotate="False"
+                                             Emotes="{Binding HomeEmotes}"
                                              Width="300" Height="400" VerticalAlignment="Bottom" Margin="0,0,0,34"
                                              ToolTip.Tip="{DynamicResource Game_ViewerHint}"/>
 
                         <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Top" Margin="4,0,4,0">
-                            <Border Classes="pill">
+                            <!-- Emotes: the pill says what the figure is doing, and opens the list of
+                                 what it can do - its own poses, and the emotes found in the build.
+                                 The list opens beside the stage, not over it, and stays open while
+                                 the player tries one after another. -->
+                            <Button Name="PosePill" Classes="pill" ToolTip.Tip="{DynamicResource Emotes_Pick}">
                                 <StackPanel Orientation="Horizontal" Spacing="7">
                                     <PathIcon Data="{StaticResource IconStar}" Width="12" Height="12" Foreground="{DynamicResource GoldBrush}"/>
-                                    <TextBlock Text="{Binding #Stage.PoseName}" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding #Stage.PoseName}" VerticalAlignment="Center"
+                                               MaxWidth="190" TextTrimming="CharacterEllipsis"/>
+                                    <PathIcon Data="{StaticResource IconChevronDown}" Width="10" Height="10"
+                                              Foreground="{DynamicResource TextMutedBrush}"/>
                                 </StackPanel>
-                            </Border>
+                                <Button.Flyout>
+                                    <controls:RevealFlyout Placement="LeftEdgeAlignedTop">
+                                        <StackPanel Spacing="10" Width="300">
+                                            <TextBlock Text="{DynamicResource Emotes_Poses}" Classes="label"/>
+                                            <ItemsControl ItemsSource="{Binding HomePoses}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <WrapPanel/>
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="vm:PoseChoice">
+                                                        <Button Classes="ghost small" Margin="0,0,6,6" Content="{Binding Name}"
+                                                                Click="OnPosePick"/>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+
+                                            <TextBlock Text="{DynamicResource Emotes_FromBuild}" Classes="label"
+                                                       IsVisible="{Binding HasHomeEmotes}"/>
+                                            <ScrollViewer MaxHeight="264" IsVisible="{Binding HasHomeEmotes}">
+                                                <ItemsControl ItemsSource="{Binding HomeEmotes}" Margin="0,0,12,0">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate x:DataType="emotes:Emote">
+                                                            <Button Classes="plain small" HorizontalAlignment="Stretch"
+                                                                    HorizontalContentAlignment="Stretch" Click="OnEmotePick">
+                                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                                    <TextBlock Text="{Binding Name}" FontSize="13"
+                                                                               TextTrimming="CharacterEllipsis"/>
+                                                                    <TextBlock Grid.Column="1" Text="{Binding Author}" Classes="faint"
+                                                                               FontSize="12" MaxWidth="110" VerticalAlignment="Center"
+                                                                               TextTrimming="CharacterEllipsis"/>
+                                                                </Grid>
+                                                            </Button>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </ScrollViewer>
+
+                                            <!-- A build without the mod: only the figure's own poses, and why. -->
+                                            <TextBlock Text="{DynamicResource Emotes_None}" Classes="faint" TextWrapping="Wrap"
+                                                       IsVisible="{Binding !HasHomeEmotes}"/>
+                                        </StackPanel>
+                                    </controls:RevealFlyout>
+                                </Button.Flyout>
+                            </Button>
                             <Button Grid.Column="2" Classes="glass-icon" Click="OnNextPoseClick"
                                     ToolTip.Tip="{DynamicResource Home_NextPose}">
                                 <PathIcon Data="{StaticResource IconRefresh}" Classes="small"/>

@@ -983,4 +983,10 @@
     <x:String x:Key="Pose_Sit">Sitting</x:String>
     <x:String x:Key="Pose_Cheer">Cheering</x:String>
     <x:String x:Key="Pose_Dance">Dancing</x:String>
+
+    <!-- Emotes: the list on the pose pill of the home screen -->
+    <x:String x:Key="Emotes_Pick">Pick a pose or an emote</x:String>
+    <x:String x:Key="Emotes_Poses">Poses</x:String>
+    <x:String x:Key="Emotes_FromBuild">Emotes from the build</x:String>
+    <x:String x:Key="Emotes_None">Emotes appear here once the build has the Emotecraft mod.</x:String>
 </ResourceDictionary>
