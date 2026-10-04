@@ -71,4 +71,25 @@ public sealed class HostedServer
 
     [JsonPropertyName("lastStartedAt")]
     public DateTimeOffset? LastStartedAt { get; set; }
+
+    /// <summary>
+    /// The host's secret for the relay room, kept so that invites already sent keep
+    /// working after a restart. Never shown and never put into an invite: the invite
+    /// carries the room key derived from it.
+    /// </summary>
+    [JsonPropertyName("hostKey")]
+    public string? HostKey { get; set; }
+
+    /// <summary>
+    /// The ways of reaching the server the player switched on. They are remembered with
+    /// the server and come up together with it; nothing here starts a way by itself.
+    /// </summary>
+    [JsonPropertyName("friendsRelay")]
+    public bool FriendsRelay { get; set; }
+
+    [JsonPropertyName("friendsDirect")]
+    public bool FriendsDirect { get; set; }
+
+    [JsonPropertyName("friendsPublic")]
+    public bool FriendsPublic { get; set; }
 }

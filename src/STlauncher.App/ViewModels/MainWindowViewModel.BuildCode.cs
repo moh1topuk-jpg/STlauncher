@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.Input;
+using STlauncher.Core.Friends;
+using STlauncher.Core.Instances;
 using STlauncher.Core.Modpacks;
 using STlauncher.Core.Mods;
 
@@ -36,47 +38,15 @@ public partial class MainWindowViewModel
         try
         {
             IsModsBusy = true;
-            Status = Localize("Export_Hashing", "Export: reading the build's files…");
 
-            var directory = InstanceDirectory;
-            var candidates = await Task.Run(() => CollectExportCandidates(directory));
-
-            Status = Localize("Export_Lookup", "Export: checking {0} file(s) against Modrinth…", candidates.Count);
-            var known = await _modrinth.GetVersionsByHashesAsync(candidates.Select(c => c.Sha1));
-
-            var files = new List<BuildCodeFile>();
-            var missing = new List<string>();
-
-            foreach (var candidate in candidates)
-            {
-                var file = known.TryGetValue(candidate.Sha1, out var version)
-                    ? version.Files.FirstOrDefault(f => string.Equals(f.Sha1, candidate.Sha1, StringComparison.OrdinalIgnoreCase))
-                    : null;
-
-                if (file is not null && ModpackWriter.IsAllowedDownload(file.Url))
-                {
-                    files.Add(new BuildCodeFile(candidate.RelativePath, file.Url, candidate.Sha1, candidate.Size));
-                }
-                else
-                {
-                    missing.Add(Path.GetFileName(candidate.RelativePath));
-                }
-            }
-
-            var code = BuildCode.Encode(new BuildCodePayload(
-                instance.Name,
-                gameVersion!,
-                instance.Loader,
-                instance.LoaderVersion ?? SelectedLoaderVersion?.Version,
-                files,
-                missing));
+            var (code, files, missing) = await MakeBuildCodeAsync(instance, gameVersion!);
 
             await CopyToClipboardAsync(code);
-            AppendConsole($"[code] {instance.Name}: {files.Count} file(s) by address, {missing.Count} not on Modrinth, {code.Length} characters");
+            AppendConsole($"[code] {instance.Name}: {files} file(s) by address, {missing.Count} not on Modrinth, {code.Length} characters");
 
             Status = missing.Count == 0
-                ? Localize("Code_Copied", "Build code copied: {0} file(s), {1} characters. Paste it to a friend.", files.Count, code.Length)
-                : Localize("Code_CopiedPartial", "Build code copied: {0} file(s). Not on Modrinth, so not in the code: {1}", files.Count, string.Join(", ", missing));
+                ? Localize("Code_Copied", "Build code copied: {0} file(s), {1} characters. Paste it to a friend.", files, code.Length)
+                : Localize("Code_CopiedPartial", "Build code copied: {0} file(s). Not on Modrinth, so not in the code: {1}", files, string.Join(", ", missing));
         }
         catch (Exception ex)
         {
@@ -89,7 +59,57 @@ public partial class MainWindowViewModel
         }
     }
 
-    /// <summary>Reads a code from the clipboard and makes a new build out of it.</summary>
+    /// <summary>
+    /// The code of a build: every file Modrinth hosts by address and hash, the rest by
+    /// name. Shared by "Copy the build code" and by the invite to a server made from a build.
+    /// </summary>
+    private async Task<(string Code, int Files, List<string> Missing)> MakeBuildCodeAsync(Instance instance, string gameVersion)
+    {
+        Status = Localize("Export_Hashing", "Export: reading the build's files…");
+
+        var directory = _instances.GameDirectory(instance);
+        var candidates = await Task.Run(() => CollectExportCandidates(directory));
+
+        Status = Localize("Export_Lookup", "Export: checking {0} file(s) against Modrinth…", candidates.Count);
+        var known = await _modrinth.GetVersionsByHashesAsync(candidates.Select(c => c.Sha1));
+
+        var files = new List<BuildCodeFile>();
+        var missing = new List<string>();
+
+        foreach (var candidate in candidates)
+        {
+            var file = known.TryGetValue(candidate.Sha1, out var version)
+                ? version.Files.FirstOrDefault(f => string.Equals(f.Sha1, candidate.Sha1, StringComparison.OrdinalIgnoreCase))
+                : null;
+
+            if (file is not null && ModpackWriter.IsAllowedDownload(file.Url))
+            {
+                files.Add(new BuildCodeFile(candidate.RelativePath, file.Url, candidate.Sha1, candidate.Size));
+            }
+            else
+            {
+                missing.Add(Path.GetFileName(candidate.RelativePath));
+            }
+        }
+
+        var loaderVersion = instance.LoaderVersion
+                            ?? (ReferenceEquals(instance, SelectedInstance) ? SelectedLoaderVersion?.Version : null);
+
+        var code = BuildCode.Encode(new BuildCodePayload(
+            instance.Name,
+            gameVersion,
+            instance.Loader,
+            loaderVersion,
+            files,
+            missing));
+
+        return (code, files.Count, missing);
+    }
+
+    /// <summary>
+    /// Reads a code from the clipboard: a build code makes a new build out of it, an
+    /// invite to a friend's server is shown first and waits for the player's answer.
+    /// </summary>
     [RelayCommand]
     private async Task AddBuildFromCodeAsync()
     {
@@ -110,12 +130,38 @@ public partial class MainWindowViewModel
             return;
         }
 
-        if (!BuildCode.TryDecode(text, out var payload) || payload is null)
+        switch (SharedCode.Read(text, out var payload, out var invite))
         {
-            Status = Localize("Code_NotFound", "The clipboard holds no build code. Copy the line that starts with STB1. and try again.");
-            return;
-        }
+            case SharedCodeKind.Server when invite is not null:
+                // Nothing is added yet: the invite goes on screen and waits for a yes.
+                ShowFriendInvite(invite);
+                return;
 
+            case SharedCodeKind.Build when payload is not null:
+                var instance = await AddBuildFromPayloadAsync(payload, showBuild: true);
+
+                if (instance is not null)
+                {
+                    Status = payload.Missing.Count > 0
+                        ? Localize("Code_AddedPartial", "Build “{0}” added. Not in the code, add by hand: {1}", instance.Name, string.Join(", ", payload.Missing))
+                        : Localize("Code_Added", "Build “{0}” added from the code", instance.Name);
+                }
+
+                return;
+
+            default:
+                Status = Localize("Friends_ClipboardEmpty", "The clipboard holds neither a build code nor an invite. Copy the line that starts with STB1. or STS1. and try again.");
+                return;
+        }
+    }
+
+    /// <summary>
+    /// Makes a new build out of a decoded code and downloads its files. Returns the build,
+    /// or null when it could not be made; the status line then says why.
+    /// </summary>
+    /// <param name="showBuild">Open the build's mods tab, where the download is seen arriving.</param>
+    private async Task<Instance?> AddBuildFromPayloadAsync(BuildCodePayload payload, bool showBuild)
+    {
         var temporary = Path.Combine(Path.GetTempPath(), $"stlauncher-code-{Guid.NewGuid():N}.mrpack");
 
         try
@@ -140,25 +186,23 @@ public partial class MainWindowViewModel
             _allInstances.Add(instance);
             ApplyBuildFilter();
             SelectedInstance = instance;
-            Section = ShellSection.Builds;
-            BuildTab = BuildTab.Mods;
+
+            if (showBuild)
+            {
+                Section = ShellSection.Builds;
+                BuildTab = BuildTab.Mods;
+            }
 
             AppendConsole($"[code] new build '{instance.Name}': {payload.Files.Count} file(s) to download, {payload.Missing.Count} not in the code");
             await ImportModpackAsync(temporary);
 
-            if (payload.Missing.Count > 0)
-            {
-                Status = Localize("Code_AddedPartial", "Build “{0}” added. Not in the code, add by hand: {1}", instance.Name, string.Join(", ", payload.Missing));
-            }
-            else
-            {
-                Status = Localize("Code_Added", "Build “{0}” added from the code", instance.Name);
-            }
+            return instance;
         }
         catch (Exception ex)
         {
             Status = Localize("Code_Failed", "Could not make the build code: {0}", ex.Message);
             AppendConsole($"[code] failed: {ex}");
+            return null;
         }
         finally
         {
