@@ -12,9 +12,25 @@ public static class DataLocation
 {
     public const string PointerFileName = "data-root.txt";
 
+    /// <summary>
+    /// Names a folder to use instead of the one under AppData. For tests and render probes:
+    /// a run that must not touch the player's real settings and builds points this at a
+    /// scratch folder before the launcher's services are built.
+    /// </summary>
+    public const string OverrideVariable = "STLAUNCHER_DATA_ROOT";
+
     /// <summary>The folder the launcher used before a custom location existed.</summary>
     public static string DefaultRoot
-        => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "STlauncher");
+    {
+        get
+        {
+            var custom = Environment.GetEnvironmentVariable(OverrideVariable);
+
+            return !string.IsNullOrWhiteSpace(custom) && Path.IsPathRooted(custom)
+                ? Path.GetFullPath(custom)
+                : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "STlauncher");
+        }
+    }
 
     public static string PointerPath => Path.Combine(DefaultRoot, PointerFileName);
 
