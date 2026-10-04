@@ -25,7 +25,13 @@ public enum EmoteAxis
     Z,
     Pitch,
     Yaw,
-    Roll
+    Roll,
+
+    /// <summary>How far the part folds at its middle: the elbow, the knee, the waist.</summary>
+    Bend,
+
+    /// <summary>Which way it folds: the turn of the hinge about the part's length. The files call it "axis".</summary>
+    BendAxis
 }
 
 /// <summary>One value at one tick, and how to leave it for the next.</summary>
@@ -40,8 +46,17 @@ public readonly record struct EmoteKeyframe(int Tick, float Value, EmoteEasing E
 /// model pixels with y pointing down and the face looking along -z, and the turn is
 /// applied pitch (about x) first, then yaw, then roll. For <see cref="EmotePart.Body"/>
 /// the offset is in blocks with y pointing up.
+///
+/// The bend is the mod's as well. A part that bends is cut across its middle, and one
+/// half turns by <see cref="Bend"/> about a hinge through the centre of the cut: the
+/// half with the hand or the foot for a limb, the half with the shoulders for the chest,
+/// and the head and arms go with it. The hinge is the model's x axis turned about the
+/// part's length by <see cref="BendAxis"/>: (cos, 0, sin) for a limb, (cos, 0, -sin)
+/// for the chest. So a positive bend with no axis folds a knee the way knees fold and
+/// bows the chest forward. The head has no bend.
 /// </remarks>
-public readonly record struct EmotePartState(float X, float Y, float Z, float Pitch, float Yaw, float Roll)
+public readonly record struct EmotePartState(
+    float X, float Y, float Z, float Pitch, float Yaw, float Roll, float Bend = 0, float BendAxis = 0)
 {
     public static EmotePartState Lerp(EmotePartState a, EmotePartState b, float t) => new(
         a.X + (b.X - a.X) * t,
@@ -49,7 +64,9 @@ public readonly record struct EmotePartState(float X, float Y, float Z, float Pi
         a.Z + (b.Z - a.Z) * t,
         a.Pitch + (b.Pitch - a.Pitch) * t,
         a.Yaw + (b.Yaw - a.Yaw) * t,
-        a.Roll + (b.Roll - a.Roll) * t);
+        a.Roll + (b.Roll - a.Roll) * t,
+        a.Bend + (b.Bend - a.Bend) * t,
+        a.BendAxis + (b.BendAxis - a.BendAxis) * t);
 }
 
 /// <summary>The whole figure at one instant of an emote.</summary>
@@ -81,14 +98,14 @@ public readonly record struct EmoteFrame(
 /// an emote here moves the way it does in the game: a part eases in from standing still
 /// before its first keyframe, holds its last value to the end tick and eases back by
 /// the stop tick, and a looping emote turns from the end tick back to the return tick.
-/// Elbows and knees are not kept: nothing that draws from this model has them.
+/// A bend and its direction are two more axes of a part, kept and sampled like the rest.
 /// </remarks>
 public sealed class Emote
 {
     public const double TicksPerSecond = 20;
 
-    private const int PartCount = 7;
-    private const int AxisCount = 6;
+    internal const int PartCount = 7;
+    internal const int AxisCount = 8;
 
     /// <summary>
     /// Where each joint sits in the game's model when nothing moves it. Position
@@ -228,7 +245,9 @@ public sealed class Emote
             Axis(at, 2, tick, looped),
             Axis(at, 3, tick, looped),
             Axis(at, 4, tick, looped),
-            Axis(at, 5, tick, looped));
+            Axis(at, 5, tick, looped),
+            Axis(at, 6, tick, looped),
+            Axis(at, 7, tick, looped));
     }
 
     private float Axis(int part, int axis, double tick, bool looped)
@@ -357,8 +376,8 @@ internal sealed class EmoteBuilder
     /// <summary>More keyframes than any real emote has; a file claiming more is not one.</summary>
     private const int MaxKeyframes = 400_000;
 
-    private readonly List<EmoteKeyframe>?[] _tracks = new List<EmoteKeyframe>?[7 * 6];
-    private readonly bool[] _outOfOrder = new bool[7 * 6];
+    private readonly List<EmoteKeyframe>?[] _tracks = new List<EmoteKeyframe>?[Emote.PartCount * Emote.AxisCount];
+    private readonly bool[] _outOfOrder = new bool[Emote.PartCount * Emote.AxisCount];
     private int _count;
 
     public int BeginTick { get; set; }
@@ -380,12 +399,18 @@ internal sealed class EmoteBuilder
             return;
         }
 
+        // The mod gives the head no bend, and reads none for it.
+        if (part == EmotePart.Head && axis >= EmoteAxis.Bend)
+        {
+            return;
+        }
+
         if (++_count > MaxKeyframes)
         {
             throw new InvalidDataException("Too many keyframes.");
         }
 
-        var index = (int)part * 6 + (int)axis;
+        var index = (int)part * Emote.AxisCount + (int)axis;
         var track = _tracks[index] ??= new List<EmoteKeyframe>();
 
         // Files list a part's keyframes in order nearly always. One that does not is put

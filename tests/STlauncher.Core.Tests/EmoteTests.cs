@@ -197,6 +197,100 @@ public class EmoteTests
         }
     }
 
+    /// <summary>A facepalm the way emotes made with bends write one: the elbow folds, the chest bows a little.</summary>
+    private const string Bends = """
+        {
+          "version": 3,
+          "name": "Bends",
+          "emote": {
+            "beginTick": 0, "endTick": 40, "stopTick": 50, "degrees": true,
+            "moves": [
+              { "tick": 10, "easing": "linear", "rightArm": { "pitch": -90, "bend": 0, "axis": 180 } },
+              { "tick": 20, "easing": "linear", "rightArm": { "bend": 120 }, "torso": { "bend": 30, "axis": -90 } },
+              { "tick": 20, "easing": "linear", "turn": 1, "leftLeg": { "bend": 45 }, "head": { "bend": 60, "axis": 60, "pitch": 10 } },
+              { "tick": 30, "easing": "linear", "body": { "bend": 20 } }
+            ]
+          }
+        }
+        """;
+
+    [Fact]
+    public void Json_ReadsBendsAndTheirDirection()
+    {
+        var emote = EmoteReader.TryRead(Utf8(Bends), "bends")!;
+
+        // Both are angles: in degrees when the rest of the file is.
+        var bend = emote.Keyframes(EmotePart.RightArm, EmoteAxis.Bend);
+        Assert.Equal(new[] { 10, 20 }, bend.Select(k => k.Tick));
+        Assert.Equal(Math.PI * 2 / 3, bend[1].Value, 4);
+        Assert.Equal(Math.PI, emote.Keyframes(EmotePart.RightArm, EmoteAxis.BendAxis).Single().Value, 4);
+        Assert.Equal(-Math.PI / 2, emote.Keyframes(EmotePart.Torso, EmoteAxis.BendAxis).Single().Value, 4);
+
+        // The chest and the whole body each keep their own; whoever draws adds them up.
+        Assert.Equal(Math.PI / 6, emote.Keyframes(EmotePart.Torso, EmoteAxis.Bend).Single().Value, 4);
+        Assert.Equal(Math.PI / 9, emote.Keyframes(EmotePart.Body, EmoteAxis.Bend).Single().Value, 4);
+
+        // A bend is an angle for "turn" too: the same keyframe again, a whole circle on.
+        var knee = emote.Keyframes(EmotePart.LeftLeg, EmoteAxis.Bend);
+        Assert.Equal(new[] { 20, 20 }, knee.Select(k => k.Tick));
+        Assert.Equal(Math.PI / 4 + Math.PI * 2, knee[1].Value, 4);
+
+        // The head does not bend, whatever a file says; the rest of what it says stands.
+        Assert.Empty(emote.Keyframes(EmotePart.Head, EmoteAxis.Bend));
+        Assert.Empty(emote.Keyframes(EmotePart.Head, EmoteAxis.BendAxis));
+        Assert.Equal(2, emote.Keyframes(EmotePart.Head, EmoteAxis.Pitch).Count);
+        Assert.True(emote.Moves(EmotePart.Torso));
+    }
+
+    [Fact]
+    public void Json_BeforeVersionThree_TheBendOfTorsoIsTheBodys()
+    {
+        const string json = """
+            { "emote": { "endTick": 20, "degrees": false, "moves": [ { "tick": 5, "torso": { "bend": 0.5, "axis": 1.5 } } ] } }
+            """;
+
+        var emote = EmoteReader.TryRead(Utf8(json), "old")!;
+
+        Assert.Equal(0.5f, emote.Keyframes(EmotePart.Body, EmoteAxis.Bend).Single().Value);
+        Assert.Equal(1.5f, emote.Keyframes(EmotePart.Body, EmoteAxis.BendAxis).Single().Value);
+        Assert.False(emote.Moves(EmotePart.Torso));
+        Assert.Equal(0.5, emote.Sample(10).Body.Bend, 4);
+    }
+
+    [Fact]
+    public void Sample_BendsMoveLikeAnyOtherAxis()
+    {
+        var emote = EmoteReader.TryRead(Utf8(Bends), "bends")!;
+
+        // Straight at the start, and still straight on the keyframe that says so.
+        Assert.Equal(0, emote.Sample(0).RightArm.Bend, 4);
+        Assert.Equal(0, emote.Sample(10).RightArm.Bend, 4);
+
+        // Half-way along a linear stretch, half the fold; on the keyframe, all of it.
+        Assert.Equal(Math.PI / 3, emote.Sample(15).RightArm.Bend, 4);
+        Assert.Equal(Math.PI * 2 / 3, emote.Sample(20).RightArm.Bend, 4);
+
+        // The direction has one keyframe: eased into, then held while the fold changes.
+        Assert.InRange(emote.Sample(5).RightArm.BendAxis, 0.1, Math.PI - 0.1);
+        Assert.Equal(Math.PI, emote.Sample(15).RightArm.BendAxis, 4);
+        Assert.Equal(-Math.PI / 2, emote.Sample(25).Torso.BendAxis, 4);
+
+        // Held to the end tick, let go by the stop tick, gone after it.
+        Assert.Equal(Math.PI * 2 / 3, emote.Sample(39.5).RightArm.Bend, 4);
+        Assert.InRange(emote.Sample(45).RightArm.Bend, 0.2, Math.PI * 2 / 3 - 0.2);
+        Assert.Equal(default(EmoteFrame), emote.Sample(50));
+
+        // A part the file does not bend is not bent, and the head never is.
+        Assert.Equal(0, emote.Sample(20).LeftArm.Bend);
+        Assert.Equal(0, emote.Sample(20).Head.Bend);
+        Assert.Equal(Math.PI / 18, emote.Sample(19.999).Head.Pitch, 3);
+
+        // Between two frames a bend goes with everything else.
+        var half = EmoteFrame.Lerp(emote.Sample(10), emote.Sample(20), 0.5f);
+        Assert.Equal(Math.PI / 3, half.RightArm.Bend, 4);
+        Assert.Equal((emote.Sample(10).Torso.Bend + emote.Sample(20).Torso.Bend) / 2, half.Torso.Bend, 4);
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("{")]
@@ -330,9 +424,16 @@ public class EmoteTests
 
             animation.Track(version, rollKeys);
 
-            for (var extra = 0; extra < (bends ? 2 : 0) + (version >= 3 ? 3 : 0); extra++)
+            if (bends)
             {
-                animation.Track(version);
+                // The direction of the bend first, then the bend: the mod's order.
+                animation.Track(version, (12, 1.25f, 0));
+                animation.Track(version, (12, -0.75f, 0), (30, 2f, 0));
+            }
+
+            for (var scale = 0; scale < (version >= 3 ? 3 : 0); scale++)
+            {
+                animation.Track(version, (3, 9f, 0));
             }
         }
 
@@ -380,6 +481,19 @@ public class EmoteTests
         // Inside the binary "torso" is already the chest.
         Assert.Equal(new EmoteKeyframe(7, -1f, EmoteEasing.Constant), emote.Keyframes(EmotePart.Torso, EmoteAxis.Roll).Single());
         Assert.False(emote.Moves(EmotePart.Body));
+
+        // The bend and its direction are kept, each from its own track; the head has
+        // neither in the file, and the scale that follows is nobody's.
+        foreach (var part in new[] { EmotePart.RightArm, EmotePart.Torso })
+        {
+            Assert.Equal(new EmoteKeyframe(12, 1.25f, EmoteEasing.Linear), emote.Keyframes(part, EmoteAxis.BendAxis).Single());
+            Assert.Equal(new[] { -0.75f, 2f }, emote.Keyframes(part, EmoteAxis.Bend).Select(k => k.Value));
+        }
+
+        Assert.Empty(emote.Keyframes(EmotePart.Head, EmoteAxis.Bend));
+        Assert.Empty(emote.Keyframes(EmotePart.RightArm, EmoteAxis.X));
+        Assert.Equal(-0.75, emote.Sample(12).RightArm.Bend, 4);
+        Assert.Equal(1.25, emote.Sample(12).Torso.BendAxis, 4);
     }
 
     [Fact]
