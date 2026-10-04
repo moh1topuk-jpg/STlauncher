@@ -154,6 +154,53 @@
                     </Border>
 
                     <TextBlock Text="{DynamicResource Skins_DropHint}" Classes="faint wrap"/>
+
+                    <!-- Random skins: asked for by a press, kept by a press. -->
+                    <Border Classes="card glass" Padding="18">
+                        <StackPanel Spacing="12">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <StackPanel Spacing="3">
+                                    <TextBlock Text="{DynamicResource Skins_RandomTitle}" Classes="h2"/>
+                                    <TextBlock Text="{DynamicResource Skins_RandomText}" Classes="muted wrap" FontSize="12.5" LineHeight="18"/>
+                                </StackPanel>
+                                <Button Grid.Column="1" Classes="ghost" Height="38" Padding="16,0" VerticalAlignment="Top"
+                                        Command="{Binding LoadRandomSkinsCommand}" IsEnabled="{Binding CanLoadRandomSkins}">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <PathIcon Data="{StaticResource IconRefresh}" Classes="small"/>
+                                        <TextBlock Text="{Binding RandomSkinsButtonText}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+
+                            <TextBlock Text="{DynamicResource Skins_RandomLoading}" Classes="faint" IsVisible="{Binding IsLoadingRandomSkins}"/>
+                            <TextBlock Text="{Binding RandomSkinsProblem}" Classes="muted wrap" IsVisible="{Binding HasRandomSkinsProblem}"/>
+
+                            <ItemsControl ItemsSource="{Binding RandomSkins}" IsVisible="{Binding HasRandomSkins}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel ItemSpacing="10" LineSpacing="10"/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:RandomSkinItem">
+                                        <StackPanel Spacing="6" Width="124">
+                                            <Panel Height="150">
+                                                <Border CornerRadius="12" Background="{DynamicResource GlassBrush}"/>
+                                                <controls:SkinViewer Skin="{Binding Skin}" AutoRotate="False" IsHitTestVisible="False" Margin="6"/>
+                                            </Panel>
+                                            <Button Classes="ghost small" HorizontalAlignment="Stretch" IsVisible="{Binding CanSave}"
+                                                    Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).SaveRandomSkinCommand}"
+                                                    CommandParameter="{Binding}">
+                                                <TextBlock Text="{DynamicResource Skins_RandomSave}"/>
+                                            </Button>
+                                            <TextBlock Text="{DynamicResource Skins_RandomSavedMark}" Classes="faint" HorizontalAlignment="Center"
+                                                       Margin="0,6" IsVisible="{Binding IsSaved}"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
 
                 <!-- ======== The chosen skin, on its own small stage ======== -->

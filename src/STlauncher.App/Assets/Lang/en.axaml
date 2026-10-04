@@ -1263,6 +1263,16 @@
     <x:String x:Key="Skins_ByNickAdd">Find and add</x:String>
     <x:String x:Key="Skins_NickNotFound">No skin was found for «{0}»: there is no such player, or they wear the default one.</x:String>
     <x:String x:Key="Skins_NickAdded">The skin of «{0}» is now in the library.</x:String>
+    <x:String x:Key="Skins_RandomTitle">Random skins</x:String>
+    <x:String x:Key="Skins_RandomText">Skins other people uploaded recently: look, save one you like and make it your own. The feed is public and nobody curates it; the skins have no names. Taken from mineskin.org when you press the button.</x:String>
+    <x:String x:Key="Skins_RandomShow">Show</x:String>
+    <x:String x:Key="Skins_RandomMore">Show others</x:String>
+    <x:String x:Key="Skins_RandomLoading">Loading skins…</x:String>
+    <x:String x:Key="Skins_RandomNone">The feed did not answer, or had nothing that is a whole skin. Try again in a minute.</x:String>
+    <x:String x:Key="Skins_RandomSave">Save</x:String>
+    <x:String x:Key="Skins_RandomSavedMark">In the library</x:String>
+    <x:String x:Key="Skins_RandomName">Random {0}</x:String>
+    <x:String x:Key="Skins_RandomSaved">Saved to the library as «{0}». It can be renamed and edited there.</x:String>
     <x:String x:Key="Skins_SaveCurrent">Save the current skin</x:String>
     <x:String x:Key="Skins_SaveCurrentHint">Copy the skin your figure wears now into the library: the one found by your nickname at Mojang, TLauncher or ely.by.</x:String>
     <x:String x:Key="Skins_SavedCurrent">The skin from your figure is now in the library as "{0}".</x:String>

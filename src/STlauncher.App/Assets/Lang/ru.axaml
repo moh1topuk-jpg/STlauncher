@@ -1263,6 +1263,16 @@
     <x:String x:Key="Skins_ByNickAdd">Найти и добавить</x:String>
     <x:String x:Key="Skins_NickNotFound">Скин для «{0}» не найден: такого игрока нет или он носит стандартный.</x:String>
     <x:String x:Key="Skins_NickAdded">Скин игрока «{0}» теперь в библиотеке.</x:String>
+    <x:String x:Key="Skins_RandomTitle">Случайные скины</x:String>
+    <x:String x:Key="Skins_RandomText">Скины, которые недавно загрузили другие люди: посмотрите, сохраните понравившийся и переделайте под себя. Лента общая и никем не отбирается, названий у скинов нет. Берётся с mineskin.org по нажатию кнопки.</x:String>
+    <x:String x:Key="Skins_RandomShow">Показать</x:String>
+    <x:String x:Key="Skins_RandomMore">Показать другие</x:String>
+    <x:String x:Key="Skins_RandomLoading">Загружаем скины…</x:String>
+    <x:String x:Key="Skins_RandomNone">Лента не ответила или в ней сейчас нет целых скинов. Попробуйте ещё раз через минуту.</x:String>
+    <x:String x:Key="Skins_RandomSave">Сохранить</x:String>
+    <x:String x:Key="Skins_RandomSavedMark">В библиотеке</x:String>
+    <x:String x:Key="Skins_RandomName">Случайный {0}</x:String>
+    <x:String x:Key="Skins_RandomSaved">Сохранён в библиотеку как «{0}». Там его можно переименовать и отредактировать.</x:String>
     <x:String x:Key="Skins_SaveCurrent">Сохранить текущий скин</x:String>
     <x:String x:Key="Skins_SaveCurrentHint">Скопировать в библиотеку скин, который сейчас на вашей фигурке: тот, что найден по нику в Mojang, TLauncher или на ely.by.</x:String>
     <x:String x:Key="Skins_SavedCurrent">Скин с вашей фигурки теперь в библиотеке под названием «{0}».</x:String>

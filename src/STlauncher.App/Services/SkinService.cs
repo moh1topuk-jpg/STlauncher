@@ -2,6 +2,9 @@
 using System.Collections.Concurrent;
 using System.IO;
 using System.Net.Http;
+using System.Text.Json;
+using System.Linq;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Media.Imaging;
@@ -12,6 +15,12 @@ using STlauncher.Core.Skins;
 namespace STlauncher.App.Services;
 
 /// <summary>Where to look for a skin. Auto tries them all in the launcher's order.</summary>
+/// <summary>A skin from the public feed: the texture's hash, the PNG to keep and the figure to show.</summary>
+public sealed record RandomSkin(string Id, byte[] Png, PlayerSkin Skin);
+
+/// <param name="Next">The cursor for the page after this one, or null when the feed ended.</param>
+public sealed record RandomSkinPage(IReadOnlyList<RandomSkin> Skins, string? Next);
+
 public enum SkinSource
 {
     Auto,
@@ -458,6 +467,124 @@ public sealed class SkinService
         {
             return (null, null);
         }
+    }
+
+    /// <summary>The public list of skins recently uploaded to MineSkin, newest first.</summary>
+    private const string RandomFeedUrl = "https://api.mineskin.org/v2/skins";
+
+    /// <summary>Where Mojang serves a skin texture by its hash; the feed gives only the hash.</summary>
+    private const string TextureUrl = "https://textures.minecraft.net/texture/";
+
+    public const string RandomSource = "random";
+
+    /// <summary>
+    /// One page of the feed as skins that can be shown and kept. The feed is everything
+    /// anyone uploads, so most of it is not a skin to wear: heads for server plugins with
+    /// an empty body are left out, and so is whatever does not decode as a skin.
+    /// </summary>
+    /// <param name="after">The cursor of the previous page, or null for the newest.</param>
+    public async Task<RandomSkinPage> GetRandomSkinsAsync(string? after, int want, CancellationToken cancellationToken = default)
+    {
+        var found = new List<RandomSkin>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var cursor = after;
+
+        // A few feed pages at most: enough to fill the row even when half are heads.
+        for (var round = 0; round < 3 && found.Count < want; round++)
+        {
+            var url = RandomFeedUrl + "?size=32" + (cursor is null ? string.Empty : "&after=" + Uri.EscapeDataString(cursor));
+            using var response = await _http.GetAsync(url, cancellationToken).ConfigureAwait(false);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                break;
+            }
+
+            using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false));
+            var root = document.RootElement;
+
+            if (!root.TryGetProperty("skins", out var skins) || skins.ValueKind != JsonValueKind.Array)
+            {
+                break;
+            }
+
+            var hashes = new List<string>();
+
+            foreach (var skin in skins.EnumerateArray())
+            {
+                if (skin.TryGetProperty("texture", out var texture) && texture.GetString() is { Length: > 0 and <= 80 } hash &&
+                    hash.All(Uri.IsHexDigit) && seen.Add(hash))
+                {
+                    hashes.Add(hash);
+                }
+            }
+
+            var loaded = await Task.WhenAll(hashes.Select(hash => LoadRandomSkinAsync(hash, cancellationToken))).ConfigureAwait(false);
+            found.AddRange(loaded.Where(skin => skin is not null).Select(skin => skin!));
+
+            cursor = root.TryGetProperty("pagination", out var pagination) &&
+                     pagination.TryGetProperty("next", out var next) &&
+                     next.TryGetProperty("after", out var nextAfter)
+                ? nextAfter.GetString()
+                : null;
+
+            if (cursor is null)
+            {
+                break;
+            }
+        }
+
+        return new RandomSkinPage(found.Take(want).ToList(), cursor);
+    }
+
+    private async Task<RandomSkin?> LoadRandomSkinAsync(string hash, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var bytes = await _http.GetByteArrayAsync(TextureUrl + hash, cancellationToken).ConfigureAwait(false);
+
+            if (bytes.Length > 64 * 1024 || SkinPng.Decode(bytes) is not { } image || !IsWholeSkin(image))
+            {
+                return null;
+            }
+
+            // Saved as the editor would save it: a legacy 64x32 texture is already converted.
+            var png = SkinPng.Encode(image);
+
+            return TryDecode(png, null, RandomSource) is { } skin ? new RandomSkin(hash, png, skin) : null;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>The front of the torso and of a leg are painted: a head for a plugin leaves them empty.</summary>
+    private static bool IsWholeSkin(SkinImage image)
+    {
+        static int Painted(SkinImage image, int left, int top, int width, int height)
+        {
+            var count = 0;
+
+            for (var y = top; y < top + height; y++)
+            {
+                for (var x = left; x < left + width; x++)
+                {
+                    if (image[x, y] >> 24 >= 128)
+                    {
+                        count++;
+                    }
+                }
+            }
+
+            return count;
+        }
+
+        return Painted(image, 20, 20, 8, 12) >= 86 && Painted(image, 4, 20, 4, 12) >= 40;
     }
 
     private static PlayerSkin? TryDecode(byte[] bytes, bool? slim, string source)
