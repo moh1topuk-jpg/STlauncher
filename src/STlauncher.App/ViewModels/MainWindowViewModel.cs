@@ -1092,7 +1092,7 @@ public partial class MainWindowViewModel : ViewModelBase
         // Only the catalog the launcher ships with has a known mirror. Falling back to it
         // for a hand-configured catalog would quietly load a different one than was asked for.
         _catalog.FallbackUrls = string.Equals(value, AppSettings.DefaultCatalogUrl, StringComparison.OrdinalIgnoreCase)
-            ? new[] { AppSettings.CatalogMirrorUrl }
+            ? AppSettings.CatalogMirrorUrls
             : Array.Empty<string>();
     }
 

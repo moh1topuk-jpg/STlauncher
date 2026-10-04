@@ -16,6 +16,21 @@ public sealed class AppSettings
     /// </summary>
     public const string CatalogMirrorUrl = "https://showtime-updates.moh1topuk.workers.dev/catalog.json";
 
+    /// <summary>
+    /// The second mirror: the owner's own server, which passes everything on to the first.
+    /// For players whose provider lets neither GitHub nor workers.dev through. It is
+    /// addressed by number on purpose: its certificate is issued for the address itself,
+    /// so no domain has to exist, be paid for or be resolvable. See docs/updates.md.
+    /// </summary>
+    public const string SecondMirrorUrl = "https://2.26.80.201/";
+
+    /// <summary>The catalog through every mirror, in the order they are tried.</summary>
+    public static readonly string[] CatalogMirrorUrls =
+    {
+        CatalogMirrorUrl,
+        SecondMirrorUrl + "catalog.json"
+    };
+
     /// <summary>The mirror's report endpoint; the catalog's reportUrl overrides it. See docs/reports.md.</summary>
     public const string DefaultReportUrl = "https://showtime-updates.moh1topuk.workers.dev/report";
 
@@ -25,7 +40,8 @@ public sealed class AppSettings
     /// </summary>
     public static readonly string[] BuiltInUpdateFeeds =
     {
-        "https://showtime-updates.moh1topuk.workers.dev/"
+        "https://showtime-updates.moh1topuk.workers.dev/",
+        SecondMirrorUrl
     };
 
     /// <summary>The installer through the mirror - the "download by hand" link that works when GitHub does not.</summary>
