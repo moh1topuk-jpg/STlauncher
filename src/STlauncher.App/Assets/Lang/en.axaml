@@ -1164,13 +1164,14 @@
     <x:String x:Key="Host_RelayBusy">The relay is at its limit right now. The launcher keeps trying.</x:String>
     <x:String x:Key="Host_RelayRejected">The relay refused the connection: the launcher may need an update.</x:String>
     <x:String x:Key="Host_WayDirect">Directly</x:String>
+    <x:String x:Key="Host_WayDirectWarning">Open ports are required. This works only when your provider gives you a public IP address and the router has UPnP on, or port {0} is forwarded by hand. Otherwise friends will not get through: use the invite way.</x:String>
     <x:String x:Key="Host_WayDirectText">Friends connect straight to your computer. The launcher asks the router to open port {0} and checks from outside that the server can be reached. The port closes together with the server.</x:String>
     <x:String x:Key="Host_DirectWorking">Talking to the router and checking from outside…</x:String>
     <x:String x:Key="Host_DirectReady">Ready, checked from outside</x:String>
     <x:String x:Key="Host_DirectReadyUnverified">The port is open. There is nothing to check it from outside with: no relay is set up</x:String>
     <x:String x:Key="Host_DirectNoGateway">The router did not answer: UPnP is switched off in it, or it has none. Switch UPnP on in the router's settings, or pick another way.</x:String>
     <x:String x:Key="Host_DirectRefused">The router refused to open the port.</x:String>
-    <x:String x:Key="Host_DirectBehindNat">Your provider keeps the router behind a shared address, so a direct connection cannot work. The other two ways will.</x:String>
+    <x:String x:Key="Host_DirectBehindNat">Your provider keeps the router behind a shared address, so a direct connection cannot work: use the invite way.</x:String>
     <x:String x:Key="Host_DirectNotReachable">The router opened the port, yet the server cannot be reached from outside: the provider or the Windows firewall is in the way.</x:String>
     <x:String x:Key="Host_DirectError">The router stopped answering. Switch the way off and on again.</x:String>
     <x:String x:Key="Host_WayPublic">A public address</x:String>

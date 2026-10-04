@@ -452,7 +452,7 @@
                         <ItemsControl ItemsSource="{Binding HostWays}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                    <UniformGrid Columns="3" ColumnSpacing="14"/>
+                                    <UniformGrid Columns="2" ColumnSpacing="14"/>
                                 </ItemsPanelTemplate>
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
@@ -479,6 +479,14 @@
                                             </Grid>
 
                                             <TextBlock Text="{Binding Description}" Classes="muted" TextWrapping="Wrap" LineHeight="17"/>
+
+                                            <Border CornerRadius="10" Padding="10,8" Background="{DynamicResource TileGoldBrush}"
+                                                    BorderBrush="{DynamicResource GoldBrush}" BorderThickness="1" IsVisible="{Binding HasWarning}">
+                                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                                                    <PathIcon Data="{StaticResource IconWarning}" Classes="small gold" VerticalAlignment="Top" Margin="0,2,0,0"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding Warning}" TextWrapping="Wrap" FontSize="12.5" LineHeight="17"/>
+                                                </Grid>
+                                            </Border>
 
                                             <Grid ColumnDefinitions="10,*" ColumnSpacing="8">
                                                 <Panel Width="10" Height="16" VerticalAlignment="Top" Margin="0,1,0,0">

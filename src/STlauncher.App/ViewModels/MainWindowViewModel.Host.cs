@@ -69,6 +69,13 @@ public partial class HostWayItem : ObservableObject
     [ObservableProperty]
     private string _description = string.Empty;
 
+    /// <summary>What the player must have for the way to work at all; shown apart from the description so it is not read past.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasWarning))]
+    private string _warning = string.Empty;
+
+    public bool HasWarning => Warning.Length > 0;
+
     [ObservableProperty]
     private bool _isOn;
 
@@ -148,7 +155,6 @@ public partial class MainWindowViewModel
 
         HostWays.Add(new HostWayItem(HostWayKind.Relay));
         HostWays.Add(new HostWayItem(HostWayKind.Direct));
-        HostWays.Add(new HostWayItem(HostWayKind.Public));
 
         hosting.Playit.StatusChanged += _ => Dispatcher.UIThread.Post(RefreshHostWays);
 
@@ -1800,16 +1806,6 @@ public partial class MainWindowViewModel
             _ = OpenHostDirectAsync(session);
         }
 
-        if (server.FriendsPublic)
-        {
-            // With a relay the address comes from it at once; playit.gg is what is left
-            // for a launcher that has no relay to ask.
-            if (!session.StartPublic())
-            {
-                _ = StartHostPublicAsync(server, askedNow: false);
-            }
-        }
-
         RefreshHostWays();
     }
 
@@ -2032,7 +2028,7 @@ public partial class MainWindowViewModel
     /// <summary>Puts each way's switch, explanation and status into words. Called whenever any of what they depend on moves.</summary>
     private void RefreshHostWays()
     {
-        if (HostWays.Count < 3)
+        if (HostWays.Count < 2)
         {
             return;
         }
@@ -2098,6 +2094,7 @@ public partial class MainWindowViewModel
 
         directWay.Title = Localize("Host_WayDirect", "Directly");
         directWay.Description = Localize("Host_WayDirectText", "Friends connect straight to your computer. The launcher asks the router to open port {0} and checks from outside that the server can be reached. The port closes together with the server.", port);
+        directWay.Warning = Localize("Host_WayDirectWarning", "Open ports are required. This works only when your provider gives you a public IP address and the router has UPnP on, or port {0} is forwarded by hand. Otherwise friends will not get through: use the invite way.", port);
         directWay.CanSwitch = server is not null;
         directWay.IsOn = server?.FriendsDirect == true;
         directWay.LinkUrl = string.Empty;
@@ -2131,7 +2128,7 @@ public partial class MainWindowViewModel
                     {
                         UpnpFailure.NoGateway => Localize("Host_DirectNoGateway", "The router did not answer: UPnP is switched off in it, or it has none. Switch UPnP on in the router's settings, or pick another way."),
                         UpnpFailure.Refused => Localize("Host_DirectRefused", "The router refused to open the port."),
-                        UpnpFailure.BehindAnotherNat => Localize("Host_DirectBehindNat", "Your provider keeps the router behind a shared address, so a direct connection cannot work. The other two ways will."),
+                        UpnpFailure.BehindAnotherNat => Localize("Host_DirectBehindNat", "Your provider keeps the router behind a shared address, so a direct connection cannot work: use the invite way."),
                         UpnpFailure.NotReachable => Localize("Host_DirectNotReachable", "The router opened the port, yet the server cannot be reached from outside: the provider or the Windows firewall is in the way."),
                         _ => Localize("Host_DirectError", "The router stopped answering. Switch the way off and on again.")
                     };
@@ -2141,6 +2138,14 @@ public partial class MainWindowViewModel
                     directWay.StatusText = Localize("Host_DirectWorking", "Talking to the router and checking from outside…");
                     break;
             }
+        }
+
+        // The public-address way (the relay's own port, or playit.gg) is not offered: on an
+        // offline-mode server anyone who learns the address can come in under a listed
+        // nickname. The code below stays for the day accounts can be verified.
+        if (HostWays.Count < 3)
+        {
+            return;
         }
 
         // ---- A public address through playit.gg ----

@@ -1164,13 +1164,14 @@
     <x:String x:Key="Host_RelayBusy">Посредник сейчас перегружен. Лаунчер пробует снова.</x:String>
     <x:String x:Key="Host_RelayRejected">Посредник отклонил подключение: возможно, лаунчер пора обновить.</x:String>
     <x:String x:Key="Host_WayDirect">Напрямую</x:String>
+    <x:String x:Key="Host_WayDirectWarning">Нужны открытые порты. Способ работает, только если провайдер даёт вам белый (публичный) IP-адрес, а в роутере включён UPnP или порт {0} проброшен вручную. Иначе друзья не подключатся: пользуйтесь способом «Только для своих».</x:String>
     <x:String x:Key="Host_WayDirectText">Друзья подключаются прямо к вашему компьютеру. Лаунчер попросит роутер открыть порт {0} и проверит снаружи, что до сервера можно достучаться. Вместе с сервером порт закроется.</x:String>
     <x:String x:Key="Host_DirectWorking">Договариваюсь с роутером и проверяю снаружи…</x:String>
     <x:String x:Key="Host_DirectReady">Готово, проверено снаружи</x:String>
     <x:String x:Key="Host_DirectReadyUnverified">Порт открыт. Проверить его снаружи нечем: посредник не настроен</x:String>
     <x:String x:Key="Host_DirectNoGateway">Роутер не ответил: в нём выключен UPnP или его нет. Включите UPnP в настройках роутера или выберите другой способ.</x:String>
     <x:String x:Key="Host_DirectRefused">Роутер отказался открыть порт.</x:String>
-    <x:String x:Key="Host_DirectBehindNat">Провайдер держит ваш роутер за общим адресом, поэтому напрямую зайти не получится. Подойдут два других способа.</x:String>
+    <x:String x:Key="Host_DirectBehindNat">Провайдер держит ваш роутер за общим адресом, поэтому напрямую зайти не получится: пользуйтесь способом «Только для своих».</x:String>
     <x:String x:Key="Host_DirectNotReachable">Роутер порт открыл, но снаружи до сервера не достучаться: мешает провайдер или брандмауэр Windows.</x:String>
     <x:String x:Key="Host_DirectError">Роутер перестал отвечать. Выключите способ и включите снова.</x:String>
     <x:String x:Key="Host_WayPublic">Публичный адрес</x:String>
