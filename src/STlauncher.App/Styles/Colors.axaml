@@ -199,4 +199,11 @@
         <GradientStop Offset="1" Color="#00000000"/>
     </RadialGradientBrush>
 
+    <!-- ===================== Skins: the editor's canvas ===================== -->
+    <!-- The chequered paper under transparent pixels, the outline of each face, the pixel grid. -->
+    <SolidColorBrush x:Key="SkinPaperBrush" Color="#241D22"/>
+    <SolidColorBrush x:Key="SkinPaperAltBrush" Color="#2E262C"/>
+    <SolidColorBrush x:Key="SkinOutlineBrush" Color="#59FFFFFF"/>
+    <SolidColorBrush x:Key="SkinGridBrush" Color="#38161014"/>
+
 </ResourceDictionary>

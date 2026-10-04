@@ -6,5 +6,8 @@ public enum ShellSection
     Builds,
     Server,
     Console,
-    Settings
+    Settings,
+
+    // Skins: the library and the editor.
+    Skins
 }

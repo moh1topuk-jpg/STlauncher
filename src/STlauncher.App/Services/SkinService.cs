@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using STlauncher.Core;
+using STlauncher.Core.Skins;
 
 namespace STlauncher.App.Services;
 
@@ -16,7 +17,10 @@ public enum SkinSource
     Auto,
     Mojang,
     TLauncher,
-    ElyBy
+    ElyBy,
+
+    /// <summary>A file from the player's own library, whatever the name is.</summary>
+    Library
 }
 
 /// <summary>
@@ -42,11 +46,71 @@ public sealed class SkinService
     private readonly string _cacheDirectory;
     private readonly ConcurrentDictionary<string, PlayerSkin> _memory = new(StringComparer.OrdinalIgnoreCase);
     private PlayerSkin? _default;
+    private PlayerSkin? _worn;
+    private string? _wornId;
 
     public SkinService(HttpClient http, LauncherPaths paths)
     {
         _http = http ?? throw new ArgumentNullException(nameof(http));
         _cacheDirectory = Path.Combine((paths ?? throw new ArgumentNullException(nameof(paths))).Meta, "skins");
+        Library = new SkinLibrary(Path.Combine(paths.Root, "skins"));
+    }
+
+    /// <summary>What <see cref="PlayerSkin.Source"/> says for a skin taken from the library.</summary>
+    public const string LibrarySource = "library";
+
+    /// <summary>The player's own skins on disk. Not a cache: these are theirs.</summary>
+    public SkinLibrary Library { get; }
+
+    /// <summary>
+    /// The library skin the figure wears, decoded once and kept until the library says
+    /// it changed. Null when none is worn or its file cannot be read.
+    /// </summary>
+    public PlayerSkin? WornLibrarySkin
+    {
+        get
+        {
+            var entry = Library.Worn;
+
+            if (entry is null)
+            {
+                return null;
+            }
+
+            if (_worn is not null && _wornId == entry.Id)
+            {
+                return _worn;
+            }
+
+            _worn = LoadLibrarySkin(entry);
+            _wornId = _worn is null ? null : entry.Id;
+            return _worn;
+        }
+    }
+
+    /// <summary>Call after the worn skin was edited, so the next look reads the file again.</summary>
+    public void ForgetWornLibrarySkin()
+    {
+        _worn = null;
+        _wornId = null;
+    }
+
+    /// <summary>A library entry as a texture the figure can wear, or null when the file is unreadable.</summary>
+    public PlayerSkin? LoadLibrarySkin(SkinEntry entry)
+    {
+        try
+        {
+            using var stream = File.OpenRead(Library.PathOf(entry.Id));
+            var bitmap = new Bitmap(stream);
+
+            return bitmap.PixelSize is { Width: 64, Height: 64 }
+                ? new PlayerSkin(bitmap, isDefault: false, entry.SkinModel == SkinModel.Slim) { Source = LibrarySource }
+                : null;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
     }
 
     /// <summary>The built-in Steve, used when a name has no skin anywhere.</summary>
@@ -70,6 +134,12 @@ public sealed class SkinService
     /// </param>
     public async Task<PlayerSkin> GetSkinAsync(string username, SkinSource source = SkinSource.Auto, CancellationToken cancellationToken = default)
     {
+        // A skin from the library is worn whatever the name is, and asks nobody.
+        if (source == SkinSource.Library)
+        {
+            return WornLibrarySkin ?? Default;
+        }
+
         if (string.IsNullOrWhiteSpace(username))
         {
             return Default;
@@ -125,6 +195,11 @@ public sealed class SkinService
     /// </summary>
     public PlayerSkin? PeekCached(string username, SkinSource source = SkinSource.Auto)
     {
+        if (source == SkinSource.Library)
+        {
+            return WornLibrarySkin;
+        }
+
         if (string.IsNullOrWhiteSpace(username))
         {
             return null;
