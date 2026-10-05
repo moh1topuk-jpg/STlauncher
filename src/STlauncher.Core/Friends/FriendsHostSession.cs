@@ -45,6 +45,16 @@ public sealed record FriendsHostStatus(
     /// </summary>
     public RelayFailure PublicFailure { get; init; }
 
+    /// <summary>The UDP port of the server's voice chat, or null when it has none.</summary>
+    public int? VoicePort { get; init; }
+
+    /// <summary>
+    /// Whether the router forwards the voice chat port as well, on the direct way: Off
+    /// when there is no voice chat or no direct way, Failed when the router would not.
+    /// The direct way itself does not depend on it.
+    /// </summary>
+    public FriendsWayState DirectVoice { get; init; }
+
     /// <summary>
     /// What goes into an invite right now. The relay is included while it is only being
     /// reconnected: the invite is read later than it is written, and the room keeps its key.
@@ -59,7 +69,10 @@ public sealed record FriendsHostStatus(
                 Direct == FriendsWayState.Ready ? DirectAddress : null,
                 relay ? RelayAddress : null,
                 relay ? RoomKey : null,
-                PublicAddress);
+                PublicAddress)
+            {
+                VoicePort = VoicePort
+            };
         }
     }
 }
@@ -84,14 +97,25 @@ public sealed class FriendsHostSession : IAsyncDisposable
 
     /// <param name="relay">From <see cref="RelayLocation.Resolve(Content.ContentCatalog?)"/>; null when there is none.</param>
     /// <param name="hostKey">The key saved from an earlier session, so invites already sent keep working.</param>
-    public FriendsHostSession(int serverPort, RelayEndpoint? relay, string? hostKey = null, RelayClientOptions? options = null)
+    /// <param name="voicePort">
+    /// The UDP port of the server's voice chat (Simple Voice Chat), when it has one: the
+    /// relay carries guests' voice to it, the direct way asks the router to forward it,
+    /// and the invite names it.
+    /// </param>
+    public FriendsHostSession(int serverPort, RelayEndpoint? relay, string? hostKey = null, RelayClientOptions? options = null, int? voicePort = null)
     {
         if (serverPort is < 1 or > 65535)
         {
             throw new ArgumentOutOfRangeException(nameof(serverPort));
         }
 
+        if (voicePort is < 1 or > 65535)
+        {
+            throw new ArgumentOutOfRangeException(nameof(voicePort));
+        }
+
         ServerPort = serverPort;
+        VoicePort = voicePort;
         HostKey = RelayKeys.IsKey(hostKey) ? hostKey!.ToLowerInvariant() : RelayKeys.NewHostKey();
 
         _relay = relay;
@@ -100,10 +124,16 @@ public sealed class FriendsHostSession : IAsyncDisposable
         _status = new FriendsHostStatus(
             FriendsWayState.Off, UpnpFailure.None, null, false,
             FriendsWayState.Off, relay is null ? RelayFailure.NotConfigured : RelayFailure.None, relay?.ToString(), null,
-            null);
+            null)
+        {
+            VoicePort = voicePort
+        };
     }
 
     public int ServerPort { get; }
+
+    /// <summary>The UDP port of the server's voice chat, or null when it has none.</summary>
+    public int? VoicePort { get; }
 
     /// <summary>The host's secret for the relay. Save it with the server's settings; never show or share it.</summary>
     public string HostKey { get; }
@@ -143,7 +173,7 @@ public sealed class FriendsHostSession : IAsyncDisposable
                 return true;
             }
 
-            host = _host = new RelayHost(_relay, ServerPort, HostKey, _options);
+            host = _host = new RelayHost(_relay, ServerPort, HostKey, _options, voicePort: VoicePort);
         }
 
         host.StateChanged += _ => OnRelayChanged(host);
@@ -272,7 +302,7 @@ public sealed class FriendsHostSession : IAsyncDisposable
     /// </summary>
     public async Task<FriendsHostStatus> OpenDirectAsync(CancellationToken cancellationToken = default)
     {
-        Update(s => s with { Direct = FriendsWayState.Working, DirectFailure = UpnpFailure.None, DirectAddress = null, DirectVerified = false });
+        Update(s => s with { Direct = FriendsWayState.Working, DirectFailure = UpnpFailure.None, DirectAddress = null, DirectVerified = false, DirectVoice = FriendsWayState.Off });
 
         try
         {
@@ -282,7 +312,11 @@ public sealed class FriendsHostSession : IAsyncDisposable
 
                 if (asIs.Outcome == Reachability.Reachable && asIs.PublicAddress is not null)
                 {
-                    return DirectReady(asIs.PublicAddress, ServerPort, verified: true);
+                    DirectReady(asIs.PublicAddress, ServerPort, verified: true);
+
+                    // The game's port is open as things stand, but that says nothing of
+                    // UDP: the voice port is still asked of the router.
+                    return await OpenDirectVoiceAsync(cancellationToken).ConfigureAwait(false);
                 }
             }
 
@@ -329,13 +363,44 @@ public sealed class FriendsHostSession : IAsyncDisposable
                 return DirectFailed(UpnpFailure.Error);
             }
 
-            return DirectReady(address, mapping.ExternalPort, verified);
+            DirectReady(address, mapping.ExternalPort, verified);
+            return await OpenDirectVoiceAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
             await CloseDirectAsync().ConfigureAwait(false);
             throw;
         }
+    }
+
+    /// <summary>
+    /// Asks the router to forward the voice chat's UDP port too, once the direct way is
+    /// ready. Voice clients send to the port number the server names, so only that very
+    /// number is any use. There is no check from outside for UDP: the status says whether
+    /// the router took the mapping, and the game's way stands either way.
+    /// </summary>
+    private async Task<FriendsHostStatus> OpenDirectVoiceAsync(CancellationToken cancellationToken)
+    {
+        if (VoicePort is not { } voicePort)
+        {
+            return Status;
+        }
+
+        Update(s => s.Direct == FriendsWayState.Ready ? s with { DirectVoice = FriendsWayState.Working } : s);
+
+        UpnpPortMapper mapper;
+
+        lock (_gate)
+        {
+            mapper = _mapper ??= new UpnpPortMapper();
+        }
+
+        var mapped = await mapper.MapUdpAsync(voicePort, cancellationToken).ConfigureAwait(false);
+
+        // Switched off while the router was being asked: CloseDirectAsync has the last word.
+        return Update(s => s.Direct == FriendsWayState.Ready
+            ? s with { DirectVoice = mapped.Ok ? FriendsWayState.Ready : FriendsWayState.Failed }
+            : s);
     }
 
     /// <summary>Removes the port mapping, if this session made one.</summary>
@@ -353,7 +418,7 @@ public sealed class FriendsHostSession : IAsyncDisposable
             await mapper.UnmapAsync().ConfigureAwait(false);
         }
 
-        Update(s => s with { Direct = FriendsWayState.Off, DirectFailure = UpnpFailure.None, DirectAddress = null, DirectVerified = false });
+        Update(s => s with { Direct = FriendsWayState.Off, DirectFailure = UpnpFailure.None, DirectAddress = null, DirectVerified = false, DirectVoice = FriendsWayState.Off });
     }
 
     /// <summary>Records the public address for the invite. Null or malformed clears it.</summary>
@@ -399,7 +464,7 @@ public sealed class FriendsHostSession : IAsyncDisposable
         });
 
     private FriendsHostStatus DirectFailed(UpnpFailure failure)
-        => Update(s => s with { Direct = FriendsWayState.Failed, DirectFailure = failure, DirectAddress = null, DirectVerified = false });
+        => Update(s => s with { Direct = FriendsWayState.Failed, DirectFailure = failure, DirectAddress = null, DirectVerified = false, DirectVoice = FriendsWayState.Off });
 
     private void OnRelayChanged(RelayHost host)
     {

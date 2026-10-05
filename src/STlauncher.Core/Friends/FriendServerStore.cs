@@ -44,6 +44,10 @@ public sealed class FriendServer
     [JsonPropertyName("public")]
     public string? Public { get; set; }
 
+    /// <summary>The UDP port of the server's voice chat, when the invite named one.</summary>
+    [JsonPropertyName("voicePort")]
+    public int? VoicePort { get; set; }
+
     /// <summary>Id of the build the invite brought, or of the one made for this server. Null when it is gone.</summary>
     [JsonPropertyName("instanceId")]
     public string? InstanceId { get; set; }
@@ -62,7 +66,7 @@ public sealed class FriendServer
     public DateTimeOffset? LastPlayedAt { get; set; }
 
     [JsonIgnore]
-    public ServerInviteEndpoints Endpoints => new(Direct, Relay, RoomKey, Public);
+    public ServerInviteEndpoints Endpoints => new(Direct, Relay, RoomKey, Public) { VoicePort = VoicePort is >= 1 and <= 65535 ? VoicePort : null };
 }
 
 /// <summary>
@@ -197,6 +201,7 @@ public sealed class FriendServerStore
         server.Relay = invite.Endpoints.Relay;
         server.RoomKey = invite.Endpoints.RoomKey;
         server.Public = invite.Endpoints.Public;
+        server.VoicePort = invite.Endpoints.VoicePort;
 
         if (!string.IsNullOrWhiteSpace(instanceId))
         {

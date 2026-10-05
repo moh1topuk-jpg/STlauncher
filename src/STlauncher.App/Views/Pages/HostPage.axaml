@@ -796,6 +796,10 @@
                                                                 <TextBlock Grid.Column="1" Text="{Binding StatusText}" TextWrapping="Wrap" FontSize="12.5" LineHeight="17"/>
                                                             </Grid>
 
+                                                            <!-- Voice chat, when the server has it: carried, or whether the router opened its port. -->
+                                                            <TextBlock Text="{Binding VoiceText}" IsVisible="{Binding HasVoiceText}" Classes="muted"
+                                                                       TextWrapping="Wrap" FontSize="12.5" LineHeight="17" Margin="18,0,0,0"/>
+
                                                             <TextBlock Text="{Binding Description}" Classes="faint" TextWrapping="Wrap" LineHeight="17"/>
 
                                                             <Border CornerRadius="10" Padding="10,8" Background="{DynamicResource TileGoldBrush}"

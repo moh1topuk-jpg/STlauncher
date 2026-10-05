@@ -1206,6 +1206,10 @@
     <x:String x:Key="Host_DirectBehindNat">Провайдер держит ваш роутер за общим адресом, поэтому напрямую зайти не получится: пользуйтесь способом «Только для своих».</x:String>
     <x:String x:Key="Host_DirectNotReachable">Роутер порт открыл, но снаружи до сервера не достучаться: мешает провайдер или брандмауэр Windows.</x:String>
     <x:String x:Key="Host_DirectError">Роутер перестал отвечать. Выключите способ и включите снова.</x:String>
+    <x:String x:Key="Host_VoiceRelay">Голосовой чат: друзья по приглашению слышат друг друга</x:String>
+    <x:String x:Key="Host_VoiceDirectWorking">Голосовой чат: прошу роутер открыть UDP-порт {0}…</x:String>
+    <x:String x:Key="Host_VoiceDirectReady">Голосовой чат: роутер открыл UDP-порт {0}</x:String>
+    <x:String x:Key="Host_VoiceDirectFailed">Голосовой чат: роутер не открыл UDP-порт {0}, поэтому друзья, подключённые напрямую, друг друга не услышат</x:String>
     <x:String x:Key="Host_InviteNeedsServer">Сначала запустите сервер: приглашение собирается, пока он работает.</x:String>
     <x:String x:Key="Host_InviteNeedsWay">Включите хотя бы один способ подключения и дождитесь, пока он заработает.</x:String>
     <x:String x:Key="Host_InviteBusy">Готовлю приглашение…</x:String>
@@ -1361,6 +1365,7 @@
     <x:String x:Key="Friends_OfflineRelayBusy">Посредник сейчас перегружен. Попробуйте через минуту.</x:String>
     <x:String x:Key="Friends_OfflineHost">Лаунчер друга не на связи, или его сервер выключен. Попросите друга запустить сервер.</x:String>
     <x:String x:Key="Friends_PlayFailed">Не удалось подключиться: {0}</x:String>
+    <x:String x:Key="Friends_VoicePortTaken">Голосовой чат не заработает: порт {0} на этом компьютере занят другой программой. На саму игру это не влияет.</x:String>
 
     <!-- Skins: the library, the editor, publishing -->
     <x:String x:Key="Nav_Skins">Скины</x:String>

@@ -103,6 +103,13 @@ public partial class HostWayItem : ObservableObject
     public bool IsFailed => State == FriendsWayState.Failed;
 
     public bool HasAddress => Address.Length > 0;
+
+    /// <summary>One line on the server's voice chat over this way, while the way is up and the server has it.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasVoiceText))]
+    private string _voiceText = string.Empty;
+
+    public bool HasVoiceText => VoiceText.Length > 0;
 }
 
 /// <summary>
@@ -1836,7 +1843,15 @@ public partial class MainWindowViewModel
     /// <summary>Opens the ways the player switched on, once the server is ready to answer.</summary>
     private void StartHostWays(HostedServer server)
     {
-        var session = new FriendsHostSession(server.Port, RelayLocation.Resolve(_loadedCatalog), server.HostKey);
+        // Read now, while the server runs: by then the mod has written its config and
+        // the port in it is the one the server really listens on.
+        var voicePort = ServerVoiceChat.FindPort(_hosting.Store.ServerDirectory(server), server.Port);
+        var session = new FriendsHostSession(server.Port, RelayLocation.Resolve(_loadedCatalog), server.HostKey, voicePort: voicePort);
+
+        if (voicePort is not null)
+        {
+            AppendConsole($"[host] voice chat found on UDP port {voicePort}: carried for friends too");
+        }
 
         if (!string.Equals(server.HostKey, session.HostKey, StringComparison.Ordinal))
         {
@@ -1992,6 +2007,9 @@ public partial class MainWindowViewModel
         relayWay.Title = Localize("Host_WayRelay", "Friends only");
         relayWay.Description = Localize("Host_WayRelayText", "Friends with STlauncher join by the invite. Nothing to set up: the connection goes through a relay server, no ports to open.");
         relayWay.Address = string.Empty;
+        relayWay.VoiceText = status is { Relay: FriendsWayState.Ready, VoicePort: not null }
+            ? Localize("Host_VoiceRelay", "Voice chat: friends who join by the invite hear each other")
+            : string.Empty;
 
         if (relay is null)
         {
@@ -2041,6 +2059,14 @@ public partial class MainWindowViewModel
         directWay.CanSwitch = server is not null;
         directWay.IsOn = server?.FriendsDirect == true;
         directWay.Address = string.Empty;
+        directWay.VoiceText = status is { Direct: FriendsWayState.Ready, VoicePort: { } voicePort }
+            ? status.DirectVoice switch
+            {
+                FriendsWayState.Ready => Localize("Host_VoiceDirectReady", "Voice chat: the router opened UDP port {0}", voicePort),
+                FriendsWayState.Failed => Localize("Host_VoiceDirectFailed", "Voice chat: the router did not open UDP port {0}, so friends who connect directly will not hear each other", voicePort),
+                _ => Localize("Host_VoiceDirectWorking", "Voice chat: asking the router to open UDP port {0}…", voicePort)
+            }
+            : string.Empty;
 
         if (!directWay.IsOn)
         {

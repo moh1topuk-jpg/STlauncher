@@ -10,7 +10,8 @@ namespace STlauncher.Core.Friends;
 /// The guest's end of the relay way: a listener on 127.0.0.1 that Minecraft joins as if
 /// the server were on this machine. Every connection it takes is carried to the host
 /// through the relay. The listener is on the loopback address only, so nothing outside
-/// this machine can use it.
+/// this machine can use it. When the host's server has voice chat, a UDP port on the
+/// loopback address carries that too (<see cref="StartVoice"/>).
 /// </summary>
 public sealed class RelayGuest : IAsyncDisposable
 {
@@ -24,6 +25,7 @@ public sealed class RelayGuest : IAsyncDisposable
     private readonly object _gate = new();
 
     private TcpListener? _listener;
+    private VoiceGuestSide? _voice;
     private Task? _loop;
     private RelayFailure _failure = RelayFailure.None;
     private int _active;
@@ -118,19 +120,87 @@ public sealed class RelayGuest : IAsyncDisposable
         }
     }
 
+    /// <summary>The UDP port on 127.0.0.1 that carries voice chat, or 0 when there is none.</summary>
+    public int VoicePort
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _voice?.Port ?? 0;
+            }
+        }
+    }
+
+    /// <summary>Voice tunnels open right now: one per voice chat connection of the game.</summary>
+    public int ActiveVoiceTunnels
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _voice?.ActiveTunnels ?? 0;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Also carries the host's voice chat: listens on UDP 127.0.0.1:<paramref name="port"/>,
+    /// the port the voice chat mod in the game will send to, and takes each sender to the
+    /// host through a tunnel of its own. False when another program holds that port; the
+    /// game itself is not affected.
+    /// </summary>
+    public bool StartVoice(int port)
+    {
+        if (port is < 1 or > 65535)
+        {
+            throw new ArgumentOutOfRangeException(nameof(port));
+        }
+
+        lock (_gate)
+        {
+            if (_voice is not null)
+            {
+                return _voice.Port == port;
+            }
+
+            if (_stop.IsCancellationRequested)
+            {
+                return false;
+            }
+
+            try
+            {
+                _voice = new VoiceGuestSide(port, token => OpenAsync(RelayChannel.Voice, report: false, token), _options.VoiceIdleTimeout);
+                return true;
+            }
+            catch (SocketException)
+            {
+                return false;
+            }
+        }
+    }
+
     public async Task StopAsync()
     {
         Task? loop;
         TcpListener? listener;
+        VoiceGuestSide? voice;
 
         lock (_gate)
         {
             loop = _loop;
             listener = _listener;
+            voice = _voice;
         }
 
         _stop.Cancel();
         listener?.Stop();
+
+        if (voice is not null)
+        {
+            await voice.DisposeAsync().ConfigureAwait(false);
+        }
 
         if (loop is not null)
         {
@@ -184,40 +254,11 @@ public sealed class RelayGuest : IAsyncDisposable
             {
                 local.NoDelay = true;
 
-                TcpClient relay;
+                using var relay = await OpenAsync(RelayChannel.Game, report: true, token).ConfigureAwait(false);
 
-                try
+                if (relay is not null)
                 {
-                    relay = await RelayWire.DialAsync(Relay, _options.ConnectTimeout, token).ConfigureAwait(false);
-                }
-                catch (Exception)
-                {
-                    SetFailure(RelayFailure.RelayUnreachable);
-                    return;
-                }
-
-                using (relay)
-                {
-                    var relayStream = relay.GetStream();
-                    string? answer;
-
-                    try
-                    {
-                        answer = await RelayWire.AskAsync(relayStream, "JOIN " + RoomKey, _options.AnswerTimeout, token).ConfigureAwait(false);
-                    }
-                    catch (Exception)
-                    {
-                        answer = null;
-                    }
-
-                    if (answer != "OK")
-                    {
-                        SetFailure(RelayWire.FailureOf(answer));
-                        return;
-                    }
-
-                    SetFailure(RelayFailure.None);
-                    await StreamSplice.RunAsync(local.GetStream(), relayStream, token).ConfigureAwait(false);
+                    await StreamSplice.RunAsync(local.GetStream(), relay.GetStream(), token).ConfigureAwait(false);
                 }
             }
         }
@@ -228,6 +269,73 @@ public sealed class RelayGuest : IAsyncDisposable
         finally
         {
             Interlocked.Decrement(ref _active);
+        }
+    }
+
+    /// <summary>
+    /// Opens one tunnel to the host and says what it is for. Null when the relay or the
+    /// host could not be reached.
+    /// </summary>
+    /// <param name="report">
+    /// Whether the outcome goes into <see cref="LastFailure"/>. Only the game's tunnels
+    /// do: that is what the join is judged by, and voice has its own word in the status.
+    /// </param>
+    private async Task<TcpClient?> OpenAsync(byte channel, bool report, CancellationToken token)
+    {
+        TcpClient relay;
+
+        try
+        {
+            relay = await RelayWire.DialAsync(Relay, _options.ConnectTimeout, token).ConfigureAwait(false);
+        }
+        catch (Exception)
+        {
+            if (report)
+            {
+                SetFailure(RelayFailure.RelayUnreachable);
+            }
+
+            return null;
+        }
+
+        try
+        {
+            var relayStream = relay.GetStream();
+            string? answer;
+
+            try
+            {
+                answer = await RelayWire.AskAsync(relayStream, "JOIN " + RoomKey, _options.AnswerTimeout, token).ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                answer = null;
+            }
+
+            if (answer != "OK")
+            {
+                if (report)
+                {
+                    SetFailure(RelayWire.FailureOf(answer));
+                }
+
+                relay.Dispose();
+                return null;
+            }
+
+            await relayStream.WriteAsync(new[] { channel }, token).ConfigureAwait(false);
+
+            if (report)
+            {
+                SetFailure(RelayFailure.None);
+            }
+
+            return relay;
+        }
+        catch (Exception)
+        {
+            relay.Dispose();
+            return null;
         }
     }
 

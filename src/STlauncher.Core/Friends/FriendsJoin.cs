@@ -20,6 +20,19 @@ public enum FriendsWay
     Public
 }
 
+/// <summary>What the launcher does for the server's voice chat on the way that was found.</summary>
+public enum FriendsVoice
+{
+    /// <summary>Nothing: the server has no voice chat, or the way needs no help with it.</summary>
+    None,
+
+    /// <summary>Voice goes through the relay alongside the game.</summary>
+    Carried,
+
+    /// <summary>The relay way could carry it, but the voice port on this machine is taken by another program.</summary>
+    PortTaken
+}
+
 /// <summary>
 /// The guest's side: takes the endpoints of an invite and finds the first way that
 /// actually answers, in the order of preference - direct, relay, public. A way counts
@@ -58,6 +71,12 @@ public sealed class FriendsJoin : IAsyncDisposable
 
     /// <summary>Why the relay way did not work, when the invite offered it and it was tried.</summary>
     public RelayFailure RelayFailure { get; }
+
+    /// <summary>Whether the server's voice chat is carried as well, for the relay way.</summary>
+    public FriendsVoice Voice { get; private init; }
+
+    /// <summary>The voice chat port from the invite, or null when it named none.</summary>
+    public int? VoicePort { get; private init; }
 
     /// <param name="preferredLocalPort">
     /// For the relay way: the local port used for this server last time, so the address
@@ -102,7 +121,22 @@ public sealed class FriendsJoin : IAsyncDisposable
                 if (status is not null)
                 {
                     keep = true;
-                    return new FriendsJoin(FriendsWay.Relay, guest.LocalAddress, status, RelayFailure.None, guest);
+
+                    // The voice chat mod sends to the address the game joined, 127.0.0.1
+                    // here, at the port the server names: so that port is listened on
+                    // too. If something else holds it, the game still goes ahead.
+                    var voice = FriendsVoice.None;
+
+                    if (endpoints.VoicePort is { } voicePort)
+                    {
+                        voice = guest.StartVoice(voicePort) ? FriendsVoice.Carried : FriendsVoice.PortTaken;
+                    }
+
+                    return new FriendsJoin(FriendsWay.Relay, guest.LocalAddress, status, RelayFailure.None, guest)
+                    {
+                        Voice = voice,
+                        VoicePort = endpoints.VoicePort
+                    };
                 }
 
                 // The tunnel opened and nothing spoke Minecraft through it: the host's

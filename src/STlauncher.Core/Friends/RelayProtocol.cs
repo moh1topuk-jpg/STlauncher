@@ -188,12 +188,37 @@ public sealed class RelayClientOptions
     public TimeSpan MinBackoff { get; set; } = TimeSpan.FromSeconds(1);
 
     public TimeSpan MaxBackoff { get; set; } = TimeSpan.FromSeconds(30);
+
+    /// <summary>
+    /// A guest's voice tunnel that has carried nothing for this long is closed. The relay
+    /// drops a silent tunnel after two minutes by default; closing ours a little sooner
+    /// means the next packet opens a fresh tunnel instead of going into one about to die.
+    /// </summary>
+    public TimeSpan VoiceIdleTimeout { get; set; } = TimeSpan.FromSeconds(100);
 }
 
 /// <summary>The line-based handshake, as the launcher speaks it. The relay's side is in src/STlauncher.Relay.</summary>
 internal static class RelayWire
 {
     private const int MaxLineLength = 256;
+
+    /// <summary>Reads the one byte that opens a tunnel; null when it did not come in time.</summary>
+    public static async Task<byte?> ReadTagAsync(Stream stream, TimeSpan timeout, CancellationToken cancellationToken)
+    {
+        using var limit = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        limit.CancelAfter(timeout);
+
+        var one = new byte[1];
+
+        try
+        {
+            return await stream.ReadAsync(one.AsMemory(0, 1), limit.Token).ConfigureAwait(false) == 1 ? one[0] : null;
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return null;
+        }
+    }
 
     public static async Task<TcpClient> DialAsync(RelayEndpoint relay, TimeSpan timeout, CancellationToken cancellationToken)
     {
