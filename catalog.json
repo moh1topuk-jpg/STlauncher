@@ -7,6 +7,7 @@
   "updateFeedUrl": "https://showtime-updates.moh1topuk.workers.dev/",
   "discordAppId": "1551994147324559490",
   "installerRelease": "v0.3.5",
+  "friendsRelay": "2.26.80.201:25580",
 
   "sections": [
     {
