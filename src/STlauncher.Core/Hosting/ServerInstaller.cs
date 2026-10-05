@@ -418,6 +418,9 @@ public sealed class ServerInstaller
         _store.Save(server);
 
         var tail = new Queue<string>();
+        var lastReport = System.Diagnostics.Stopwatch.StartNew();
+        var skipped = 0;
+        var reported = 0;
 
         void OnLine(string line)
         {
@@ -429,6 +432,24 @@ public sealed class ServerInstaller
                 {
                     tail.Dequeue();
                 }
+
+                // A Forge install prints some thirty thousand lines in half a minute. Each
+                // report is a hop to the UI thread, so past the first lines the console gets
+                // one at most every quarter second with a count of what was left out; the
+                // full tail is kept above for the error message.
+                if (++reported > 100 && lastReport.ElapsedMilliseconds < 250)
+                {
+                    skipped++;
+                    return;
+                }
+
+                if (skipped > 0)
+                {
+                    line = $"{line}   (+{skipped})";
+                    skipped = 0;
+                }
+
+                lastReport.Restart();
             }
 
             progress?.Report(new ServerInstallProgress(
