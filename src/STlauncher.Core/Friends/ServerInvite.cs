@@ -21,6 +21,13 @@ public sealed record ServerInviteEndpoints(string? Direct, string? Relay, string
 {
     public static ServerInviteEndpoints None { get; } = new(null, null, null, null);
 
+    /// <summary>
+    /// The UDP port of the server's voice chat (Simple Voice Chat), or null when it has
+    /// none. On the relay way the guest's launcher listens on this port at 127.0.0.1,
+    /// because that is where the mod in the game sends its voice.
+    /// </summary>
+    public int? VoicePort { get; init; }
+
     public bool HasRelay => Relay is not null && RoomKey is not null;
 
     public bool HasAny => Direct is not null || HasRelay || Public is not null;
@@ -90,7 +97,8 @@ public static class ServerInviteCode
             D = endpoints.Direct,
             R = endpoints.Relay,
             K = endpoints.RoomKey,
-            P = endpoints.Public
+            P = endpoints.Public,
+            Vp = endpoints.VoicePort
         };
 
         var json = JsonSerializer.SerializeToUtf8Bytes(dto, Json);
@@ -161,7 +169,7 @@ public static class ServerInviteCode
                 return false;
             }
 
-            var endpoints = Sanitize(new ServerInviteEndpoints(dto.D, dto.R, dto.K, dto.P));
+            var endpoints = Sanitize(new ServerInviteEndpoints(dto.D, dto.R, dto.K, dto.P) { VoicePort = dto.Vp });
 
             // An invite that leads nowhere is not an invite.
             if (!endpoints.HasAny)
@@ -226,7 +234,10 @@ public static class ServerInviteCode
 
         var open = HostPort.TryNormalize(endpoints.Public, out var normalized) ? normalized : null;
 
-        return new ServerInviteEndpoints(direct, relay, roomKey, open);
+        // The guest opens a port with this number on its own machine, so it has to be one.
+        var voice = endpoints.VoicePort is >= 1 and <= 65535 ? endpoints.VoicePort : null;
+
+        return new ServerInviteEndpoints(direct, relay, roomKey, open) { VoicePort = voice };
     }
 
     /// <summary>The part of a build code after its prefix, or null when the text holds no such code.</summary>
@@ -358,6 +369,9 @@ public static class ServerInviteCode
         [JsonPropertyName("r")] public string? R { get; set; }
         [JsonPropertyName("k")] public string? K { get; set; }
         [JsonPropertyName("p")] public string? P { get; set; }
+
+        // Added in 0.5.7. Older launchers ignore it; older invites simply lack it.
+        [JsonPropertyName("voicePort")] public int? Vp { get; set; }
     }
 }
 

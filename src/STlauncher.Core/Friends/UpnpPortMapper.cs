@@ -64,6 +64,7 @@ public sealed record UpnpService(string ServiceType, Uri ControlUrl);
 ///
 /// The mapping is taken for an hour and renewed while it is in use, so a launcher that
 /// dies without cleaning up leaves a hole that closes by itself. On stop it is removed.
+/// Next to the game's TCP port there can be one UDP port, for voice chat, kept the same way.
 /// Everything the router sends is treated as untrusted: its description may only point
 /// at the router itself, and XML is read with DTDs off.
 /// </summary>
@@ -88,12 +89,14 @@ public sealed class UpnpPortMapper : IAsyncDisposable
         "urn:schemas-upnp-org:device:InternetGatewayDevice:2"
     };
 
+    private const string Tcp = "TCP";
+    private const string Udp = "UDP";
+
     private readonly HttpClient _http;
     private readonly SemaphoreSlim _gate = new(1, 1);
 
-    private Active? _active;
-    private CancellationTokenSource? _renewStop;
-    private Task? _renewLoop;
+    private Lease? _tcp;
+    private Lease? _udp;
 
     public UpnpPortMapper()
     {
@@ -112,14 +115,17 @@ public sealed class UpnpPortMapper : IAsyncDisposable
         };
     }
 
-    /// <summary>The mapping in place right now, or null.</summary>
-    public UpnpMapping? Current => _active?.Mapping;
+    /// <summary>The TCP mapping in place right now, or null.</summary>
+    public UpnpMapping? Current => _tcp?.Active.Mapping;
+
+    /// <summary>The UDP mapping in place right now, or null.</summary>
+    public UpnpMapping? CurrentUdp => _udp?.Active.Mapping;
 
     /// <summary>
     /// Opens <paramref name="externalPort"/> (the same number as the internal one unless
     /// given) on the router and points it at this machine. If that port is taken by
     /// another device, a few random high ports are tried instead; the result says which
-    /// one it ended up with. Replaces a mapping made earlier by this object.
+    /// one it ended up with. Replaces a TCP mapping made earlier by this object.
     /// </summary>
     public async Task<UpnpResult> MapAsync(int internalPort, int? externalPort = null, CancellationToken cancellationToken = default)
     {
@@ -137,14 +143,23 @@ public sealed class UpnpPortMapper : IAsyncDisposable
 
         try
         {
-            await RemoveAsync().ConfigureAwait(false);
+            var old = _tcp;
+            _tcp = null;
+            await RemoveAsync(old).ConfigureAwait(false);
 
             using var limit = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             limit.CancelAfter(OverallTimeout);
 
             try
             {
-                return await FindAndMapAsync(internalPort, externalPort ?? internalPort, limit.Token).ConfigureAwait(false);
+                var (result, active) = await FindAndMapAsync(internalPort, externalPort ?? internalPort, Tcp, otherPorts: true, limit.Token).ConfigureAwait(false);
+
+                if (active is not null)
+                {
+                    _tcp = StartLease(active);
+                }
+
+                return result;
             }
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
             {
@@ -157,14 +172,83 @@ public sealed class UpnpPortMapper : IAsyncDisposable
         }
     }
 
-    /// <summary>Removes the mapping from the router. Safe to call when there is none.</summary>
+    /// <summary>
+    /// Opens UDP <paramref name="port"/> on the router, the same number outside and in.
+    /// For voice chat, whose clients are told the port number by the server and send to
+    /// exactly that, so a different port outside would be no use and none is tried. Goes
+    /// to the router of the TCP mapping when there is one. Replaces a UDP mapping made
+    /// earlier by this object.
+    /// </summary>
+    public async Task<UpnpResult> MapUdpAsync(int port, CancellationToken cancellationToken = default)
+    {
+        if (port is < 1 or > 65535)
+        {
+            throw new ArgumentOutOfRangeException(nameof(port));
+        }
+
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+
+        try
+        {
+            var old = _udp;
+            _udp = null;
+            await RemoveAsync(old).ConfigureAwait(false);
+
+            using var limit = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            limit.CancelAfter(OverallTimeout);
+
+            try
+            {
+                (UpnpResult Result, Active? Active) mapped;
+
+                if (_tcp?.Active is { } known)
+                {
+                    try
+                    {
+                        mapped = await MapOnAsync(known.Service, known.Location, port, port, Udp, otherPorts: false, limit.Token).ConfigureAwait(false);
+                    }
+                    catch (Exception) when (!limit.IsCancellationRequested)
+                    {
+                        mapped = (new UpnpResult(UpnpFailure.Error, null), null);
+                    }
+                }
+                else
+                {
+                    mapped = await FindAndMapAsync(port, port, Udp, otherPorts: false, limit.Token).ConfigureAwait(false);
+                }
+
+                if (mapped.Active is not null)
+                {
+                    _udp = StartLease(mapped.Active);
+                }
+
+                return mapped.Result;
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                return new UpnpResult(UpnpFailure.Error, null);
+            }
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    /// <summary>Removes the mappings from the router, TCP and UDP. Safe to call when there are none.</summary>
     public async Task UnmapAsync()
     {
         await _gate.WaitAsync().ConfigureAwait(false);
 
         try
         {
-            await RemoveAsync().ConfigureAwait(false);
+            var tcp = _tcp;
+            var udp = _udp;
+            _tcp = null;
+            _udp = null;
+
+            await RemoveAsync(udp).ConfigureAwait(false);
+            await RemoveAsync(tcp).ConfigureAwait(false);
         }
         finally
         {
@@ -178,7 +262,7 @@ public sealed class UpnpPortMapper : IAsyncDisposable
         _http.Dispose();
     }
 
-    private async Task<UpnpResult> FindAndMapAsync(int internalPort, int externalPort, CancellationToken token)
+    private async Task<(UpnpResult Result, Active? Active)> FindAndMapAsync(int internalPort, int externalPort, string protocol, bool otherPorts, CancellationToken token)
     {
         var locations = await DiscoverAsync(token).ConfigureAwait(false);
         var failure = UpnpFailure.NoGateway;
@@ -198,36 +282,36 @@ public sealed class UpnpPortMapper : IAsyncDisposable
 
             foreach (var service in ParseDescription(description, location))
             {
-                UpnpResult result;
+                (UpnpResult Result, Active? Active) mapped;
 
                 try
                 {
-                    result = await MapOnAsync(service, location, internalPort, externalPort, token).ConfigureAwait(false);
+                    mapped = await MapOnAsync(service, location, internalPort, externalPort, protocol, otherPorts, token).ConfigureAwait(false);
                 }
                 catch (Exception) when (!token.IsCancellationRequested)
                 {
-                    result = new UpnpResult(UpnpFailure.Error, null);
+                    mapped = (new UpnpResult(UpnpFailure.Error, null), null);
                 }
 
-                if (result.Ok)
+                if (mapped.Result.Ok)
                 {
-                    return result;
+                    return mapped;
                 }
 
-                failure = result.Failure;
+                failure = mapped.Result.Failure;
             }
         }
 
-        return new UpnpResult(failure, null);
+        return (new UpnpResult(failure, null), null);
     }
 
-    private async Task<UpnpResult> MapOnAsync(UpnpService service, Uri location, int internalPort, int externalPort, CancellationToken token)
+    private async Task<(UpnpResult Result, Active? Active)> MapOnAsync(UpnpService service, Uri location, int internalPort, int externalPort, string protocol, bool otherPorts, CancellationToken token)
     {
         var local = LocalAddressTowards(location.Host);
 
         if (local is null)
         {
-            return new UpnpResult(UpnpFailure.Error, null);
+            return (new UpnpResult(UpnpFailure.Error, null), null);
         }
 
         string? external = null;
@@ -244,21 +328,22 @@ public sealed class UpnpPortMapper : IAsyncDisposable
             // the other service, if there is one, is the live one.
             if (outside.Equals(IPAddress.Any))
             {
-                return new UpnpResult(UpnpFailure.Error, null);
+                return (new UpnpResult(UpnpFailure.Error, null), null);
             }
 
             if (!IsPublicAddress(outside))
             {
-                return new UpnpResult(UpnpFailure.BehindAnotherNat, null);
+                return (new UpnpResult(UpnpFailure.BehindAnotherNat, null), null);
             }
         }
 
         var port = externalPort;
+        var attempts = otherPorts ? MaxPortAttempts : 1;
 
-        for (var attempt = 0; attempt < MaxPortAttempts; attempt++)
+        for (var attempt = 0; attempt < attempts; attempt++)
         {
             var lease = LeaseSeconds;
-            var (added, body) = await AddAsync(service, port, internalPort, local, lease, token).ConfigureAwait(false);
+            var (added, body) = await AddAsync(service, port, internalPort, local, protocol, lease, token).ConfigureAwait(false);
 
             if (!added && ParseFaultCode(body) != ConflictInMappingEntry)
             {
@@ -266,11 +351,11 @@ public sealed class UpnpPortMapper : IAsyncDisposable
                 // several error codes. Such a mapping lives until it is removed, which
                 // stopping does.
                 lease = 0;
-                (added, body) = await AddAsync(service, port, internalPort, local, lease, token).ConfigureAwait(false);
+                (added, body) = await AddAsync(service, port, internalPort, local, protocol, lease, token).ConfigureAwait(false);
             }
 
             if (!added && ParseFaultCode(body) == ConflictInMappingEntry &&
-                await IsOwnMappingAsync(service, port, internalPort, local, token).ConfigureAwait(false))
+                await IsOwnMappingAsync(service, port, internalPort, local, protocol, token).ConfigureAwait(false))
             {
                 // The port is taken by this very machine and port: a mapping left by a
                 // session that did not end cleanly. It is adopted, and removed on stop.
@@ -281,14 +366,12 @@ public sealed class UpnpPortMapper : IAsyncDisposable
             if (added)
             {
                 var mapping = new UpnpMapping(port, internalPort, local.ToString(), external);
-                _active = new Active(service, mapping);
-                StartRenewing(lease);
-                return new UpnpResult(UpnpFailure.None, mapping);
+                return (new UpnpResult(UpnpFailure.None, mapping), new Active(service, location, mapping, protocol, lease));
             }
 
             if (ParseFaultCode(body) != ConflictInMappingEntry)
             {
-                return new UpnpResult(UpnpFailure.Refused, null);
+                return (new UpnpResult(UpnpFailure.Refused, null), null);
             }
 
             // Another device holds this port. Taking it away would break whatever that
@@ -296,15 +379,15 @@ public sealed class UpnpPortMapper : IAsyncDisposable
             port = RandomNumberGenerator.GetInt32(20000, 60000);
         }
 
-        return new UpnpResult(UpnpFailure.Refused, null);
+        return (new UpnpResult(UpnpFailure.Refused, null), null);
     }
 
-    private Task<(bool Ok, string Body)> AddAsync(UpnpService service, int externalPort, int internalPort, IPAddress local, int lease, CancellationToken token)
+    private Task<(bool Ok, string Body)> AddAsync(UpnpService service, int externalPort, int internalPort, IPAddress local, string protocol, int lease, CancellationToken token)
         => CallAsync(service, "AddPortMapping", new[]
         {
             ("NewRemoteHost", string.Empty),
             ("NewExternalPort", externalPort.ToString(CultureInfo.InvariantCulture)),
-            ("NewProtocol", "TCP"),
+            ("NewProtocol", protocol),
             ("NewInternalPort", internalPort.ToString(CultureInfo.InvariantCulture)),
             ("NewInternalClient", local.ToString()),
             ("NewEnabled", "1"),
@@ -312,13 +395,13 @@ public sealed class UpnpPortMapper : IAsyncDisposable
             ("NewLeaseDuration", lease.ToString(CultureInfo.InvariantCulture))
         }, token);
 
-    private async Task<bool> IsOwnMappingAsync(UpnpService service, int externalPort, int internalPort, IPAddress local, CancellationToken token)
+    private async Task<bool> IsOwnMappingAsync(UpnpService service, int externalPort, int internalPort, IPAddress local, string protocol, CancellationToken token)
     {
         var (ok, body) = await CallAsync(service, "GetSpecificPortMappingEntry", new[]
         {
             ("NewRemoteHost", string.Empty),
             ("NewExternalPort", externalPort.ToString(CultureInfo.InvariantCulture)),
-            ("NewProtocol", "TCP")
+            ("NewProtocol", protocol)
         }, token).ConfigureAwait(false);
 
         return ok && ParsePortMappingEntry(body) is { } entry &&
@@ -326,29 +409,27 @@ public sealed class UpnpPortMapper : IAsyncDisposable
                string.Equals(entry.InternalClient, local.ToString(), StringComparison.Ordinal);
     }
 
-    private void StartRenewing(int lease)
+    private Lease StartLease(Active active)
     {
-        if (lease <= 0 || _active is null)
+        if (active.LeaseSeconds <= 0)
         {
-            return;
+            return new Lease(active, null, null);
         }
 
-        var active = _active;
         var stop = new CancellationTokenSource();
-        _renewStop = stop;
 
-        _renewLoop = Task.Run(async () =>
+        var renewing = Task.Run(async () =>
         {
             try
             {
                 while (true)
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(lease / 2), stop.Token).ConfigureAwait(false);
+                    await Task.Delay(TimeSpan.FromSeconds(active.LeaseSeconds / 2), stop.Token).ConfigureAwait(false);
 
                     try
                     {
                         var local = IPAddress.Parse(active.Mapping.InternalAddress);
-                        await AddAsync(active.Service, active.Mapping.ExternalPort, active.Mapping.InternalPort, local, lease, stop.Token).ConfigureAwait(false);
+                        await AddAsync(active.Service, active.Mapping.ExternalPort, active.Mapping.InternalPort, local, active.Protocol, active.LeaseSeconds, stop.Token).ConfigureAwait(false);
                     }
                     catch (Exception) when (!stop.IsCancellationRequested)
                     {
@@ -360,31 +441,30 @@ public sealed class UpnpPortMapper : IAsyncDisposable
             {
             }
         });
+
+        return new Lease(active, stop, renewing);
     }
 
-    private async Task RemoveAsync()
+    private async Task RemoveAsync(Lease? lease)
     {
-        var active = _active;
-        _active = null;
-
-        if (_renewStop is not null)
-        {
-            _renewStop.Cancel();
-
-            if (_renewLoop is not null)
-            {
-                await _renewLoop.ConfigureAwait(false);
-            }
-
-            _renewStop.Dispose();
-            _renewStop = null;
-            _renewLoop = null;
-        }
-
-        if (active is null)
+        if (lease is null)
         {
             return;
         }
+
+        if (lease.Stop is not null)
+        {
+            lease.Stop.Cancel();
+
+            if (lease.Renewing is not null)
+            {
+                await lease.Renewing.ConfigureAwait(false);
+            }
+
+            lease.Stop.Dispose();
+        }
+
+        var active = lease.Active;
 
         try
         {
@@ -392,7 +472,7 @@ public sealed class UpnpPortMapper : IAsyncDisposable
             {
                 ("NewRemoteHost", string.Empty),
                 ("NewExternalPort", active.Mapping.ExternalPort.ToString(CultureInfo.InvariantCulture)),
-                ("NewProtocol", "TCP")
+                ("NewProtocol", active.Protocol)
             }, CancellationToken.None).ConfigureAwait(false);
         }
         catch (Exception)
@@ -816,5 +896,10 @@ public sealed class UpnpPortMapper : IAsyncDisposable
         }
     }
 
-    private sealed record Active(UpnpService Service, UpnpMapping Mapping);
+    /// <param name="Location">The router's description, which the local address towards it is worked out from.</param>
+    /// <param name="LeaseSeconds">Zero for a mapping that lives until it is removed.</param>
+    private sealed record Active(UpnpService Service, Uri Location, UpnpMapping Mapping, string Protocol, int LeaseSeconds);
+
+    /// <summary>A mapping in place and the loop that keeps renewing it, when it has a lease.</summary>
+    private sealed record Lease(Active Active, CancellationTokenSource? Stop, Task? Renewing);
 }

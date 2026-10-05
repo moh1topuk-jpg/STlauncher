@@ -26,8 +26,9 @@ public enum RelayHostState
 /// <summary>
 /// The host's end of the relay way. Keeps one control connection to the relay; each time
 /// the relay says a friend has arrived, dials a second connection for that friend and
-/// splices it to the Minecraft server on this machine. Nothing listens here: both
-/// connections go out, which is why no port needs to be open.
+/// splices it to the Minecraft server on this machine, or, for a voice tunnel, hands
+/// its datagrams to the voice chat server. Nothing listens here: both connections go
+/// out, which is why no port needs to be open.
 /// </summary>
 public sealed class RelayHost : IAsyncDisposable
 {
@@ -54,8 +55,13 @@ public sealed class RelayHost : IAsyncDisposable
     /// <param name="wantPublic">
     /// Ask the relay for a public port: an address anyone can type into Minecraft, no
     /// launcher needed. The relay may have none to give; <see cref="PublicPort"/> says.
+    /// Such a room carries plain Minecraft clients, so its tunnels have no channel tag.
     /// </param>
-    public RelayHost(RelayEndpoint relay, int serverPort, string? hostKey = null, RelayClientOptions? options = null, bool wantPublic = false)
+    /// <param name="voicePort">
+    /// The UDP port of the voice chat server on this machine, when the server has one.
+    /// Guests' voice tunnels go there; without it they are turned away.
+    /// </param>
+    public RelayHost(RelayEndpoint relay, int serverPort, string? hostKey = null, RelayClientOptions? options = null, bool wantPublic = false, int? voicePort = null)
     {
         _wantPublic = wantPublic;
 
@@ -66,7 +72,13 @@ public sealed class RelayHost : IAsyncDisposable
             throw new ArgumentOutOfRangeException(nameof(serverPort));
         }
 
+        if (voicePort is < 1 or > 65535)
+        {
+            throw new ArgumentOutOfRangeException(nameof(voicePort));
+        }
+
         ServerPort = serverPort;
+        VoicePort = voicePort;
         HostKey = RelayKeys.IsKey(hostKey) ? hostKey!.ToLowerInvariant() : RelayKeys.NewHostKey();
         RoomKey = RelayKeys.RoomKeyFor(HostKey);
         _options = options ?? new RelayClientOptions();
@@ -76,6 +88,9 @@ public sealed class RelayHost : IAsyncDisposable
 
     /// <summary>The port of the Minecraft server on this machine.</summary>
     public int ServerPort { get; }
+
+    /// <summary>The UDP port of the voice chat server on this machine, or null when there is none.</summary>
+    public int? VoicePort { get; }
 
     /// <summary>The host's secret. Keep it in the host's settings; it never goes into an invite.</summary>
     public string HostKey { get; }
@@ -381,6 +396,24 @@ public sealed class RelayHost : IAsyncDisposable
             if (answer != "OK")
             {
                 return;
+            }
+
+            // A guest's launcher says first what the tunnel is for. Anything else, or
+            // nothing, closes it: guessing would hand stray bytes to the server.
+            if (!_wantPublic)
+            {
+                var tag = await RelayWire.ReadTagAsync(relayStream, _options.AnswerTimeout, token).ConfigureAwait(false);
+
+                if (tag == RelayChannel.Voice && VoicePort is { } voicePort)
+                {
+                    await VoiceHostSide.RunAsync(relayStream, voicePort, token).ConfigureAwait(false);
+                    return;
+                }
+
+                if (tag != RelayChannel.Game)
+                {
+                    return;
+                }
             }
 
             // The server is dialled after the relay on purpose. When it is not running

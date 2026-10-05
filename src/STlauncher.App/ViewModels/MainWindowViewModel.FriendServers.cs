@@ -375,6 +375,17 @@ public partial class MainWindowViewModel
                 _ => Localize("Friends_ConnectedPublic", "Connected by the public address. If the game does not join by itself, the server's address is {0}", join.Address)
             };
 
+            if (join.Voice == FriendsVoice.PortTaken)
+            {
+                // The game goes ahead regardless; only the voice chat has nowhere to land.
+                item.Note += " " + Localize("Friends_VoicePortTaken", "Voice chat will not work: port {0} on this computer is taken by another program. The game itself is not affected.", join.VoicePort ?? 0);
+                AppendConsole($"[friends] voice chat: UDP port {join.VoicePort} on 127.0.0.1 is taken, carrying the game only");
+            }
+            else if (join.Voice == FriendsVoice.Carried)
+            {
+                AppendConsole($"[friends] voice chat carried through the relay on UDP 127.0.0.1:{join.VoicePort}");
+            }
+
             if (join.Way == FriendsWay.Relay &&
                 HostPort.TryParse(join.Address, out _, out var localPort) && localPort is { } port)
             {
