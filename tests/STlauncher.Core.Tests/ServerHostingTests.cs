@@ -739,27 +739,27 @@ public class ServerInstallerTests
         var downloader = new DownloadClient(http, maxAttempts: 1);
         var store = new HostedServerStore(paths);
 
+        var java = new JavaManager(paths, downloader, http);
+
         var installer = new ServerInstaller(
             http,
             new MetadataClient(http, paths),
             downloader,
-            new LoaderService(http, paths, downloader, new JavaManager(paths, downloader, http)),
-            store);
+            new LoaderService(http, paths, downloader, java),
+            store,
+            new ServerJava(java, http));
 
         return (installer, store, handler);
     }
 
     private static byte[] Json(string text) => Encoding.UTF8.GetBytes(text);
 
-    [Theory]
-    [InlineData(LoaderKind.Forge)]
-    [InlineData(LoaderKind.NeoForge)]
-    [InlineData(LoaderKind.Quilt)]
-    public async Task Plan_OtherLoadersAreUnsupported_WithoutAskingTheNetwork(LoaderKind loader)
+    [Fact]
+    public async Task Plan_QuiltIsUnsupported_WithoutAskingTheNetwork()
     {
         var (installer, _, handler) = NewInstaller();
 
-        var plan = await installer.PlanAsync("1.21.1", loader);
+        var plan = await installer.PlanAsync("1.21.1", LoaderKind.Quilt);
 
         Assert.Equal(ServerInstallStatus.UnsupportedLoader, plan.Status);
         Assert.False(plan.CanInstall);
@@ -881,7 +881,7 @@ public class ServerInstallerTests
         var (installer, store, handler) = NewInstaller();
         var server = store.Create("Home", "1.21.1");
 
-        var unsupported = await installer.PlanAsync("1.21.1", LoaderKind.Forge);
+        var unsupported = await installer.PlanAsync("1.21.1", LoaderKind.Quilt);
         var fabric = await installer.PlanAsync("1.21.1", LoaderKind.Fabric);
 
         Assert.Equal(ServerInstallOutcome.PlanNotReady, (await installer.InstallAsync(server, unsupported)).Outcome);

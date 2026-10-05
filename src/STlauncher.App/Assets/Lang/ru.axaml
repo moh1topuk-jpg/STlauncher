@@ -1038,6 +1038,8 @@
     <x:String x:Key="Host_PlanServerJar">Сервер Minecraft {0}</x:String>
     <x:String x:Key="Host_PlanLoaderLauncher">Загрузчик {0} {1}</x:String>
     <x:String x:Key="Host_PlanLoaderLibraries">Библиотеки {0}</x:String>
+    <x:String x:Key="Host_PlanLoaderInstaller">Установщик {0} {1}</x:String>
+    <x:String x:Key="Host_PlanByInstaller">{0} · {1} · это скачает сам установщик {2}</x:String>
     <x:String x:Key="Host_PlanJava">Java {0}</x:String>
     <x:String x:Key="Host_PlanFrom">{0} · {1}</x:String>
     <x:String x:Key="Host_PlanFromAbout">{0} · около {1}</x:String>
@@ -1054,6 +1056,9 @@
     <x:String x:Key="Host_PlanModsNoneDetail">Сервер будет работать без модов.</x:String>
     <x:String x:Key="Host_PlanModsSkipped">Не попадут на сервер: {0}</x:String>
     <x:String x:Key="Host_PlanSkippedClient">Только для клиента: {0}.</x:String>
+    <x:String x:Key="Host_PlanSkippedLikelyClient">Похожи на клиентские (игра им нужна только на стороне клиента): {0}.</x:String>
+    <x:String x:Key="Host_PlanModsForge">Моды {0} редко сообщают, нужны ли они серверу</x:String>
+    <x:String x:Key="Host_PlanModsForgeDetail">Не копируются только те, что сами об этом говорят. Если сервер не запустится из-за клиентского мода, уберите его из папки «mods» сервера.</x:String>
     <x:String x:Key="Host_PlanSkippedDisabled">Выключены в сборке: {0}.</x:String>
     <x:String x:Key="Host_PlanAndMore">{0} и ещё {1}</x:String>
     <x:String x:Key="Host_PlanWorldNew">Новый мир</x:String>
@@ -1071,7 +1076,8 @@
     <x:String x:Key="Host_CreateConfirm">Создать и скачать</x:String>
     <x:String x:Key="Host_ProblemNoBuilds">Пока нет ни одной сборки. Создайте сборку во вкладке «Сборки» — сервер возьмёт из неё версию игры.</x:String>
     <x:String x:Key="Host_ProblemNoVersion">У этой сборки не указана версия игры. Выберите версию в настройках сборки или возьмите другую сборку.</x:String>
-    <x:String x:Key="Host_ProblemLoader">Сервер с {0} лаунчер пока ставить не умеет. Сейчас подходят сборки без загрузчика и сборки с Fabric.</x:String>
+    <x:String x:Key="Host_ProblemLoader">Сервер с {0} лаунчер пока ставить не умеет. Сейчас подходят сборки без загрузчика и сборки с Fabric, Forge и NeoForge.</x:String>
+    <x:String x:Key="Host_ProblemInstaller">Установщик {0} не справился: {1}. Уже скачанное сохранится — попробуйте ещё раз.</x:String>
     <x:String x:Key="Host_ProblemUnknownVersion">В списке Mojang нет версии {0}, сервер для неё взять негде.</x:String>
     <x:String x:Key="Host_ProblemNoServer">Для версии {0} Mojang не публикует сервер.</x:String>
     <x:String x:Key="Host_ProblemLoaderUnavailable">У {0} нет сборки для Minecraft {1}.</x:String>
@@ -1085,6 +1091,7 @@
     <x:String x:Key="Host_BusyDownloadOf">Скачиваю сервер: {0} из {1}</x:String>
     <x:String x:Key="Host_BusyJava">Скачиваю Java {0}…</x:String>
     <x:String x:Key="Host_BusyMods">Копирую моды…</x:String>
+    <x:String x:Key="Host_BusyInstaller">Установщик загрузчика скачивает остальное и собирает сервер. Это займёт несколько минут…</x:String>
     <x:String x:Key="Host_BusyFindJava">Ищу Java…</x:String>
     <x:String x:Key="Host_Created">Сервер «{0}» готов. Нажмите «Запустить», когда будете готовы.</x:String>
     <x:String x:Key="Host_StateNotInstalled">не установлен</x:String>

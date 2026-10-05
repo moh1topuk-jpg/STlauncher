@@ -1038,6 +1038,8 @@
     <x:String x:Key="Host_PlanServerJar">Minecraft server {0}</x:String>
     <x:String x:Key="Host_PlanLoaderLauncher">{0} {1} loader</x:String>
     <x:String x:Key="Host_PlanLoaderLibraries">{0} libraries</x:String>
+    <x:String x:Key="Host_PlanLoaderInstaller">{0} {1} installer</x:String>
+    <x:String x:Key="Host_PlanByInstaller">{0} · {1} · the {2} installer downloads this itself</x:String>
     <x:String x:Key="Host_PlanJava">Java {0}</x:String>
     <x:String x:Key="Host_PlanFrom">{0} · {1}</x:String>
     <x:String x:Key="Host_PlanFromAbout">{0} · about {1}</x:String>
@@ -1054,6 +1056,9 @@
     <x:String x:Key="Host_PlanModsNoneDetail">The server will run without mods.</x:String>
     <x:String x:Key="Host_PlanModsSkipped">Left out of the server: {0}</x:String>
     <x:String x:Key="Host_PlanSkippedClient">Only for the client: {0}.</x:String>
+    <x:String x:Key="Host_PlanSkippedLikelyClient">Look like client mods (they ask for the game on the client side only): {0}.</x:String>
+    <x:String x:Key="Host_PlanModsForge">{0} mods rarely say whether a server needs them</x:String>
+    <x:String x:Key="Host_PlanModsForgeDetail">Only the ones that say so themselves are left out. If the server does not start because of a client mod, remove it from the “mods” folder of the server.</x:String>
     <x:String x:Key="Host_PlanSkippedDisabled">Switched off in the build: {0}.</x:String>
     <x:String x:Key="Host_PlanAndMore">{0} and {1} more</x:String>
     <x:String x:Key="Host_PlanWorldNew">A new world</x:String>
@@ -1071,7 +1076,8 @@
     <x:String x:Key="Host_CreateConfirm">Create and download</x:String>
     <x:String x:Key="Host_ProblemNoBuilds">There is no build yet. Make one on the Builds tab - the server takes its game version from it.</x:String>
     <x:String x:Key="Host_ProblemNoVersion">This build names no game version. Pick one in the build's settings, or take another build.</x:String>
-    <x:String x:Key="Host_ProblemLoader">The launcher cannot set up a {0} server yet. Builds without a loader and Fabric builds work.</x:String>
+    <x:String x:Key="Host_ProblemLoader">The launcher cannot set up a {0} server yet. Builds without a loader and Fabric, Forge and NeoForge builds work.</x:String>
+    <x:String x:Key="Host_ProblemInstaller">The {0} installer did not finish: {1}. What it has already downloaded is kept - try again.</x:String>
     <x:String x:Key="Host_ProblemUnknownVersion">Mojang does not list version {0}, so there is no server to get for it.</x:String>
     <x:String x:Key="Host_ProblemNoServer">Mojang publishes no server for version {0}.</x:String>
     <x:String x:Key="Host_ProblemLoaderUnavailable">{0} has no build for Minecraft {1}.</x:String>
@@ -1085,6 +1091,7 @@
     <x:String x:Key="Host_BusyDownloadOf">Downloading the server: {0} of {1}</x:String>
     <x:String x:Key="Host_BusyJava">Downloading Java {0}…</x:String>
     <x:String x:Key="Host_BusyMods">Copying the mods…</x:String>
+    <x:String x:Key="Host_BusyInstaller">The loader's installer is downloading the rest and putting the server together. This takes a few minutes…</x:String>
     <x:String x:Key="Host_BusyFindJava">Looking for Java…</x:String>
     <x:String x:Key="Host_Created">The server “{0}” is ready. Press “Start” when you are.</x:String>
     <x:String x:Key="Host_StateNotInstalled">not installed</x:String>

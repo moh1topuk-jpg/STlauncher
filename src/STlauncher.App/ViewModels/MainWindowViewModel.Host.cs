@@ -848,7 +848,7 @@ public partial class MainWindowViewModel
     {
         if (!ServerInstaller.IsSupported(server.Loader))
         {
-            HostNotice = Localize("Host_ProblemLoader", "The launcher cannot set up a {0} server yet. Builds without a loader and Fabric builds are supported.", server.Loader);
+            HostNotice = Localize("Host_ProblemLoader", "The launcher cannot set up a {0} server yet. Builds without a loader and Fabric, Forge and NeoForge builds work.", server.Loader);
             return;
         }
 
@@ -874,9 +874,24 @@ public partial class MainWindowViewModel
             return;
         }
 
+        var lines = plan.Downloads.Select(d => HostDownloadLine(d, plan.GameVersion, plan.Loader, plan.LoaderVersion, plan.JavaMajor)).ToList();
+
+        // A Forge installer is itself run with Java, so a missing Java is downloaded
+        // already during the install: it stands in the same list the player agrees to.
+        if (plan.RunsInstaller && await Task.Run(() => _hosting.Java.Find(plan.JavaMajor)) is null)
+        {
+            if (await _hosting.Java.DescribeDownloadAsync(plan.JavaMajor) is not { } javaDownload)
+            {
+                HostNotice = Localize("Host_NoticeJavaMissing", "The server needs Java {0} and this computer has none. The download site does not answer right now - check the connection and try again.", plan.JavaMajor);
+                return;
+            }
+
+            lines.Add(HostDownloadLine(javaDownload, plan.GameVersion, plan.Loader, plan.LoaderVersion, plan.JavaMajor));
+        }
+
         OpenHostConsent(
             Localize("Host_ConsentInstallTitle", "The server has not been downloaded yet"),
-            plan.Downloads.Select(d => HostDownloadLine(d, plan.GameVersion, plan.Loader, plan.LoaderVersion, plan.JavaMajor)),
+            lines,
             Localize("Host_ConsentInstallAction", "Download"),
             async () =>
             {
@@ -887,7 +902,7 @@ public partial class MainWindowViewModel
 
                     if (!result.Succeeded)
                     {
-                        HostNotice = Localize(
+                        HostNotice = HostInstallerFailure(result, plan.Loader) ?? Localize(
                             "Host_NoticeDownload",
                             "The server could not be downloaded: {0}. Check the connection and press “Start” again.",
                             result.Failure?.Detail ?? result.Outcome.ToString());
@@ -985,9 +1000,38 @@ public partial class MainWindowViewModel
             });
     }
 
+    /// <summary>What to say when a loader's installer, or the Java it runs on, let the install down; null for an ordinary failed download.</summary>
+    private static string? HostInstallerFailure(ServerInstallResult result, LoaderKind loader) => result.Outcome switch
+    {
+        ServerInstallOutcome.InstallerFailed => Localize("Host_ProblemInstaller", "The {0} installer did not finish: {1}. What it has already downloaded is kept - try again.", loader, result.Detail ?? string.Empty),
+        ServerInstallOutcome.JavaUnavailable => Localize("Host_NoticeJavaDownload", "Java could not be downloaded: {0}", result.Detail ?? string.Empty),
+        _ => null
+    };
+
     private IProgress<ServerInstallProgress> HostInstallProgress()
         => new Progress<ServerInstallProgress>(p =>
         {
+            if (p.InstallerRunning)
+            {
+                // The installer counts no bytes; what it prints goes to the launcher's log.
+                if (p.InstallerLine is { } line)
+                {
+                    AppendConsole($"[host] installer: {line}");
+                }
+
+                IsHostProgressUnknown = true;
+                HostBusyText = Localize("Host_BusyInstaller", "The loader's installer is downloading the rest and putting the server together. This takes a few minutes…");
+                return;
+            }
+
+            if (p.Kind == ServerDownloadKind.JavaRuntime)
+            {
+                // Before a loader's installer: finding Java, or fetching it when it was in the agreed list.
+                IsHostProgressUnknown = true;
+                HostBusyText = Localize("Host_BusyFindJava", "Looking for Java…");
+                return;
+            }
+
             IsHostProgressUnknown = p.BytesTotal <= 0;
             HostProgress = p.BytesTotal > 0 ? Math.Min(100, p.BytesDone * 100d / p.BytesTotal) : 0;
             HostBusyText = p.BytesTotal > 0
@@ -1002,11 +1046,19 @@ public partial class MainWindowViewModel
             ServerDownloadKind.ServerJar => Localize("Host_PlanServerJar", "Minecraft server {0}", gameVersion),
             ServerDownloadKind.LoaderLauncher => Localize("Host_PlanLoaderLauncher", "{0} {1} starter", loader, loaderVersion ?? string.Empty).Trim(),
             ServerDownloadKind.LoaderLibraries => Localize("Host_PlanLoaderLibraries", "{0} libraries", loader),
+            ServerDownloadKind.LoaderInstaller => Localize("Host_PlanLoaderInstaller", "{0} {1} installer", loader, loaderVersion ?? string.Empty).Trim(),
             _ => Localize("Host_PlanJava", "Java {0}", javaMajor)
         };
 
         var detail = download.SizeBytes <= 0
             ? Localize("Host_PlanFromUnknown", "{0} · size not known in advance", download.Host)
+            : download.ByInstaller
+                ? Localize(
+                    "Host_PlanByInstaller",
+                    "{0} · {1} · the {2} installer downloads this itself",
+                    download.Host,
+                    download.SizeIsExact ? FormatSize(download.SizeBytes) : Localize("Host_PlanAbout", "about {0}", FormatSize(download.SizeBytes)),
+                    loader)
             : download.AtFirstStart
                 ? Localize("Host_PlanAtFirstStart", "{0} · about {1} · the server fetches them itself on its first start", download.Host, FormatSize(download.SizeBytes))
                 : download.SizeIsExact
@@ -1018,7 +1070,7 @@ public partial class MainWindowViewModel
 
     private static string DescribeHostPlanFailure(ServerInstallPlan plan) => plan.Status switch
     {
-        ServerInstallStatus.UnsupportedLoader => Localize("Host_ProblemLoader", "The launcher cannot set up a {0} server yet. Builds without a loader and Fabric builds are supported.", plan.Loader),
+        ServerInstallStatus.UnsupportedLoader => Localize("Host_ProblemLoader", "The launcher cannot set up a {0} server yet. Builds without a loader and Fabric, Forge and NeoForge builds work.", plan.Loader),
         ServerInstallStatus.UnknownGameVersion => Localize("Host_ProblemUnknownVersion", "Mojang does not list version {0}, so there is no server to get for it.", plan.GameVersion),
         ServerInstallStatus.NoServerForVersion => Localize("Host_ProblemNoServer", "Mojang publishes no server for version {0}.", plan.GameVersion),
         ServerInstallStatus.LoaderUnavailable => Localize("Host_ProblemLoaderUnavailable", "{0} has no build for Minecraft {1}.", plan.Loader, plan.GameVersion),
@@ -1452,7 +1504,7 @@ public partial class MainWindowViewModel
 
         if (!ServerInstaller.IsSupported(instance.Loader))
         {
-            HostCreateProblem = Localize("Host_ProblemLoader", "The launcher cannot set up a {0} server yet. Builds without a loader and Fabric builds are supported.", instance.Loader);
+            HostCreateProblem = Localize("Host_ProblemLoader", "The launcher cannot set up a {0} server yet. Builds without a loader and Fabric, Forge and NeoForge builds work.", instance.Loader);
             return;
         }
 
@@ -1493,6 +1545,14 @@ public partial class MainWindowViewModel
 
             if (token.IsCancellationRequested)
             {
+                return;
+            }
+
+            // A Forge installer runs on that Java during the install itself, so there is
+            // no later moment to ask about a download whose size is not known yet.
+            if (plan.RunsInstaller && java is null && javaDownload is null)
+            {
+                HostCreateProblem = Localize("Host_NoticeJavaMissing", "The server needs Java {0} and this computer has none. The download site does not answer right now - check the connection and try again.", plan.JavaMajor);
                 return;
             }
 
@@ -1591,6 +1651,13 @@ public partial class MainWindowViewModel
                     parts.Add(Localize("Host_PlanSkippedClient", "Only for the client: {0}.", JoinHostNames(clientOnly)));
                 }
 
+                var likelyClient = mods.Skipped.Where(m => m.Reason == ModSkipReason.LikelyClientOnly).Select(m => m.Name ?? m.FileName).ToList();
+
+                if (likelyClient.Count > 0)
+                {
+                    parts.Add(Localize("Host_PlanSkippedLikelyClient", "Look like client mods (they ask for the game on the client side only): {0}.", JoinHostNames(likelyClient)));
+                }
+
                 if (disabled.Count > 0)
                 {
                     parts.Add(Localize("Host_PlanSkippedDisabled", "Switched off in the build: {0}.", JoinHostNames(disabled)));
@@ -1599,6 +1666,14 @@ public partial class MainWindowViewModel
                 HostPlanLines.Add(new HostPlanLine(
                     Localize("Host_PlanModsSkipped", "Mods left out of the server: {0}", mods.Skipped.Count),
                     string.Join(" ", parts)));
+            }
+
+            if (ForgeServer.IsForgeLike(plan.Loader) && mods.Copied.Count > 0)
+            {
+                // Most Forge mods do not say which side they are for; nothing here pretends to know.
+                HostPlanLines.Add(new HostPlanLine(
+                    Localize("Host_PlanModsForge", "{0} mods rarely say whether a server needs them", plan.Loader),
+                    Localize("Host_PlanModsForgeDetail", "Only the ones that say so themselves are left out. If the server does not start because of a client mod, remove it from the “mods” folder of the server.")));
             }
         }
 
@@ -1701,7 +1776,7 @@ public partial class MainWindowViewModel
 
             if (!installed.Succeeded)
             {
-                HostCreateProblem = Localize(
+                HostCreateProblem = HostInstallerFailure(installed, plan.Loader) ?? Localize(
                     "Host_ProblemDownload",
                     "The server could not be downloaded: {0}. Check the connection and press “Create” again - what is already downloaded is kept.",
                     installed.Failure?.Detail ?? installed.Outcome.ToString());

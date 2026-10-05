@@ -87,7 +87,8 @@ public static partial class ServerOutput
             prefixed = LegacyPrefixRegex().Match(line);
         }
 
-        var message = prefixed.Success ? prefixed.Groups["msg"].Value : line;
+        // NeoForge's early lines end in a space, and a line from Windows may keep its \r.
+        var message = (prefixed.Success ? prefixed.Groups["msg"].Value : line).TrimEnd();
 
         // Only a line the server itself logged can announce readiness or a player. A raw
         // line with no log prefix is Java or the loader talking, and is checked for
