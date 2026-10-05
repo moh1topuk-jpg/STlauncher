@@ -1192,6 +1192,12 @@ public partial class MainWindowViewModel : ViewModelBase
         // so the pinned loader build was silently replaced on every refresh.
         var previous = SelectedLoaderVersion;
 
+        // The build's own loader version comes first. Going by "what was selected a moment
+        // ago" alone gave a build that had just been selected the loader of the build
+        // before it: a build made from a friend's code with Fabric 0.19.5 started on the
+        // 0.19.2 of the player's old build, and its mods refused to load.
+        var pinned = SelectedInstance?.LoaderVersion;
+
         LoaderVersions.Clear();
         SelectedLoaderVersion = null;
 
@@ -1218,7 +1224,8 @@ public partial class MainWindowViewModel : ViewModelBase
                 LoaderVersions.Add(version);
             }
 
-            SelectedLoaderVersion = LoaderVersions.FirstOrDefault(v => v.Version == previous?.Version)
+            SelectedLoaderVersion = LoaderVersions.FirstOrDefault(v => v.Version == pinned)
+                                    ?? LoaderVersions.FirstOrDefault(v => v.Version == previous?.Version)
                                     ?? LoaderVersions.FirstOrDefault();
         }
         catch (Exception ex)
