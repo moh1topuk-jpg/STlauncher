@@ -25,6 +25,7 @@ internal static class ChildProcessGuard
 
     private static readonly object Gate = new();
     private static readonly List<ServerProcess> Live = new();
+    private static readonly List<Process> Helpers = new();
     private static bool _hooked;
     private static IntPtr _job;
     private static bool _jobUnavailable;
@@ -48,6 +49,32 @@ internal static class ChildProcessGuard
         lock (Gate)
         {
             Live.Remove(server);
+        }
+    }
+
+    /// <summary>
+    /// For a child that has nothing to save - a loader's installer: when the launcher
+    /// exits it is simply ended, so it does not go on downloading with nobody watching.
+    /// </summary>
+    public static void TrackHelper(Process process)
+    {
+        lock (Gate)
+        {
+            Helpers.Add(process);
+
+            if (!_hooked)
+            {
+                _hooked = true;
+                AppDomain.CurrentDomain.ProcessExit += (_, _) => StopAllOnExit();
+            }
+        }
+    }
+
+    public static void UntrackHelper(Process process)
+    {
+        lock (Gate)
+        {
+            Helpers.Remove(process);
         }
     }
 
@@ -77,10 +104,24 @@ internal static class ChildProcessGuard
     private static void StopAllOnExit()
     {
         ServerProcess[] servers;
+        Process[] helpers;
 
         lock (Gate)
         {
             servers = Live.ToArray();
+            helpers = Helpers.ToArray();
+        }
+
+        foreach (var helper in helpers)
+        {
+            try
+            {
+                helper.Kill(entireProcessTree: true);
+            }
+            catch (Exception)
+            {
+                // Already gone or already disposed: either way it is not running.
+            }
         }
 
         if (servers.Length == 0)

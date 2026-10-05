@@ -53,8 +53,10 @@ public sealed class HostedServer
     public DateTimeOffset? EulaAcceptedAt { get; set; }
 
     /// <summary>
-    /// The jar that starts the server, relative to its folder. Null until the server
-    /// has been installed, which is also how "not installed yet" is told apart.
+    /// What starts the server, relative to its folder: a jar, or for Forge and NeoForge
+    /// since 1.17 the argument file their installer leaves under <c>libraries/</c>.
+    /// Null until the server has been installed, which is also how "not installed yet"
+    /// is told apart - and null again while a loader's installer is at work.
     /// </summary>
     [JsonPropertyName("launchJar")]
     public string? LaunchJar { get; set; }

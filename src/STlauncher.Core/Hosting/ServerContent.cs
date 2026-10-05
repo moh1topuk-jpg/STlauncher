@@ -18,7 +18,27 @@ public enum ModSkipReason
     ClientOnly,
 
     /// <summary>Switched off in the build, so it is not part of what the player plays with.</summary>
-    Disabled
+    Disabled,
+
+    /// <summary>
+    /// A Forge or NeoForge mod that does not say "client only" in so many words, but
+    /// declares that it needs the game and the loader on the client side only. Left out
+    /// as a client mod; the screen says that this is read from its dependencies.
+    /// </summary>
+    LikelyClientOnly
+}
+
+/// <summary>How firmly a jar says it is for the client only; see <see cref="ServerContent.ClientSide"/>.</summary>
+public enum ModClientSide
+{
+    /// <summary>The jar says nothing either way, or says it is for both sides. It is copied.</summary>
+    NotStated,
+
+    /// <summary>Not said outright, but its dependencies on the game are for the client side only.</summary>
+    Implied,
+
+    /// <summary>The mod's own metadata says it is for the client only.</summary>
+    Stated
 }
 
 /// <param name="Name">The mod's own title when the jar states one; otherwise null.</param>
@@ -79,6 +99,18 @@ public static partial class ServerContent
     [GeneratedRegex(@"^\s*clientSideOnly\s*=\s*true\b", RegexOptions.Multiline | RegexOptions.IgnoreCase)]
     private static partial Regex ForgeClientOnlyRegex();
 
+    [GeneratedRegex(@"^\s*\[")]
+    private static partial Regex TomlTableRegex();
+
+    [GeneratedRegex(@"^\s*\[\[\s*dependencies\s*\.")]
+    private static partial Regex TomlDependencyRegex();
+
+    [GeneratedRegex(@"^\s*(?<key>modId|side)\s*=\s*[""'](?<value>[^""']*)[""']")]
+    private static partial Regex TomlStringRegex();
+
+    /// <summary>The game and the loaders themselves, as mods.toml names them in a dependency.</summary>
+    private static readonly HashSet<string> PlatformIds = new(StringComparer.OrdinalIgnoreCase) { "minecraft", "forge", "neoforge" };
+
     /// <summary>
     /// What <see cref="CopyMods"/> would do, without touching the server: lets the screen
     /// show the two lists before the player agrees.
@@ -103,32 +135,50 @@ public static partial class ServerContent
         return Walk(instanceGameDirectory, serverDirectory, copy: true, cancellationToken);
     }
 
+    /// <summary>True when <see cref="ClientSide"/> finds any statement that the jar is for the client only.</summary>
+    public static bool IsClientOnly(string jarPath) => ClientSide(jarPath) != ModClientSide.NotStated;
+
     /// <summary>
-    /// True when the jar declares itself client-only: <c>"environment": "client"</c> in
-    /// fabric.mod.json, the same under <c>minecraft</c> in quilt.mod.json, or
-    /// <c>clientSideOnly=true</c> in a Forge mods.toml. A jar that says nothing is taken
-    /// as needed on both sides.
+    /// What the jar itself says about being for the client only. The rule, in full:
+    /// <list type="bullet">
+    /// <item><see cref="ModClientSide.Stated"/>: <c>"environment": "client"</c> in
+    /// fabric.mod.json, the same under <c>minecraft</c> in quilt.mod.json, or a top-level
+    /// <c>clientSideOnly = true</c> (above the first table) in mods.toml or
+    /// neoforge.mods.toml - the key with which Forge since 1.20.4 itself skips the mod
+    /// on a dedicated server. NeoForge does not read it, but a mod that writes it says
+    /// the same thing in the same words.</item>
+    /// <item><see cref="ModClientSide.Implied"/>: a Forge or NeoForge mod without that
+    /// key whose dependencies on the game and the loader (<c>minecraft</c>,
+    /// <c>forge</c>, <c>neoforge</c>) are all declared with <c>side = "CLIENT"</c>, at
+    /// least one of them. The author says the mod needs the game only on the client;
+    /// that is not the same as saying a server must not have it.</item>
+    /// <item><see cref="ModClientSide.NotStated"/>: everything else, which is most
+    /// Forge mods. <c>displayTest</c> is not used: it says the mod may be missing on
+    /// one side without saying which. The annotations of 1.12 and older are not read.</item>
+    /// </list>
+    /// A jar carrying metadata for several loaders counts as client-only only when all
+    /// of them agree.
     /// </summary>
-    public static bool IsClientOnly(string jarPath)
+    public static ModClientSide ClientSide(string jarPath)
     {
         try
         {
             using var archive = ZipFile.OpenRead(jarPath);
+            var verdicts = new List<ModClientSide>();
 
             if (archive.GetEntry("fabric.mod.json") is { } fabric)
             {
                 using var doc = ParseJson(fabric);
-                return doc.RootElement.ValueKind == JsonValueKind.Object &&
-                       IsClient(doc.RootElement, "environment");
+                verdicts.Add(Stated(doc.RootElement.ValueKind == JsonValueKind.Object && IsClient(doc.RootElement, "environment")));
             }
-
-            if (archive.GetEntry("quilt.mod.json") is { } quilt)
+            else if (archive.GetEntry("quilt.mod.json") is { } quilt)
             {
                 using var doc = ParseJson(quilt);
-                return doc.RootElement.ValueKind == JsonValueKind.Object &&
-                       doc.RootElement.TryGetProperty("minecraft", out var minecraft) &&
-                       minecraft.ValueKind == JsonValueKind.Object &&
-                       IsClient(minecraft, "environment");
+                verdicts.Add(Stated(
+                    doc.RootElement.ValueKind == JsonValueKind.Object &&
+                    doc.RootElement.TryGetProperty("minecraft", out var minecraft) &&
+                    minecraft.ValueKind == JsonValueKind.Object &&
+                    IsClient(minecraft, "environment")));
             }
 
             foreach (var name in new[] { "META-INF/neoforge.mods.toml", "META-INF/mods.toml" })
@@ -136,17 +186,86 @@ public static partial class ServerContent
                 if (archive.GetEntry(name) is { } toml)
                 {
                     using var reader = new StreamReader(toml.Open());
-                    return ForgeClientOnlyRegex().IsMatch(reader.ReadToEnd());
+                    verdicts.Add(ForgeClientSide(reader.ReadToEnd()));
                 }
             }
+
+            return verdicts.Count == 0 ? ModClientSide.NotStated : verdicts.Min();
         }
         catch (Exception)
         {
             // Not a readable jar: nothing says it is client-only, and the server will
             // report it itself if it cannot load it.
+            return ModClientSide.NotStated;
+        }
+    }
+
+    private static ModClientSide Stated(bool clientOnly) => clientOnly ? ModClientSide.Stated : ModClientSide.NotStated;
+
+    /// <summary>Reads the side out of a mods.toml; see <see cref="ClientSide"/> for the rule.</summary>
+    private static ModClientSide ForgeClientSide(string toml)
+    {
+        var platform = 0;
+        var clientOnly = 0;
+        string? modId = null;
+        string? side = null;
+        var inDependency = false;
+        var inAnyTable = false;
+
+        void Close()
+        {
+            if (inDependency && modId is not null && PlatformIds.Contains(modId))
+            {
+                platform++;
+
+                if (string.Equals(side, "CLIENT", StringComparison.OrdinalIgnoreCase))
+                {
+                    clientOnly++;
+                }
+            }
+
+            inDependency = false;
+            modId = null;
+            side = null;
         }
 
-        return false;
+        foreach (var line in toml.Split('\n'))
+        {
+            if (TomlTableRegex().IsMatch(line))
+            {
+                Close();
+                inAnyTable = true;
+                inDependency = TomlDependencyRegex().IsMatch(line);
+                continue;
+            }
+
+            // Only above the first table is it the file's own key: the same word inside
+            // a [[mods]] or [[dependencies]] entry is not what the loader reads.
+            if (!inAnyTable && ForgeClientOnlyRegex().IsMatch(line))
+            {
+                return ModClientSide.Stated;
+            }
+
+            if (!inDependency)
+            {
+                continue;
+            }
+
+            var pair = TomlStringRegex().Match(line);
+
+            if (pair.Success && pair.Groups["key"].Value == "modId")
+            {
+                modId = pair.Groups["value"].Value;
+            }
+            else if (pair.Success && pair.Groups["key"].Value == "side")
+            {
+                side = pair.Groups["value"].Value;
+            }
+        }
+
+        Close();
+
+        return platform > 0 && clientOnly == platform ? ModClientSide.Implied : ModClientSide.NotStated;
     }
 
     /// <summary>The single-player worlds of a build, most recently played first.</summary>
@@ -335,9 +454,14 @@ public static partial class ServerContent
 
                 var title = TitleOf(file);
 
-                if (IsClientOnly(file))
+                var side = ClientSide(file);
+
+                if (side != ModClientSide.NotStated)
                 {
-                    skipped.Add(new SkippedMod(fileName, title, ModSkipReason.ClientOnly));
+                    skipped.Add(new SkippedMod(
+                        fileName,
+                        title,
+                        side == ModClientSide.Stated ? ModSkipReason.ClientOnly : ModSkipReason.LikelyClientOnly));
                     continue;
                 }
 
