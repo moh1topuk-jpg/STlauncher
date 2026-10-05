@@ -1,19 +1,419 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:STlauncher.App.ViewModels"
+             xmlns:conv="using:STlauncher.App.Converters"
+             xmlns:controls="using:STlauncher.App.Controls"
              x:Class="STlauncher.App.Views.Pages.HostModsView"
              x:DataType="vm:MainWindowViewModel">
 
-    <!-- The "Mods" tab of the player's server. A file of its own on purpose: HostPage only
-         places it, so the tab can be rebuilt as a whole without touching the page. Until
-         then it is a quiet placeholder; nothing the page needs lives here. -->
+    <!-- The server's mods: what is on it on the left, Modrinth on the right, and the
+         settings files of a mod in an editor that takes the tab's place while it is open.
+         Self-contained: the page only places it, the view model's HostMods partial does
+         the rest. -->
 
-    <Border Classes="card glass" Padding="24,28">
-        <StackPanel Spacing="10" HorizontalAlignment="Center" MaxWidth="460">
-            <PathIcon Data="{StaticResource IconBuilds}" Width="26" Height="26" Foreground="{DynamicResource TextMutedBrush}"
-                      HorizontalAlignment="Center"/>
-            <TextBlock Text="{DynamicResource Host_ModsSoon}" Classes="muted" FontSize="13"
-                       TextWrapping="Wrap" TextAlignment="Center" LineHeight="19"/>
+    <UserControl.Styles>
+        <!-- A value the file would not take: the field says so before Save does. -->
+        <Style Selector="TextBox.invalid">
+            <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}"/>
+        </Style>
+        <Style Selector="TextBox.invalid:focus /template/ Border#PART_BorderElement">
+            <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}"/>
+        </Style>
+        <Style Selector="TextBox.mono">
+            <Setter Property="FontFamily" Value="Consolas, Menlo, monospace"/>
+            <Setter Property="FontSize" Value="12.5"/>
+        </Style>
+    </UserControl.Styles>
+
+    <UserControl.DataTemplates>
+        <!-- One line of an install's list: a file to fetch, a mod already there, a reason it cannot go ahead. -->
+        <DataTemplate DataType="vm:HostModPlanLine">
+            <Grid ColumnDefinitions="16,*" ColumnSpacing="10" Margin="0,0,0,9">
+                <Panel Width="16" Height="16" VerticalAlignment="Top" Margin="0,1,0,0">
+                    <PathIcon Data="{StaticResource IconDownload}" Width="12" Height="12"
+                              Foreground="{DynamicResource GoldBrush}" IsVisible="{Binding IsDownload}"/>
+                    <PathIcon Data="{StaticResource IconCheck}" Width="11" Height="11"
+                              Foreground="{DynamicResource SuccessBrush}" IsVisible="{Binding IsPresent}"/>
+                    <PathIcon Data="{StaticResource IconWarning}" Width="12" Height="12"
+                              Foreground="{DynamicResource DangerBrush}" IsVisible="{Binding IsProblem}"/>
+                </Panel>
+                <StackPanel Grid.Column="1" Spacing="2">
+                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                    <TextBlock Text="{Binding Detail}" Classes="muted" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Grid>
+        </DataTemplate>
+    </UserControl.DataTemplates>
+
+    <Panel>
+        <!-- ================= The tab: the server's mods and Modrinth ================= -->
+        <StackPanel Spacing="12" IsVisible="{Binding !IsHostConfigOpen}">
+
+            <!-- What the last action did, or why it could not. -->
+            <Border Classes="panel" CornerRadius="12" Padding="14,10,8,10" IsVisible="{Binding HasHostModsNotice}">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                    <TextBlock Text="{Binding HostModsNotice}" TextWrapping="Wrap" LineHeight="18" VerticalAlignment="Center"/>
+                    <Button Grid.Column="1" Classes="plain small" VerticalAlignment="Top"
+                            ToolTip.Tip="{DynamicResource HostMods_NoticeClose}"
+                            Command="{Binding DismissHostModsNoticeCommand}">
+                        <PathIcon Data="{StaticResource IconClose}" Width="10" Height="10"/>
+                    </Button>
+                </Grid>
+            </Border>
+
+            <!-- A vanilla server loads no mods: said, not offered. -->
+            <Border Classes="card glass" Padding="20" IsVisible="{Binding HostModsUnsupported}">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                    <PathIcon Data="{StaticResource IconWarning}" Classes="gold" VerticalAlignment="Top" Margin="0,2,0,0"/>
+                    <StackPanel Grid.Column="1" Spacing="6">
+                        <TextBlock Text="{DynamicResource HostMods_UnsupportedTitle}" Classes="h3"/>
+                        <TextBlock Text="{DynamicResource HostMods_UnsupportedText}" Classes="muted" TextWrapping="Wrap" LineHeight="18"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <Grid ColumnDefinitions="*,1.25*" ColumnSpacing="16" IsVisible="{Binding HostModsSupported}">
+
+                <!-- ============ On the server ============ -->
+                <Border Classes="card glass" Padding="16" VerticalAlignment="Top">
+                    <StackPanel Spacing="10">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                            <TextBlock Text="{Binding HostModsHeader}" Classes="h3" VerticalAlignment="Center"/>
+                            <ProgressBar Grid.Column="1" IsIndeterminate="True" Width="50" Height="3" VerticalAlignment="Center"
+                                         IsVisible="{Binding IsHostModsLoading}"/>
+                        </Grid>
+                        <!-- Nothing restarts by itself: the player is told when changes take hold. -->
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                            <PathIcon Data="{StaticResource IconRefresh}" Classes="small muted" VerticalAlignment="Top" Margin="0,2,0,0"/>
+                            <TextBlock Grid.Column="1" Text="{Binding HostModsRestartNote}" Classes="faint" TextWrapping="Wrap" LineHeight="17"/>
+                        </Grid>
+
+                        <TextBlock Text="{DynamicResource HostMods_Empty}" Classes="muted" TextWrapping="Wrap" LineHeight="18"
+                                   Margin="0,6" IsVisible="{Binding ShowHostModsEmpty}"/>
+
+                        <ScrollViewer MaxHeight="640" IsVisible="{Binding HasHostMods}">
+                            <ItemsControl ItemsSource="{Binding HostMods}" Margin="0,0,4,0">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Spacing="8"/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:HostModItem">
+                                        <Border Classes="mod-line" Classes.off="{Binding !Enabled}" Padding="10,9">
+                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="10">
+                                                <!-- The mod's own icon; a letter on its colour when the jar has none. -->
+                                                <Border Width="40" Height="40" CornerRadius="10" ClipToBounds="True" VerticalAlignment="Center"
+                                                        Background="{Binding TintKey, Converter={x:Static conv:TintBrushConverter.Instance}}">
+                                                    <Panel>
+                                                        <TextBlock Text="{Binding Initial}" Classes="tile-letter" FontSize="17" IsVisible="{Binding !HasIcon}"/>
+                                                        <Border Background="{DynamicResource ElevatedBrush}" IsVisible="{Binding HasIcon}">
+                                                            <Image Source="{Binding Icon}" Stretch="UniformToFill"/>
+                                                        </Border>
+                                                    </Panel>
+                                                </Border>
+                                                <!-- A grid, not a stack: a stack never limits a long title, which then runs under the buttons. -->
+                                                <Grid Grid.Column="1" RowDefinitions="Auto,Auto,Auto" RowSpacing="1" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold"
+                                                               TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Entry.FileName}"/>
+                                                    <TextBlock Grid.Row="1" Text="{Binding Description}" Classes="muted" FontSize="12.5"
+                                                               TextTrimming="CharacterEllipsis" IsVisible="{Binding HasDescription}"
+                                                               ToolTip.Tip="{Binding Description}"/>
+                                                    <TextBlock Grid.Row="2" Text="{Binding Detail}" Classes="faint" FontSize="11.5"
+                                                               TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
+                                                </Grid>
+                                                <Button Grid.Column="2" Classes="ghost small" VerticalAlignment="Center"
+                                                        IsVisible="{Binding HasSettings}"
+                                                        Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).OpenHostModSettingsCommand}"
+                                                        CommandParameter="{Binding}">
+                                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                                        <PathIcon Data="{StaticResource IconSettings}" Width="12" Height="12"/>
+                                                        <TextBlock Text="{DynamicResource HostMods_Configure}"/>
+                                                    </StackPanel>
+                                                </Button>
+                                                <!-- The switch shows the state and changes it. -->
+                                                <ToggleSwitch Grid.Column="3" IsChecked="{Binding Enabled, Mode=OneWay}"
+                                                              OnContent="" OffContent="" MinWidth="0" VerticalAlignment="Center"
+                                                              ToolTip.Tip="{DynamicResource HostMods_ToggleTip}"
+                                                              Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).ToggleHostModCommand}"
+                                                              CommandParameter="{Binding}"/>
+                                                <!-- Removing asks first; the answer is in the flyout. -->
+                                                <Button Grid.Column="4" Classes="plain small icon-danger" VerticalAlignment="Center"
+                                                        ToolTip.Tip="{DynamicResource HostMods_Remove}">
+                                                    <PathIcon Data="{StaticResource IconClose}" Classes="small"/>
+                                                    <Button.Flyout>
+                                                        <controls:RevealFlyout Placement="BottomEdgeAlignedRight">
+                                                            <StackPanel Spacing="10" Width="290">
+                                                                <TextBlock Text="{Binding RemoveQuestion}" Classes="muted" TextWrapping="Wrap" LineHeight="18"/>
+                                                                <Button Classes="danger small" HorizontalAlignment="Left"
+                                                                        Content="{DynamicResource HostMods_RemoveConfirm}"
+                                                                        Command="{Binding RemoveCommand}" CommandParameter="{Binding}"/>
+                                                            </StackPanel>
+                                                        </controls:RevealFlyout>
+                                                    </Button.Flyout>
+                                                </Button>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+
+                        <!-- Settings files no mod could be named for. -->
+                        <Border Classes="panel" CornerRadius="12" Padding="12,8,8,8" IsVisible="{Binding HasHostOtherConfigs}">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                <PathIcon Data="{StaticResource IconFolder}" Classes="small muted" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="{Binding HostOtherConfigsLabel}" VerticalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis"/>
+                                <Button Grid.Column="2" Classes="ghost small" Content="{DynamicResource HostMods_OtherOpen}"
+                                        Command="{Binding OpenHostOtherSettingsCommand}"/>
+                            </Grid>
+                        </Border>
+
+                        <TextBlock Text="{DynamicResource HostMods_ConfigureHint}" Classes="faint" TextWrapping="Wrap" LineHeight="17"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- ============ From Modrinth ============ -->
+                <Border Grid.Column="1" Classes="card glass" Padding="16" VerticalAlignment="Top">
+                    <StackPanel Spacing="10">
+                        <Border Classes="field">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                <PathIcon Data="{StaticResource IconSearch}" Classes="small muted" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Classes="bare" Text="{Binding HostModQueryText}"
+                                         Watermark="{DynamicResource HostMods_SearchHint}">
+                                    <TextBox.KeyBindings>
+                                        <KeyBinding Gesture="Enter" Command="{Binding SearchHostModsCommand}"/>
+                                    </TextBox.KeyBindings>
+                                </TextBox>
+                                <ProgressBar Grid.Column="2" IsIndeterminate="True" Width="40" Height="3" VerticalAlignment="Center"
+                                             IsVisible="{Binding IsHostModSearching}"/>
+                            </Grid>
+                        </Border>
+                        <TextBlock Text="{Binding HostModsSearchNote}" Classes="faint" TextWrapping="Wrap" LineHeight="17"/>
+
+                        <!-- What an install would fetch, before anything is fetched. -->
+                        <Border Classes="panel" CornerRadius="14" Padding="16,14,16,12" IsVisible="{Binding IsHostModPlanOpen}"
+                                controls:Reveal.OnVisible="True">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="{Binding HostModPlanTitle}" Classes="h3" TextWrapping="Wrap"/>
+                                <ItemsControl ItemsSource="{Binding HostModPlanLines}"/>
+                                <TextBlock Text="{Binding HostModPlanTotal}" Classes="muted" TextWrapping="Wrap"/>
+                                <TextBlock Text="{Binding HostModsRestartNote}" Classes="faint" TextWrapping="Wrap"
+                                           IsVisible="{Binding HostModPlanCanInstall}"/>
+                                <StackPanel Spacing="6" IsVisible="{Binding IsHostModInstalling}">
+                                    <TextBlock Text="{Binding HostModInstallText}" Classes="muted"/>
+                                    <ProgressBar IsIndeterminate="True" Height="4"/>
+                                </StackPanel>
+                                <WrapPanel ItemSpacing="8" LineSpacing="6">
+                                    <Button Classes="primary small" IsVisible="{Binding HostModPlanCanInstall}"
+                                            IsEnabled="{Binding CanConfirmHostModPlan}"
+                                            Command="{Binding ConfirmHostModPlanCommand}">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <PathIcon Data="{StaticResource IconDownload}" Width="11" Height="11"/>
+                                            <TextBlock Text="{DynamicResource HostMods_PlanConfirm}"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Classes="ghost small" Content="{DynamicResource Common_Cancel}"
+                                            IsEnabled="{Binding CanCancelHostModPlan}"
+                                            Command="{Binding CancelHostModPlanCommand}"/>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Text="{Binding HostModSearchMessage}" Classes="muted" TextWrapping="Wrap"
+                                   IsVisible="{Binding HasHostModSearchMessage}" Margin="0,4"/>
+
+                        <ScrollViewer MaxHeight="640">
+                            <StackPanel Spacing="8" Margin="0,0,4,0">
+                                <ItemsControl ItemsSource="{Binding HostModResults}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Spacing="8"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:HostModResultItem">
+                                            <Border Classes="mod-line" Padding="10,9">
+                                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                                    <Border Width="40" Height="40" CornerRadius="10" ClipToBounds="True" VerticalAlignment="Center"
+                                                            Background="{Binding Result.Slug, Converter={x:Static conv:TintBrushConverter.Instance}}">
+                                                        <Panel>
+                                                            <TextBlock Text="{Binding Initial}" Classes="tile-letter" FontSize="17" IsVisible="{Binding !HasIcon}"/>
+                                                            <Border Background="{DynamicResource ElevatedBrush}" IsVisible="{Binding HasIcon}">
+                                                                <Image Source="{Binding Icon}" Stretch="UniformToFill"/>
+                                                            </Border>
+                                                        </Panel>
+                                                    </Border>
+                                                    <Grid Grid.Column="1" RowDefinitions="Auto,Auto,Auto" RowSpacing="1" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                                        <TextBlock Grid.Row="1" Text="{Binding Description}" Classes="muted" FontSize="12.5"
+                                                                   TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Description}"/>
+                                                        <TextBlock Grid.Row="2" Text="{Binding Byline}" Classes="faint" FontSize="11.5"
+                                                                   TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
+                                                    </Grid>
+                                                    <!-- One state at a time: offer it, work out what it brings, already there. -->
+                                                    <Panel Grid.Column="2" VerticalAlignment="Center">
+                                                        <Button Classes="primary add" IsVisible="{Binding NotInstalled}"
+                                                                IsEnabled="{Binding !IsPlanning}"
+                                                                Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).PlanHostModCommand}"
+                                                                CommandParameter="{Binding}">
+                                                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                                                <PathIcon Data="{StaticResource IconPlus}" Width="11" Height="11"/>
+                                                                <TextBlock Text="{DynamicResource HostMods_Add}"/>
+                                                            </StackPanel>
+                                                        </Button>
+                                                        <Border Classes="in-build" IsVisible="{Binding Installed}">
+                                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                                <PathIcon Data="{StaticResource IconCheck}" Width="11" Height="11"
+                                                                          Foreground="{DynamicResource InstalledTagTextBrush}"/>
+                                                                <TextBlock Text="{DynamicResource HostMods_AlreadyThere}"/>
+                                                            </StackPanel>
+                                                        </Border>
+                                                        <ProgressBar IsIndeterminate="True" Height="3" VerticalAlignment="Bottom" Margin="0,0,0,-6"
+                                                                     IsVisible="{Binding IsPlanning}"/>
+                                                    </Panel>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <Button Classes="ghost small" HorizontalAlignment="Center" Content="{DynamicResource HostMods_More}"
+                                        IsVisible="{Binding HostModsHasMore}" Command="{Binding MoreHostModsCommand}"/>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </StackPanel>
+                </Border>
+            </Grid>
         </StackPanel>
-    </Border>
+
+        <!-- ================= Settings of a mod: its files, one open at a time ================= -->
+        <Border Classes="card glass" Padding="16" IsVisible="{Binding IsHostConfigOpen}" controls:Reveal.OnVisible="True">
+            <Grid RowDefinitions="Auto,Auto,*" RowSpacing="12">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                    <Button Classes="ghost small" Command="{Binding CloseHostConfigCommand}" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <PathIcon Data="{StaticResource IconChevronLeft}" Width="11" Height="11"/>
+                            <TextBlock Text="{DynamicResource HostMods_Back}"/>
+                        </StackPanel>
+                    </Button>
+                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding HostConfigTitle}" Classes="h3" TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Text="{Binding HostModsRestartNote}" Classes="faint" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Unsaved changes and a way out was taken: the player decides. -->
+                <Border Grid.Row="1" CornerRadius="12" Padding="14,10" Background="{DynamicResource TileGoldBrush}"
+                        BorderBrush="{DynamicResource GoldBrush}" BorderThickness="1" IsVisible="{Binding IsHostConfigAsking}">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                        <PathIcon Data="{StaticResource IconWarning}" Classes="small gold" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="{DynamicResource HostMods_UnsavedQuestion}" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
+                            <Button Classes="primary small" Content="{DynamicResource HostMods_UnsavedSave}"
+                                    Command="{Binding HostConfigAnswerSaveCommand}"/>
+                            <Button Classes="ghost small" Content="{DynamicResource HostMods_UnsavedDiscard}"
+                                    Command="{Binding HostConfigAnswerDiscardCommand}"/>
+                            <Button Classes="plain small" Content="{DynamicResource HostMods_UnsavedStay}"
+                                    Command="{Binding HostConfigAnswerStayCommand}"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <Grid Grid.Row="2" ColumnDefinitions="270,*" ColumnSpacing="14">
+                    <!-- The mod's files. -->
+                    <ScrollViewer MaxHeight="660" VerticalAlignment="Top">
+                        <ItemsControl ItemsSource="{Binding HostConfigFiles}" Margin="0,0,4,0">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Spacing="6"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:HostConfigFileItem">
+                                    <Button Classes="plain" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="0"
+                                            Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).OpenHostConfigFileCommand}"
+                                            CommandParameter="{Binding}">
+                                        <Border Classes="mod-line" Classes.selected="{Binding IsSelected}" Padding="10,8">
+                                            <StackPanel Spacing="2">
+                                                <TextBlock Text="{Binding Label}" FontWeight="SemiBold" TextWrapping="Wrap"
+                                                           ToolTip.Tip="{Binding File.RelativePath}"/>
+                                                <TextBlock Text="{Binding Detail}" Classes="faint" TextTrimming="CharacterEllipsis"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+
+                    <!-- The open file: fields where the file can be read as fields, its text otherwise. -->
+                    <Border Grid.Column="1" Classes="panel" CornerRadius="14" Padding="16,14" IsVisible="{Binding HasHostConfigFile}">
+                        <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" RowSpacing="10">
+                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                                <TextBlock Text="{Binding HostConfigFile.File.RelativePath, FallbackValue=''}" Classes="mono"
+                                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                <Button Grid.Column="1" Classes="plain small" Content="{DynamicResource HostMods_AsText}"
+                                        IsVisible="{Binding HostConfigCanShowText}" Command="{Binding ShowHostConfigAsTextCommand}"/>
+                                <Button Grid.Column="2" Classes="plain small" ToolTip.Tip="{DynamicResource HostMods_Reveal}"
+                                        Command="{Binding RevealHostConfigFileCommand}">
+                                    <PathIcon Data="{StaticResource IconFolder}" Classes="small"/>
+                                </Button>
+                            </Grid>
+
+                            <TextBlock Grid.Row="1" Text="{Binding HostConfigMessage}" Classes="muted" TextWrapping="Wrap"
+                                       IsVisible="{Binding HasHostConfigMessage}"/>
+                            <TextBlock Grid.Row="2" Text="{Binding HostConfigNotice}" TextWrapping="Wrap" FontSize="12.5"
+                                       Foreground="{DynamicResource GoldBrush}" IsVisible="{Binding HasHostConfigNotice}"/>
+
+                            <Panel Grid.Row="3">
+                                <!-- Fields: the key, what the file says about it, the value. -->
+                                <ScrollViewer MaxHeight="560" VerticalAlignment="Top" IsVisible="{Binding IsHostConfigFields}">
+                                    <ItemsControl ItemsSource="{Binding HostConfigFields}" Margin="0,0,10,0">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:HostConfigFieldItem">
+                                                <StackPanel Spacing="4" Margin="0,0,0,14">
+                                                    <TextBlock Text="{Binding SectionHeader}" Classes="label" Margin="0,6,0,4"
+                                                               IsVisible="{Binding HasSectionHeader}"/>
+                                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                        <TextBlock Text="{Binding Key}" FontWeight="SemiBold" VerticalAlignment="Center"
+                                                                   TextTrimming="CharacterEllipsis"/>
+                                                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding BoolValue}" IsVisible="{Binding IsBool}"
+                                                                      OnContent="" OffContent="" MinWidth="0" VerticalAlignment="Center"/>
+                                                    </Grid>
+                                                    <TextBlock Text="{Binding Comment}" Classes="faint" TextWrapping="Wrap" LineHeight="16"
+                                                               IsVisible="{Binding HasComment}"/>
+                                                    <TextBox Text="{Binding Value}" IsVisible="{Binding IsTextual}"
+                                                             Classes.mono="{Binding IsRaw}" Classes.invalid="{Binding IsInvalid}"/>
+                                                    <TextBlock Text="{DynamicResource HostMods_FieldBad}" FontSize="11.5"
+                                                               Foreground="{DynamicResource DangerBrush}" IsVisible="{Binding IsInvalid}"/>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+
+                                <!-- Text: the file as it is, in a fixed-width font. -->
+                                <TextBox Classes="mono" Text="{Binding HostConfigText}" IsVisible="{Binding IsHostConfigText}"
+                                         AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
+                                         MinHeight="320" MaxHeight="560" VerticalAlignment="Top" VerticalContentAlignment="Top"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                         ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+                            </Panel>
+
+                            <WrapPanel Grid.Row="4" ItemSpacing="8" LineSpacing="6"
+                                       IsVisible="{Binding !HasHostConfigMessage}">
+                                <Button Classes="primary small" Content="{DynamicResource HostMods_Save}"
+                                        IsEnabled="{Binding CanSaveHostConfig}" Command="{Binding SaveHostConfigCommand}"/>
+                                <Button Classes="ghost small" Content="{DynamicResource HostMods_Discard}"
+                                        IsEnabled="{Binding HostConfigDirty}" Command="{Binding RevertHostConfigCommand}"/>
+                                <TextBlock Text="{DynamicResource HostMods_SaveHint}" Classes="faint" VerticalAlignment="Center"
+                                           TextWrapping="Wrap" MaxWidth="420"/>
+                            </WrapPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Grid>
+        </Border>
+    </Panel>
 </UserControl>

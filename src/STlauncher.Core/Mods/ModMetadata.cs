@@ -29,7 +29,11 @@ public sealed record ModMetadata(
     IReadOnlyList<string> Provides);
 
 /// <summary>The title, version and icon a jar carries for itself. Any of them may be missing.</summary>
-public sealed record ModDisplayInfo(string? Name, string? Version, byte[]? Icon);
+public sealed record ModDisplayInfo(string? Name, string? Version, byte[]? Icon)
+{
+    /// <summary>The mod's own sentence or two about itself, when the jar carries them.</summary>
+    public string? Description { get; init; }
+}
 
 public static class ModMetadataReader
 {
@@ -396,6 +400,7 @@ public static class ModMetadataReader
             string? name = null;
             string? version = null;
             string? iconPath = null;
+            string? description = null;
 
             if (archive.GetEntry("fabric.mod.json") is { } fabric)
             {
@@ -405,6 +410,7 @@ public static class ModMetadataReader
                     name = TextOf(doc.RootElement, "name");
                     version = TextOf(doc.RootElement, "version");
                     iconPath = IconPathOf(doc.RootElement);
+                    description = TextOf(doc.RootElement, "description");
                 }
                 catch (Exception)
                 {
@@ -426,6 +432,7 @@ public static class ModMetadataReader
                         {
                             name = TextOf(metadata, "name");
                             iconPath = IconPathOf(metadata);
+                            description = TextOf(metadata, "description");
                         }
                     }
                 }
@@ -454,6 +461,7 @@ public static class ModMetadataReader
                         name = values.TryGetValue("displayName", out var dn) ? dn : null;
                         version = values.TryGetValue("version", out var ver) ? ver : null;
                         iconPath = values.TryGetValue("logoFile", out var logo) ? logo : null;
+                        description = TomlDescription(mod.Body);
                     }
 
                     if (iconPath is null)
@@ -492,12 +500,40 @@ public static class ModMetadataReader
             name = string.IsNullOrWhiteSpace(name) ? null : name!.Trim();
             version = string.IsNullOrWhiteSpace(version) ? null : version!.Trim();
 
-            return name is null && version is null && icon is null ? null : new ModDisplayInfo(name, version, icon);
+            description = string.IsNullOrWhiteSpace(description) ? null : description!.Trim();
+
+            return name is null && version is null && icon is null && description is null
+                ? null
+                : new ModDisplayInfo(name, version, icon) { Description = description };
         }
         catch (Exception)
         {
             return null;
         }
+    }
+
+    /// <summary>
+    /// A Forge description is usually a block between triple quotes, which the one-line
+    /// key reader does not see; a plainly quoted one is taken as well.
+    /// </summary>
+    private static string? TomlDescription(string body)
+    {
+        var block = Regex.Match(
+            body,
+            @"^\s*description\s*=\s*(?:""""""|''')(?<text>.*?)(?:""""""|''')",
+            RegexOptions.Multiline | RegexOptions.Singleline);
+
+        if (block.Success)
+        {
+            return block.Groups["text"].Value;
+        }
+
+        var line = Regex.Match(
+            body,
+            @"^\s*description\s*=\s*(?:""(?<text>[^""\r\n]*)""|'(?<text>[^'\r\n]*)')",
+            RegexOptions.Multiline);
+
+        return line.Success ? line.Groups["text"].Value : null;
     }
 
     private static string? TextOf(JsonElement element, string property)

@@ -132,7 +132,20 @@ public static partial class ServerContent
             throw new ArgumentException("A server folder is required.", nameof(serverDirectory));
         }
 
-        return Walk(instanceGameDirectory, serverDirectory, copy: true, cancellationToken);
+        var result = Walk(instanceGameDirectory, serverDirectory, copy: true, cancellationToken);
+
+        // Noted at the copy, so the server's mods page can still say "from the build"
+        // after the build itself has changed or been deleted. The record is only a label:
+        // a copy that worked is not reported as failed because the label could not be written.
+        try
+        {
+            ServerMods.RecordBuildCopies(serverDirectory, result.Copied.Select(m => m.FileName));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+        }
+
+        return result;
     }
 
     /// <summary>True when <see cref="ClientSide"/> finds any statement that the jar is for the client only.</summary>

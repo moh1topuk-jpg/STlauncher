@@ -163,7 +163,7 @@ public sealed class ModrinthClient : IModSource
         _http = http ?? throw new ArgumentNullException(nameof(http));
     }
 
-    public async Task<ModSearchPage> SearchAsync(
+    public Task<ModSearchPage> SearchAsync(
         string query,
         string? gameVersion,
         LoaderKind loader,
@@ -173,8 +173,22 @@ public sealed class ModrinthClient : IModSource
         int offset = 0,
         CancellationToken cancellationToken = default,
         string projectType = ProjectTypes.Mod)
+        => SearchByFacetsAsync(query, BuildFacets(gameVersion, loader, category, projectType), sort, limit, offset, cancellationToken);
+
+    /// <summary>
+    /// The same search with the facets given as they go to Modrinth. The build's catalog
+    /// asks by version, loader and category; a server also asks which side a mod runs on
+    /// and puts that query together itself.
+    /// </summary>
+    public async Task<ModSearchPage> SearchByFacetsAsync(
+        string query,
+        string facetsJson,
+        string sort = "relevance",
+        int limit = 20,
+        int offset = 0,
+        CancellationToken cancellationToken = default)
     {
-        var facets = Uri.EscapeDataString(BuildFacets(gameVersion, loader, category, projectType));
+        var facets = Uri.EscapeDataString(facetsJson);
         var index = string.IsNullOrWhiteSpace(sort) ? "relevance" : sort;
 
         var url = $"{BaseUrl}/search?query={Uri.EscapeDataString(query ?? string.Empty)}" +
