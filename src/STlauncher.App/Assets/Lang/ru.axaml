@@ -1269,6 +1269,10 @@
     <x:String x:Key="Skins_RandomMore">Показать другие</x:String>
     <x:String x:Key="Skins_RandomLoading">Загружаем скины…</x:String>
     <x:String x:Key="Skins_RandomNone">Лента не ответила или в ней сейчас нет целых скинов. Попробуйте ещё раз через минуту.</x:String>
+    <x:String x:Key="Skins_RandomPreviewHint">Посмотреть на модели</x:String>
+    <x:String x:Key="Skins_RandomPreviewTitle">Случайный скин</x:String>
+    <x:String x:Key="Skins_RandomPreviewText">Потяните фигурку мышью, чтобы повернуть и рассмотреть со всех сторон.</x:String>
+    <x:String x:Key="Skins_RandomSaveToLibrary">Сохранить в библиотеку</x:String>
     <x:String x:Key="Skins_RandomSave">Сохранить</x:String>
     <x:String x:Key="Skins_RandomSavedMark">В библиотеке</x:String>
     <x:String x:Key="Skins_RandomName">Случайный {0}</x:String>

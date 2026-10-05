@@ -1269,6 +1269,10 @@
     <x:String x:Key="Skins_RandomMore">Show others</x:String>
     <x:String x:Key="Skins_RandomLoading">Loading skins…</x:String>
     <x:String x:Key="Skins_RandomNone">The feed did not answer, or had nothing that is a whole skin. Try again in a minute.</x:String>
+    <x:String x:Key="Skins_RandomPreviewHint">Look at it on the model</x:String>
+    <x:String x:Key="Skins_RandomPreviewTitle">A random skin</x:String>
+    <x:String x:Key="Skins_RandomPreviewText">Drag the figure with the mouse to turn it and look from every side.</x:String>
+    <x:String x:Key="Skins_RandomSaveToLibrary">Save to the library</x:String>
     <x:String x:Key="Skins_RandomSave">Save</x:String>
     <x:String x:Key="Skins_RandomSavedMark">In the library</x:String>
     <x:String x:Key="Skins_RandomName">Random {0}</x:String>

@@ -27,6 +27,10 @@ public sealed partial class RandomSkinItem : ObservableObject
     private bool _isSaved;
 
     public bool CanSave => !IsSaved;
+
+    /// <summary>The one standing on the big stage right now.</summary>
+    [ObservableProperty]
+    private bool _isPreviewed;
 }
 
 /// <summary>
@@ -60,6 +64,32 @@ public partial class MainWindowViewModel
 
     public bool CanLoadRandomSkins => !IsLoadingRandomSkins;
 
+    /// <summary>The skin taken out of the row to be looked at from every side before it is kept.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasRandomPreview))]
+    private RandomSkinItem? _previewedRandomSkin;
+
+    public bool HasRandomPreview => PreviewedRandomSkin is not null;
+
+    partial void OnPreviewedRandomSkinChanged(RandomSkinItem? oldValue, RandomSkinItem? newValue)
+    {
+        if (oldValue is not null)
+        {
+            oldValue.IsPreviewed = false;
+        }
+
+        if (newValue is not null)
+        {
+            newValue.IsPreviewed = true;
+        }
+    }
+
+    [RelayCommand]
+    private void PreviewRandomSkin(RandomSkinItem? item) => PreviewedRandomSkin = item;
+
+    [RelayCommand]
+    private void CloseRandomPreview() => PreviewedRandomSkin = null;
+
     public string RandomSkinsButtonText => HasRandomSkins
         ? Localize("Skins_RandomMore", "Show others")
         : Localize("Skins_RandomShow", "Show");
@@ -86,6 +116,7 @@ public partial class MainWindowViewModel
             }
 
             _randomSkinsCursor = page.Next;
+            PreviewedRandomSkin = null;
             RandomSkins.Clear();
 
             foreach (var skin in page.Skins)

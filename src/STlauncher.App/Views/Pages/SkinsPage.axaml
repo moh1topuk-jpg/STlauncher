@@ -183,18 +183,32 @@
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:RandomSkinItem">
-                                        <StackPanel Spacing="6" Width="124">
-                                            <Panel Height="150">
-                                                <Border CornerRadius="12" Background="{DynamicResource GlassBrush}"/>
-                                                <controls:SkinViewer Skin="{Binding Skin}" AutoRotate="False" IsHitTestVisible="False" Margin="6"/>
-                                            </Panel>
-                                            <Button Classes="ghost small" HorizontalAlignment="Stretch" IsVisible="{Binding CanSave}"
-                                                    Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).SaveRandomSkinCommand}"
+                                        <StackPanel Spacing="6" Width="128">
+                                            <!-- The card opens the skin on the big stage, where it can be turned. -->
+                                            <Button Classes="skin-card" Classes.selected="{Binding IsPreviewed}" Padding="4" HorizontalAlignment="Stretch"
+                                                    ToolTip.Tip="{DynamicResource Skins_RandomPreviewHint}"
+                                                    Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).PreviewRandomSkinCommand}"
                                                     CommandParameter="{Binding}">
-                                                <TextBlock Text="{DynamicResource Skins_RandomSave}"/>
+                                                <Panel Height="146">
+                                                    <Border CornerRadius="12" Background="{DynamicResource GlassBrush}"/>
+                                                    <controls:SkinViewer Skin="{Binding Skin}" AutoRotate="False" IsHitTestVisible="False" Margin="6"/>
+                                                </Panel>
                                             </Button>
-                                            <TextBlock Text="{DynamicResource Skins_RandomSavedMark}" Classes="faint" HorizontalAlignment="Center"
-                                                       Margin="0,6" IsVisible="{Binding IsSaved}"/>
+                                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                                                <Button Classes="ghost small" MinWidth="36" Padding="8,0"
+                                                        ToolTip.Tip="{DynamicResource Skins_RandomPreviewHint}"
+                                                        Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).PreviewRandomSkinCommand}"
+                                                        CommandParameter="{Binding}">
+                                                    <PathIcon Data="{StaticResource IconEye}" Classes="small"/>
+                                                </Button>
+                                                <Button Grid.Column="1" Classes="ghost small" HorizontalAlignment="Stretch" IsVisible="{Binding CanSave}"
+                                                        Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).SaveRandomSkinCommand}"
+                                                        CommandParameter="{Binding}">
+                                                    <TextBlock Text="{DynamicResource Skins_RandomSave}"/>
+                                                </Button>
+                                                <TextBlock Grid.Column="1" Text="{DynamicResource Skins_RandomSavedMark}" Classes="faint"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding IsSaved}"/>
+                                            </Grid>
                                         </StackPanel>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
@@ -566,6 +580,50 @@
                 </Border>
             </Grid>
         </Grid>
+
+        <!-- ============ A random skin on the big stage ============ -->
+        <Border Background="{DynamicResource OverlayScrimBrush}" IsVisible="{Binding HasRandomPreview}"
+                controls:Reveal.OnVisible="True">
+            <Border Classes="card" Width="420" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="22">
+                <StackPanel Spacing="14">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Spacing="3">
+                            <TextBlock Text="{DynamicResource Skins_RandomPreviewTitle}" FontSize="17" FontWeight="SemiBold"/>
+                            <TextBlock Text="{DynamicResource Skins_RandomPreviewText}" Classes="muted wrap" FontSize="12.5"/>
+                        </StackPanel>
+                        <Button Grid.Column="1" Classes="glass-icon" VerticalAlignment="Top"
+                                Command="{Binding CloseRandomPreviewCommand}" ToolTip.Tip="{DynamicResource Common_Close}">
+                            <PathIcon Data="{StaticResource IconClose}" Classes="small"/>
+                        </Button>
+                    </Grid>
+
+                    <Panel Height="400">
+                        <Path IsHitTestVisible="False" Fill="{DynamicResource StageConeBrush}" Stretch="Fill"
+                              Width="300" Height="370" VerticalAlignment="Top" HorizontalAlignment="Center"
+                              Data="M 114,0 L 186,0 L 300,440 L 0,440 Z"/>
+                        <Ellipse IsHitTestVisible="False" Width="270" Height="54" VerticalAlignment="Bottom" Margin="0,0,0,10"
+                                 Fill="{DynamicResource PedestalBrush}" Stroke="{DynamicResource PedestalRimBrush}" StrokeThickness="1"/>
+                        <Ellipse IsHitTestVisible="False" Width="170" Height="22" VerticalAlignment="Bottom" Margin="0,0,0,30"
+                                 Fill="{DynamicResource PedestalShadowBrush}"/>
+                        <controls:SkinViewer Skin="{Binding PreviewedRandomSkin.Skin}" AutoRotate="False"
+                                             Width="340" Height="366" VerticalAlignment="Bottom" Margin="0,0,0,20"
+                                             ToolTip.Tip="{DynamicResource Game_ViewerHint}"/>
+                    </Panel>
+
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <Button Classes="primary" HorizontalAlignment="Stretch" Height="42"
+                                IsVisible="{Binding PreviewedRandomSkin.CanSave}"
+                                Command="{Binding SaveRandomSkinCommand}" CommandParameter="{Binding PreviewedRandomSkin}">
+                            <TextBlock Text="{DynamicResource Skins_RandomSaveToLibrary}" Foreground="{DynamicResource TextOnAccentBrush}"/>
+                        </Button>
+                        <TextBlock Text="{DynamicResource Skins_RandomSavedMark}" Classes="muted" VerticalAlignment="Center"
+                                   IsVisible="{Binding PreviewedRandomSkin.IsSaved}"/>
+                        <Button Grid.Column="1" Classes="ghost" Height="42" Content="{DynamicResource Common_Close}"
+                                Command="{Binding CloseRandomPreviewCommand}"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Border>
 
         <!-- ============ Leaving with unsaved changes ============ -->
         <Border Background="{DynamicResource OverlayScrimBrush}" IsVisible="{Binding IsSkinUnsavedPromptOpen}"
