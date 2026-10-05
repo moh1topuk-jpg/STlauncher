@@ -1771,6 +1771,7 @@ public partial class MainWindowViewModel
         }
 
         session.Changed += _ => Dispatcher.UIThread.Post(RefreshHostWays);
+        session.RememberInvite(server.LastInvite);
         _hostSession = session;
 
         if (server.FriendsRelay)
@@ -2080,14 +2081,23 @@ public partial class MainWindowViewModel
             var invite = session.BuildInvite(server.Name, server.GameVersion, server.Loader, server.LoaderVersion, Username, buildCode);
             var code = ServerInviteCode.Encode(invite);
 
-            await CopyToClipboardAsync(code);
-            AppendConsole($"[host] invite for '{server.Name}': {code.Length} characters, build {(buildCode is null ? "not included" : "included")}");
+            // The relay keeps the long invite; friends get ten characters. Without the
+            // relay way there is nobody to keep it, and the long one goes out as before.
+            server.LastInvite = code;
+            SaveHostServer(server);
+
+            var shortCode = await session.PublishInviteAsync(code, TimeSpan.FromSeconds(5));
+
+            await CopyToClipboardAsync(shortCode ?? code);
+            AppendConsole($"[host] invite for '{server.Name}': {code.Length} characters, build {(buildCode is null ? "not included" : "included")}, {(shortCode is null ? "sent in full" : "left with the relay as " + shortCode)}");
 
             Status = buildFailed
                 ? Localize("Host_InviteCopiedNoBuild", "The invite is copied without the build: Modrinth did not answer. The friend will need a build of their own for {0}.", server.GameVersion)
                 : missing.Count > 0
                     ? Localize("Host_InviteCopiedMissing", "The invite is copied. These mods are not on Modrinth and have to be handed over separately: {0}", string.Join(", ", missing))
-                    : Localize("Host_InviteCopied", "The invite is copied. Send it to a friend: they press “A friend's build” on the home screen. Remember to put their nickname on the list.");
+                    : shortCode is not null
+                        ? Localize("Host_InviteCopiedShort", "The invite is copied: {0}. Send it to a friend: they copy it and press “A friend's build” on the home screen. It works while your server is running. Remember to put their nickname on the list.", shortCode)
+                        : Localize("Host_InviteCopied", "The invite is copied. Send it to a friend: they press “A friend's build” on the home screen. Remember to put their nickname on the list.");
         }
         catch (Exception ex)
         {

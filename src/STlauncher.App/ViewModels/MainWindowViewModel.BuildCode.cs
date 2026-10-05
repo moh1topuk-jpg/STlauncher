@@ -130,6 +130,29 @@ public partial class MainWindowViewModel
             return;
         }
 
+        // A short invite is only a name: the relay holds what it stands for.
+        if (SharedCode.Detect(text) == SharedCodeKind.None && RelayKeys.TryFindInviteCode(text, out var shortCode))
+        {
+            if (RelayLocation.Resolve(_loadedCatalog) is not { } relay)
+            {
+                Status = Localize("Friends_ShortNoRelay", "This is a short invite, and the launcher does not know the server that keeps such invites yet. Ask the friend for the long one, or try again later.");
+                return;
+            }
+
+            Status = Localize("Friends_ShortFetching", "Asking for the invite {0}…", RelayKeys.FormatInviteCode(shortCode));
+            var (full, failure) = await Task.Run(() => RelayInvite.FetchAsync(relay, shortCode));
+
+            if (full is null)
+            {
+                Status = failure == RelayFailure.RelayUnreachable
+                    ? Localize("Friends_ShortUnreachable", "The server that keeps invites does not answer. Check the connection and try again.")
+                    : Localize("Friends_ShortOffline", "Nobody answers to the invite {0}: the friend's server is not running right now, or the code has a typo.", RelayKeys.FormatInviteCode(shortCode));
+                return;
+            }
+
+            text = full;
+        }
+
         switch (SharedCode.Read(text, out var payload, out var invite))
         {
             case SharedCodeKind.Server when invite is not null:
@@ -150,7 +173,7 @@ public partial class MainWindowViewModel
                 return;
 
             default:
-                Status = Localize("Friends_ClipboardEmpty", "The clipboard holds neither a build code nor an invite. Copy the line that starts with STB1. or STS1. and try again.");
+                Status = Localize("Friends_ClipboardEmpty", "The clipboard holds neither a build code nor an invite. Copy the invite (ST-XXXXX-XXXXX) or the line that starts with STB1. or STS1. and try again.");
                 return;
         }
     }

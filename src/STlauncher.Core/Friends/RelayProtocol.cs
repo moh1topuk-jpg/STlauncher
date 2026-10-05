@@ -94,6 +94,65 @@ public static class RelayKeys
         return Convert.ToHexString(hash, 0, KeyLength / 2).ToLowerInvariant();
     }
 
+    private const string CodeAlphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+
+    /// <summary>
+    /// The short name of a room: ten characters a person can read out, made from the room
+    /// key. A host leaves the full invite with the relay under it, so what friends are
+    /// sent is "ST-XXXXX-XXXXX" instead of two thousand characters.
+    /// </summary>
+    public static string InviteCodeFor(string roomKey)
+    {
+        var hash = SHA256.HashData(System.Text.Encoding.ASCII.GetBytes("invite:" + roomKey.ToLowerInvariant()));
+        var bits = ((ulong)hash[0] << 56) | ((ulong)hash[1] << 48) | ((ulong)hash[2] << 40) | ((ulong)hash[3] << 32) |
+                   ((ulong)hash[4] << 24) | ((ulong)hash[5] << 16) | ((ulong)hash[6] << 8) | hash[7];
+        var code = new char[10];
+
+        for (var i = 0; i < code.Length; i++)
+        {
+            code[i] = CodeAlphabet[(int)((bits >> (59 - (i * 5))) & 31)];
+        }
+
+        return new string(code);
+    }
+
+    /// <summary>The code as it is shown and sent: ST-XXXXX-XXXXX.</summary>
+    public static string FormatInviteCode(string code) => "ST-" + code[..5] + "-" + code[5..];
+
+    /// <summary>
+    /// Finds a short invite code in whatever was pasted. Letters people mix up are read
+    /// as what was meant: O as zero, I and L as one.
+    /// </summary>
+    public static bool TryFindInviteCode(string? text, out string code)
+    {
+        code = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return false;
+        }
+
+        var match = System.Text.RegularExpressions.Regex.Match(text, @"(?<![A-Za-z0-9])[Ss][Tt]-([0-9A-Za-z]{5})-([0-9A-Za-z]{5})(?![A-Za-z0-9])");
+
+        if (!match.Success)
+        {
+            return false;
+        }
+
+        var raw = (match.Groups[1].Value + match.Groups[2].Value).ToUpperInvariant().Replace('O', '0').Replace('I', '1').Replace('L', '1');
+
+        foreach (var c in raw)
+        {
+            if (CodeAlphabet.IndexOf(c) < 0)
+            {
+                return false;
+            }
+        }
+
+        code = raw;
+        return true;
+    }
+
     public static bool IsKey(string? text)
     {
         if (text is null || text.Length != KeyLength)

@@ -78,6 +78,7 @@ public sealed class FriendsHostSession : IAsyncDisposable
 
     private RelayHost? _host;
     private RelayHost? _publicHost;
+    private string? _invite;
     private UpnpPortMapper? _mapper;
     private FriendsHostStatus _status;
 
@@ -146,9 +147,52 @@ public sealed class FriendsHostSession : IAsyncDisposable
         }
 
         host.StateChanged += _ => OnRelayChanged(host);
+
+        if (_invite is not null)
+        {
+            _ = host.PublishInvite(_invite);
+        }
+
         host.Start();
         OnRelayChanged(host);
         return true;
+    }
+
+    /// <summary>
+    /// Leaves the full invite with the relay and returns the short code that leads to it
+    /// ("ST-XXXXX-XXXXX"), or null when the relay way is not up or did not take it in
+    /// time: the caller then hands out the full invite as before. The invite is kept and
+    /// left again by itself whenever the room reopens.
+    /// </summary>
+    public async Task<string?> PublishInviteAsync(string invite, TimeSpan wait)
+    {
+        RelayHost? host;
+
+        lock (_gate)
+        {
+            _invite = invite;
+            host = _host;
+        }
+
+        if (host is null)
+        {
+            return null;
+        }
+
+        var published = host.PublishInvite(invite);
+
+        return await Task.WhenAny(published, Task.Delay(wait)).ConfigureAwait(false) == published && host.State == RelayHostState.Online
+            ? RelayKeys.FormatInviteCode(host.InviteCode)
+            : null;
+    }
+
+    /// <summary>An invite remembered from an earlier session: left with the relay as soon as the room opens.</summary>
+    public void RememberInvite(string? invite)
+    {
+        lock (_gate)
+        {
+            _invite = string.IsNullOrWhiteSpace(invite) ? null : invite;
+        }
     }
 
     public async Task StopRelayAsync()

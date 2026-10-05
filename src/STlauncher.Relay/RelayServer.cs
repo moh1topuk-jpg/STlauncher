@@ -50,6 +50,9 @@ public sealed class RelayServer : IAsyncDisposable
     /// <summary>How many rooms each address holds; read and written under the lock on <see cref="_rooms"/>.</summary>
     private readonly Dictionary<IPAddress, int> _roomsByOwner = new();
 
+    /// <summary>Rooms by their short invite code, guarded by the <see cref="_rooms"/> lock.</summary>
+    private readonly Dictionary<string, Room> _roomsByCode = new(StringComparer.Ordinal);
+
     /// <summary>Public ports in use, guarded by the <see cref="_rooms"/> lock.</summary>
     private readonly HashSet<int> _publicPorts = new();
 
@@ -120,6 +123,7 @@ public sealed class RelayServer : IAsyncDisposable
             }
 
             _rooms.Clear();
+            _roomsByCode.Clear();
             _roomsByOwner.Clear();
         }
 
@@ -156,6 +160,47 @@ public sealed class RelayServer : IAsyncDisposable
     {
         var hash = SHA256.HashData(Convert.FromHexString(hostKey));
         return Convert.ToHexString(hash, 0, KeyLength / 2).ToLowerInvariant();
+    }
+
+    private const string CodeAlphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+
+    /// <summary>
+    /// The short name of a room: ten characters a person can read out, made from the room
+    /// key. A host leaves the full invite with the relay under it, so what friends are
+    /// sent is "ST-XXXXX-XXXXX" instead of two thousand characters.
+    /// </summary>
+    public static string InviteCodeFor(string roomKey)
+    {
+        var hash = SHA256.HashData(System.Text.Encoding.ASCII.GetBytes("invite:" + roomKey.ToLowerInvariant()));
+        var bits = ((ulong)hash[0] << 56) | ((ulong)hash[1] << 48) | ((ulong)hash[2] << 40) | ((ulong)hash[3] << 32) |
+                   ((ulong)hash[4] << 24) | ((ulong)hash[5] << 16) | ((ulong)hash[6] << 8) | hash[7];
+        var code = new char[10];
+
+        for (var i = 0; i < code.Length; i++)
+        {
+            code[i] = CodeAlphabet[(int)((bits >> (59 - (i * 5))) & 31)];
+        }
+
+        return new string(code);
+    }
+
+    /// <summary>The longest invite a room may leave, in characters. A real one is two or three thousand.</summary>
+    private const int MaxInviteLength = 32_000;
+
+    /// <summary>How much of an invite travels in one line.</summary>
+    private const int InviteChunk = 200;
+
+    private static bool IsInviteText(string text)
+    {
+        foreach (var c in text)
+        {
+            if (!(char.IsAsciiLetterOrDigit(c) || c is '.' or '_' or '-'))
+            {
+                return false;
+            }
+        }
+
+        return text.Length > 0;
     }
 
     private static Socket Listen(IPAddress? bind, int port)
@@ -311,6 +356,10 @@ public sealed class RelayServer : IAsyncDisposable
                     await ServeDataAsync(socket, parts[1], parts[2]).ConfigureAwait(false);
                     break;
 
+                case "FETCH" when parts.Length == 2:
+                    await ServeFetchAsync(socket, parts[1]).ConfigureAwait(false);
+                    break;
+
                 case "PROBE" when parts.Length == 2:
                     await ServeProbeAsync(socket, address, parts[1]).ConfigureAwait(false);
                     break;
@@ -365,8 +414,9 @@ public sealed class RelayServer : IAsyncDisposable
                 // must not be able to sit on all of them.
                 if (held < _options.MaxRoomsPerIp)
                 {
-                    room = new Room(socket, owner);
+                    room = new Room(socket, owner) { Code = InviteCodeFor(roomKey) };
                     _rooms.Add(roomKey, room);
+                    _roomsByCode[room.Code] = room;
                     _roomsByOwner[owner] = held + 1;
                 }
                 else
@@ -395,13 +445,47 @@ public sealed class RelayServer : IAsyncDisposable
                 return;
             }
 
+            StringBuilder? incoming = null;
+
             while (true)
             {
                 var line = await ReadLineAsync(socket, _options.ControlTimeout).ConfigureAwait(false);
 
-                // The control connection only ever pings. Anything else is a broken
-                // client, and silence past the timeout is a host that is gone.
-                if (line != "PING" || !await SendControlAsync(room, socket, "PONG").ConfigureAwait(false))
+                // The control connection pings, and now and then leaves the room's invite,
+                // a few lines at a time. Anything else is a broken client, and silence
+                // past the timeout is a host that is gone.
+                if (line == "PING")
+                {
+                    if (!await SendControlAsync(room, socket, "PONG").ConfigureAwait(false))
+                    {
+                        break;
+                    }
+                }
+                else if (line == "INVITE BEGIN")
+                {
+                    incoming = new StringBuilder();
+                }
+                else if (line == "INVITE CLEAR")
+                {
+                    incoming = null;
+                    room.Invite = null;
+                }
+                else if (line is not null && incoming is not null && line.StartsWith("INVITE + ", StringComparison.Ordinal) &&
+                         line.Length - 9 <= InviteChunk && IsInviteText(line[9..]) && incoming.Length + line.Length - 9 <= MaxInviteLength)
+                {
+                    incoming.Append(line, 9, line.Length - 9);
+                }
+                else if (line == "INVITE END" && incoming is { Length: > 0 })
+                {
+                    room.Invite = incoming.ToString();
+                    incoming = null;
+
+                    if (!await SendControlAsync(room, socket, "INVITED").ConfigureAwait(false))
+                    {
+                        break;
+                    }
+                }
+                else
                 {
                     break;
                 }
@@ -416,6 +500,11 @@ public sealed class RelayServer : IAsyncDisposable
                 if (ReferenceEquals(room.Control, socket))
                 {
                     removed = _rooms.Remove(roomKey);
+
+                    if (removed && _roomsByCode.TryGetValue(room.Code, out var named) && ReferenceEquals(named, room))
+                    {
+                        _roomsByCode.Remove(room.Code);
+                    }
                 }
 
                 // Counted against whoever opened the room, wherever its host has moved since.
@@ -700,6 +789,44 @@ public sealed class RelayServer : IAsyncDisposable
             Close(socket);
             _gate.Leave(gateKey);
             Interlocked.Decrement(ref _connections);
+        }
+    }
+
+    /// <summary>Hands out the invite a host left under its room's short code.</summary>
+    private async Task ServeFetchAsync(Socket socket, string code)
+    {
+        Room? room;
+
+        lock (_rooms)
+        {
+            _roomsByCode.TryGetValue(code.ToUpperInvariant(), out room);
+        }
+
+        if (room is null)
+        {
+            await SendLineAsync(socket, "ERR NOROOM").ConfigureAwait(false);
+            return;
+        }
+
+        if (room.Invite is not { } invite)
+        {
+            await SendLineAsync(socket, "ERR NOINVITE").ConfigureAwait(false);
+            return;
+        }
+
+        var lines = (invite.Length + InviteChunk - 1) / InviteChunk;
+
+        if (!await SendLineAsync(socket, "OK " + lines.ToString(CultureInfo.InvariantCulture)).ConfigureAwait(false))
+        {
+            return;
+        }
+
+        for (var at = 0; at < invite.Length; at += InviteChunk)
+        {
+            if (!await SendLineAsync(socket, invite.Substring(at, Math.Min(InviteChunk, invite.Length - at))).ConfigureAwait(false))
+            {
+                return;
+            }
         }
     }
 
@@ -1102,6 +1229,12 @@ public sealed class RelayServer : IAsyncDisposable
 
         public volatile Socket Control;
         public int Guests;
+
+        /// <summary>The short code friends type; follows from the room key.</summary>
+        public string Code { get; init; } = string.Empty;
+
+        /// <summary>The invite the host left for whoever comes with the code.</summary>
+        public volatile string? Invite;
 
         /// <summary>The room's public port, or 0. Set once, under the rooms lock.</summary>
         public volatile int PublicPort;

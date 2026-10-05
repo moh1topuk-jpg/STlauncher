@@ -89,4 +89,11 @@ public sealed class HostedServer
 
     [JsonPropertyName("friendsDirect")]
     public bool FriendsDirect { get; set; }
+
+    /// <summary>
+    /// The last full invite that was put together for this server. It is left with the
+    /// relay again whenever the server starts, so the short code a friend already has
+    /// keeps working after a restart.
+    /// </summary>
+    public string? LastInvite { get; set; }
 }

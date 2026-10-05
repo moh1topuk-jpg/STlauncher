@@ -39,6 +39,11 @@ public sealed class RelayHost : IAsyncDisposable
     private RelayHostState _state = RelayHostState.Stopped;
     private RelayFailure _failure = RelayFailure.None;
     private readonly bool _wantPublic;
+    private readonly SemaphoreSlim _inviteSignal = new(0);
+
+    private string? _invite;
+    private int _inviteVersion;
+    private TaskCompletionSource<bool> _invitePublished = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private int _active;
     private int _publicPort;
 
@@ -99,6 +104,29 @@ public sealed class RelayHost : IAsyncDisposable
                 return _failure;
             }
         }
+    }
+
+    /// <summary>The short code under which the relay hands out this room's invite.</summary>
+    public string InviteCode => RelayKeys.InviteCodeFor(RoomKey);
+
+    /// <summary>
+    /// Leaves the full invite with the relay, to be handed to whoever comes with
+    /// <see cref="InviteCode"/>. It is sent again by itself whenever the room is reopened.
+    /// The task completes when the relay has it; null takes the invite back.
+    /// </summary>
+    public Task<bool> PublishInvite(string? invite)
+    {
+        TaskCompletionSource<bool> published;
+
+        lock (_gate)
+        {
+            _invite = string.IsNullOrWhiteSpace(invite) ? null : invite;
+            _inviteVersion++;
+            published = _invitePublished = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        }
+
+        _inviteSignal.Release();
+        return published.Task;
     }
 
     /// <summary>The port on the relay that leads to this server, or 0 when there is none.</summary>
@@ -238,6 +266,16 @@ public sealed class RelayHost : IAsyncDisposable
                         return (RelayFailure.RelayUnreachable, true);
                     }
 
+                    if (line == "INVITED")
+                    {
+                        lock (_gate)
+                        {
+                            _invitePublished.TrySetResult(true);
+                        }
+
+                        continue;
+                    }
+
                     // PONG, and anything a newer relay might add, is simply proof of life.
                     if (line.StartsWith("OPEN ", StringComparison.Ordinal) && RelayKeys.IsKey(line[5..]))
                     {
@@ -264,14 +302,57 @@ public sealed class RelayHost : IAsyncDisposable
         }
     }
 
+    /// <summary>How much of an invite travels in one line; the relay takes no more.</summary>
+    private const int InviteChunk = 200;
+
     private async Task PingAsync(NetworkStream stream, CancellationTokenSource session)
     {
         try
         {
+            // Every write on the control connection is made here, one after another: the
+            // pings, and the invite whenever it is new to this connection.
+            var sent = -1;
+
             while (true)
             {
-                await Task.Delay(_options.PingInterval, session.Token).ConfigureAwait(false);
-                await RelayWire.WriteLineAsync(stream, "PING", session.Token).ConfigureAwait(false);
+                string? invite;
+                int version;
+
+                lock (_gate)
+                {
+                    invite = _invite;
+                    version = _inviteVersion;
+                }
+
+                if (version != sent)
+                {
+                    sent = version;
+
+                    if (invite is null)
+                    {
+                        await RelayWire.WriteLineAsync(stream, "INVITE CLEAR", session.Token).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        await RelayWire.WriteLineAsync(stream, "INVITE BEGIN", session.Token).ConfigureAwait(false);
+
+                        for (var at = 0; at < invite.Length; at += InviteChunk)
+                        {
+                            var piece = invite.Substring(at, Math.Min(InviteChunk, invite.Length - at));
+                            await RelayWire.WriteLineAsync(stream, "INVITE + " + piece, session.Token).ConfigureAwait(false);
+                        }
+
+                        await RelayWire.WriteLineAsync(stream, "INVITE END", session.Token).ConfigureAwait(false);
+                    }
+
+                    continue;
+                }
+
+                // Woken early by a new invite; otherwise it is time for a ping.
+                if (!await _inviteSignal.WaitAsync(_options.PingInterval, session.Token).ConfigureAwait(false))
+                {
+                    await RelayWire.WriteLineAsync(stream, "PING", session.Token).ConfigureAwait(false);
+                }
             }
         }
         catch (OperationCanceledException)

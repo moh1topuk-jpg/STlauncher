@@ -1177,6 +1177,11 @@
     <x:String x:Key="Host_InviteNeedsServer">Start the server first: the invite is put together while it runs.</x:String>
     <x:String x:Key="Host_InviteNeedsWay">Switch on at least one way of connecting and wait until it is ready.</x:String>
     <x:String x:Key="Host_InviteBusy">Putting the invite together…</x:String>
+    <x:String x:Key="Host_InviteCopiedShort">The invite is copied: {0}. Send it to a friend: they copy it and press “A friend's build” on the home screen. It works while your server is running. Remember to put their nickname on the list.</x:String>
+    <x:String x:Key="Friends_ShortNoRelay">This is a short invite, and the launcher does not know the server that keeps such invites yet. Ask the friend for the long one, or try again later.</x:String>
+    <x:String x:Key="Friends_ShortFetching">Asking for the invite {0}…</x:String>
+    <x:String x:Key="Friends_ShortUnreachable">The server that keeps invites does not answer. Check the connection and try again.</x:String>
+    <x:String x:Key="Friends_ShortOffline">Nobody answers to the invite {0}: the friend's server is not running right now, or the code has a typo.</x:String>
     <x:String x:Key="Host_InviteCopied">The invite is copied. Send it to a friend: they press “A friend's build” on the home screen. Remember to put their nickname on the list.</x:String>
     <x:String x:Key="Host_InviteCopiedMissing">The invite is copied. These mods are not on Modrinth and have to be handed over separately: {0}</x:String>
     <x:String x:Key="Host_InviteCopiedNoBuild">The invite is copied without the build: Modrinth did not answer. The friend will need a build of their own for {0}.</x:String>
@@ -1199,7 +1204,7 @@
     <x:String x:Key="Friends_Title">Friends' servers</x:String>
     <x:String x:Key="Friends_Paste">paste an invite</x:String>
     <x:String x:Key="Friends_Empty">Servers you have been invited to show up here. Copy a friend's invite - the line that starts with STS1. - and press “paste an invite”.</x:String>
-    <x:String x:Key="Friends_ClipboardEmpty">The clipboard holds neither a build code nor an invite. Copy the line that starts with STB1. or STS1. and try again.</x:String>
+    <x:String x:Key="Friends_ClipboardEmpty">The clipboard holds neither a build code nor an invite. Copy the invite (ST-XXXXX-XXXXX) or the line that starts with STB1. or STS1. and try again.</x:String>
     <x:String x:Key="Friends_DefaultName">A friend's server</x:String>
     <x:String x:Key="Friends_Subtitle">{0} · Minecraft {1} · {2}</x:String>
     <x:String x:Key="Friends_SubtitleNoHost">Minecraft {0} · {1}</x:String>

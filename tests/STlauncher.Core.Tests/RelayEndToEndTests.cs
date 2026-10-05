@@ -514,6 +514,52 @@ public class RelayEndToEndTests
     }
 
     [Fact]
+    public async Task A_short_code_leads_to_the_invite_the_host_left_and_dies_with_the_room()
+    {
+        await using var relay = StartRelay();
+        await using var server = new StatusServer("short invite");
+
+        var session = new FriendsHostSession(server.Port, EndpointOf(relay), null, Quick());
+        Assert.True(session.StartRelay());
+        await Until(() => session.Status.Relay == FriendsWayState.Ready);
+
+        // Long enough to travel in many lines, as a real invite with a build inside does.
+        var full = ServerInviteCode.Encode(session.BuildInvite("Наш мир", "1.21.11", LoaderKind.Fabric, "0.19.5", "Steve", "STB1." + new string('a', 3000)));
+        var shown = await session.PublishInviteAsync(full, TimeSpan.FromSeconds(5));
+
+        Assert.NotNull(shown);
+        Assert.Matches("^ST-[0-9A-Z]{5}-[0-9A-Z]{5}$", shown);
+
+        // Typed the way people type: lower case, and inside a sentence.
+        Assert.True(RelayKeys.TryFindInviteCode("заходи: " + shown!.ToLowerInvariant() + " жду", out var code));
+        Assert.Equal(RelayServer.InviteCodeFor(session.Status.RoomKey!), code);
+
+        var (fetched, failure) = await RelayInvite.FetchAsync(EndpointOf(relay), code, Quick());
+        Assert.Equal(RelayFailure.None, failure);
+        Assert.Equal(full, fetched);
+
+        // A code nobody has, and the same code once the host is gone.
+        var (none, _) = await RelayInvite.FetchAsync(EndpointOf(relay), "0000000000", Quick());
+        Assert.Null(none);
+
+        await session.DisposeAsync();
+        await Until(() => relay.Stats.Rooms == 0);
+
+        var (after, why) = await RelayInvite.FetchAsync(EndpointOf(relay), code, Quick());
+        Assert.Null(after);
+        Assert.Equal(RelayFailure.HostOffline, why);
+    }
+
+    [Fact]
+    public void A_short_code_is_not_mistaken_for_other_text()
+    {
+        Assert.False(RelayKeys.TryFindInviteCode("STB1.abcdefghij", out _));
+        Assert.False(RelayKeys.TryFindInviteCode("TEST-ABCDE-12345", out _));
+        Assert.True(RelayKeys.TryFindInviteCode("ST-ABCDE-O1L2Z", out var code));
+        Assert.Equal("ABCDE0112Z", code);
+    }
+
+    [Fact]
     public async Task A_relay_without_public_ports_gives_none()
     {
         await using var relay = StartRelay(o => o.PublicPortFrom = 0);

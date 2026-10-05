@@ -1177,6 +1177,11 @@
     <x:String x:Key="Host_InviteNeedsServer">Сначала запустите сервер: приглашение собирается, пока он работает.</x:String>
     <x:String x:Key="Host_InviteNeedsWay">Включите хотя бы один способ подключения и дождитесь, пока он заработает.</x:String>
     <x:String x:Key="Host_InviteBusy">Готовлю приглашение…</x:String>
+    <x:String x:Key="Host_InviteCopiedShort">Приглашение скопировано: {0}. Отправьте его другу: он копирует его и нажимает «Сборка от друга» на главной. Работает, пока ваш сервер запущен. Не забудьте добавить его ник в список.</x:String>
+    <x:String x:Key="Friends_ShortNoRelay">Это короткое приглашение, а лаунчер пока не знает сервер, который такие приглашения хранит. Попросите у друга длинное или попробуйте позже.</x:String>
+    <x:String x:Key="Friends_ShortFetching">Запрашиваем приглашение {0}…</x:String>
+    <x:String x:Key="Friends_ShortUnreachable">Сервер, который хранит приглашения, не отвечает. Проверьте интернет и попробуйте ещё раз.</x:String>
+    <x:String x:Key="Friends_ShortOffline">На приглашение {0} никто не отвечает: сервер друга сейчас не запущен или в коде опечатка.</x:String>
     <x:String x:Key="Host_InviteCopied">Приглашение скопировано. Отправьте его другу: он нажмёт «Сборка от друга» на главной. Не забудьте добавить его ник в список.</x:String>
     <x:String x:Key="Host_InviteCopiedMissing">Приглашение скопировано. Этих модов нет на Modrinth, их придётся передать другу отдельно: {0}</x:String>
     <x:String x:Key="Host_InviteCopiedNoBuild">Приглашение скопировано без сборки: Modrinth не ответил. Другу понадобится своя сборка для {0}.</x:String>
@@ -1199,7 +1204,7 @@
     <x:String x:Key="Friends_Title">Серверы друзей</x:String>
     <x:String x:Key="Friends_Paste">вставить приглашение</x:String>
     <x:String x:Key="Friends_Empty">Здесь появятся серверы, на которые вас позвали. Скопируйте приглашение друга — строку, которая начинается с STS1. — и нажмите «вставить приглашение».</x:String>
-    <x:String x:Key="Friends_ClipboardEmpty">В буфере обмена нет ни кода сборки, ни приглашения. Скопируйте строку, начинающуюся с STB1. или STS1., и попробуйте снова.</x:String>
+    <x:String x:Key="Friends_ClipboardEmpty">В буфере обмена нет ни кода сборки, ни приглашения. Скопируйте приглашение (ST-XXXXX-XXXXX) или строку, которая начинается с STB1. или STS1., и попробуйте ещё раз.</x:String>
     <x:String x:Key="Friends_DefaultName">Сервер друга</x:String>
     <x:String x:Key="Friends_Subtitle">{0} · Minecraft {1} · {2}</x:String>
     <x:String x:Key="Friends_SubtitleNoHost">Minecraft {0} · {1}</x:String>
