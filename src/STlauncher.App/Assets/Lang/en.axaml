@@ -1014,13 +1014,19 @@
     <x:String x:Key="Count_MillionsShort">{0}M</x:String>
     <x:String x:Key="Count_ThousandsShort">{0}K</x:String>
 
-    <!-- My server: a server the player hosts for friends -->
-    <x:String x:Key="Nav_Host">My server</x:String>
-    <x:String x:Key="Host_Title">My server</x:String>
-    <x:String x:Key="Host_Subtitle">A Minecraft server on this computer. Only the people you invite can join.</x:String>
+    <!-- Playing with friends: a server the player hosts for friends -->
+    <x:String x:Key="Nav_Host">Friends</x:String>
+    <x:String x:Key="Host_Title">Playing with friends</x:String>
+    <x:String x:Key="Host_Subtitle">Your own server on this computer or a friend's server: one place for both.</x:String>
     <x:String x:Key="Host_Another">Another server</x:String>
+    <x:String x:Key="Host_PickServer">Which server is shown</x:String>
+    <x:String x:Key="Host_TabOverview">Overview</x:String>
+    <x:String x:Key="Host_TabPlayers">Players</x:String>
+    <x:String x:Key="Host_TabMods">Mods</x:String>
+    <x:String x:Key="Host_TabSettings">Server settings</x:String>
+    <x:String x:Key="Host_TabConsole">Console</x:String>
     <x:String x:Key="Host_EmptyTitle">Your own server for friends</x:String>
-    <x:String x:Key="Host_EmptyText">The launcher sets up a Minecraft server on this computer and takes the game version and the mods from your build. Friends join by an invite - one line of text. The server runs while the launcher is open, and nothing is downloaded without your say.</x:String>
+    <x:String x:Key="Host_EmptyText">The launcher sets up a Minecraft server on this computer and takes the game version and the mods from your build. Friends join by an invite: a short code. The server runs while the launcher is open, and nothing is downloaded without your say.</x:String>
     <x:String x:Key="Host_Create">Create a server</x:String>
     <x:String x:Key="Host_CreateTitle">A new server</x:String>
     <x:String x:Key="Host_CreateBuild">Based on the build</x:String>
@@ -1097,9 +1103,27 @@
     <x:String x:Key="Host_PlaySelf">Join it myself</x:String>
     <x:String x:Key="Host_PlaySelfHint">Starts the build the server was made from and joins the server at once</x:String>
     <x:String x:Key="Host_CopyInvite">Copy the invite</x:String>
-    <x:String x:Key="Host_Settings">Memory and port</x:String>
+    <x:String x:Key="Host_InviteTitle">HOW TO INVITE A FRIEND</x:String>
+    <x:String x:Key="Host_Step1Done">The server is running</x:String>
+    <x:String x:Key="Host_Step1DoneNote">It runs while the launcher is open.</x:String>
+    <x:String x:Key="Host_Step1Todo">Start the server</x:String>
+    <x:String x:Key="Host_Step1TodoNote">The “Start” button is on the server's card above.</x:String>
+    <x:String x:Key="Host_Step1WorkingNote">The server is starting or stopping; it does not take long.</x:String>
+    <x:String x:Key="Host_Step2">Put your friend's nickname on the list</x:String>
+    <x:String x:Key="Host_Step2Note">The server lets in only the nicknames on the list. Spell it exactly as in your friend's launcher.</x:String>
+    <x:String x:Key="Host_Step3">Send your friend the code</x:String>
+    <x:String x:Key="Host_Step3Note">Your friend pastes the code under “Friends”, on the “Join a friend” tab. The mods of your build are set up for them by the launcher. The code works while the server is running.</x:String>
+    <x:String x:Key="Host_InviteCopy">Copy</x:String>
+    <x:String x:Key="Host_InvitePlaceholder">The code appears here once the server is running and you press “Copy”.</x:String>
+    <x:String x:Key="Host_InviteLongCopied">The long invite line is copied</x:String>
+    <x:String x:Key="Host_OnlineLabel">ON THE SERVER NOW</x:String>
+    <x:String x:Key="Host_OnlineTitle">On the server now</x:String>
     <x:String x:Key="Host_SettingsPort">Port</x:String>
     <x:String x:Key="Host_SettingsHint">Changed while the server is stopped; used from the next start.</x:String>
+    <x:String x:Key="Host_SettingsPortHint">The port matters for the “Directly” way. If another program holds it, the launcher offers a free one.</x:String>
+    <x:String x:Key="Host_FilesTitle">Folder and removal</x:String>
+    <x:String x:Key="Host_FolderHint">The server's folder holds the world, the mods and the settings files.</x:String>
+    <x:String x:Key="Host_RemoveAsk">Take the server off the list? The folder with the world stays on the disk.</x:String>
     <x:String x:Key="Host_OpenFolder">Open the server's folder</x:String>
     <x:String x:Key="Host_Remove">Take off the list</x:String>
     <x:String x:Key="Host_RemoveHint">The server leaves the launcher, but nothing is deleted: its folder, world included, moves to servers/.removed. A running server cannot be taken off.</x:String>
@@ -1123,6 +1147,7 @@
     <x:String x:Key="Host_WhitelistExists">{0} is already on the list</x:String>
     <x:String x:Key="Host_WhitelistAdded">{0} can now join the server</x:String>
     <x:String x:Key="Host_WhitelistRemoved">{0} can no longer join the server</x:String>
+    <x:String x:Key="Host_ModsSoon">The server's mods will be here. For now they can be put into the server's mods folder by hand: the folder button on the server's card.</x:String>
     <x:String x:Key="Host_OtherRunning">Stop the server “{0}” first: one runs at a time.</x:String>
     <x:String x:Key="Host_NoticePort">Port {0} is taken by another program - perhaps another Minecraft server is already running.</x:String>
     <x:String x:Key="Host_UseFreePort">Take a free port</x:String>
@@ -1135,7 +1160,7 @@
     <x:String x:Key="Host_NoticeKilled">The server did not stop in time and was closed by force. The last minutes of play may not have been saved.</x:String>
     <x:String x:Key="Host_NoticeEula">The server did not start: eula.txt does not agree to the licence.</x:String>
     <x:String x:Key="Host_NoticeWrongJava">The server did not start: it needs a newer Java than the one it was started with.</x:String>
-    <x:String x:Key="Host_NoticeMemory">Java could not get {0} of memory. Lower the server's memory under “Memory and port” and start again.</x:String>
+    <x:String x:Key="Host_NoticeMemory">Java could not get {0} of memory. Lower the memory on the “Server settings” tab and start again.</x:String>
     <x:String x:Key="Host_NoticeWorldInUse">The server's world is open in another program - perhaps another server or the game.</x:String>
     <x:String x:Key="Host_NoticeFailedToStart">The server could not start (code {0}). The last lines of the console say why.</x:String>
     <x:String x:Key="Host_NoticeCrash">The server went down with an error (code {0}). The console below shows what happened.</x:String>
@@ -1151,7 +1176,7 @@
     <x:String x:Key="Host_ConsentEulaLine">A Minecraft server only starts once Mojang's agreement (EULA) is accepted</x:String>
     <x:String x:Key="Host_ConsentEulaDetail">By pressing the button you confirm that you have read it and accept it.</x:String>
     <x:String x:Key="Host_ConsentEulaAction">I accept, start</x:String>
-    <x:String x:Key="Host_WaysTitle">How friends connect</x:String>
+    <x:String x:Key="Host_WaysTitle">WAYS OF CONNECTING</x:String>
     <x:String x:Key="Host_WaysHint">Switch on one way or several. The invite carries what is on and already working.</x:String>
     <x:String x:Key="Host_WayOff">Off</x:String>
     <x:String x:Key="Host_WayPending">Comes on when the server is running</x:String>
@@ -1177,12 +1202,12 @@
     <x:String x:Key="Host_InviteNeedsServer">Start the server first: the invite is put together while it runs.</x:String>
     <x:String x:Key="Host_InviteNeedsWay">Switch on at least one way of connecting and wait until it is ready.</x:String>
     <x:String x:Key="Host_InviteBusy">Putting the invite together…</x:String>
-    <x:String x:Key="Host_InviteCopiedShort">The invite is copied: {0}. Send it to a friend: they copy it and press “A friend's build” on the home screen. It works while your server is running. Remember to put their nickname on the list.</x:String>
+    <x:String x:Key="Host_InviteCopiedShort">The invite is copied: {0}. Send it to a friend: they paste the code under “Friends”, on the “Join a friend” tab. The code works while your server is running. Remember to put their nickname on the list.</x:String>
     <x:String x:Key="Friends_ShortNoRelay">This is a short invite, and the launcher does not know the server that keeps such invites yet. Ask the friend for the long one, or try again later.</x:String>
     <x:String x:Key="Friends_ShortFetching">Asking for the invite {0}…</x:String>
     <x:String x:Key="Friends_ShortUnreachable">The server that keeps invites does not answer. Check the connection and try again.</x:String>
     <x:String x:Key="Friends_ShortOffline">Nobody answers to the invite {0}: the friend's server is not running right now, or the code has a typo.</x:String>
-    <x:String x:Key="Host_InviteCopied">The invite is copied. Send it to a friend: they press “A friend's build” on the home screen. Remember to put their nickname on the list.</x:String>
+    <x:String x:Key="Host_InviteCopied">The invite is copied. Send it to a friend: they paste the line under “Friends”, on the “Join a friend” tab. Remember to put their nickname on the list.</x:String>
     <x:String x:Key="Host_InviteCopiedMissing">The invite is copied. These mods are not on Modrinth and have to be handed over separately: {0}</x:String>
     <x:String x:Key="Host_InviteCopiedNoBuild">The invite is copied without the build: Modrinth did not answer. The friend will need a build of their own for {0}.</x:String>
     <x:String x:Key="Host_InviteFailed">The invite could not be put together: {0}</x:String>
@@ -1200,15 +1225,26 @@
     <x:String x:Key="Host_CloseConfirmTunnel">Close anyway</x:String>
     <x:String x:Key="Host_CloseCancel">Keep it open</x:String>
 
-    <!-- My server: friends' servers and invites -->
+    <!-- Playing with friends: friends' servers and invites -->
     <x:String x:Key="Friends_Title">Friends' servers</x:String>
-    <x:String x:Key="Friends_Paste">paste an invite</x:String>
-    <x:String x:Key="Friends_Empty">Servers you have been invited to show up here. Copy a friend's invite - the line that starts with STS1. - and press “paste an invite”.</x:String>
+    <x:String x:Key="Friends_TitleHint">the launcher remembers the servers you have added</x:String>
+    <x:String x:Key="Friends_TabMine">My server</x:String>
+    <x:String x:Key="Friends_TabJoin">Join a friend</x:String>
+    <x:String x:Key="Friends_EntryTitle">Got an invite?</x:String>
+    <x:String x:Key="Friends_EntryText">Paste the code your friend sent. The launcher shows what server it is and which mods it needs, and sets up nothing until you agree.</x:String>
+    <x:String x:Key="Friends_EntryPaste">Paste from clipboard</x:String>
+    <x:String x:Key="Friends_EntryFind">Find the server</x:String>
+    <x:String x:Key="Friends_EntryHint">A code looks like ST-XXXXX-XXXXX. The long line that starts with STS1. works too.</x:String>
+    <x:String x:Key="Friends_BoxEmpty">Put the code your friend sent into the box first.</x:String>
+    <x:String x:Key="Friends_BoxClipboardEmpty">The clipboard is empty. Copy the code your friend sent and press the button again.</x:String>
+    <x:String x:Key="Friends_BoxBusy">The launcher is busy with a build right now. Wait until it is done and press the button again.</x:String>
+    <x:String x:Key="Friends_BoxUnknown">This does not look like an invite. A code looks like ST-XXXXX-XXXXX; the long line starts with STS1.</x:String>
+    <x:String x:Key="Friends_Empty">Servers you have been invited to show up here. Paste a friend's code into the box above and press “Find the server”.</x:String>
     <x:String x:Key="Friends_ClipboardEmpty">The clipboard holds neither a build code nor an invite. Copy the invite (ST-XXXXX-XXXXX) or the line that starts with STB1. or STS1. and try again.</x:String>
     <x:String x:Key="Friends_DefaultName">A friend's server</x:String>
     <x:String x:Key="Friends_Subtitle">{0} · Minecraft {1} · {2}</x:String>
     <x:String x:Key="Friends_SubtitleNoHost">Minecraft {0} · {1}</x:String>
-    <x:String x:Key="Friends_Build">Build “{0}”</x:String>
+    <x:String x:Key="Friends_Build">The build “{0}” is on this computer</x:String>
     <x:String x:Key="Friends_BuildGone">The build for this server was deleted. Paste the invite again to bring it back.</x:String>
     <x:String x:Key="Friends_Play">Play</x:String>
     <x:String x:Key="Friends_Remove">Take the server off the list</x:String>

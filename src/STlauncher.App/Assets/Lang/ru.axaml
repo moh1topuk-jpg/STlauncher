@@ -1014,13 +1014,19 @@
     <x:String x:Key="Count_MillionsShort">{0} млн</x:String>
     <x:String x:Key="Count_ThousandsShort">{0} тыс.</x:String>
 
-    <!-- My server: a server the player hosts for friends -->
-    <x:String x:Key="Nav_Host">Мой сервер</x:String>
-    <x:String x:Key="Host_Title">Мой сервер</x:String>
-    <x:String x:Key="Host_Subtitle">Сервер Minecraft на этом компьютере. Заходят только те, кого вы позвали.</x:String>
+    <!-- Playing with friends: a server the player hosts for friends -->
+    <x:String x:Key="Nav_Host">Друзья</x:String>
+    <x:String x:Key="Host_Title">Игра с друзьями</x:String>
+    <x:String x:Key="Host_Subtitle">Свой сервер на этом компьютере или сервер друга: одно место для обоих.</x:String>
     <x:String x:Key="Host_Another">Ещё один сервер</x:String>
+    <x:String x:Key="Host_PickServer">Какой сервер показан</x:String>
+    <x:String x:Key="Host_TabOverview">Обзор</x:String>
+    <x:String x:Key="Host_TabPlayers">Игроки</x:String>
+    <x:String x:Key="Host_TabMods">Моды</x:String>
+    <x:String x:Key="Host_TabSettings">Настройки сервера</x:String>
+    <x:String x:Key="Host_TabConsole">Консоль</x:String>
     <x:String x:Key="Host_EmptyTitle">Свой сервер для друзей</x:String>
-    <x:String x:Key="Host_EmptyText">Лаунчер поставит сервер Minecraft на этот компьютер и возьмёт версию игры и моды из вашей сборки. Друзья зайдут по приглашению — одной строке текста. Сервер работает, пока открыт лаунчер, и ничего не скачивается без вашего согласия.</x:String>
+    <x:String x:Key="Host_EmptyText">Лаунчер поставит сервер Minecraft на этот компьютер и возьмёт версию игры и моды из вашей сборки. Друзья зайдут по приглашению: короткому коду. Сервер работает, пока открыт лаунчер, и ничего не скачивается без вашего согласия.</x:String>
     <x:String x:Key="Host_Create">Создать сервер</x:String>
     <x:String x:Key="Host_CreateTitle">Новый сервер</x:String>
     <x:String x:Key="Host_CreateBuild">На основе сборки</x:String>
@@ -1097,9 +1103,27 @@
     <x:String x:Key="Host_PlaySelf">Зайти самому</x:String>
     <x:String x:Key="Host_PlaySelfHint">Запустит сборку, из которой сделан сервер, и сразу зайдёт на него</x:String>
     <x:String x:Key="Host_CopyInvite">Скопировать приглашение</x:String>
-    <x:String x:Key="Host_Settings">Память и порт</x:String>
+    <x:String x:Key="Host_InviteTitle">КАК ПОЗВАТЬ ДРУГА</x:String>
+    <x:String x:Key="Host_Step1Done">Сервер запущен</x:String>
+    <x:String x:Key="Host_Step1DoneNote">Работает, пока открыт лаунчер.</x:String>
+    <x:String x:Key="Host_Step1Todo">Запустите сервер</x:String>
+    <x:String x:Key="Host_Step1TodoNote">Кнопка «Запустить» на карточке сервера выше.</x:String>
+    <x:String x:Key="Host_Step1WorkingNote">Сервер запускается или останавливается, это недолго.</x:String>
+    <x:String x:Key="Host_Step2">Впишите ник друга</x:String>
+    <x:String x:Key="Host_Step2Note">Сервер пускает только ники из списка. Ник пишется точно как в лаунчере друга.</x:String>
+    <x:String x:Key="Host_Step3">Отправьте другу код</x:String>
+    <x:String x:Key="Host_Step3Note">Друг вставляет код в разделе «Друзья», на вкладке «Зайти к другу». Моды из вашей сборки поставятся у него сами. Код работает, пока сервер запущен.</x:String>
+    <x:String x:Key="Host_InviteCopy">Скопировать</x:String>
+    <x:String x:Key="Host_InvitePlaceholder">Код появится здесь, когда сервер запущен и вы нажмёте «Скопировать».</x:String>
+    <x:String x:Key="Host_InviteLongCopied">Скопирована длинная строка приглашения</x:String>
+    <x:String x:Key="Host_OnlineLabel">СЕЙЧАС НА СЕРВЕРЕ</x:String>
+    <x:String x:Key="Host_OnlineTitle">Сейчас на сервере</x:String>
     <x:String x:Key="Host_SettingsPort">Порт</x:String>
     <x:String x:Key="Host_SettingsHint">Меняются, пока сервер остановлен, и действуют со следующего запуска.</x:String>
+    <x:String x:Key="Host_SettingsPortHint">Порт нужен способу «Напрямую». Если он занят другой программой, лаунчер предложит свободный.</x:String>
+    <x:String x:Key="Host_FilesTitle">Папка и удаление</x:String>
+    <x:String x:Key="Host_FolderHint">В папке сервера лежат мир, моды и файлы настроек.</x:String>
+    <x:String x:Key="Host_RemoveAsk">Убрать сервер из списка? Папка с миром останется на диске.</x:String>
     <x:String x:Key="Host_OpenFolder">Открыть папку сервера</x:String>
     <x:String x:Key="Host_Remove">Убрать из списка</x:String>
     <x:String x:Key="Host_RemoveHint">Сервер исчезнет из лаунчера, но ничего не удалится: его папка вместе с миром переедет в servers/.removed. Пока сервер работает, убрать его нельзя.</x:String>
@@ -1123,6 +1147,7 @@
     <x:String x:Key="Host_WhitelistExists">{0} уже в списке</x:String>
     <x:String x:Key="Host_WhitelistAdded">{0} теперь может заходить на сервер</x:String>
     <x:String x:Key="Host_WhitelistRemoved">{0} больше не может заходить на сервер</x:String>
+    <x:String x:Key="Host_ModsSoon">Здесь будут моды сервера. Пока их можно положить в папку mods сервера вручную: кнопка с папкой на карточке сервера.</x:String>
     <x:String x:Key="Host_OtherRunning">Сначала остановите сервер «{0}»: одновременно работает один.</x:String>
     <x:String x:Key="Host_NoticePort">Порт {0} занят другой программой — возможно, уже запущен другой сервер Minecraft.</x:String>
     <x:String x:Key="Host_UseFreePort">Взять свободный порт</x:String>
@@ -1135,7 +1160,7 @@
     <x:String x:Key="Host_NoticeKilled">Сервер не остановился вовремя и был закрыт принудительно. Последние минуты игры могли не сохраниться.</x:String>
     <x:String x:Key="Host_NoticeEula">Сервер не запустился: в eula.txt нет согласия с лицензионным соглашением.</x:String>
     <x:String x:Key="Host_NoticeWrongJava">Сервер не запустился: ему нужна более новая Java, чем та, с которой он был запущен.</x:String>
-    <x:String x:Key="Host_NoticeMemory">Java не смогла получить {0} памяти. Уменьшите память сервера в «Память и порт» и запустите снова.</x:String>
+    <x:String x:Key="Host_NoticeMemory">Java не смогла получить {0} памяти. Уменьшите память на вкладке «Настройки сервера» и запустите снова.</x:String>
     <x:String x:Key="Host_NoticeWorldInUse">Мир сервера открыт другой программой — возможно, другим сервером или игрой.</x:String>
     <x:String x:Key="Host_NoticeFailedToStart">Сервер не смог запуститься (код {0}). Причина — в последних строках консоли.</x:String>
     <x:String x:Key="Host_NoticeCrash">Сервер завершился с ошибкой (код {0}). Что случилось, видно в консоли ниже.</x:String>
@@ -1151,7 +1176,7 @@
     <x:String x:Key="Host_ConsentEulaLine">Сервер Minecraft запускается только после согласия с соглашением Mojang (EULA)</x:String>
     <x:String x:Key="Host_ConsentEulaDetail">Нажимая кнопку, вы подтверждаете, что прочитали его и принимаете.</x:String>
     <x:String x:Key="Host_ConsentEulaAction">Принимаю, запустить</x:String>
-    <x:String x:Key="Host_WaysTitle">Как подключатся друзья</x:String>
+    <x:String x:Key="Host_WaysTitle">СПОСОБЫ ПОДКЛЮЧЕНИЯ</x:String>
     <x:String x:Key="Host_WaysHint">Включите один способ или несколько. В приглашение попадёт то, что включено и уже работает.</x:String>
     <x:String x:Key="Host_WayOff">Выключено</x:String>
     <x:String x:Key="Host_WayPending">Включится, когда сервер заработает</x:String>
@@ -1177,12 +1202,12 @@
     <x:String x:Key="Host_InviteNeedsServer">Сначала запустите сервер: приглашение собирается, пока он работает.</x:String>
     <x:String x:Key="Host_InviteNeedsWay">Включите хотя бы один способ подключения и дождитесь, пока он заработает.</x:String>
     <x:String x:Key="Host_InviteBusy">Готовлю приглашение…</x:String>
-    <x:String x:Key="Host_InviteCopiedShort">Приглашение скопировано: {0}. Отправьте его другу: он копирует его и нажимает «Сборка от друга» на главной. Работает, пока ваш сервер запущен. Не забудьте добавить его ник в список.</x:String>
+    <x:String x:Key="Host_InviteCopiedShort">Приглашение скопировано: {0}. Отправьте его другу: он вставляет код в разделе «Друзья», на вкладке «Зайти к другу». Код работает, пока ваш сервер запущен. Не забудьте добавить ник друга в список.</x:String>
     <x:String x:Key="Friends_ShortNoRelay">Это короткое приглашение, а лаунчер пока не знает сервер, который такие приглашения хранит. Попросите у друга длинное или попробуйте позже.</x:String>
     <x:String x:Key="Friends_ShortFetching">Запрашиваем приглашение {0}…</x:String>
     <x:String x:Key="Friends_ShortUnreachable">Сервер, который хранит приглашения, не отвечает. Проверьте интернет и попробуйте ещё раз.</x:String>
     <x:String x:Key="Friends_ShortOffline">На приглашение {0} никто не отвечает: сервер друга сейчас не запущен или в коде опечатка.</x:String>
-    <x:String x:Key="Host_InviteCopied">Приглашение скопировано. Отправьте его другу: он нажмёт «Сборка от друга» на главной. Не забудьте добавить его ник в список.</x:String>
+    <x:String x:Key="Host_InviteCopied">Приглашение скопировано. Отправьте его другу: он вставляет строку в разделе «Друзья», на вкладке «Зайти к другу». Не забудьте добавить ник друга в список.</x:String>
     <x:String x:Key="Host_InviteCopiedMissing">Приглашение скопировано. Этих модов нет на Modrinth, их придётся передать другу отдельно: {0}</x:String>
     <x:String x:Key="Host_InviteCopiedNoBuild">Приглашение скопировано без сборки: Modrinth не ответил. Другу понадобится своя сборка для {0}.</x:String>
     <x:String x:Key="Host_InviteFailed">Не удалось собрать приглашение: {0}</x:String>
@@ -1200,15 +1225,26 @@
     <x:String x:Key="Host_CloseConfirmTunnel">Всё равно закрыть</x:String>
     <x:String x:Key="Host_CloseCancel">Не закрывать</x:String>
 
-    <!-- My server: friends' servers and invites -->
+    <!-- Playing with friends: friends' servers and invites -->
     <x:String x:Key="Friends_Title">Серверы друзей</x:String>
-    <x:String x:Key="Friends_Paste">вставить приглашение</x:String>
-    <x:String x:Key="Friends_Empty">Здесь появятся серверы, на которые вас позвали. Скопируйте приглашение друга — строку, которая начинается с STS1. — и нажмите «вставить приглашение».</x:String>
+    <x:String x:Key="Friends_TitleHint">лаунчер помнит серверы, которые вы добавили</x:String>
+    <x:String x:Key="Friends_TabMine">Мой сервер</x:String>
+    <x:String x:Key="Friends_TabJoin">Зайти к другу</x:String>
+    <x:String x:Key="Friends_EntryTitle">Есть приглашение?</x:String>
+    <x:String x:Key="Friends_EntryText">Вставьте код, который прислал друг. Лаунчер покажет, что это за сервер и какие моды нужны, и ничего не поставит без вашего согласия.</x:String>
+    <x:String x:Key="Friends_EntryPaste">Вставить из буфера</x:String>
+    <x:String x:Key="Friends_EntryFind">Найти сервер</x:String>
+    <x:String x:Key="Friends_EntryHint">Код выглядит так: ST-XXXXX-XXXXX. Подойдёт и длинная строка, которая начинается с STS1.</x:String>
+    <x:String x:Key="Friends_BoxEmpty">Сначала вставьте в поле код, который прислал друг.</x:String>
+    <x:String x:Key="Friends_BoxClipboardEmpty">Буфер обмена пуст. Скопируйте код, который прислал друг, и нажмите кнопку ещё раз.</x:String>
+    <x:String x:Key="Friends_BoxBusy">Лаунчер сейчас занят сборкой. Дождитесь, пока он закончит, и нажмите кнопку ещё раз.</x:String>
+    <x:String x:Key="Friends_BoxUnknown">Это не похоже на приглашение. Код выглядит так: ST-XXXXX-XXXXX; длинная строка начинается с STS1.</x:String>
+    <x:String x:Key="Friends_Empty">Здесь появятся серверы, на которые вас позвали. Вставьте код друга в поле выше и нажмите «Найти сервер».</x:String>
     <x:String x:Key="Friends_ClipboardEmpty">В буфере обмена нет ни кода сборки, ни приглашения. Скопируйте приглашение (ST-XXXXX-XXXXX) или строку, которая начинается с STB1. или STS1., и попробуйте ещё раз.</x:String>
     <x:String x:Key="Friends_DefaultName">Сервер друга</x:String>
     <x:String x:Key="Friends_Subtitle">{0} · Minecraft {1} · {2}</x:String>
     <x:String x:Key="Friends_SubtitleNoHost">Minecraft {0} · {1}</x:String>
-    <x:String x:Key="Friends_Build">Сборка «{0}»</x:String>
+    <x:String x:Key="Friends_Build">Сборка «{0}» уже у вас</x:String>
     <x:String x:Key="Friends_BuildGone">Сборка для этого сервера удалена. Вставьте приглашение ещё раз, чтобы вернуть её.</x:String>
     <x:String x:Key="Friends_Play">Играть</x:String>
     <x:String x:Key="Friends_Remove">Убрать сервер из списка</x:String>

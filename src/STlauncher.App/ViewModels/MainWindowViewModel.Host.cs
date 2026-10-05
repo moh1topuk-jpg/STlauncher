@@ -140,7 +140,7 @@ public partial class MainWindowViewModel
 
         HostWays.Add(new HostWayItem(HostWayKind.Relay));
         HostWays.Add(new HostWayItem(HostWayKind.Direct));
-
+        AttachHostTabs();
 
         // Subscribed before the window's own handler, so by the time the window is asked
         // to close this already knows the launcher itself asked for it (the game ended).
@@ -696,7 +696,7 @@ public partial class MainWindowViewModel
             ServerProblem.PortInUse => Localize("Host_NoticePort", "Port {0} is taken by another program - perhaps another Minecraft server is already running.", server.Port),
             ServerProblem.EulaNotAccepted => Localize("Host_NoticeEula", "The server did not start: eula.txt does not agree to the licence."),
             ServerProblem.WrongJava => Localize("Host_NoticeWrongJava", "The server did not start: it needs a newer Java than the one it was started with."),
-            ServerProblem.NotEnoughMemory => Localize("Host_NoticeMemory", "Java could not get {0} of memory. Lower the server's memory under “Memory and port” and start again.", FormatHostMemory(server.MemoryMb)),
+            ServerProblem.NotEnoughMemory => Localize("Host_NoticeMemory", "Java could not get {0} of memory. Lower the memory on the “Server settings” tab and start again.", FormatHostMemory(server.MemoryMb)),
             ServerProblem.WorldInUse => Localize("Host_NoticeWorldInUse", "The server's world is open in another program - perhaps another server or the game."),
             _ => exit.Reason == ServerExitReason.FailedToStart
                 ? Localize("Host_NoticeFailedToStart", "The server could not start (code {0}). The last lines of the console say why.", exit.ExitCode)
@@ -1773,6 +1773,7 @@ public partial class MainWindowViewModel
         session.Changed += _ => Dispatcher.UIThread.Post(RefreshHostWays);
         session.RememberInvite(server.LastInvite);
         _hostSession = session;
+        _hostInviteWentLong = false;
 
         if (server.FriendsRelay)
         {
@@ -2006,6 +2007,7 @@ public partial class MainWindowViewModel
             }
         }
 
+        RefreshHostInviteCode();
     }
 
     private static string HostOfUrl(string url)
@@ -2089,6 +2091,7 @@ public partial class MainWindowViewModel
             var shortCode = await session.PublishInviteAsync(code, TimeSpan.FromSeconds(5));
 
             await CopyToClipboardAsync(shortCode ?? code);
+            RememberHostInviteCopy(shortCode, code);
             AppendConsole($"[host] invite for '{server.Name}': {code.Length} characters, build {(buildCode is null ? "not included" : "included")}, {(shortCode is null ? "sent in full" : "left with the relay as " + shortCode)}");
 
             Status = buildFailed
@@ -2096,8 +2099,8 @@ public partial class MainWindowViewModel
                 : missing.Count > 0
                     ? Localize("Host_InviteCopiedMissing", "The invite is copied. These mods are not on Modrinth and have to be handed over separately: {0}", string.Join(", ", missing))
                     : shortCode is not null
-                        ? Localize("Host_InviteCopiedShort", "The invite is copied: {0}. Send it to a friend: they copy it and press “A friend's build” on the home screen. It works while your server is running. Remember to put their nickname on the list.", shortCode)
-                        : Localize("Host_InviteCopied", "The invite is copied. Send it to a friend: they press “A friend's build” on the home screen. Remember to put their nickname on the list.");
+                        ? Localize("Host_InviteCopiedShort", "The invite is copied: {0}. Send it to a friend: they paste the code under “Friends”, on the “Join a friend” tab. The code works while your server is running. Remember to put their nickname on the list.", shortCode)
+                        : Localize("Host_InviteCopied", "The invite is copied. Send it to a friend: they paste the line under “Friends”, on the “Join a friend” tab. Remember to put their nickname on the list.");
         }
         catch (Exception ex)
         {

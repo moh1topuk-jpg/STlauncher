@@ -434,6 +434,7 @@ public partial class MainWindowViewModel : ViewModelBase
         UiScale = NormalizeUiScale(settings.UiScale);
         PreferDiscreteGpu = settings.PreferDiscreteGpu;
         ModsSort = Enum.TryParse<ModsSortOrder>(settings.ModsSort, ignoreCase: true, out var modsSort) ? modsSort : ModsSortOrder.Default;
+        RestoreFriendsTab(settings.FriendsTab);
         LoadAppearance(settings.Theme, settings.Accent);
         DiscordPresence = settings.DiscordPresence;
         _safeModeRestore = settings.SafeModeRestore?.ToList() ?? new List<string>();
@@ -1327,6 +1328,7 @@ public partial class MainWindowViewModel : ViewModelBase
             UiScale = UiScale,
             PreferDiscreteGpu = PreferDiscreteGpu,
             ModsSort = ModsSort.ToString(),
+            FriendsTab = FriendsTab.ToString(),
             Theme = Theme,
             Accent = Accent,
             DiscordPresence = DiscordPresence,
