@@ -103,7 +103,7 @@
                                 <TextBlock Text="{DynamicResource Nav_Skins}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
-                        <!-- My server: the player's own server for friends. -->
+                        <!-- Friends: the player's own server for friends, and the servers friends invited them to. -->
                         <Button Classes="rail" Classes.active="{Binding IsHostSection}"
                                 Command="{Binding SelectSectionCommand}" CommandParameter="Host">
                             <StackPanel Spacing="5" HorizontalAlignment="Center">
@@ -203,7 +203,7 @@
                     <pages:SettingsPage IsVisible="{Binding IsSettingsSection}" controls:Reveal.OnVisible="True"/>
                     <!-- Skins -->
                     <pages:SkinsPage IsVisible="{Binding IsSkinsSection}" controls:Reveal.OnVisible="True"/>
-                    <!-- My server -->
+                    <!-- Playing with friends -->
                     <pages:HostPage IsVisible="{Binding IsHostSection}" controls:Reveal.OnVisible="True"/>
                 </Panel>
 

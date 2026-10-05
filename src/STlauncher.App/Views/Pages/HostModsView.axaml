@@ -1,0 +1,19 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:STlauncher.App.ViewModels"
+             x:Class="STlauncher.App.Views.Pages.HostModsView"
+             x:DataType="vm:MainWindowViewModel">
+
+    <!-- The "Mods" tab of the player's server. A file of its own on purpose: HostPage only
+         places it, so the tab can be rebuilt as a whole without touching the page. Until
+         then it is a quiet placeholder; nothing the page needs lives here. -->
+
+    <Border Classes="card glass" Padding="24,28">
+        <StackPanel Spacing="10" HorizontalAlignment="Center" MaxWidth="460">
+            <PathIcon Data="{StaticResource IconBuilds}" Width="26" Height="26" Foreground="{DynamicResource TextMutedBrush}"
+                      HorizontalAlignment="Center"/>
+            <TextBlock Text="{DynamicResource Host_ModsSoon}" Classes="muted" FontSize="13"
+                       TextWrapping="Wrap" TextAlignment="Center" LineHeight="19"/>
+        </StackPanel>
+    </Border>
+</UserControl>

@@ -86,6 +86,9 @@ public sealed class AppSettings
     /// <summary>Order of the mod list: Default, Name, Size or Added.</summary>
     public string ModsSort { get; set; } = "Default";
 
+    /// <summary>Which half of "Playing with friends" was open last: MyServer or Join.</summary>
+    public string? FriendsTab { get; set; }
+
     /// <summary>Ask Windows to run the game's Java on the high-performance graphics card.</summary>
     public bool PreferDiscreteGpu { get; set; } = true;
 

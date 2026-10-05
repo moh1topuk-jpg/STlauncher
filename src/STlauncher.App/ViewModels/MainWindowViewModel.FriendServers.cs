@@ -104,7 +104,7 @@ public partial class MainWindowViewModel
                     : Localize("Friends_Subtitle", "{0} · Minecraft {1} · {2}", model.HostNickname, model.GameVersion, loader),
                 HasBuild = instance is not null,
                 BuildLine = instance is not null
-                    ? Localize("Friends_Build", "Build “{0}”", instance.Name)
+                    ? Localize("Friends_Build", "The build “{0}” is on this computer", instance.Name)
                     : Localize("Friends_BuildGone", "The build for this server was deleted. Paste the invite again to bring it back."),
                 Note = notes.TryGetValue(model.Id, out var note) ? note : string.Empty
             });
@@ -152,7 +152,10 @@ public partial class MainWindowViewModel
     /// </summary>
     private void ShowFriendInvite(ServerInvite invite)
     {
+        // Wherever the code was read - the home screen's tile or the box on the page -
+        // the question is asked on the tab the friends' servers live on.
         Section = ShellSection.Host;
+        FriendsTab = FriendsTab.Join;
 
         _pendingInvite = invite;
         _pendingInviteBuild = BuildCode.TryDecode(invite.BuildCode, out var build) ? build : null;

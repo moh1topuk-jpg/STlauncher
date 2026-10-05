@@ -130,13 +130,23 @@ public partial class MainWindowViewModel
             return;
         }
 
+        await AddFromCodeTextAsync(text, fromClipboard: true);
+    }
+
+    /// <summary>
+    /// What a code leads to, wherever the text came from: the clipboard ("A friend's
+    /// build") or the box on the "Join a friend" tab. True when the code was understood -
+    /// an invite is on screen, or a build was added; otherwise the status line says why not.
+    /// </summary>
+    private async Task<bool> AddFromCodeTextAsync(string? text, bool fromClipboard)
+    {
         // A short invite is only a name: the relay holds what it stands for.
         if (SharedCode.Detect(text) == SharedCodeKind.None && RelayKeys.TryFindInviteCode(text, out var shortCode))
         {
             if (RelayLocation.Resolve(_loadedCatalog) is not { } relay)
             {
                 Status = Localize("Friends_ShortNoRelay", "This is a short invite, and the launcher does not know the server that keeps such invites yet. Ask the friend for the long one, or try again later.");
-                return;
+                return false;
             }
 
             Status = Localize("Friends_ShortFetching", "Asking for the invite {0}…", RelayKeys.FormatInviteCode(shortCode));
@@ -147,7 +157,7 @@ public partial class MainWindowViewModel
                 Status = failure == RelayFailure.RelayUnreachable
                     ? Localize("Friends_ShortUnreachable", "The server that keeps invites does not answer. Check the connection and try again.")
                     : Localize("Friends_ShortOffline", "Nobody answers to the invite {0}: the friend's server is not running right now, or the code has a typo.", RelayKeys.FormatInviteCode(shortCode));
-                return;
+                return false;
             }
 
             text = full;
@@ -158,23 +168,27 @@ public partial class MainWindowViewModel
             case SharedCodeKind.Server when invite is not null:
                 // Nothing is added yet: the invite goes on screen and waits for a yes.
                 ShowFriendInvite(invite);
-                return;
+                return true;
 
             case SharedCodeKind.Build when payload is not null:
                 var instance = await AddBuildFromPayloadAsync(payload, showBuild: true);
 
-                if (instance is not null)
+                if (instance is null)
                 {
-                    Status = payload.Missing.Count > 0
-                        ? Localize("Code_AddedPartial", "Build “{0}” added. Not in the code, add by hand: {1}", instance.Name, string.Join(", ", payload.Missing))
-                        : Localize("Code_Added", "Build “{0}” added from the code", instance.Name);
+                    return false;
                 }
 
-                return;
+                Status = payload.Missing.Count > 0
+                    ? Localize("Code_AddedPartial", "Build “{0}” added. Not in the code, add by hand: {1}", instance.Name, string.Join(", ", payload.Missing))
+                    : Localize("Code_Added", "Build “{0}” added from the code", instance.Name);
+
+                return true;
 
             default:
-                Status = Localize("Friends_ClipboardEmpty", "The clipboard holds neither a build code nor an invite. Copy the invite (ST-XXXXX-XXXXX) or the line that starts with STB1. or STS1. and try again.");
-                return;
+                Status = fromClipboard
+                    ? Localize("Friends_ClipboardEmpty", "The clipboard holds neither a build code nor an invite. Copy the invite (ST-XXXXX-XXXXX) or the line that starts with STB1. or STS1. and try again.")
+                    : Localize("Friends_BoxUnknown", "This does not look like an invite. A code looks like ST-XXXXX-XXXXX; the long line starts with STS1.");
+                return false;
         }
     }
 
