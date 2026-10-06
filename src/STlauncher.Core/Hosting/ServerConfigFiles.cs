@@ -361,6 +361,10 @@ public static class ServerConfigFiles
             return null;
         }
 
+        // A backslash is a separator on Windows and a plain character elsewhere; read it as a
+        // separator everywhere, so "..\" means the same on every system and is refused.
+        relativePath = relativePath.Replace('\\', '/');
+
         var root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(serverDirectory));
         string full;
 

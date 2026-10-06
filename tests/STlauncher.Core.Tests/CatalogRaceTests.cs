@@ -79,12 +79,16 @@ public class CatalogRaceTests
             return Ok();
         });
 
+        // A long deadline for the hung address, so "answered before it" is measured with
+        // room to spare on a busy CI machine rather than against a two-second race.
+        service.RequestTimeout = TimeSpan.FromSeconds(20);
+
         var clock = Stopwatch.StartNew();
         var result = await service.LoadAsync();
 
         Assert.Equal(CatalogOrigin.Remote, result.Origin);
         Assert.Null(result.Error);
-        Assert.True(clock.Elapsed < TimeSpan.FromSeconds(1.5), $"took {clock.Elapsed}");
+        Assert.True(clock.Elapsed < TimeSpan.FromSeconds(10), $"took {clock.Elapsed}");
     }
 
     [Fact]
