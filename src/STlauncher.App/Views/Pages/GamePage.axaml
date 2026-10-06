@@ -559,7 +559,7 @@
 
                                             <!-- A build without the mod: only the figure's own poses, and why. -->
                                             <TextBlock Text="{DynamicResource Emotes_None}" Classes="faint" TextWrapping="Wrap"
-                                                       IsVisible="{Binding !HasHomeEmotes}"/>
+                                                       IsVisible="False"/>
                                         </StackPanel>
                                     </controls:RevealFlyout>
                                 </Button.Flyout>

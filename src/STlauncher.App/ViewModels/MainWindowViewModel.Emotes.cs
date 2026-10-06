@@ -35,6 +35,13 @@ public partial class MainWindowViewModel
     /// Called by the home screen once it has a view model: from then on the list follows
     /// the selected build and the language. Nothing is read before a screen wants it.
     /// </summary>
+    /// <summary>
+    /// Emotecraft emotes are off until the figure plays them the way the game does: its
+    /// pose math follows the old playerAnimator, while the mod now runs on
+    /// PlayerAnimationLib, and the emotes came out broken. Only the built-in poses show.
+    /// </summary>
+    private const bool EmotesEnabled = false;
+
     public void WatchHomeEmotes()
     {
         if (_watchingEmotes)
@@ -45,7 +52,11 @@ public partial class MainWindowViewModel
         _watchingEmotes = true;
         PropertyChanged += OnEmoteSourceChanged;
         RefreshHomePoses();
-        _ = RefreshHomeEmotesAsync();
+
+        if (EmotesEnabled)
+        {
+            _ = RefreshHomeEmotesAsync();
+        }
     }
 
     private void OnEmoteSourceChanged(object? sender, PropertyChangedEventArgs e)
@@ -53,19 +64,19 @@ public partial class MainWindowViewModel
         switch (e.PropertyName)
         {
             case nameof(SelectedInstance):
-                _ = RefreshHomeEmotesAsync();
+                if (EmotesEnabled) { _ = RefreshHomeEmotesAsync(); }
                 break;
 
             // The mod names its own emotes in the game's languages; ours follow the launcher's.
             case nameof(Language):
                 RefreshHomePoses();
-                _ = RefreshHomeEmotesAsync();
+                if (EmotesEnabled) { _ = RefreshHomeEmotesAsync(); }
                 break;
 
             // Coming back from the builds page, where the mod may just have been added or
             // removed. An unchanged build costs a directory listing here, not a re-read.
             case nameof(Section) when Section == ShellSection.Game:
-                _ = RefreshHomeEmotesAsync();
+                if (EmotesEnabled) { _ = RefreshHomeEmotesAsync(); }
                 break;
         }
     }
