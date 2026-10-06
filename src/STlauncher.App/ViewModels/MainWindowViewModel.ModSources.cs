@@ -382,7 +382,7 @@ public partial class MainWindowViewModel
     /// such mod, so the usual case - everything needed is already in the build - costs one
     /// question per dependency and no file lists.
     /// </summary>
-    private async Task<bool> BringsOtherModsAsync(ModVersion version)
+    private async Task<bool> BringsOtherModsAsync(ModVersion version, Instance? instance)
     {
         var source = SourceFor(version.Source);
 
@@ -390,7 +390,7 @@ public partial class MainWindowViewModel
         {
             var project = await source.GetProjectAsync(dependency.ProjectId!).ConfigureAwait(true);
 
-            if (project is not null && !IsProjectInstalled(project.Slug))
+            if (project is not null && !IsProjectInstalled(instance, project.Slug))
             {
                 return true;
             }

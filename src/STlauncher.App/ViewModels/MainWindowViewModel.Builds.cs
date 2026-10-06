@@ -333,12 +333,13 @@ public partial class MainWindowViewModel
         // Kept: another card may be opened while the files are coming.
         var project = OpenedProject;
         var version = OpenedProjectPreferred;
+        var target = CurrentInstallTarget();
 
         try
         {
             IsProjectBusy = true;
             _installBatch.Clear();
-            await InstallProjectWithDependenciesAsync(version, project.Slug, project.Title, project.IconUrl);
+            await InstallProjectWithDependenciesAsync(version, project.Slug, project.Title, project.IconUrl, target: target);
             RefreshBrowserInstallState();
             RefreshHiddenItems();
 
@@ -348,8 +349,13 @@ public partial class MainWindowViewModel
             }
 
             // The panel stays open, so the list is not opened on the new mods; they are
-            // outlined there, and the status line names every file that came.
-            RevealFreshMods(_installBatch.ToList(), focus: null);
+            // outlined there, and the status line names every file that came. Not with
+            // another build opened meanwhile: its list has none of them.
+            if (IsSelectedBuild(target))
+            {
+                RevealFreshMods(_installBatch.ToList(), focus: null);
+            }
+
             ReportModsLeftToThePlayer(project.Title);
         }
         catch (Exception ex)
@@ -669,6 +675,7 @@ public partial class MainWindowViewModel
         var project = OpenedProject;
         var run = _projectRun;
         var title = project?.Title ?? file.FileName;
+        var target = CurrentInstallTarget();
 
         try
         {
@@ -683,7 +690,10 @@ public partial class MainWindowViewModel
             }
 
             // Another version of an installed mod replaces it rather than sits beside it.
-            if (project is not null && IsProjectInstalled(project.Slug))
+            // The old one is taken out through the list on screen, so only while that list
+            // is still this build's; with another build opened meanwhile, the install
+            // switches the old file off instead of removing it.
+            if (project is not null && IsSelectedBuild(target) && IsProjectInstalled(project.Slug))
             {
                 await UninstallProjectAsync(project.Slug);
             }
@@ -692,7 +702,8 @@ public partial class MainWindowViewModel
                 version!,
                 project?.Slug ?? string.Empty,
                 title,
-                project?.IconUrl);
+                project?.IconUrl,
+                target: target);
 
             if (run == _projectRun)
             {

@@ -662,19 +662,21 @@ public partial class MainWindowViewModel
     private string _backupDirectoryOverride = string.Empty;
 
     [RelayCommand]
-    private async Task CreateBackupNowAsync()
+    private Task CreateBackupNowAsync() => CreateBackupAsync(SelectedInstance);
+
+    private async Task CreateBackupAsync(Instance? instance)
     {
         try
         {
-            if (SelectedInstance is null)
+            if (instance is null)
             {
                 return;
             }
 
             BackupStatus = Localize("Backup_InProgress", "Creating a backup…");
-            AppendConsole($"[backup] creating a backup of {SelectedInstance.Name}");
+            AppendConsole($"[backup] creating a backup of {instance.Name}");
 
-            var backup = await _backups.CreateAsync(InstanceDirectory, BackupsDirectory, SelectedInstance.Id, SelectedInstance);
+            var backup = await _backups.CreateAsync(_instances.GameDirectory(instance), BackupsDirectory, instance.Id, instance);
             PruneBackups();
             RefreshBackups();
 
@@ -717,16 +719,22 @@ public partial class MainWindowViewModel
     /// timer: the "once a day" rule is evaluated when the launcher actually launches
     /// the game or touches mods.
     /// </summary>
-    public async Task<bool> MaybeBackupAsync(BackupTrigger trigger)
+    public Task<bool> MaybeBackupAsync(BackupTrigger trigger) => MaybeBackupAsync(trigger, SelectedInstance);
+
+    /// <summary>
+    /// The same, for a named build: an install backs up the build it was started for,
+    /// which may no longer be the one open by the time it gets to it.
+    /// </summary>
+    public async Task<bool> MaybeBackupAsync(BackupTrigger trigger, Instance? instance)
     {
-        if (!BackupsEnabled || SelectedInstance is null)
+        if (!BackupsEnabled || instance is null)
         {
             return false;
         }
 
         var due = trigger switch
         {
-            BackupTrigger.BeforeLaunch => BackupsBeforeLaunch || (BackupsDaily && IsDailyBackupDue()),
+            BackupTrigger.BeforeLaunch => BackupsBeforeLaunch || (BackupsDaily && IsDailyBackupDue(instance)),
             BackupTrigger.BeforeModChange => BackupsBeforeModChanges,
             _ => false
         };
@@ -736,13 +744,13 @@ public partial class MainWindowViewModel
             return false;
         }
 
-        await CreateBackupNowAsync();
+        await CreateBackupAsync(instance);
         return true;
     }
 
-    private bool IsDailyBackupDue()
+    private bool IsDailyBackupDue(Instance instance)
     {
-        var latest = _backups.List(BackupsDirectory, SelectedInstance?.Id).FirstOrDefault();
+        var latest = _backups.List(BackupsDirectory, instance.Id).FirstOrDefault();
 
         return latest is null || DateTimeOffset.Now - latest.CreatedAt >= TimeSpan.FromDays(1);
     }

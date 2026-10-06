@@ -246,9 +246,26 @@ public partial class MainWindowViewModel
 
     /// <summary>Puts the newer version in place of the file, with anything it now needs.</summary>
     [RelayCommand]
-    private async Task UpdateModAsync(InstalledModItem? item)
+    private Task UpdateModAsync(InstalledModItem? item) => UpdateModIntoAsync(item, CurrentInstallTarget());
+
+    [RelayCommand]
+    private async Task UpdateAllModsAsync()
     {
-        if (item?.Update is null || item.IsUpdating || SelectedInstance is null)
+        var pending = InstalledMods.Where(m => m.HasUpdate).ToList();
+
+        // The list was read from one build: every update goes into that one, even if
+        // another build is opened before the last of them is done.
+        var target = CurrentInstallTarget();
+
+        foreach (var item in pending)
+        {
+            await UpdateModIntoAsync(item, target);
+        }
+    }
+
+    private async Task UpdateModIntoAsync(InstalledModItem? item, InstallTarget target)
+    {
+        if (item?.Update is null || item.IsUpdating || target.Instance is null)
         {
             return;
         }
@@ -256,7 +273,7 @@ public partial class MainWindowViewModel
         try
         {
             item.IsUpdating = true;
-            await ApplyModUpdateAsync(item);
+            await ApplyModUpdateAsync(item, target);
         }
         catch (Exception ex)
         {
@@ -267,18 +284,7 @@ public partial class MainWindowViewModel
         }
     }
 
-    [RelayCommand]
-    private async Task UpdateAllModsAsync()
-    {
-        var pending = InstalledMods.Where(m => m.HasUpdate).ToList();
-
-        foreach (var item in pending)
-        {
-            await UpdateModAsync(item);
-        }
-    }
-
-    private async Task ApplyModUpdateAsync(InstalledModItem item)
+    private async Task ApplyModUpdateAsync(InstalledModItem item, InstallTarget target)
     {
         var version = item.Update!;
         var oldFile = item.FileName;
@@ -293,9 +299,9 @@ public partial class MainWindowViewModel
         Status = Localize("Mods_Updating", "Updating {0} to {1}…", title, version.VersionNumber);
 
         // The same path a fresh install takes: file, then whatever it requires.
-        await InstallProjectWithDependenciesAsync(version, slug, title, project?.IconUrl ?? item.Record?.IconUrl);
+        await InstallProjectWithDependenciesAsync(version, slug, title, project?.IconUrl ?? item.Record?.IconUrl, target: target);
 
-        var newFile = ModrinthClient.SelectFile(version, SelectedVersion?.Id, SelectedLoader)?.FileName;
+        var newFile = ModrinthClient.SelectFile(version, target.GameVersion, target.Loader)?.FileName;
 
         var replaced = newFile is not null && !string.Equals(newFile, oldFile, StringComparison.OrdinalIgnoreCase);
 
@@ -305,14 +311,18 @@ public partial class MainWindowViewModel
         if (replaced && System.IO.File.Exists(item.Path) && _mods.SetEnabled(item.Path, false))
         {
             AppendConsole($"[mods] switched off {oldFile}: updated to {newFile}, kept for rolling back");
-            MarkRecordDisabled(SelectedInstance!, oldFile);
-            _instances.Save(SelectedInstance!);
+            MarkRecordDisabled(target.Instance!, oldFile);
+            _instances.Save(target.Instance!);
         }
 
         _knownModUpdates.Remove(oldFile);
         ModUpdateCount = Math.Max(0, ModUpdateCount - 1);
 
-        RefreshMods();
+        if (IsSelectedBuild(target))
+        {
+            RefreshMods();
+        }
+
         Status = replaced
             ? Localize("Mods_UpdatedKeptOld", "{0} updated to {1}. The old version is switched off and stays in the list, so you can go back.", title, version.VersionNumber)
             : Localize("Mods_Updated", "{0} updated to {1}", title, version.VersionNumber);

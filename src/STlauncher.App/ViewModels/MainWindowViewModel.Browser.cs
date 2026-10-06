@@ -540,8 +540,24 @@ public partial class MainWindowViewModel
                                      (SelectedLoader != Core.Loaders.LoaderKind.Vanilla || !ProjectTypes.UsesLoader(BrowserKind));
 
     /// <summary>The loader to filter versions by: none for packs, which have no loader.</summary>
-    private Core.Loaders.LoaderKind LoaderFor(string projectType)
-        => ProjectTypes.UsesLoader(projectType) ? SelectedLoader : Core.Loaders.LoaderKind.Vanilla;
+    private Core.Loaders.LoaderKind LoaderFor(string projectType) => LoaderFor(projectType, SelectedLoader);
+
+    private static Core.Loaders.LoaderKind LoaderFor(string projectType, Core.Loaders.LoaderKind loader)
+        => ProjectTypes.UsesLoader(projectType) ? loader : Core.Loaders.LoaderKind.Vanilla;
+
+    /// <summary>
+    /// The build an install was started for. The files take a while to come, and the
+    /// player may open another build before the last of them does; every download,
+    /// record, backup and list refresh of the install stays with this one.
+    /// </summary>
+    private sealed record InstallTarget(Instance? Instance, string Directory, string? GameVersion, Core.Loaders.LoaderKind Loader);
+
+    private InstallTarget CurrentInstallTarget()
+        => new(SelectedInstance, InstanceDirectory, SelectedVersion?.Id, SelectedLoader);
+
+    /// <summary>True while the build an install was started for is still the one open.</summary>
+    private bool IsSelectedBuild(InstallTarget target)
+        => target.Instance is null ? SelectedInstance is null : IsSelectedBuild(target.Instance);
 
     /// <summary>Re-runs the browser after the build or the filters change, with a short delay.</summary>
     private void ScheduleBrowserReload()
@@ -617,8 +633,12 @@ public partial class MainWindowViewModel
             item.IsInstalling = true;
             Status = Localize("Status_ResolvingMod", "Resolving {0}…", item.Result.Title);
 
+            // The build the card was pressed for: the install goes there, whatever build
+            // is open by the time the files have come.
+            var target = CurrentInstallTarget();
+
             var versions = await SourceFor(item.Result.Source)
-                .GetVersionsAsync(item.Result.ProjectId, SelectedVersion?.Id, LoaderFor(BrowserKind));
+                .GetVersionsAsync(item.Result.ProjectId, target.GameVersion, LoaderFor(BrowserKind, target.Loader));
             var preferred = ModrinthClient.SelectPreferred(versions);
 
             if (preferred is null)
@@ -630,7 +650,7 @@ public partial class MainWindowViewModel
             // One press adds the mod that was pressed. Anything more than that - other mods
             // it needs, or a file only its page gives out - is shown on the mod's panel
             // first, and the install waits for the button there.
-            review = await IsBlockedAsync(preferred) || await BringsOtherModsAsync(preferred);
+            review = await IsBlockedAsync(preferred) || await BringsOtherModsAsync(preferred, target.Instance);
 
             if (!review)
             {
@@ -641,13 +661,19 @@ public partial class MainWindowViewModel
                     item.Result.Slug,
                     item.Result.Title,
                     item.Result.IconUrl,
-                    projectType: BrowserKind);
+                    projectType: BrowserKind,
+                    target: target);
 
-                item.Installed = true;
-                RefreshHiddenItems();
+                // The card and the list on screen belong to the open build: with another
+                // one opened meanwhile, they have nothing to show for this install.
+                if (IsSelectedBuild(target))
+                {
+                    item.Installed = true;
+                    RefreshHiddenItems();
 
-                // The mod itself is the last file installed: its dependencies came first.
-                RevealFreshMods(_installBatch.ToList(), _installBatch.LastOrDefault());
+                    // The mod itself is the last file installed: its dependencies came first.
+                    RevealFreshMods(_installBatch.ToList(), _installBatch.LastOrDefault());
+                }
             }
         }
         catch (Exception ex)
@@ -677,6 +703,8 @@ public partial class MainWindowViewModel
     /// Installs a version and everything it requires. A mod that needs Fabric API and is
     /// installed without it crashes the game on the next start with a message the player
     /// cannot act on - so the required dependencies come along, one level down each.
+    /// The build is settled once, at the start: the player may open another build while
+    /// the files are coming, and the rest of them still go where the first one went.
     /// </summary>
     private async Task InstallProjectWithDependenciesAsync(
         ModVersion version,
@@ -684,12 +712,14 @@ public partial class MainWindowViewModel
         string title,
         string? iconUrl,
         int depth = 0,
-        string? projectType = null)
+        string? projectType = null,
+        InstallTarget? target = null)
     {
         projectType ??= BrowserKind;
+        target ??= CurrentInstallTarget();
         var fromCurseForge = version.Source == ModSource.CurseForge;
         var source = SourceFor(version.Source);
-        var file = ModrinthClient.SelectFile(version, SelectedVersion?.Id, LoaderFor(projectType));
+        var file = ModrinthClient.SelectFile(version, target.GameVersion, LoaderFor(projectType, target.Loader));
 
         // A CurseForge file may come without an address and still be downloadable; that
         // is settled below. For Modrinth no address means no file.
@@ -712,7 +742,7 @@ public partial class MainWindowViewModel
         if (depth == 0)
         {
             _modsLeftToThePlayer.Clear();
-            await MaybeBackupAsync(BackupTrigger.BeforeModChange);
+            await MaybeBackupAsync(BackupTrigger.BeforeModChange, target.Instance);
         }
 
         // Dependencies first, so a failure there leaves the build without the mod rather
@@ -723,7 +753,7 @@ public partial class MainWindowViewModel
             {
                 var project = await source.GetProjectAsync(dependency.ProjectId!);
 
-                if (project is null || IsProjectInstalled(project.Slug))
+                if (project is null || IsProjectInstalled(target.Instance, project.Slug))
                 {
                     continue;
                 }
@@ -731,7 +761,7 @@ public partial class MainWindowViewModel
                 Status = Localize("Status_ResolvingDependency", "Adding {0}, which {1} needs…", project.Title, title);
 
                 // A shader's dependency is a mod (Iris); the folder follows the dependency.
-                var candidates = await source.GetVersionsAsync(project.Id, SelectedVersion?.Id, LoaderFor(project.ProjectType));
+                var candidates = await source.GetVersionsAsync(project.Id, target.GameVersion, LoaderFor(project.ProjectType, target.Loader));
                 var pick = dependency.VersionId is { } wanted
                     ? candidates.FirstOrDefault(v => v.Id == wanted) ?? ModrinthClient.SelectPreferred(candidates)
                     : ModrinthClient.SelectPreferred(candidates);
@@ -742,7 +772,7 @@ public partial class MainWindowViewModel
                         Localize("Error_DependencyMissing", "{0} needs {1}, which has no version for this build", title, project.Title));
                 }
 
-                await InstallProjectWithDependenciesAsync(pick, project.Slug, project.Title, project.IconUrl, depth + 1, project.ProjectType);
+                await InstallProjectWithDependenciesAsync(pick, project.Slug, project.Title, project.IconUrl, depth + 1, project.ProjectType, target);
             }
         }
 
@@ -765,7 +795,7 @@ public partial class MainWindowViewModel
         if (fromCurseForge)
         {
             // The client fetches from CurseForge's own CDN only and checks the SHA-1 the API gave.
-            var outcome = await _curseForge.InstallAsync(version, InstanceDirectory, folder);
+            var outcome = await _curseForge.InstallAsync(version, target.Directory, folder);
 
             if (outcome.State != CurseForgeFileState.Ready || outcome.File is null)
             {
@@ -777,18 +807,18 @@ public partial class MainWindowViewModel
         }
         else
         {
-            await _mods.InstallAsync(InstanceDirectory, folder, file.FileName, file.Url, file.Sha1, file.Size);
+            await _mods.InstallAsync(target.Directory, folder, file.FileName, file.Url, file.Sha1, file.Size);
         }
 
         AppendConsole($"[mods] installed {folder}/{file.FileName} ({slug} {version.VersionNumber}, {SourceName(version.Source)})");
 
-        if (string.Equals(folder, ModManager.ModsFolderName, StringComparison.OrdinalIgnoreCase) && SelectedInstance is not null)
+        if (string.Equals(folder, ModManager.ModsFolderName, StringComparison.OrdinalIgnoreCase) && target.Instance is not null)
         {
-            ReplaceOtherVersions(SelectedInstance, file.FileName);
+            ReplaceOtherVersions(target.Instance, file.FileName);
             _installBatch.Add(file.FileName);
         }
 
-        RecordInstalledMod(fromCurseForge
+        var record = fromCurseForge
             ? CurseForgeClient.RecordFor(version, file, slug, title, iconUrl, folder)
             : new InstalledModRecord
             {
@@ -799,9 +829,20 @@ public partial class MainWindowViewModel
                 IconUrl = iconUrl,
                 Version = version.VersionNumber,
                 Folder = folder
-            });
+            };
 
-        RefreshMods();
+        if (target.Instance is not null)
+        {
+            RecordInstalledMod(target.Instance, record);
+        }
+
+        // The list on screen is the open build's: with another one opened meanwhile, the
+        // file that came is not its to show. It is found there when this build is reopened.
+        if (IsSelectedBuild(target))
+        {
+            RefreshMods();
+        }
+
         Status = Localize("Status_InstalledFile", "Installed {0}", file.FileName);
 
         if (depth == 0)
@@ -908,8 +949,11 @@ public partial class MainWindowViewModel
         record.DisabledByUser = true;
     }
 
-    public bool IsProjectInstalled(string slug)
-        => SelectedInstance?.InstalledMods.Any(m =>
+    public bool IsProjectInstalled(string slug) => IsProjectInstalled(SelectedInstance, slug);
+
+    /// <summary>The same, for the build an install was started for.</summary>
+    private static bool IsProjectInstalled(Instance? instance, string slug)
+        => instance?.InstalledMods.Any(m =>
                string.Equals(m.Id, slug, StringComparison.OrdinalIgnoreCase)) == true;
 
     /// <summary>Re-evaluates the "installed" badge after the build or its files change.</summary>

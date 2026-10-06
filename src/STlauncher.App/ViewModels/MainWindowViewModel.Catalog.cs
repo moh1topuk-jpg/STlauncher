@@ -402,16 +402,20 @@ public partial class MainWindowViewModel
             return;
         }
 
+        // The build whose list the mod is in: the backup takes a while, and the record
+        // must leave that build's list even if another one is opened meanwhile.
+        var instance = SelectedInstance;
+
         try
         {
-            await MaybeBackupAsync(BackupTrigger.BeforeModChange);
+            await MaybeBackupAsync(BackupTrigger.BeforeModChange, instance);
             _mods.Uninstall(mod.Path);
 
-            if (SelectedInstance is not null)
+            if (instance is not null)
             {
-                SelectedInstance.InstalledMods.RemoveAll(m =>
+                instance.InstalledMods.RemoveAll(m =>
                     string.Equals(m.FileName, mod.FileName, StringComparison.OrdinalIgnoreCase));
-                _instances.Save(SelectedInstance);
+                _instances.Save(instance);
             }
 
             RefreshMods();
