@@ -675,6 +675,25 @@
     <x:String x:Key="DataFolder_Done">Перенесено файлов: {0}. Перезапускаю лаунчер…</x:String>
     <x:String x:Key="DataFolder_Failed">Не удалось перенести данные: {0}</x:String>
 
+    <!-- Shared files: one copy on disk for all builds -->
+    <x:String x:Key="Settings_SharedFiles">Хранить одинаковые моды и паки один раз</x:String>
+    <x:String x:Key="Settings_SharedFilesHint">Мод, ресурспак или шейдер, который есть в нескольких сборках, занимает место на диске один раз. Удаление мода или сборки остальных не задевает. Выключатель действует только на новые загрузки; на диске FAT32 или exFAT файлы хранятся по-старому.</x:String>
+    <x:String x:Key="Settings_SharedFilesClean">Освободить место</x:String>
+    <x:String x:Key="Settings_SharedFilesCleanHint">Сравнивает моды и паки во всех сборках, одинаковые файлы сводит к одному и убирает из хранилища те, что не нужны ни одной сборке. Из сборок ничего не удаляется.</x:String>
+    <x:String x:Key="SharedFiles_Empty">Общих файлов пока нет.</x:String>
+    <x:String x:Key="SharedFiles_Summary">Общих файлов: {0}, на диске {1}. Экономия: {2}.</x:String>
+    <x:String x:Key="SharedFiles_SummaryPlain">Общих файлов: {0}, на диске {1}.</x:String>
+    <x:String x:Key="SharedFiles_Unused">Из них {0} не нужны ни одной сборке.</x:String>
+    <x:String x:Key="SharedFiles_Scanning">Просматриваю сборки…</x:String>
+    <x:String x:Key="SharedFiles_Comparing">Сравниваю файлы: {0} из {1}</x:String>
+    <x:String x:Key="SharedFiles_Linking">Свожу одинаковые файлы: {0} из {1}</x:String>
+    <x:String x:Key="SharedFiles_Removing">Убираю то, что не нужно сборкам: {0} из {1}</x:String>
+    <x:String x:Key="SharedFiles_Nothing">Освобождать нечего: одинаковых файлов, лежащих отдельно, в сборках нет.</x:String>
+    <x:String x:Key="SharedFiles_Done">Освобождено {0}. Сведено одинаковых файлов: {1}; убрано из хранилища: {2}.</x:String>
+    <x:String x:Key="SharedFiles_Skipped">Не удалось свести: {0}. Файл занят, или этот диск не умеет хранить файлы один раз.</x:String>
+    <x:String x:Key="SharedFiles_Cancelled">Остановлено. Сделанное сохранено, сборки целы.</x:String>
+    <x:String x:Key="SharedFiles_Failed">Не получилось закончить: {0}</x:String>
+
     <!-- Build change notice and usage statistics -->
     <x:String x:Key="BuildChange_Title">Сборка обновлена</x:String>
     <x:String x:Key="BuildChange_TitleFor">«{0}»: обновление из каталога</x:String>

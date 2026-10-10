@@ -23,6 +23,9 @@ public sealed class ModManager
         _downloader = downloader ?? throw new ArgumentNullException(nameof(downloader));
     }
 
+    /// <summary>The store the downloads go through, for the clean-up in Settings; null when there is none.</summary>
+    public Storage.SharedFileStore? SharedFiles => _downloader.SharedFiles;
+
     public static string ModsDirectory(string gameDirectory)
         => Path.Combine(gameDirectory, ModsFolderName);
 

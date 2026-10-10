@@ -420,6 +420,7 @@ public partial class MainWindowViewModel : ViewModelBase
         AfterLaunch = settings.AfterLaunch;
         ForceUpdate = settings.ForceUpdate;
         _globalJavaPath = settings.JavaPath ?? string.Empty;
+        ShareFiles = settings.ShareFiles;
 
         BackupsEnabled = settings.BackupsEnabled;
         BackupsBeforeLaunch = settings.BackupsBeforeLaunch;
@@ -1345,6 +1346,7 @@ public partial class MainWindowViewModel : ViewModelBase
             JavaPath = SelectedJavaChoice?.Path,
             AfterLaunch = AfterLaunch,
             ForceUpdate = ForceUpdate,
+            ShareFiles = ShareFiles,
             BackupsEnabled = BackupsEnabled,
             BackupsBeforeLaunch = BackupsBeforeLaunch,
             BackupsDaily = BackupsDaily,

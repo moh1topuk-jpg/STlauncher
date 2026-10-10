@@ -142,6 +142,9 @@ public sealed class AppSettings
 
     public bool ShowAlpha { get; set; }
 
+    /// <summary>New downloads of a mod or pack several builds have in common are kept once on disk.</summary>
+    public bool ShareFiles { get; set; } = true;
+
     /// <summary>Explicit Java executable for every build. Empty means automatic.</summary>
     public string? JavaPath { get; set; }
 

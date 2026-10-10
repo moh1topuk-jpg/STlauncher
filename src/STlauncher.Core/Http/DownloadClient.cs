@@ -8,6 +8,7 @@ using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using STlauncher.Core.Storage;
 
 namespace STlauncher.Core.Http;
 
@@ -18,13 +19,27 @@ public sealed class DownloadClient
     private readonly int _maxAttempts;
     private readonly VerifiedFileCache _cache;
 
-    public DownloadClient(HttpClient http, ILogger<DownloadClient>? logger = null, int maxAttempts = 3, VerifiedFileCache? cache = null)
+    public DownloadClient(
+        HttpClient http,
+        ILogger<DownloadClient>? logger = null,
+        int maxAttempts = 3,
+        VerifiedFileCache? cache = null,
+        SharedFileStore? sharedFiles = null)
     {
         _http = http ?? throw new ArgumentNullException(nameof(http));
         _logger = logger;
         _maxAttempts = Math.Max(1, maxAttempts);
         _cache = cache ?? new VerifiedFileCache();
+        SharedFiles = sharedFiles;
     }
+
+    /// <summary>
+    /// One copy on disk for the mods and packs several builds have in common. Every
+    /// download into a build passes through this class, so this is the one place that
+    /// knows to ask; the store itself decides which destinations it cares about. Null
+    /// means plain files everywhere.
+    /// </summary>
+    public SharedFileStore? SharedFiles { get; }
 
     /// <summary>Files verified so far, so a forced re-check can forget them all.</summary>
     public VerifiedFileCache Cache => _cache;
@@ -101,6 +116,15 @@ public sealed class DownloadClient
             Directory.CreateDirectory(directory);
         }
 
+        // Another build already has this very file: a link to it instead of a download.
+        if (SharedFiles is not null && !string.IsNullOrEmpty(item.Sha1) &&
+            SharedFiles.TryLinkInto(item.Sha1, item.DestinationPath, path => VerifyHash(path, item)))
+        {
+            _logger?.LogInformation("Linked {Path} from the shared store instead of downloading.", item.DestinationPath);
+            RememberVerified(item);
+            return true;
+        }
+
         // Unique per attempt: two items in the same batch can share a destination, and a
         // fixed ".part" name makes them fight over the same file.
         var tempPath = $"{item.DestinationPath}.{Guid.NewGuid():N}.part";
@@ -119,6 +143,12 @@ public sealed class DownloadClient
                 }
 
                 File.Move(tempPath, item.DestinationPath, overwrite: true);
+
+                // The SHA-1 is taken on trust only when it is the hash just checked.
+                SharedFiles?.Adopt(
+                    item.DestinationPath,
+                    string.Equals(ExpectedHash(item), item.Sha1, StringComparison.Ordinal) ? item.Sha1 : null);
+
                 RememberVerified(item);
                 return true;
             }

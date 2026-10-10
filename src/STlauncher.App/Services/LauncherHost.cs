@@ -67,6 +67,7 @@ public static class LauncherHost
 
         services.AddSingleton<MetadataClient>();
         services.AddSingleton<VerifiedFileCache>();
+        services.AddSingleton(new STlauncher.Core.Storage.SharedFileStore(paths) { Enabled = startupSettings.ShareFiles });
         services.AddSingleton<DownloadClient>();
         services.AddSingleton<VersionService>();
         services.AddSingleton<AssetService>();
