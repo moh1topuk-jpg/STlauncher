@@ -92,6 +92,7 @@
            TextBlock.strong     a row's or a setting's title (bold). TextBlock.sub: the one muted line under it.
            TextBlock.mono       a version or a loader: mono, secondary colour.
            TextBlock.tag        "there is 0.8.13": mono, the warning colour.
+           TextBlock.kbd        the name of a key beside what it does ("Ctrl K", "Esc"): mono, muted.
            Ellipse.dot          a 7 px status dot, green; .warn gold, .off grey.
            Border.icon-tile     the 34x34 coloured square with a letter or an icon.
            Border.hairline      a 1 px line across.
@@ -1825,6 +1826,60 @@
         <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
         <Setter Property="FontSize" Value="12.5"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <!-- The search entry in that strip: a button dressed as a field, 300 wide; "compact"
+         leaves only its icon when the strip has no room for the words. -->
+    <Style Selector="Button.search-entry">
+        <Setter Property="Width" Value="300"/>
+        <Setter Property="Height" Value="32"/>
+        <Setter Property="Padding" Value="12,0"/>
+        <Setter Property="CornerRadius" Value="9"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+        <Setter Property="FontWeight" Value="Medium"/>
+        <Setter Property="FontSize" Value="13"/>
+    </Style>
+    <Style Selector="Button.search-entry /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource FieldBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+    <Style Selector="Button.search-entry:pointerover /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}"/>
+    </Style>
+    <Style Selector="Button.search-entry TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+    </Style>
+    <Style Selector="Button.search-entry PathIcon">
+        <Setter Property="Width" Value="15"/>
+        <Setter Property="Height" Value="15"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+    </Style>
+    <Style Selector="Button.search-entry:pointerover PathIcon">
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+    </Style>
+    <Style Selector="Button.search-entry:pressed">
+        <Setter Property="RenderTransform" Value="scale(1)"/>
+    </Style>
+    <Style Selector="Button.search-entry.compact">
+        <Setter Property="Width" Value="32"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+    </Style>
+    <Style Selector="Button.search-entry.compact TextBlock">
+        <Setter Property="IsVisible" Value="False"/>
+    </Style>
+    <Style Selector="Button.search-entry.compact > Grid">
+        <Setter Property="ColumnSpacing" Value="0"/>
+    </Style>
+
+    <!-- The name of a key beside what it does: "Ctrl K", "Esc". -->
+    <Style Selector="TextBlock.kbd">
+        <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="FontWeight" Value="Medium"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
     </Style>
 
     <!-- Red stays red under the pointer, whatever else the button is. -->

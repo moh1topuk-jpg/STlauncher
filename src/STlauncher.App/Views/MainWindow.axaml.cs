@@ -17,6 +17,7 @@ public partial class MainWindow : Window
         FitToScreen();
         SizeChanged += (_, _) => UpdateCompactScale();
         DataContextChanged += (_, _) => WatchUiScale();
+        InitializeSearch();
 
         // The mark flies to the rail logo, wherever the layout puts it.
         Splash.LayoutUpdated += (_, _) =>

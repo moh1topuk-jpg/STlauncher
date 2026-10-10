@@ -8,6 +8,31 @@
     <x:String x:Key="Nav_Server">Server</x:String>
     <x:String x:Key="Nav_Console">Console</x:String>
     <x:String x:Key="Nav_Settings">Settings</x:String>
+    <x:String x:Key="Search_Entry">Find a build, mod or setting</x:String>
+    <x:String x:Key="Search_GroupPlaces">Places and actions</x:String>
+    <x:String x:Key="Search_GroupBuilds">Builds</x:String>
+    <x:String x:Key="Search_GroupRecentBuilds">Recent builds</x:String>
+    <x:String x:Key="Search_GroupMods">Mods of “{0}”</x:String>
+    <x:String x:Key="Search_GroupPacks">Resource packs of “{0}”</x:String>
+    <x:String x:Key="Search_GroupShaders">Shaders of “{0}”</x:String>
+    <x:String x:Key="Search_GroupWorlds">Worlds of “{0}”</x:String>
+    <x:String x:Key="Search_GroupSettings">Settings</x:String>
+    <x:String x:Key="Search_Empty">Nothing found</x:String>
+    <x:String x:Key="Search_EmptyHint">Try the name of a build or a mod, a word from a setting, or a section.</x:String>
+    <x:String x:Key="Search_LayoutNote">Showing results for “{0}”: the other keyboard layout seems to have been on.</x:String>
+    <x:String x:Key="Search_Hints">↑ ↓ select  ·  Enter open  ·  Tab button on the right  ·  Esc close</x:String>
+    <x:String x:Key="Search_ActPlay">Play “{0}”</x:String>
+    <x:String x:Key="Search_ActImport">Bring builds over from another launcher</x:String>
+    <x:String x:Key="Search_ActJoin">Join a friend by code</x:String>
+    <x:String x:Key="Search_ActCatalog">Find mods in the catalog</x:String>
+    <x:String x:Key="Search_ActBuildSettings">Settings of the build “{0}”</x:String>
+    <x:String x:Key="Search_ActBuildFolder">Open the build's folder</x:String>
+    <x:String x:Key="Search_ActDataFolder">Open the launcher's data folder</x:String>
+    <x:String x:Key="Search_ActReport">Collect a report for support</x:String>
+    <x:String x:Key="Search_Section">section</x:String>
+    <x:String x:Key="Search_Selected">selected</x:String>
+    <x:String x:Key="Search_ModOff">switched off</x:String>
+    <x:String x:Key="Search_BuildBusy">The build cannot be changed now: the game is starting or already running.</x:String>
 
     <!-- Game page -->
     <x:String x:Key="Game_Profile">Profile</x:String>

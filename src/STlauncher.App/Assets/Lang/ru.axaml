@@ -8,6 +8,31 @@
     <x:String x:Key="Nav_Server">Сервер</x:String>
     <x:String x:Key="Nav_Console">Консоль</x:String>
     <x:String x:Key="Nav_Settings">Настройки</x:String>
+    <x:String x:Key="Search_Entry">Найти сборку, мод, настройку</x:String>
+    <x:String x:Key="Search_GroupPlaces">Разделы и действия</x:String>
+    <x:String x:Key="Search_GroupBuilds">Сборки</x:String>
+    <x:String x:Key="Search_GroupRecentBuilds">Недавние сборки</x:String>
+    <x:String x:Key="Search_GroupMods">Моды сборки «{0}»</x:String>
+    <x:String x:Key="Search_GroupPacks">Ресурспаки сборки «{0}»</x:String>
+    <x:String x:Key="Search_GroupShaders">Шейдеры сборки «{0}»</x:String>
+    <x:String x:Key="Search_GroupWorlds">Миры сборки «{0}»</x:String>
+    <x:String x:Key="Search_GroupSettings">Настройки</x:String>
+    <x:String x:Key="Search_Empty">Ничего не нашлось</x:String>
+    <x:String x:Key="Search_EmptyHint">Попробуйте название сборки или мода, слово из настройки или раздел.</x:String>
+    <x:String x:Key="Search_LayoutNote">Показано для «{0}»: похоже, была включена другая раскладка.</x:String>
+    <x:String x:Key="Search_Hints">↑ ↓ выбрать  ·  Enter открыть  ·  Tab кнопка справа  ·  Esc закрыть</x:String>
+    <x:String x:Key="Search_ActPlay">Играть в «{0}»</x:String>
+    <x:String x:Key="Search_ActImport">Перенести сборки из другого лаунчера</x:String>
+    <x:String x:Key="Search_ActJoin">Зайти к другу по коду</x:String>
+    <x:String x:Key="Search_ActCatalog">Найти моды в каталоге</x:String>
+    <x:String x:Key="Search_ActBuildSettings">Настройки сборки «{0}»</x:String>
+    <x:String x:Key="Search_ActBuildFolder">Открыть папку сборки</x:String>
+    <x:String x:Key="Search_ActDataFolder">Открыть папку данных лаунчера</x:String>
+    <x:String x:Key="Search_ActReport">Собрать отчёт для поддержки</x:String>
+    <x:String x:Key="Search_Section">раздел</x:String>
+    <x:String x:Key="Search_Selected">выбрана</x:String>
+    <x:String x:Key="Search_ModOff">выключен</x:String>
+    <x:String x:Key="Search_BuildBusy">Сейчас сборку не сменить: игра запускается или уже идёт.</x:String>
 
     <!-- Game page -->
     <x:String x:Key="Game_Profile">Профиль</x:String>
