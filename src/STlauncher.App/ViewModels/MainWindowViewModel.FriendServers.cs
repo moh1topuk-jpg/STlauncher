@@ -135,6 +135,35 @@ public partial class MainWindowViewModel
     private ServerInvite? _pendingInvite;
     private BuildCodePayload? _pendingInviteBuild;
 
+    /// <summary>The build of the player's own that the screen said the server would be played with.</summary>
+    private Instance? _pendingInviteExisting;
+
+    /// <summary>
+    /// Which build to join a server with. Builds that follow the catalog or came whole
+    /// from another launcher are left out of the choice: the first belong to their own
+    /// server, the second do not say what loader they really carry. The build made for
+    /// this server is always in.
+    /// </summary>
+    private JoinDecision PlanJoin(string? gameVersion, LoaderKind? loader, bool inviteBringsBuild, Instance? dedicated, bool canCreate = true)
+        => JoinPlan.Decide(
+            gameVersion,
+            loader,
+            inviteBringsBuild,
+            _allInstances
+                .Select(i => new JoinBuild(
+                    i.Id,
+                    string.IsNullOrWhiteSpace(i.CatalogBuildId) && string.IsNullOrWhiteSpace(i.ProfileVersionId) ? i.VersionId : null,
+                    i.Loader,
+                    ReferenceEquals(i, dedicated)))
+                .ToList(),
+            SelectedInstance?.Id,
+            canCreate);
+
+    private Instance? InstanceById(string? id)
+        => string.IsNullOrWhiteSpace(id)
+            ? null
+            : _allInstances.FirstOrDefault(i => string.Equals(i.Id, id, StringComparison.OrdinalIgnoreCase));
+
     [ObservableProperty]
     private bool _hasFriendInvite;
 
@@ -163,6 +192,11 @@ public partial class MainWindowViewModel
         var loader = invite.Loader.ToString();
         var known = FriendServerStore.FindSame(_friendServerModels, invite);
         var knownBuild = known is null ? null : FriendServerInstance(known);
+
+        // The server's own build and the build inside the invite go first, as before;
+        // only an invite without a build looks among the builds the player has.
+        var plan = PlanJoin(invite.GameVersion, invite.Loader, _pendingInviteBuild is not null, knownBuild);
+        _pendingInviteExisting = plan.Action == JoinAction.UseExisting ? InstanceById(plan.BuildId) : null;
 
         FriendInviteTitle = string.IsNullOrWhiteSpace(invite.HostNickname)
             ? Localize("Friends_InviteTitleNoHost", "An invite to a server")
@@ -205,6 +239,12 @@ public partial class MainWindowViewModel
                 Localize("Friends_InviteBuildAdd", "The build “{0}” is added", payload.Name),
                 detail,
                 IsDownload: payload.Files.Count > 0));
+        }
+        else if (_pendingInviteExisting is { } existing)
+        {
+            FriendInviteLines.Add(new HostPlanLine(
+                Localize("Friends_InviteBuildExisting", "Played with your build “{0}”", existing.Name),
+                Localize("Friends_InviteBuildExistingDetail", "Minecraft {0} · {1}: it fits this server. Nothing is created or downloaded, and the build is not changed.", existing.VersionId, existing.Loader)));
         }
         else
         {
@@ -256,11 +296,32 @@ public partial class MainWindowViewModel
             var known = FriendServerStore.FindSame(_friendServerModels, invite);
             var instance = known is null ? null : FriendServerInstance(known);
 
+            var hadBuild = instance is not null;
+
             if (instance is null)
             {
-                instance = _pendingInviteBuild is { } payload
-                    ? await AddBuildFromPayloadAsync(payload, showBuild: false)
-                    : CreateBuildForFriendServer(invite);
+                if (_pendingInviteExisting is { } existing)
+                {
+                    if (!_allInstances.Contains(existing))
+                    {
+                        // Deleted while the invite was on screen: what was promised cannot
+                        // be done, so the screen says anew what would happen now.
+                        ShowFriendInvite(invite);
+                        return;
+                    }
+
+                    instance = existing;
+                }
+                else
+                {
+                    instance = _pendingInviteBuild is { } payload
+                        ? await AddBuildFromPayloadAsync(payload, showBuild: false)
+                        : CreateCleanBuild(
+                            string.IsNullOrWhiteSpace(invite.Name) ? Localize("Friends_DefaultName", "A friend's server") : invite.Name,
+                            invite.GameVersion,
+                            invite.Loader,
+                            invite.LoaderVersion);
+                }
 
                 if (instance is null)
                 {
@@ -276,10 +337,13 @@ public partial class MainWindowViewModel
             HasFriendInvite = false;
             _pendingInvite = null;
             _pendingInviteBuild = null;
+            _pendingInviteExisting = null;
 
             Status = known is null
                 ? Localize("Friends_Added", "The server “{0}” is added. Press “Play” once your friend has started it.", invite.Name)
-                : Localize("Friends_Updated", "The addresses of the server “{0}” are updated", invite.Name);
+                : hadBuild
+                    ? Localize("Friends_Updated", "The addresses of the server “{0}” are updated", invite.Name)
+                    : Localize("Friends_BuildBack", "The server “{0}” has a build again: “{1}”. Press “Play”.", invite.Name, instance.Name);
         }
         catch (Exception ex)
         {
@@ -303,22 +367,101 @@ public partial class MainWindowViewModel
         HasFriendInvite = false;
         _pendingInvite = null;
         _pendingInviteBuild = null;
+        _pendingInviteExisting = null;
     }
 
-    /// <summary>An invite to a server that was not made from a build: a build of that version and loader, with nothing in it.</summary>
-    private Instance CreateBuildForFriendServer(ServerInvite invite)
+    /// <summary>
+    /// A build of a server's version and loader with nothing in it: for an invite to a
+    /// server that was not made from a build, and for the player's own server whose build
+    /// is gone. Only ever called after the player agreed to it on the screen.
+    /// </summary>
+    private Instance CreateCleanBuild(string name, string gameVersion, LoaderKind loader, string? loaderVersion)
     {
-        var name = string.IsNullOrWhiteSpace(invite.Name) ? Localize("Friends_DefaultName", "A friend's server") : invite.Name;
         var instance = _instances.Create(UniqueInstanceName(name));
 
-        instance.VersionId = invite.GameVersion;
-        instance.Loader = invite.Loader;
-        instance.LoaderVersion = invite.LoaderVersion;
+        instance.VersionId = gameVersion;
+        instance.Loader = loader;
+        instance.LoaderVersion = loaderVersion;
+        instance.MaxMemoryMb = MemoryForNewBuild(mods: 0);
         _instances.Save(instance);
 
         _allInstances.Add(instance);
         ApplyBuildFilter();
         return instance;
+    }
+
+    /// <summary>
+    /// "Play" on a server whose build was deleted. A build of the player's that fits is
+    /// taken as it is; a new one is only offered, on the same screen an invite is agreed
+    /// to on; and with nothing to go by, nothing starts.
+    /// </summary>
+    private async Task<Instance?> FindBuildForFriendServerAsync(FriendServerItem item)
+    {
+        var server = item.Model;
+
+        if (string.IsNullOrWhiteSpace(server.GameVersion))
+        {
+            try
+            {
+                item.IsBusy = true;
+                item.Note = Localize("Friends_AskingVersion", "Asking the server which version it runs…");
+
+                if (await PingFriendServerVersionAsync(server) is { } learnt)
+                {
+                    server.GameVersion = learnt;
+                    SaveFriendServers();
+                }
+            }
+            finally
+            {
+                item.IsBusy = false;
+            }
+        }
+
+        var plan = PlanJoin(server.GameVersion, server.Loader, inviteBringsBuild: false, dedicated: null);
+
+        if (plan.Action == JoinAction.UseExisting && InstanceById(plan.BuildId) is { } build)
+        {
+            server.InstanceId = build.Id;
+            SaveFriendServers();
+
+            item.HasBuild = true;
+            item.BuildLine = Localize("Friends_Build", "The build “{0}” is on this computer", build.Name);
+            return build;
+        }
+
+        if (plan.Action == JoinAction.CreateClean)
+        {
+            // The same screen an invite is agreed to on: it says which build would be made.
+            ShowFriendInvite(new ServerInvite(server.Name, plan.GameVersion!, plan.Loader, server.LoaderVersion, server.HostNickname, null, server.Endpoints));
+            item.Note = Localize("Friends_BuildGoneConfirm", "The build for this server was deleted and none of yours fits it. Above is what would be made instead; nothing is made until you agree.");
+            return null;
+        }
+
+        item.Note = Localize("Friends_VersionUnknown", "The launcher does not know which version this server runs and will not guess a build for it. Ask your friend for a new invite.");
+        return null;
+    }
+
+    /// <summary>What the server says its version is, asked directly. Null when it does not answer or names no single version.</summary>
+    private static async Task<string?> PingFriendServerVersionAsync(FriendServer server)
+    {
+        foreach (var address in new[] { server.Direct, server.Public })
+        {
+            if (!HostPort.TryParse(address, out var host, out var port))
+            {
+                continue;
+            }
+
+            // A friend's home connection through a relay of the provider's can take its time.
+            var status = await Core.Server.ServerPinger.PingAsync(host, port ?? Core.Server.ServerPinger.DefaultPort, TimeSpan.FromSeconds(6));
+
+            if (JoinPlan.VersionFromStatus(status?.VersionName) is { } version)
+            {
+                return version;
+            }
+        }
+
+        return null;
     }
 
     // ===================== Play =====================
@@ -339,10 +482,24 @@ public partial class MainWindowViewModel
 
         var server = item.Model;
 
-        if (FriendServerInstance(server) is not { } instance)
+        var instance = FriendServerInstance(server);
+
+        if (instance is null)
         {
-            item.Note = Localize("Friends_BuildGone", "The build for this server was deleted. Paste the invite again to bring it back.");
-            return;
+            try
+            {
+                instance = await FindBuildForFriendServerAsync(item);
+            }
+            catch (Exception ex)
+            {
+                item.Note = Localize("Friends_PlayFailed", "Could not connect: {0}", ex.Message);
+                AppendConsole($"[friends] {ex}");
+            }
+
+            if (instance is null)
+            {
+                return;
+            }
         }
 
         FriendsJoin? join = null;

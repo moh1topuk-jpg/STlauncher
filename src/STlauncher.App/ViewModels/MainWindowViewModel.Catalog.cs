@@ -256,6 +256,7 @@ public partial class MainWindowViewModel
             OnPropertyChanged(nameof(HasNoInstalledMods));
 
             RefreshPacks();
+            RaiseMemoryAdvice();
             ApplyModsFilter();
             ScheduleBuildCheck();
             OnPropertyChanged(nameof(CanUseSafeMode));

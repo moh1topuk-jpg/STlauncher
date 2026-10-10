@@ -306,24 +306,86 @@ public partial class MainWindowViewModel
     /// <summary>Upper end of the memory slider: the RAM minus what Windows and the launcher need.</summary>
     public int MemorySliderMax => Math.Max(2048, TotalMemoryMb - 2048);
 
+    /// <summary>Mods switched on in the selected build: what its memory is advised for.</summary>
+    private int EnabledModCount => InstalledMods.Count(m => m.IsMod && m.Enabled);
+
+    /// <summary>A shader pack is picked and the build has the mod that loads it.</summary>
+    private bool ShadersInUse => HasShaderLoader && !NoShaderActive;
+
     /// <summary>
-    /// A sensible allocation for this machine: a quarter of the RAM, kept between 2 and
-    /// 8 GB. More than that does not make Minecraft faster - it makes garbage collection
-    /// pauses longer.
+    /// What the selected build takes on this machine. Advice only: it is shown beside the
+    /// slider and offered, and the number the player has set stays until they change it.
     /// </summary>
-    public int RecommendedMemoryMb => Math.Clamp(TotalMemoryMb / 4 / 512 * 512, 2048, 8192);
+    private MemoryRecommendation MemoryRecommendation
+        => MemoryAdvice.Recommend(TotalMemoryMb, null, EnabledModCount, ShadersInUse);
+
+    public int RecommendedMemoryMb => Math.Min(MemoryRecommendation.Mb, MemorySliderMax);
+
+    /// <summary>The heap for a build that is being made now, before the player has set anything.</summary>
+    private int MemoryForNewBuild(int mods)
+        => Math.Min(MemoryAdvice.Recommend(TotalMemoryMb, null, mods, shaders: false).Mb, MemorySliderMax);
 
     public string MemoryHint => Localize(
         "Settings_MemoryHint",
-        "{0} MB of {1} MB - recommended {2} MB",
+        "{0} MB of {1} MB - recommended {2} MB {3}",
         (int)MaxMemoryMb,
         TotalMemoryMb,
-        RecommendedMemoryMb);
+        RecommendedMemoryMb,
+        MemoryReason);
+
+    /// <summary>Why this number: "for 120 mods", and that the machine has no more to give when it holds it back.</summary>
+    private string MemoryReason
+    {
+        get
+        {
+            var mods = EnabledModCount;
+
+            var what = mods == 0
+                ? Localize("Memory_ForNoMods", "for the game without mods")
+                : Localize(
+                    mods % 10 == 1 && mods % 100 != 11 ? "Memory_ForModsOne" : "Memory_ForModsMany",
+                    "for {0} mods",
+                    mods);
+
+            if (ShadersInUse)
+            {
+                what = Localize("Memory_WithShaders", "{0} and shaders", what);
+            }
+
+            return MemoryRecommendation.LimitedBy == MemoryLimit.Machine
+                ? Localize("Memory_MachineLimit", "{0}; the build would take {1} MB, but this computer needs the rest", what, MemoryRecommendation.WantedMb)
+                : what;
+        }
+    }
 
     public string RecommendedMemoryLabel => Localize("Settings_MemoryRecommendedValue", "Recommended · {0} MB", RecommendedMemoryMb);
 
+    /// <summary>The mods or the shader of the selected build changed: the advice is for another build now.</summary>
+    private void RaiseMemoryAdvice()
+    {
+        OnPropertyChanged(nameof(RecommendedMemoryMb));
+        OnPropertyChanged(nameof(RecommendedMemoryLabel));
+        OnPropertyChanged(nameof(MemoryHint));
+    }
+
     [RelayCommand]
     private void UseRecommendedMemory() => MaxMemoryMb = RecommendedMemoryMb;
+
+    /// <summary>Memory no program holds right now, or null when the system does not say.</summary>
+    private static int? DetectFreeMemoryMb()
+    {
+        try
+        {
+            var info = GC.GetGCMemoryInfo();
+            var free = info.TotalAvailableMemoryBytes - info.MemoryLoadBytes;
+
+            return info.MemoryLoadBytes > 0 && free > 0 ? (int)(free / 1024 / 1024) : null;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
 
     private static int DetectTotalMemoryMb()
     {
