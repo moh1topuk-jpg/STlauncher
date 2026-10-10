@@ -88,7 +88,7 @@ public partial class MainWindowViewModel
     /// <summary>What the zip holds, in words, so the player agrees to something concrete.</summary>
     public string ReportSendSummary => Localize(
         "Report_SendSummary",
-        "The admin will get: launcher and game logs, the crash report, the build's mod list, launcher settings, and what this machine is. Your nickname: {0}. Nothing else.",
+        "The admin will get: launcher and game logs, the crash report, the launcher's freeze reports, the build's mod list, launcher settings, and what this machine is. Your nickname: {0}. Nothing else.",
         Username);
 
     [RelayCommand]
@@ -167,6 +167,10 @@ public partial class MainWindowViewModel
                 AddTail(zip, CrashReportPath, "crash-report.txt");
                 AddTail(zip, Path.Combine(_paths.Root, "crash.log"), "launcher-crash.log");
                 AddTail(zip, Path.Combine(_paths.Root, "settings.json"), "settings.json");
+
+                // The launcher's own health: interface freezes and how the last start went.
+                AddFreezeReports(zip);
+                AddTail(zip, Path.Combine(_paths.Root, STlauncher.Core.Diagnostics.StartupGuard.FileName), "startup-state.json");
 
                 if (SelectedInstance is not null)
                 {

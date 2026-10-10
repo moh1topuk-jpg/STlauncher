@@ -777,7 +777,7 @@
     <x:String x:Key="BuildChange_WillRemove">Will be removed: {0}</x:String>
     <x:String x:Key="Builds_SyncDeclined">The build is left as it is. You will be asked again on the next start.</x:String>
     <x:String x:Key="Settings_UsageStats">Anonymous launch statistics</x:String>
-    <x:String x:Key="Settings_UsageStatsHint">Once per launch the launcher sends the statistics collector a random installation id, the version, the language, the OS and how the update check went; after a game crash, the cause, game version and loader. No nickname, files, paths or address are sent. That is how the server owner sees how many people use the launcher and what breaks for them.</x:String>
+    <x:String x:Key="Settings_UsageStatsHint">Once per launch the launcher sends the statistics collector a random installation id, the version, the language, the OS, how the update check went and how many times the launcher froze over the week (the number only); after a game crash, the cause, game version and loader. No nickname, files, paths or address are sent. That is how the server owner sees how many people use the launcher and what breaks for them.</x:String>
     <x:String x:Key="Settings_UsageNumbers">Launcher users: {0} today · {1} over 7 days · launches today: {2}</x:String>
     <x:String x:Key="Settings_UsageNumbersNone">The collector does not publish launcher usage yet (see docs/monitoring.md).</x:String>
 
@@ -1045,12 +1045,28 @@
     <!-- Report to the admin; build code -->
     <x:String x:Key="Report_SendOpen">Send to the admin</x:String>
     <x:String x:Key="Report_SendTitle">Send the report to the server admin</x:String>
-    <x:String x:Key="Report_SendSummary">The admin will get: launcher and game logs, the crash report, the build's mod list, launcher settings, and what this machine is. Your nickname: {0}. Nothing else.</x:String>
+    <x:String x:Key="Report_SendSummary">The admin will get: launcher and game logs, the crash report, the launcher's freeze reports, the build's mod list, launcher settings, and what this machine is. Your nickname: {0}. Nothing else.</x:String>
     <x:String x:Key="Report_CommentHint">What you did and what you saw — optional, but it helps</x:String>
     <x:String x:Key="Report_SendButton">Send</x:String>
     <x:String x:Key="Report_Sending">Sending the report…</x:String>
     <x:String x:Key="Report_Sent">Report sent. The admin has it; the copy stayed in the reports folder.</x:String>
     <x:String x:Key="Report_SendFailed">Could not send the report ({0}). Use “Collect a report” and send the file by hand.</x:String>
+    <!-- The launcher noticing it is unwell: the question after a start that never opened -->
+    <x:String x:Key="SelfRepair_Question">Last time the launcher could not open. Check and reinstall its files?</x:String>
+    <x:String x:Key="SelfRepair_QuestionAgain">The launcher could not open again. This version's files have already been reinstalled once. Reinstall them one more time?</x:String>
+    <x:String x:Key="SelfRepair_Details">The launcher will download version {0} again, replace its program files and restart. Builds, worlds and settings are not touched.</x:String>
+    <x:String x:Key="SelfRepair_Check">Check</x:String>
+    <x:String x:Key="SelfRepair_CheckAgain">Reinstall</x:String>
+    <x:String x:Key="SelfRepair_NotNow">Not now</x:String>
+    <x:String x:Key="SelfRepair_Working">Downloading the launcher's files: {0}%</x:String>
+    <x:String x:Key="SelfRepair_Applying">Replacing the files and restarting the launcher…</x:String>
+    <x:String x:Key="SelfRepair_FailedTitle">The files could not be reinstalled from here.</x:String>
+    <x:String x:Key="SelfRepair_NotOffered">The update sources no longer carry version {0}, so its files cannot be put back in place. You can download the installer of the current version and run it: builds, worlds and settings stay.</x:String>
+    <x:String x:Key="SelfRepair_Failed">The launcher's files could not be downloaded. You can download the installer in the browser and run it: builds, worlds and settings stay.</x:String>
+    <x:String x:Key="SelfRepair_FailedWhy">The launcher's files could not be downloaded ({0}). You can download the installer in the browser and run it: builds, worlds and settings stay.</x:String>
+    <x:String x:Key="SelfRepair_OpenInstaller">Download the installer</x:String>
+    <x:String x:Key="SelfRepair_Continue">Continue starting</x:String>
+    <x:String x:Key="SelfRepair_InstallerOpened">The installer is downloading in the browser: {0}. Close the launcher before running it.</x:String>
     <x:String x:Key="Builds_CopyCode">Copy the build code</x:String>
     <x:String x:Key="Builds_FromCode">From a build code (in the clipboard)</x:String>
     <x:String x:Key="Code_Copied">Build code copied: {0} file(s), {1} characters. Paste it to a friend.</x:String>

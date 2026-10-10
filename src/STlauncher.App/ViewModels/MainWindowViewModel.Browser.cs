@@ -375,7 +375,7 @@ public partial class MainWindowViewModel
         OnPropertyChanged(nameof(CanGoToNextPage));
     }
 
-    private CancellationTokenSource? _browserDebounce;
+    private readonly Core.Diagnostics.SupersedingCancellation _browserDebounce = new();
     private bool _categoriesLoaded;
 
     public async Task LoadCategoriesAsync()
@@ -567,15 +567,11 @@ public partial class MainWindowViewModel
     /// <summary>Re-runs the browser after the build or the filters change, with a short delay.</summary>
     private void ScheduleBrowserReload()
     {
-        var previousCts = _browserDebounce;
-        var cts = new CancellationTokenSource();
-        _browserDebounce = cts;
-        previousCts?.Cancel();
-        previousCts?.Dispose();
-
-        // The token is taken now: a newer request disposes this source while the wait is
-        // still running, and asking a disposed source for its token throws.
-        var token = cts.Token;
+        // Filters change from the interface and, during start and build sync, from pool
+        // threads. Cancelling and disposing the previous source by hand let two such calls
+        // cancel one source twice, the second time after its disposal, and the
+        // ObjectDisposedException ended up in a task nobody watched.
+        var token = _browserDebounce.Next();
 
         _ = Task.Run(async () =>
         {
@@ -606,6 +602,12 @@ public partial class MainWindowViewModel
             }
             catch (OperationCanceledException)
             {
+            }
+            catch (Exception ex)
+            {
+                // Nobody awaits this task: a failure here would otherwise surface only as
+                // an "unobserved task" entry in the crash log, long after the fact.
+                AppendConsole($"[browser] reload failed: {ex.Message}");
             }
         });
     }

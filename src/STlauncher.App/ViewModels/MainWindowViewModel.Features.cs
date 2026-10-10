@@ -231,7 +231,7 @@ public partial class MainWindowViewModel
             return;
         }
 
-        _ = _usage.ReportAsync(_stats.StatsUrl, _installId, _updates.CurrentVersion ?? "dev", Language, updateOutcome);
+        _ = _usage.ReportAsync(_stats.StatsUrl, _installId, _updates.CurrentVersion ?? "dev", Language, updateOutcome, RecentFreezeCount());
     }
 
     /// <summary>"ok:mirror" / "fail:GitHub=Blocked;mirror=Timeout", short enough for a blob.</summary>

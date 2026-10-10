@@ -777,7 +777,7 @@
     <x:String x:Key="BuildChange_WillRemove">Уберётся: {0}</x:String>
     <x:String x:Key="Builds_SyncDeclined">Сборка оставлена как есть. Спрошу снова при следующем запуске.</x:String>
     <x:String x:Key="Settings_UsageStats">Анонимная статистика запусков</x:String>
-    <x:String x:Key="Settings_UsageStatsHint">Раз за запуск лаунчер отправляет на сборщик статистики случайный идентификатор установки, версию, язык, ОС и исход проверки обновлений; если игра упала — причину падения, версию игры и загрузчик. Ник, файлы, пути и адрес не передаются. Так владелец сервера видит, сколько людей пользуются лаунчером и что у них ломается.</x:String>
+    <x:String x:Key="Settings_UsageStatsHint">Раз за запуск лаунчер отправляет на сборщик статистики случайный идентификатор установки, версию, язык, ОС, исход проверки обновлений и число зависаний лаунчера за неделю (только число); если игра упала — причину падения, версию игры и загрузчик. Ник, файлы, пути и адрес не передаются. Так владелец сервера видит, сколько людей пользуются лаунчером и что у них ломается.</x:String>
     <x:String x:Key="Settings_UsageNumbers">Пользователей лаунчера: {0} за сутки · {1} за 7 дней · запусков за сутки: {2}</x:String>
     <x:String x:Key="Settings_UsageNumbersNone">Сборщик пока не публикует статистику лаунчера (см. docs/monitoring.md).</x:String>
 
@@ -1045,12 +1045,28 @@
     <!-- Report to the admin; build code -->
     <x:String x:Key="Report_SendOpen">Отправить админу</x:String>
     <x:String x:Key="Report_SendTitle">Отправить отчёт администратору сервера</x:String>
-    <x:String x:Key="Report_SendSummary">Администратор получит: логи лаунчера и игры, отчёт о падении, список модов сборки, настройки лаунчера и сведения об этом компьютере. Ваш ник: {0}. Больше ничего.</x:String>
+    <x:String x:Key="Report_SendSummary">Администратор получит: логи лаунчера и игры, отчёт о падении, отчёты о зависаниях лаунчера, список модов сборки, настройки лаунчера и сведения об этом компьютере. Ваш ник: {0}. Больше ничего.</x:String>
     <x:String x:Key="Report_CommentHint">Что делали и что увидели — необязательно, но помогает</x:String>
     <x:String x:Key="Report_SendButton">Отправить</x:String>
     <x:String x:Key="Report_Sending">Отправляю отчёт…</x:String>
     <x:String x:Key="Report_Sent">Отчёт отправлен. Администратор его получил; копия осталась в папке reports.</x:String>
     <x:String x:Key="Report_SendFailed">Не удалось отправить отчёт ({0}). Нажмите «Собрать отчёт» и перешлите файл вручную.</x:String>
+    <!-- The launcher noticing it is unwell: the question after a start that never opened -->
+    <x:String x:Key="SelfRepair_Question">В прошлый раз лаунчер не смог открыться. Проверить и переустановить его файлы?</x:String>
+    <x:String x:Key="SelfRepair_QuestionAgain">Лаунчер снова не смог открыться. Файлы этой версии уже переустанавливались один раз. Переустановить их ещё раз?</x:String>
+    <x:String x:Key="SelfRepair_Details">Лаунчер заново скачает версию {0}, заменит файлы программы и перезапустится. Сборки, миры и настройки не затрагиваются.</x:String>
+    <x:String x:Key="SelfRepair_Check">Проверить</x:String>
+    <x:String x:Key="SelfRepair_CheckAgain">Переустановить</x:String>
+    <x:String x:Key="SelfRepair_NotNow">Не сейчас</x:String>
+    <x:String x:Key="SelfRepair_Working">Скачиваю файлы лаунчера: {0}%</x:String>
+    <x:String x:Key="SelfRepair_Applying">Заменяю файлы и перезапускаю лаунчер…</x:String>
+    <x:String x:Key="SelfRepair_FailedTitle">Переустановить файлы отсюда не получилось.</x:String>
+    <x:String x:Key="SelfRepair_NotOffered">Источники обновлений больше не раздают версию {0}, поэтому вернуть её файлы на место нельзя. Можно скачать установщик актуальной версии и запустить его: сборки, миры и настройки останутся.</x:String>
+    <x:String x:Key="SelfRepair_Failed">Не удалось скачать файлы лаунчера. Можно скачать установщик в браузере и запустить его: сборки, миры и настройки останутся.</x:String>
+    <x:String x:Key="SelfRepair_FailedWhy">Не удалось скачать файлы лаунчера ({0}). Можно скачать установщик в браузере и запустить его: сборки, миры и настройки останутся.</x:String>
+    <x:String x:Key="SelfRepair_OpenInstaller">Скачать установщик</x:String>
+    <x:String x:Key="SelfRepair_Continue">Продолжить запуск</x:String>
+    <x:String x:Key="SelfRepair_InstallerOpened">Установщик скачивается в браузере: {0}. Перед его запуском закройте лаунчер.</x:String>
     <x:String x:Key="Builds_CopyCode">Скопировать код сборки</x:String>
     <x:String x:Key="Builds_FromCode">Из кода сборки (из буфера обмена)</x:String>
     <x:String x:Key="Code_Copied">Код сборки скопирован: файлов — {0}, символов — {1}. Вставьте его другу.</x:String>

@@ -1,7 +1,7 @@
 ﻿using System;
-using System.IO;
 using System.Threading.Tasks;
 using Avalonia;
+using STlauncher.App.Services;
 using Velopack;
 
 namespace STlauncher.App;
@@ -27,11 +27,13 @@ sealed class Program
         // Without these, a failure outside the UI's try/catch disappears with the process
         // and the user just sees the launcher vanish.
         AppDomain.CurrentDomain.UnhandledException += (_, e) =>
-            WriteCrashLog(e.ExceptionObject as Exception);
+            CrashLog.Write(e.ExceptionObject as Exception, e.IsTerminating ? "unhandled, the launcher closed" : "unhandled");
 
+        // Not fatal: the task failed and nobody was waiting for it. Still written, because
+        // it is usually a real bug that only shows as "something did not refresh".
         TaskScheduler.UnobservedTaskException += (_, e) =>
         {
-            WriteCrashLog(e.Exception);
+            CrashLog.Write(e.Exception, "unobserved task, the launcher kept running");
             e.SetObserved();
         };
 
@@ -47,29 +49,4 @@ sealed class Program
             .With(new SkiaOptions { MaxGpuResourceSizeBytes = 96L * 1024 * 1024 })
             .WithInterFont()
             .LogToTrace();
-
-    private static void WriteCrashLog(Exception? exception)
-    {
-        if (exception is null)
-        {
-            return;
-        }
-
-        try
-        {
-            var directory = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "STlauncher");
-
-            Directory.CreateDirectory(directory);
-
-            File.AppendAllText(
-                Path.Combine(directory, "crash.log"),
-                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {exception}{Environment.NewLine}{Environment.NewLine}");
-        }
-        catch (Exception)
-        {
-            // Nothing left to try - a failing crash logger must not become the crash.
-        }
-    }
 }

@@ -15,6 +15,8 @@ STlauncher — лаунчер Minecraft для сервера mc.showtime.su с 
 - случайный идентификатор установки (создаётся при первом запуске, ни с чем не связан);
 - версию лаунчера, язык интерфейса и версию ОС;
 - как прошла проверка обновлений (например, «успешно через зеркало»);
+- сколько раз интерфейс лаунчера зависал за последнюю неделю — только число; сами отчёты
+  о зависаниях остаются на компьютере;
 - если игра закрылась с ошибкой — причину падения, версию игры и загрузчик модов.
 
 **Не отправляются:** ник, пароли, файлы, пути на диске, содержимое папок, IP-адрес
@@ -52,6 +54,14 @@ STlauncher — лаунчер Minecraft для сервера mc.showtime.su с 
 (`logs/launcher.log`) никуда не отправляется автоматически — только если вы сами
 решите его прислать.
 
+Там же лаунчер ведёт записи о собственных сбоях: `crash.log` (необработанные ошибки),
+папку `freezes` (до пяти отчётов о зависаниях интерфейса: когда, как долго, версия
+лаунчера и ОС, какой раздел был открыт и какие операции шли) и `startup-state.json`
+(удалось ли лаунчеру открыться в прошлый раз). Эти файлы попадают в отчёт для
+администратора, только когда вы сами его собираете или отправляете. Если прошлый запуск
+не удался, лаунчер спросит, переустановить ли его файлы, и ничего не скачает без вашего
+согласия.
+
 ## Дети
 
 Лаунчер не собирает персональные данные и не различает возраст пользователей.
@@ -80,6 +90,8 @@ server owner's statistics collector (a Cloudflare Worker):
 - a random install identifier, generated on first start and linked to nothing else;
 - launcher version, interface language and OS version;
 - how the update check went (for example "ok via mirror");
+- how many times the launcher's interface froze over the last week: the number only; the
+  freeze reports themselves stay on the computer;
 - if the game crashed: the crash cause, game version and mod loader.
 
 **Never sent:** nickname, passwords, files, paths on disk, folder contents, play history.
@@ -115,6 +127,14 @@ The launcher never asks for Microsoft/Mojang account credentials and stores no p
 Settings, nickname, builds, mods, worlds, logs and the skin cache live in the launcher's
 data folder (`%APPDATA%\STlauncher` by default; it can be moved in settings). The
 launcher log (`logs/launcher.log`) is never uploaded automatically.
+
+The launcher also keeps records of its own failures there: `crash.log` (unhandled
+errors), the `freezes` folder (up to five reports of the interface freezing: when, for
+how long, launcher version and OS, which section was open and which operations were
+running) and `startup-state.json` (whether the launcher managed to open last time).
+These files go into the report for the admin only when you collect or send it yourself.
+If the previous start failed, the launcher asks whether to reinstall its files and
+downloads nothing without your consent.
 
 ## Children
 
