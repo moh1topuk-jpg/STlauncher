@@ -278,6 +278,7 @@ public partial class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(nameof(ShowLaunchProgress));
         OnPropertyChanged(nameof(CanRepairBuild));
         OnPropertyChanged(nameof(CanEditPacks));
+        RaiseBoostState();
     }
 
     [ObservableProperty]
@@ -1049,6 +1050,7 @@ public partial class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(nameof(LastPlayedLabel));
         RaisePlaytimeLabels();
         OnPropertyChanged(nameof(CanInstallOptimizationMods));
+        RaiseBoostState(buildChanged: true);
         RefreshOtherInstances();
         ScreenshotCount = Core.Screenshots.ScreenshotFolder.List(InstanceDirectory).Count;
 

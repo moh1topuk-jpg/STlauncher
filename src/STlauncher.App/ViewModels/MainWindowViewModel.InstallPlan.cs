@@ -206,7 +206,8 @@ public partial class MainWindowViewModel
     }
 
     /// <summary>Carries out a plan as it is: these files, in this order, and no others.</summary>
-    private async Task InstallPlanAsync(ModInstallPlan plan, InstallTarget target)
+    /// <param name="backup">False when the caller installs several plans in a row and has made the one backup itself.</param>
+    private async Task InstallPlanAsync(ModInstallPlan plan, InstallTarget target, bool backup = true)
     {
         var root = plan.Root;
 
@@ -237,7 +238,11 @@ public partial class MainWindowViewModel
         }
 
         _modsLeftToThePlayer.Clear();
-        await MaybeBackupAsync(BackupTrigger.BeforeModChange, target.Instance);
+
+        if (backup)
+        {
+            await MaybeBackupAsync(BackupTrigger.BeforeModChange, target.Instance);
+        }
 
         // Dependencies first, so a failure there leaves the build without the mod rather
         // than with a mod that cannot start.
