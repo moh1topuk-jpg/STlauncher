@@ -27,6 +27,12 @@ public static class LaunchCommandBuilder
         arguments.Add($"-Xms{options.MinMemoryMb}M");
         arguments.AddRange(options.ExtraJvmArgs);
 
+        var jvmArguments = (version.JvmArguments.Count > 0
+            ? Expand(version.JvmArguments, context, values)
+            : ExpandDefaults(DefaultJvmArguments, values)).ToList();
+
+        arguments.AddRange(OutputEncodingArguments(options.ExtraJvmArgs.Concat(jvmArguments)));
+
         // Log4Shell (CVE-2021-44228): a chat message could make an unpatched game run code.
         // This switch closes it for 1.17 to 1.18; the game ignores it elsewhere. It goes
         // after the player's own arguments so nothing typed there can turn it back on.
@@ -39,10 +45,6 @@ public static class LaunchCommandBuilder
         {
             arguments.Add(loggingArgument.Replace("${path}", loggingPath, StringComparison.Ordinal));
         }
-
-        var jvmArguments = version.JvmArguments.Count > 0
-            ? Expand(version.JvmArguments, context, values)
-            : ExpandDefaults(DefaultJvmArguments, values);
 
         arguments.AddRange(jvmArguments);
 
@@ -81,6 +83,38 @@ public static class LaunchCommandBuilder
     }
 
     public const string Log4ShellGuard = "-Dlog4j2.formatMsgNoLookups=true";
+
+    /// <summary>
+    /// The properties that decide what encoding the game prints in. file.encoding is the
+    /// default for everything up to Java 17; sun.stdout.encoding and sun.stderr.encoding
+    /// are what the console streams read up to Java 18, stdout.encoding and
+    /// stderr.encoding from Java 19 on. A Java that does not know one of them keeps it as
+    /// an ordinary system property and is none the worse, so all are passed whatever the
+    /// Java: the launcher does not always know which one a player picked.
+    /// </summary>
+    private static readonly string[] EncodingProperties =
+    {
+        "file.encoding",
+        "sun.stdout.encoding",
+        "sun.stderr.encoding",
+        "stdout.encoding",
+        "stderr.encoding"
+    };
+
+    /// <summary>
+    /// "Print in UTF-8", for every encoding property that the build's own arguments and
+    /// the version's profile leave unset. Without it a Java older than 18 prints in the
+    /// system code page, and a Cyrillic path in the log depends on the reader guessing right.
+    /// </summary>
+    public static IReadOnlyList<string> OutputEncodingArguments(IEnumerable<string> alreadyPassed)
+    {
+        var passed = alreadyPassed as IReadOnlyCollection<string> ?? alreadyPassed.ToList();
+
+        return EncodingProperties
+            .Where(property => !passed.Any(a => a.StartsWith("-D" + property + "=", StringComparison.Ordinal) || a == "-D" + property))
+            .Select(property => "-D" + property + "=UTF-8")
+            .ToList();
+    }
 
     /// <summary>
     /// Windows refuses to start a process whose command line is longer than 32 767

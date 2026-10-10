@@ -429,7 +429,7 @@ public partial class MainWindowViewModel
     /// Runs the game and reacts once it is up. The process is never killed here, so the
     /// game keeps running even when the launcher closes itself.
     /// </summary>
-    private async Task<int> LaunchAndReactAsync(LaunchCommand command, LaunchSettings settings)
+    private async Task<LaunchResult> LaunchAndReactAsync(LaunchCommand command, LaunchSettings settings)
     {
         void OnStarted()
         {
@@ -460,12 +460,20 @@ public partial class MainWindowViewModel
 
         _gameLauncher.GameStarted += OnStarted;
 
-        int exitCode;
+        LaunchResult result;
         _gameLaunchedAtUtc = DateTime.UtcNow;
+
+        // A Java picked in the settings is the player's: the launcher reports that it is
+        // broken and never installs over it.
+        var javaPicked = !string.IsNullOrWhiteSpace(settings.JavaPath);
 
         try
         {
-            exitCode = await _launch.LaunchAsync(command, settings.GameDirectory);
+            result = await _launch.RunAsync(
+                command,
+                settings.GameDirectory,
+                javaPicked,
+                line => AppendConsole("[launcher] " + PathMask.Mask(line)));
         }
         finally
         {
@@ -473,24 +481,32 @@ public partial class MainWindowViewModel
         }
 
         LastGameLogPath = _gameLauncher.LogFilePath;
+        var closedNormally = result.ExitCode == 0 && !result.IsFailedLaunch;
 
         // Exit code 0 is a normal quit. Anything else is a crash the player must hear
         // about - which is only possible because "close" no longer really closes.
-        if (exitCode == 0)
+        if (closedNormally)
         {
             GameCrashNotice = string.Empty;
             ClearCrashDiagnosis();
         }
         else
         {
-            AnalyzeCrash(exitCode, settings.GameDirectory);
-            GameCrashNotice = Localize(
-                "Game_CrashNotice",
-                "Minecraft closed with an error (code {0}). The game log says why.",
-                exitCode);
+            AnalyzeCrash(result, settings.GameDirectory, command.FileName, javaPicked);
+
+            // A game that never got going is told apart from one that crashed: "closed
+            // with an error" sends the player to look for what they did in the game.
+            GameCrashNotice = result.StartError != JavaStartError.None
+                ? Localize("Game_LaunchFailedNoCode", "Minecraft did not start: Java could not be run.")
+                : result.IsFailedLaunch
+                    ? Localize("Game_LaunchFailedNotice", "Minecraft did not start (code {0}). The log says why.", NtStatus.Format(result.ExitCode))
+                    : Localize(
+                        "Game_CrashNotice",
+                        "Minecraft closed with an error (code {0}). The game log says why.",
+                        NtStatus.Format(result.ExitCode));
         }
 
-        if (AfterLaunch == AfterLaunchAction.Close && exitCode == 0)
+        if (AfterLaunch == AfterLaunchAction.Close && closedNormally)
         {
             RequestCloseLauncher?.Invoke();
         }
@@ -499,7 +515,7 @@ public partial class MainWindowViewModel
             RequestShowLauncher?.Invoke();
         }
 
-        return exitCode;
+        return result;
     }
 
     // ===================== Nickname presets =====================

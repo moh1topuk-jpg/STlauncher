@@ -43,7 +43,7 @@ public static class CrashReport
 
         var text = new StringBuilder();
 
-        text.AppendLine($"STlauncher {context.LauncherVersion} · {OperatingSystem()} · exit code {context.ExitCode}");
+        text.AppendLine($"STlauncher {context.LauncherVersion} · {OperatingSystem()} · exit code {NtStatus.Format(context.ExitCode)}");
         text.AppendLine($"Build: {context.BuildName} · Minecraft {context.GameVersion ?? "?"} · {context.Loader} {context.LoaderVersion}".TrimEnd());
         text.AppendLine($"Java: {(string.IsNullOrWhiteSpace(context.JavaPath) ? "automatic" : context.JavaPath)} · memory {context.MaxMemoryMb} MB");
         text.AppendLine($"Diagnosis: {Describe(diagnosis)}");
@@ -80,7 +80,9 @@ public static class CrashReport
             text.AppendLine(line);
         }
 
-        return text.ToString().TrimEnd();
+        // The report is pasted into chats: the home folder, and the Windows user name in
+        // it, stay behind. Every path in a log runs through it.
+        return PathMask.Mask(text.ToString().TrimEnd());
     }
 
     /// <summary>
@@ -141,6 +143,13 @@ public static class CrashReport
         CrashCause.Graphics => "graphics driver",
         CrashCause.BrokenInstallation => ("broken game file " + diagnosis.Subject).TrimEnd(),
         CrashCause.DiskFull => "disk full",
+        CrashCause.JavaMissing => "Java was not started: the executable is missing",
+        CrashCause.JavaBlocked => "Java was not started: access denied",
+        CrashCause.JavaBroken => ("damaged Java: " + diagnosis.Subject).TrimEnd(' ', ':'),
+        CrashCause.JavaOption => $"Java does not know the option {diagnosis.Subject}",
+        CrashCause.JavaMemory => ("Java refused the memory setting " + diagnosis.Subject).TrimEnd(),
+        CrashCause.JavaNotStarted => ("Java did not start: " + diagnosis.Subject).TrimEnd(' ', ':'),
+        CrashCause.WindowsError => $"stopped by Windows with {diagnosis.Subject} ({diagnosis.Detail})",
         _ => "unknown"
     };
 

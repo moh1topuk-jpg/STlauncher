@@ -46,7 +46,30 @@ public enum CrashCause
     /// <summary>A game file is missing or damaged.</summary>
     BrokenInstallation,
 
-    DiskFull
+    DiskFull,
+
+    // The causes below are named by LaunchFailureAnalyzer: Java itself did not run.
+
+    /// <summary>The Java executable is not there.</summary>
+    JavaMissing,
+
+    /// <summary>Windows refused to run the Java executable.</summary>
+    JavaBlocked,
+
+    /// <summary>The Java installation has files missing or damaged. Subject is what it printed.</summary>
+    JavaBroken,
+
+    /// <summary>The JVM does not know an option it was given. Subject is the option.</summary>
+    JavaOption,
+
+    /// <summary>The JVM refused the heap size it was given. Subject is the argument, when it named one.</summary>
+    JavaMemory,
+
+    /// <summary>The JVM gave up before the game for a reason the launcher has no name for. Subject is the cause line.</summary>
+    JavaNotStarted,
+
+    /// <summary>Windows ended the process. Subject is the status code as hex.</summary>
+    WindowsError
 }
 
 /// <param name="Subject">The mod, file or number the message is about, when there is one.</param>

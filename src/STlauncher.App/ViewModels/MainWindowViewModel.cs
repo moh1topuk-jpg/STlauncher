@@ -773,6 +773,11 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
         }
 
+        if (await IsBuildGameRunningAsync())
+        {
+            return;
+        }
+
         try
         {
             IsBusy = true;
@@ -863,6 +868,9 @@ public partial class MainWindowViewModel : ViewModelBase
             Mark(_stageStart, LaunchStageState.Done, Localize("Launch_Done", "done"));
             IsGameRunning = true;
 
+            var playedInstance = SelectedInstance;
+            var playedBefore = playedInstance?.LastPlayedAt;
+
             if (SelectedInstance is not null)
             {
                 SelectedInstance.LastPlayedAt = DateTimeOffset.Now;
@@ -872,16 +880,27 @@ public partial class MainWindowViewModel : ViewModelBase
 
             GameCrashNotice = string.Empty;
             ApplyDiscordPresence(playing: true, joinServer);
-            var playedInstance = SelectedInstance;
             var playedFrom = DateTimeOffset.Now;
-            var exitCode = await LaunchAndReactAsync(command, settings);
+            var result = await LaunchAndReactAsync(command, settings);
             ApplyDiscordPresence(playing: false, joinServer: false);
-            RecordPlaytime(playedInstance, playedFrom);
 
-            Status = exitCode == 0
+            if (result.IsFailedLaunch)
+            {
+                // Java never ran, or died before the game began: nobody played. The build
+                // keeps the "last played" it had and gains no session.
+                ForgetFailedLaunch(playedInstance, playedBefore);
+            }
+            else
+            {
+                RecordPlaytime(playedInstance, playedFrom);
+            }
+
+            Status = result.ExitCode == 0 && !result.IsFailedLaunch
                 ? Localize("Status_GameClosed", "Minecraft closed")
                 : GameCrashNotice;
-            AppendConsole($"--- Game exited with code {exitCode} ---");
+            AppendConsole(result.StartError != Core.Launch.JavaStartError.None
+                ? "--- Java could not be started ---"
+                : $"--- Game exited with code {Core.Launch.NtStatus.Format(result.ExitCode)}{(result.IsFailedLaunch ? " before it started" : string.Empty)} ---");
         }
         catch (Exception ex)
         {
