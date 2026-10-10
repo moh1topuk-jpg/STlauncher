@@ -45,6 +45,40 @@ public static class VersionRange
         }
     }
 
+    /// <summary>
+    /// The strict question, for "does not run with these versions": true only when the
+    /// range is read with certainty and the version is in it. <see cref="Satisfies"/> gives
+    /// the benefit of the doubt to a range it cannot parse, which is right for "is this
+    /// requirement met" and exactly wrong for "is this a conflict". No range at all, or
+    /// "*", means every version, known or not.
+    /// </summary>
+    public static bool DefinitelyMatches(string? range, string? version)
+    {
+        if (string.IsNullOrWhiteSpace(range) || range.Trim() is "*" or "x" or "X")
+        {
+            return true;
+        }
+
+        if (string.IsNullOrWhiteSpace(version) || !char.IsDigit(version.TrimStart()[0]))
+        {
+            return false;
+        }
+
+        var text = range.Trim();
+
+        if (text.StartsWith('[') || text.StartsWith('('))
+        {
+            return (text.EndsWith(']') || text.EndsWith(')')) && Satisfies(text, version);
+        }
+
+        var understood = text
+            .Split("||", StringSplitOptions.RemoveEmptyEntries)
+            .SelectMany(alternative => alternative.Split(new[] { ' ', ',' }, StringSplitOptions.RemoveEmptyEntries))
+            .All(part => Comparator.IsMatch(part));
+
+        return understood && Satisfies(text, version);
+    }
+
     /// <summary>Orders "1.21.4" after "1.21" and "0.6.13" after "0.6.2"; suffixes are ignored.</summary>
     public static int CompareVersions(string? a, string? b) => Compare(Parse(a ?? string.Empty), Parse(b ?? string.Empty));
 

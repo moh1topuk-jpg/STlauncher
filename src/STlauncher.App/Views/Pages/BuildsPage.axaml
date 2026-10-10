@@ -1287,6 +1287,10 @@
                                                     <TextBlock Text="{DynamicResource Mods_DepsIncomplete}" FontSize="12" TextWrapping="Wrap"
                                                                LineHeight="17" Foreground="{DynamicResource GoldBrush}"
                                                                IsVisible="{Binding IsOpenedProjectListIncomplete}"/>
+                                                    <!-- The source marks this mod, or one it brings, as not going with a mod of the build. -->
+                                                    <TextBlock Text="{Binding OpenedProjectConflictLabel}" FontSize="12" TextWrapping="Wrap"
+                                                               LineHeight="17" Foreground="{DynamicResource GoldBrush}"
+                                                               IsVisible="{Binding HasOpenedProjectConflict}"/>
                                                 </StackPanel>
                                             </Border>
 

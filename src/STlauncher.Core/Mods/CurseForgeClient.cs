@@ -54,7 +54,7 @@ public sealed record CurseForgeFileOutcome(
 /// third-party downloads, and files are only ever fetched from CurseForge's own CDN
 /// and checked against the SHA-1 its API gave.
 /// </summary>
-public sealed class CurseForgeClient : IModSource
+public sealed class CurseForgeClient : IModSource, IModFingerprintLookup
 {
     /// <summary>Minecraft. The mirror serves nothing else.</summary>
     public const int GameId = 432;

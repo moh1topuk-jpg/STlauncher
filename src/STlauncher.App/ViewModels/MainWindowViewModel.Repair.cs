@@ -66,8 +66,9 @@ public partial class MainWindowViewModel
 
             // 3. Doubles, wrong loader, wrong game version: the switch fixes, not the catalog trips.
             var directory = _instances.GameDirectory(instance);
-            var issues = await Task.Run(() => BuildChecker.Check(directory, instance.Loader, instance.VersionId));
-            var fixable = issues.Where(i => i.Kind != BuildIssueKind.MissingDependency || i.DisabledFileName is not null).ToList();
+            var cache = MetadataCacheFor(instance);
+            var issues = await Task.Run(() => BuildChecker.Check(directory, instance.Loader, instance.VersionId, instance.LoaderVersion, cache));
+            var fixable = issues.Where(i => i.FixableBySwitch).ToList();
             fixedCount = ApplySwitchFixes(fixable);
 
             Status = IsCatalogInstance

@@ -253,110 +253,6 @@ public partial class MainWindowViewModel
     /// <summary>"Add" can be pressed: there is a version for this build, and everything it brings is on the list.</summary>
     public bool CanAddOpenedProject => HasOpenedProjectVersion && !IsOpenedProjectListIncomplete;
 
-    /// <summary>The list as it is being put together, and whether every required mod could be asked about.</summary>
-    private sealed class DependencyWalk
-    {
-        public List<ModDependencyItem> Items { get; } = new();
-
-        public HashSet<string> Seen { get; } = new(StringComparer.OrdinalIgnoreCase);
-
-        public bool Incomplete { get; set; }
-    }
-
-    /// <summary>
-    /// What a version needs beyond itself, with whether the build has it and how big the
-    /// missing ones are. This is the list the player reads before agreeing to an install:
-    /// a mod asked for by name must not bring files nobody mentioned. Complete is false
-    /// when a required mod could not be looked up - the install might still bring it.
-    /// </summary>
-    private async Task<(IReadOnlyList<ModDependencyItem> Items, bool Complete)> ResolveDependenciesAsync(ModVersion version, string title)
-    {
-        var walk = new DependencyWalk();
-        await CollectDependenciesAsync(version, title, 0, walk);
-        return (walk.Items, !walk.Incomplete);
-    }
-
-    private async Task CollectDependenciesAsync(ModVersion version, string title, int depth, DependencyWalk walk)
-    {
-        var source = SourceFor(version.Source);
-
-        foreach (var dependency in version.Dependencies.Where(d => !string.IsNullOrEmpty(d.ProjectId)))
-        {
-            // Embedded and incompatible relations are not something to install, and what a
-            // dependency merely goes well with is its own business, not this mod's.
-            var optional = depth == 0 && string.Equals(dependency.Type, "optional", StringComparison.OrdinalIgnoreCase);
-
-            if (!dependency.IsRequired && !optional)
-            {
-                continue;
-            }
-
-            // Only the optional ones are cut short. A required mod is always named, however
-            // long the list already is: the install has no such limit.
-            if (!dependency.IsRequired && walk.Items.Count >= MaxListedDependencies)
-            {
-                continue;
-            }
-
-            try
-            {
-                var project = await source.GetProjectAsync(dependency.ProjectId!).ConfigureAwait(true);
-
-                if (project is null || !walk.Seen.Add(project.Slug))
-                {
-                    continue;
-                }
-
-                var installed = IsProjectInstalled(project.Slug);
-                long size = 0;
-                var blocked = false;
-                ModVersion? pick = null;
-
-                if (dependency.IsRequired && !installed)
-                {
-                    var candidates = await source
-                        .GetVersionsAsync(project.Id, SelectedVersion?.Id, LoaderFor(project.ProjectType))
-                        .ConfigureAwait(true);
-
-                    pick = dependency.VersionId is { } wanted
-                        ? candidates.FirstOrDefault(v => v.Id == wanted) ?? ModrinthClient.SelectPreferred(candidates)
-                        : ModrinthClient.SelectPreferred(candidates);
-
-                    var file = pick is null ? null : ModrinthClient.SelectFile(pick, SelectedVersion?.Id, LoaderFor(project.ProjectType));
-                    size = file?.Size ?? 0;
-
-                    // The same question the install asks, so the two agree on what comes.
-                    blocked = await IsBlockedAsync(pick);
-                }
-
-                walk.Items.Add(new ModDependencyItem(project.Title, installed, dependency.IsRequired)
-                {
-                    Size = size,
-                    SizeLabel = size > 0 ? FormatSize(size) : string.Empty,
-                    Blocked = blocked,
-                    PageUrl = blocked ? pick?.PageUrl ?? project.PageUrl : null
-                });
-
-                // The install goes one level further down, so the list does too: otherwise
-                // a mod would arrive that the panel never named.
-                if (pick is not null && depth == 0)
-                {
-                    await CollectDependenciesAsync(pick, project.Title, depth + 1, walk);
-                }
-            }
-            catch (Exception ex)
-            {
-                AppendConsole($"[{SourceName(version.Source).ToLowerInvariant()}] dependency of {title}: {ex.Message}");
-
-                // The install asks again and may get an answer: what it would then bring is not on this list.
-                if (dependency.IsRequired)
-                {
-                    walk.Incomplete = true;
-                }
-            }
-        }
-    }
-
     /// <summary>
     /// Required mods the last install could not fetch because their authors keep the file
     /// to the site. Everything else came; these are for the player to download by hand.
@@ -376,34 +272,11 @@ public partial class MainWindowViewModel
         }
     }
 
-    /// <summary>
-    /// True when installing this version would also install a mod nobody pressed "Add" on.
-    /// Asked on a card's button, where there is no room for a list: it stops at the first
-    /// such mod, so the usual case - everything needed is already in the build - costs one
-    /// question per dependency and no file lists.
-    /// </summary>
-    private async Task<bool> BringsOtherModsAsync(ModVersion version, Instance? instance)
-    {
-        var source = SourceFor(version.Source);
-
-        foreach (var dependency in version.Dependencies.Where(d => d.IsRequired && !string.IsNullOrEmpty(d.ProjectId)))
-        {
-            var project = await source.GetProjectAsync(dependency.ProjectId!).ConfigureAwait(true);
-
-            if (project is not null && !IsProjectInstalled(instance, project.Slug))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     /// <summary>The line under the dependency list: how many files the install is, and their size together.</summary>
     private void RefreshOpenedProjectTotal()
     {
         // A file only its page gives out is not one of the downloads.
-        var extra = OpenedProjectDependencies.Where(d => d.Required && !d.Installed && !d.Blocked).ToList();
+        var extra = OpenedProjectDependencies.Where(d => d.Required && !d.Installed && !d.Blocked && !d.Unavailable).ToList();
         var own = OpenedProjectPreferred is null
             ? null
             : ModrinthClient.SelectFile(OpenedProjectPreferred, SelectedVersion?.Id, LoaderFor(BrowserKind));
