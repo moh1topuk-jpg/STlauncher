@@ -4,7 +4,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using Avalonia.Layout;
 using Avalonia.Platform.Storage;
 using Avalonia.VisualTree;
 using STlauncher.App.ViewModels;
@@ -29,7 +28,6 @@ public partial class BuildsPage : UserControl
             if (_viewModel is not null)
             {
                 _viewModel.RevealModRequested -= RevealMod;
-                _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
             }
 
             _viewModel = DataContext as MainWindowViewModel;
@@ -37,22 +35,12 @@ public partial class BuildsPage : UserControl
             if (_viewModel is not null)
             {
                 _viewModel.RevealModRequested += RevealMod;
-                _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+
+                // The list is one row wide; the view model lays it out in lines of as many
+                // mods as it is told.
+                _viewModel.ModColumns = 1;
             }
         };
-    }
-
-    /// <summary>
-    /// Another mod opened in the details panel starts from the top: what "Add" will bring
-    /// is written there, and the panel would otherwise stay where the last mod was left.
-    /// </summary>
-    private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName == nameof(MainWindowViewModel.OpenedProject) &&
-            this.FindControl<ScrollViewer>("ProjectScroll") is { } scroll)
-        {
-            scroll.Offset = default;
-        }
     }
 
     // ===================== Files dragged in =====================
@@ -108,10 +96,10 @@ public partial class BuildsPage : UserControl
     // ===================== Scroll to a fresh mod =====================
 
     /// <summary>
-    /// Brings the mod's line into view once the list has laid itself out; the tab may have
+    /// Brings the mod's row into view once the list has laid itself out; the tab may have
     /// just switched, so this waits for a layout pass rather than measuring an invisible
-    /// panel. The list keeps only the lines on screen, so the line is asked for by its
-    /// number: its card may not exist yet.
+    /// panel. The list keeps only the rows on screen, so the row is asked for by its
+    /// number: its control may not exist yet.
     /// </summary>
     private void RevealMod(string fileName)
     {
@@ -134,45 +122,17 @@ public partial class BuildsPage : UserControl
         }, Avalonia.Threading.DispatcherPriority.Background);
     }
 
-    /// <summary>
-    /// Mod cards per line from the width there is: two while each still has room for a
-    /// title and its buttons, one in a narrow window.
-    /// </summary>
-    private void OnModsSizeChanged(object? sender, SizeChangedEventArgs e)
-    {
-        if (DataContext is MainWindowViewModel viewModel)
-        {
-            viewModel.ModColumns = e.NewSize.Width >= 700 ? 2 : 1;
-        }
-    }
-
-    /// <summary>Opens the project card when a mod card is clicked.</summary>
-    private void OnModRowPressed(object? sender, PointerPressedEventArgs e)
-    {
-        if (sender is not Control { DataContext: ModBrowserItem item } ||
-            DataContext is not MainWindowViewModel viewModel)
-        {
-            return;
-        }
-
-        // Clicks on the card's own button belong to that button.
-        if (e.Source is Button || e.Source is Visual visual && visual.FindAncestorOfType<Button>() is not null)
-        {
-            return;
-        }
-
-        viewModel.OpenProjectCommand.Execute(item);
-    }
-
+    /// <summary>A click on a pack's row unfolds what the pack says about itself.</summary>
     private void OnPackRowPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (sender is not Control { DataContext: ResourcePackItem item } ||
-            DataContext is not MainWindowViewModel viewModel)
+        if (sender is not Control { DataContext: ResourcePackItem item } control ||
+            DataContext is not MainWindowViewModel viewModel ||
+            !e.GetCurrentPoint(control).Properties.IsLeftButtonPressed)
         {
             return;
         }
 
-        // The switch and the arrows on the row do their own thing.
+        // The switch and the buttons on the row do their own thing.
         if (e.Source is Button or ToggleSwitch ||
             e.Source is Visual visual && visual.FindAncestorOfType<Button>() is not null ||
             e.Source is Visual visual2 && visual2.FindAncestorOfType<ToggleSwitch>() is not null)
@@ -183,50 +143,91 @@ public partial class BuildsPage : UserControl
         viewModel.SelectResourcePackCommand.Execute(item);
     }
 
+    // ===================== The rows' menus =====================
+
+    /// <summary>The "..." of a row opens the row's own right-click menu.</summary>
+    private void OnRowMoreClick(object? sender, RoutedEventArgs e) => RowMenu.OpenFrom(sender);
+
     /// <summary>
-    /// The menu of a pack row has one entry, "bring back the previous version", and it is
-    /// there only for a pack that was updated. For any other row the request stops here:
-    /// an empty menu is a grey square under the cursor. This handler is attached before
-    /// the menu's own, so it is asked first.
+    /// An entry of a row's menu that needs the page's view model. The menu lives in a
+    /// popup, where a binding to the page does not reach, so the entry names its action
+    /// in Tag and the row's item says what it acts on.
     /// </summary>
-    private void OnPackMenuRequested(object? sender, ContextRequestedEventArgs e)
+    private void OnRowMenuClick(object? sender, RoutedEventArgs e)
     {
-        var hasPrevious = (sender as Control)?.DataContext switch
+        if (_viewModel is not { } viewModel || sender is not MenuItem { Tag: string action } entry)
         {
-            ResourcePackItem pack => pack.HasPrevious,
-            ShaderPackItem shader => shader.HasPrevious,
-            _ => false
+            return;
+        }
+
+        var item = entry.DataContext;
+
+        System.Windows.Input.ICommand? command = (item, action) switch
+        {
+            (InstalledModItem, "update") => viewModel.UpdateModCommand,
+            (InstalledModItem, "page") => viewModel.OpenModPageCommand,
+            (InstalledModItem, "delete") => viewModel.UninstallModCommand,
+            (ResourcePackItem, "update") => viewModel.UpdateResourcePackCommand,
+            (ResourcePackItem, "up") => viewModel.MoveResourcePackUpCommand,
+            (ResourcePackItem, "down") => viewModel.MoveResourcePackDownCommand,
+            (ResourcePackItem, "page") => viewModel.OpenResourcePackOnModrinthCommand,
+            (ResourcePackItem, "delete") => viewModel.DeleteResourcePackCommand,
+            (ShaderPackItem, "update") => viewModel.UpdateShaderCommand,
+            (ShaderPackItem, "page") => viewModel.OpenShaderOnModrinthCommand,
+            (ShaderPackItem, "delete") => viewModel.DeleteShaderCommand,
+            (ScreenshotItem, "open") => viewModel.OpenScreenshotCommand,
+            (ScreenshotItem, "copy") => viewModel.CopyScreenshotCommand,
+            (ScreenshotItem, "delete") => viewModel.DeleteScreenshotCommand,
+            (InstalledModItem or ResourcePackItem or ShaderPackItem, "file") => viewModel.ShowContentFileCommand,
+            _ => null
         };
 
-        if (!hasPrevious)
+        if (command?.CanExecute(item) == true)
         {
-            e.Handled = true;
+            command.Execute(item);
         }
     }
+
+    // ===================== Shaders: one at a time =====================
 
     /// <summary>
-    /// Cards per row from the width there is: one below 450px, two to 740, three above.
-    /// The numbers leave a card room for its title beside the logo; with the details panel
-    /// open the default window still shows two. XAML has no width queries, so the count is
-    /// set here whenever the area resizes.
+    /// A shader's switch: on makes it the one the game loads, off leaves the game without
+    /// shaders. The switch then shows what really happened - the game may be running,
+    /// and then nothing changes.
     /// </summary>
-    private void OnBrowserSizeChanged(object? sender, SizeChangedEventArgs e)
+    private void OnShaderToggle(object? sender, RoutedEventArgs e)
     {
-        if (this.FindControl<ItemsControl>("BrowserItems")?.ItemsPanelRoot is Avalonia.Controls.Primitives.UniformGrid grid)
+        if (sender is not ToggleSwitch { DataContext: ShaderPackItem item } toggle || _viewModel is not { } viewModel)
         {
-            var width = e.NewSize.Width;
-            grid.Columns = width >= 740 ? 3 : width >= 450 ? 2 : 1;
+            return;
         }
+
+        if (item.IsActive)
+        {
+            viewModel.DisableShadersCommand.Execute(null);
+        }
+        else
+        {
+            viewModel.ActivateShaderCommand.Execute(item);
+        }
+
+        toggle.SetCurrentValue(ToggleSwitch.IsCheckedProperty, item.IsActive);
     }
 
-    /// <summary>The chip row scrolls sideways with the wheel, since it has no vertical extent.</summary>
-    private void OnChipWheel(object? sender, PointerWheelEventArgs e)
+    /// <summary>"No shaders" can only be switched on: switching it off would need a shader to pick.</summary>
+    private void OnNoShaderToggle(object? sender, RoutedEventArgs e)
     {
-        if (sender is ScrollViewer scroll)
+        if (sender is not ToggleSwitch toggle || _viewModel is not { } viewModel)
         {
-            scroll.Offset = new Vector(scroll.Offset.X - e.Delta.Y * 60, scroll.Offset.Y);
-            e.Handled = true;
+            return;
         }
+
+        if (!viewModel.NoShaderActive)
+        {
+            viewModel.DisableShadersCommand.Execute(null);
+        }
+
+        toggle.SetCurrentValue(ToggleSwitch.IsCheckedProperty, viewModel.NoShaderActive);
     }
 
     /// <summary>A build picked from the "From the catalog" submenu.</summary>

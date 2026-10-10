@@ -1,298 +1,335 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:STlauncher.App.ViewModels"
+             xmlns:controls="using:STlauncher.App.Controls"
              x:Class="STlauncher.App.Views.Pages.WorldsView"
              x:DataType="vm:MainWindowViewModel">
 
-    <!-- The build's single-player worlds, one card each. Self-contained: the builds page
+    <!-- The build's single-player worlds, a picture each. Self-contained: the builds page
          only places it among its tabs, the view model's Worlds partial does the rest.
-         The frequent things - a backup, the name - sit on the card; the rare ones are one
-         click deep under the dots. Nothing here replaces a world; a world is deleted for
-         good only from the trash, by a button that says so and asks first. -->
-    <Grid RowDefinitions="Auto,*" RowSpacing="10">
-        <StackPanel Spacing="10">
-            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
-                <TextBlock Text="{DynamicResource Worlds_Hint}" Classes="faint" TextWrapping="Wrap" VerticalAlignment="Center"/>
-                <Button Grid.Column="1" Classes="ghost small" VerticalAlignment="Top"
-                        Content="{DynamicResource Worlds_OpenFolder}" Command="{Binding OpenSavesFolderCommand}"/>
-                <Button Grid.Column="2" Classes="primary small" CornerRadius="10" VerticalAlignment="Top"
-                        ToolTip.Tip="{DynamicResource Worlds_ImportHint}"
+         The frequent things - a backup, the seed - show over the picture under the pointer;
+         everything a world can have done to it is in its menu, which the "..." beside the
+         name and a right click both open. Nothing here replaces a world; a world is deleted
+         for good only from the trash, by a button that says so and asks first. -->
+
+    <UserControl.Styles>
+        <!-- Actions over a picture. The picture is anything, so the plate under the words
+             is the same dark one in both themes. -->
+        <Style Selector="Button.over">
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Padding" Value="10,0"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="#FFFFFFFF"/>
+        </Style>
+        <Style Selector="Button.over /template/ Border#PART_Root">
+            <Setter Property="Background" Value="#C70A080B"/>
+        </Style>
+        <Style Selector="Button.over:pointerover /template/ Border#PART_Root">
+            <Setter Property="Background" Value="#F00A080B"/>
+        </Style>
+        <Style Selector="Border.plate">
+            <Setter Property="Background" Value="#C70A080B"/>
+            <Setter Property="CornerRadius" Value="7"/>
+            <Setter Property="Padding" Value="8,3"/>
+        </Style>
+        <Style Selector="Border.plate > TextBlock">
+            <Setter Property="Foreground" Value="#FFFFFFFF"/>
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+        </Style>
+        <Style Selector="Border.note">
+            <Setter Property="Background" Value="{DynamicResource FieldBrush}"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="14,10"/>
+        </Style>
+        <Style Selector="TextBlock.ask">
+            <Setter Property="FontSize" Value="12.5"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="LineHeight" Value="18"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto,Auto,Auto" Margin="12,0,0,0">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" Margin="0,14,0,8">
+            <!-- What the last action did, or why it did not. -->
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" VerticalAlignment="Center" IsVisible="{Binding HasWorldsStatus}">
+                <ProgressBar IsIndeterminate="True" Width="60" Height="3" VerticalAlignment="Center" IsVisible="{Binding IsWorldsBusy}"/>
+                <TextBlock Grid.Column="1" Text="{Binding WorldsStatus}" Classes="ask" VerticalAlignment="Center"/>
+                <Button Grid.Column="2" Classes="icon" IsVisible="{Binding !IsWorldsBusy}" VerticalAlignment="Center"
+                        ToolTip.Tip="{DynamicResource Common_Close}" Command="{Binding DismissWorldsStatusCommand}">
+                    <PathIcon Data="{StaticResource IconClose}" Width="12" Height="12"/>
+                </Button>
+            </Grid>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Top">
+                <Button Height="36" Padding="14,0" ToolTip.Tip="{DynamicResource Worlds_ImportHint}"
                         IsEnabled="{Binding !IsWorldsBusy}" Click="OnImportWorldClick">
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <PathIcon Data="{StaticResource IconPlus}" Classes="small"/>
-                        <TextBlock Text="{DynamicResource Worlds_Import}" FontWeight="SemiBold"
-                                   Foreground="{DynamicResource TextOnAccentBrush}"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <PathIcon Data="{StaticResource IconPlus}" Width="12" Height="12"/>
+                        <TextBlock Text="{DynamicResource Worlds_AddZip}" FontWeight="Bold"/>
                     </StackPanel>
                 </Button>
-            </Grid>
-
-            <!-- While the game runs the saves folder is its own; say so once, up top. -->
-            <Border Classes="panel glass" CornerRadius="14" Padding="14,12" IsVisible="{Binding !CanEditWorlds}">
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
-                    <PathIcon Data="{StaticResource IconWarning}" Classes="small" Foreground="{DynamicResource GoldBrush}"
-                              VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="1" Text="{DynamicResource Worlds_GameRunning}" TextWrapping="Wrap" VerticalAlignment="Center"/>
-                </Grid>
-            </Border>
-
-            <!-- What the last action did, or why it did not. -->
-            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" IsVisible="{Binding HasWorldsStatus}">
-                <ProgressBar IsIndeterminate="True" Width="60" Height="3" VerticalAlignment="Center" IsVisible="{Binding IsWorldsBusy}"/>
-                <TextBlock Grid.Column="1" Text="{Binding WorldsStatus}" Classes="gold" TextWrapping="Wrap" VerticalAlignment="Center"/>
-                <Button Grid.Column="2" Classes="plain small" IsVisible="{Binding !IsWorldsBusy}"
-                        ToolTip.Tip="{DynamicResource Common_Close}" Command="{Binding DismissWorldsStatusCommand}">
-                    <PathIcon Data="{StaticResource IconClose}" Classes="small"/>
+                <Button Classes="icon" Height="36" Width="34" ToolTip.Tip="{DynamicResource Worlds_OpenFolder}"
+                        Command="{Binding OpenSavesFolderCommand}">
+                    <PathIcon Data="{StaticResource IconFolder}"/>
                 </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- While the game runs the saves folder is its own; say so once, up top. -->
+        <Border Grid.Row="1" Classes="note" Margin="0,0,0,8" IsVisible="{Binding !CanEditWorlds}">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <PathIcon Data="{StaticResource IconWarning}" Classes="small gold" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1" Text="{DynamicResource Worlds_GameRunning}" TextWrapping="Wrap" VerticalAlignment="Center"/>
             </Grid>
+        </Border>
+
+        <StackPanel Grid.Row="2" Spacing="14" Margin="12,22,12,0" MaxWidth="520" HorizontalAlignment="Left"
+                    VerticalAlignment="Top" IsVisible="{Binding HasNoWorlds}">
+            <TextBlock Text="{DynamicResource Worlds_Empty}" Foreground="{DynamicResource TextSecondaryBrush}"
+                       TextWrapping="Wrap" LineHeight="20"/>
+            <Button HorizontalAlignment="Left" IsEnabled="{Binding !IsWorldsBusy}" Click="OnImportWorldClick">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <PathIcon Data="{StaticResource IconPlus}" Width="12" Height="12"/>
+                    <TextBlock Text="{DynamicResource Worlds_AddZip}" FontWeight="Bold"/>
+                </StackPanel>
+            </Button>
         </StackPanel>
 
-        <ScrollViewer Grid.Row="1">
-            <StackPanel Spacing="14">
-                <Border Classes="panel glass" Padding="20" IsVisible="{Binding HasNoWorlds}">
-                    <StackPanel Spacing="12">
-                        <TextBlock Text="{DynamicResource Worlds_Empty}" Classes="muted" FontSize="13" TextWrapping="Wrap"/>
-                        <Button Classes="primary small" HorizontalAlignment="Left" CornerRadius="10"
-                                Content="{DynamicResource Worlds_Import}"
-                                IsEnabled="{Binding !IsWorldsBusy}" Click="OnImportWorldClick"/>
-                    </StackPanel>
-                </Border>
+        <ScrollViewer Grid.Row="2" IsVisible="{Binding HasWorlds}">
+            <ItemsControl ItemsSource="{Binding Worlds}" VerticalAlignment="Top" Margin="0,6,0,14">
+                <!-- Three on a line in the default window; the grid counts by the width it has. -->
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <controls:TileGrid ColumnSpacing="18" RowSpacing="20"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:WorldItem">
+                        <StackPanel Classes="reveal-host" Spacing="9" Background="Transparent" VerticalAlignment="Top">
+                            <StackPanel.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="{DynamicResource Worlds_Rename}"
+                                              Command="{Binding BeginRenameCommand}" IsVisible="{Binding IsReadable}"/>
+                                    <MenuItem Header="{DynamicResource Worlds_BackupNow}"
+                                              ToolTip.Tip="{DynamicResource Worlds_BackupNowHint}"
+                                              Command="{Binding BackupCommand}"/>
+                                    <MenuItem Header="{Binding BackupsLabel}" IsVisible="{Binding HasBackups}"
+                                              Command="{Binding ToggleBackupsCommand}"/>
+                                    <MenuItem Header="{DynamicResource Worlds_Duplicate}"
+                                              Command="{Binding DuplicateCommand}"/>
+                                    <MenuItem Header="{DynamicResource Worlds_Export}" Click="OnExportWorldClick"/>
+                                    <MenuItem Header="{DynamicResource Worlds_CopySeed}"
+                                              Command="{Binding CopySeedCommand}" IsVisible="{Binding HasSeed}"/>
+                                    <MenuItem Header="{DynamicResource Worlds_OpenWorldFolder}"
+                                              Command="{Binding OpenFolderCommand}"/>
+                                    <Separator/>
+                                    <MenuItem Classes="danger" Header="{DynamicResource Worlds_Delete}"
+                                              Command="{Binding AskDeleteCommand}"/>
+                                </ContextMenu>
+                            </StackPanel.ContextMenu>
 
-                <ItemsControl ItemsSource="{Binding Worlds}" IsVisible="{Binding HasWorlds}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel Orientation="Horizontal" ItemSpacing="10" LineSpacing="10"/>
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="vm:WorldItem">
-                            <Border Classes="mod-line" Width="368" Padding="12" VerticalAlignment="Top">
-                                <StackPanel Spacing="10">
-                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                                        <!-- The picture the game took of the world; a globe until it is read, or when there is none. -->
-                                        <Border Width="64" Height="64" CornerRadius="12" ClipToBounds="True"
-                                                Background="{DynamicResource ElevatedBrush}" VerticalAlignment="Top">
-                                            <Panel>
-                                                <PathIcon Data="{StaticResource IconGlobe}" Classes="muted" Width="26" Height="26"
-                                                          IsVisible="{Binding !HasIcon}"/>
-                                                <Image Source="{Binding Icon}" Stretch="UniformToFill" IsVisible="{Binding HasIcon}"/>
-                                            </Panel>
-                                        </Border>
-
-                                        <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center" IsVisible="{Binding !IsRenaming}">
-                                            <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold"
-                                                       TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Name}"/>
-                                            <TextBlock Text="{Binding FactsLabel}" Classes="muted" FontSize="12"
-                                                       TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding FactsLabel}"
-                                                       IsVisible="{Binding HasFacts}"/>
-                                            <TextBlock Text="{DynamicResource Worlds_UnreadableHint}" Classes="gold" FontSize="12"
-                                                       TextWrapping="Wrap" IsVisible="{Binding IsUnreadable}"/>
-                                            <TextBlock Text="{Binding PlayedLabel}" Classes="faint" FontSize="12"
-                                                       TextTrimming="CharacterEllipsis" IsVisible="{Binding IsReadable}"/>
-                                        </StackPanel>
-
-                                        <!-- Renaming happens where the name is. Only the name in the game changes. -->
-                                        <StackPanel Grid.Column="1" Grid.ColumnSpan="2" Spacing="6" IsVisible="{Binding IsRenaming}">
-                                            <Border Classes="field">
-                                                <TextBox Classes="bare" Text="{Binding NameEdit}" MaxLength="128">
-                                                    <TextBox.KeyBindings>
-                                                        <KeyBinding Gesture="Enter" Command="{Binding CommitRenameCommand}"/>
-                                                        <KeyBinding Gesture="Escape" Command="{Binding CancelRenameCommand}"/>
-                                                    </TextBox.KeyBindings>
-                                                </TextBox>
-                                            </Border>
-                                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                                <Button Classes="primary small" Content="{DynamicResource Worlds_RenameSave}"
-                                                        IsEnabled="{Binding IsIdle}" Command="{Binding CommitRenameCommand}"/>
-                                                <Button Classes="plain small" Content="{DynamicResource Common_Cancel}"
-                                                        Command="{Binding CancelRenameCommand}"/>
-                                            </StackPanel>
-                                            <TextBlock Text="{DynamicResource Worlds_RenameHint}" Classes="faint" FontSize="11" TextWrapping="Wrap"/>
-                                        </StackPanel>
-
-                                        <!-- The rare actions, out of the way but one click deep. -->
-                                        <Button Grid.Column="2" Classes="plain small" VerticalAlignment="Top"
-                                                IsVisible="{Binding !IsRenaming}" IsEnabled="{Binding IsIdle}"
-                                                ToolTip.Tip="{DynamicResource Worlds_More}">
-                                            <PathIcon Data="{StaticResource IconDots}" Classes="small"/>
-                                            <Button.Flyout>
-                                                <MenuFlyout Placement="BottomEdgeAlignedRight">
-                                                    <MenuItem Header="{DynamicResource Worlds_Rename}"
-                                                              Command="{Binding BeginRenameCommand}" IsVisible="{Binding IsReadable}"/>
-                                                    <MenuItem Header="{DynamicResource Worlds_Duplicate}"
-                                                              Command="{Binding DuplicateCommand}"/>
-                                                    <MenuItem Header="{DynamicResource Worlds_Export}" Click="OnExportWorldClick"/>
-                                                    <MenuItem Header="{DynamicResource Worlds_CopySeed}"
-                                                              Command="{Binding CopySeedCommand}" IsVisible="{Binding HasSeed}"/>
-                                                    <MenuItem Header="{DynamicResource Worlds_OpenWorldFolder}"
-                                                              Command="{Binding OpenFolderCommand}"/>
-                                                    <Separator/>
-                                                    <MenuItem Header="{DynamicResource Worlds_Delete}"
-                                                              Command="{Binding AskDeleteCommand}"/>
-                                                </MenuFlyout>
-                                            </Button.Flyout>
-                                        </Button>
-                                    </Grid>
-
-                                    <WrapPanel ItemSpacing="6" LineSpacing="6">
-                                        <Border Classes="tag accent" IsVisible="{Binding IsHardcore}">
-                                            <TextBlock Text="{DynamicResource Worlds_ModeHardcore}"/>
-                                        </Border>
-                                        <Border Classes="tag success" IsVisible="{Binding IsUnreadable}">
-                                            <TextBlock Text="{DynamicResource Worlds_Unreadable}"/>
-                                        </Border>
-                                        <Border Classes="tag" IsVisible="{Binding HasVersion}">
-                                            <TextBlock Text="{Binding VersionLabel}"/>
-                                        </Border>
-                                        <Border Classes="tag">
-                                            <TextBlock Text="{Binding SizeLabel}"/>
-                                        </Border>
-                                        <Border Classes="tag" IsVisible="{Binding ShowFolderName}"
-                                                ToolTip.Tip="{DynamicResource Worlds_FolderHint}">
-                                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                                <PathIcon Data="{StaticResource IconFolder}" Width="10" Height="10" Classes="muted"/>
-                                                <TextBlock Text="{Binding FolderName}" MaxWidth="150" TextTrimming="CharacterEllipsis"
-                                                           FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                            </StackPanel>
-                                        </Border>
-                                    </WrapPanel>
-
-                                    <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="6" IsVisible="{Binding !IsConfirmingDelete}">
-                                        <Button Classes="ghost small" IsEnabled="{Binding IsIdle}"
+                            <!-- The picture the game took of the world; a globe until it is read, or when there is none. -->
+                            <Border Height="118" CornerRadius="12" ClipToBounds="True" Background="{DynamicResource FieldBrush}">
+                                <ToolTip.Tip>
+                                    <StackPanel Spacing="2">
+                                        <TextBlock Text="{Binding Name}" FontWeight="Bold"/>
+                                        <TextBlock Text="{Binding FactsLabel}" IsVisible="{Binding HasFacts}"/>
+                                        <TextBlock Text="{Binding PlayedLabel}" IsVisible="{Binding IsReadable}"/>
+                                        <TextBlock Text="{Binding VersionLabel}" IsVisible="{Binding HasVersion}"/>
+                                        <TextBlock IsVisible="{Binding ShowFolderName}">
+                                            <Run Text="{DynamicResource Worlds_FolderHint}"/><Run Text=": "/><Run Text="{Binding FolderName}"/>
+                                        </TextBlock>
+                                        <TextBlock Text="{DynamicResource Worlds_Unreadable}" IsVisible="{Binding IsUnreadable}"/>
+                                    </StackPanel>
+                                </ToolTip.Tip>
+                                <Panel>
+                                    <PathIcon Data="{StaticResource IconGlobe}" Classes="muted" Width="28" Height="28">
+                                        <PathIcon.IsVisible>
+                                            <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                <Binding Path="!HasIcon"/>
+                                                <Binding Path="IsReadable"/>
+                                            </MultiBinding>
+                                        </PathIcon.IsVisible>
+                                    </PathIcon>
+                                    <Image Source="{Binding Icon}" Stretch="UniformToFill" IsVisible="{Binding HasIcon}"/>
+                                    <TextBlock Text="{DynamicResource Worlds_UnreadableShort}" Classes="sub"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               IsVisible="{Binding IsUnreadable}"/>
+                                    <Border Classes="plate" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8"
+                                            IsVisible="{Binding IsHardcore}">
+                                        <TextBlock Text="{DynamicResource Worlds_ModeHardcore}"/>
+                                    </Border>
+                                    <StackPanel Classes="reveal" Orientation="Horizontal" Spacing="6" Margin="8"
+                                                HorizontalAlignment="Left" VerticalAlignment="Bottom">
+                                        <Button Classes="over" Content="{DynamicResource Worlds_BackupShort}"
                                                 ToolTip.Tip="{DynamicResource Worlds_BackupNowHint}"
-                                                Command="{Binding BackupCommand}">
-                                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                                <PathIcon Data="{StaticResource IconRestore}" Classes="small"/>
-                                                <TextBlock Text="{DynamicResource Worlds_BackupNow}"/>
-                                            </StackPanel>
-                                        </Button>
-                                        <Button Grid.Column="1" Classes="plain small" IsVisible="{Binding HasBackups}"
-                                                Command="{Binding ToggleBackupsCommand}">
-                                            <StackPanel Orientation="Horizontal" Spacing="5">
-                                                <TextBlock Text="{Binding BackupsLabel}"/>
-                                                <PathIcon Data="{StaticResource IconChevronDown}" Width="9" Height="9"/>
-                                            </StackPanel>
-                                        </Button>
-                                        <Button Grid.Column="3" Classes="plain small" IsVisible="{Binding HasSeed}"
+                                                IsEnabled="{Binding IsIdle}" Command="{Binding BackupCommand}"/>
+                                        <Button Classes="over" Content="{DynamicResource Worlds_Seed}"
                                                 ToolTip.Tip="{DynamicResource Worlds_CopySeed}"
-                                                Command="{Binding CopySeedCommand}">
-                                            <StackPanel Orientation="Horizontal" Spacing="5">
-                                                <PathIcon Data="{StaticResource IconCopy}" Classes="small"/>
-                                                <TextBlock Text="{DynamicResource Worlds_Seed}"/>
-                                            </StackPanel>
-                                        </Button>
+                                                IsVisible="{Binding HasSeed}" Command="{Binding CopySeedCommand}"/>
+                                    </StackPanel>
+                                </Panel>
+                            </Border>
+
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6" IsVisible="{Binding !IsRenaming}">
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Classes="strong" Text="{Binding Name}" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Classes="sub" TextTrimming="CharacterEllipsis" IsVisible="{Binding IsReadable}">
+                                        <Run Text="{Binding FactsLabel}"/><Run Text=" · "/><Run Text="{Binding SizeLabel}"/>
+                                    </TextBlock>
+                                    <TextBlock Classes="sub" Foreground="{DynamicResource WarningBrush}" TextWrapping="Wrap"
+                                               Text="{DynamicResource Worlds_UnreadableHint}" IsVisible="{Binding IsUnreadable}"/>
+                                </StackPanel>
+                                <!-- Everything a world can have done to it, reachable without a pointer. -->
+                                <Button Grid.Column="1" Classes="icon more" VerticalAlignment="Top"
+                                        IsEnabled="{Binding IsIdle}" ToolTip.Tip="{DynamicResource Worlds_More}"
+                                        Click="OnMoreClick">
+                                    <PathIcon Data="{StaticResource IconDots}"/>
+                                </Button>
+                            </Grid>
+
+                            <!-- Renaming happens where the name is. Only the name in the game changes. -->
+                            <StackPanel Spacing="6" IsVisible="{Binding IsRenaming}">
+                                <Border Classes="field">
+                                    <TextBox Classes="bare" Text="{Binding NameEdit}" MaxLength="128">
+                                        <TextBox.KeyBindings>
+                                            <KeyBinding Gesture="Enter" Command="{Binding CommitRenameCommand}"/>
+                                            <KeyBinding Gesture="Escape" Command="{Binding CancelRenameCommand}"/>
+                                        </TextBox.KeyBindings>
+                                    </TextBox>
+                                </Border>
+                                <TextBlock Text="{DynamicResource Worlds_RenameHint}" Classes="ask"/>
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <Button Classes="small" Content="{DynamicResource Worlds_RenameSave}"
+                                            IsEnabled="{Binding IsIdle}" Command="{Binding CommitRenameCommand}"/>
+                                    <Button Classes="ghost small" Content="{DynamicResource Common_Cancel}"
+                                            Command="{Binding CancelRenameCommand}"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- Delete asks once, right here, and says where the world goes. -->
+                            <StackPanel Spacing="8" IsVisible="{Binding IsConfirmingDelete}">
+                                <TextBlock Text="{DynamicResource Worlds_DeleteAsk}" Classes="ask"/>
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <Button Classes="danger small" Content="{DynamicResource Worlds_DeleteConfirm}"
+                                            Command="{Binding ConfirmDeleteCommand}"/>
+                                    <Button Classes="ghost small" Content="{DynamicResource Common_Cancel}"
+                                            Command="{Binding CancelDeleteCommand}"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- The world's backups. Each comes back as a world of its own. -->
+                            <StackPanel Spacing="4" IsVisible="{Binding IsBackupsOpen}">
+                                <Border Classes="hairline"/>
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="{Binding BackupsLabel}" Classes="caption" VerticalAlignment="Center"/>
+                                    <Button Grid.Column="1" Classes="icon" Width="24" Height="24" ToolTip.Tip="{DynamicResource Common_Close}"
+                                            Command="{Binding ToggleBackupsCommand}">
+                                        <PathIcon Data="{StaticResource IconClose}" Width="10" Height="10"/>
+                                    </Button>
+                                </Grid>
+                                <TextBlock Text="{DynamicResource Worlds_RestoreBackupHint}" Classes="ask"/>
+                                <ItemsControl ItemsSource="{Binding Backups}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:WorldBackupItem">
+                                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0,4,0,0">
+                                                <StackPanel VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding DateLabel}" FontSize="12.5"/>
+                                                    <TextBlock Text="{Binding SizeLabel}" Classes="sub"/>
+                                                </StackPanel>
+                                                <Button Grid.Column="1" Classes="small" Content="{DynamicResource Worlds_RestoreBackup}"
+                                                        VerticalAlignment="Center" Command="{Binding RestoreCommand}"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <!-- The launcher's trash, opened from the line at the foot. -->
+        <Border Grid.Row="3" BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="0,1,0,0"
+                IsVisible="{Binding IsWorldsTrashOpen}">
+            <ScrollViewer MaxHeight="210" IsVisible="{Binding HasTrashedWorlds}">
+                <ItemsControl ItemsSource="{Binding TrashedWorlds}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:TrashedWorldItem">
+                            <!-- Not dimmed like a switched-off mod: the row carries two live buttons. -->
+                            <Border Classes="row" Padding="0,9">
+                                <Panel>
+                                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6" IsVisible="{Binding !IsConfirmingDelete}">
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" Classes="strong" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding DetailLabel}" Classes="sub"/>
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Classes="small" Content="{DynamicResource Worlds_TrashRestore}"
+                                                VerticalAlignment="Center" Command="{Binding RestoreCommand}"/>
+                                        <Button Grid.Column="2" Classes="ghost small" Content="{DynamicResource Worlds_TrashDelete}"
+                                                VerticalAlignment="Center" Command="{Binding AskDeleteCommand}"/>
                                     </Grid>
 
-                                    <!-- Delete asks once, right here, and says where the world goes. -->
-                                    <StackPanel Spacing="8" IsVisible="{Binding IsConfirmingDelete}">
-                                        <TextBlock Text="{DynamicResource Worlds_DeleteAsk}" FontSize="12" TextWrapping="Wrap"/>
-                                        <StackPanel Orientation="Horizontal" Spacing="4">
-                                            <Button Classes="danger small" Content="{DynamicResource Worlds_DeleteConfirm}"
+                                    <!-- The question names the world and what it takes; the size is counted before "yes" is offered. -->
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" IsVisible="{Binding IsConfirmingDelete}">
+                                        <TextBlock Text="{Binding DeleteAskLabel}" Classes="ask" VerticalAlignment="Center"/>
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                            <Button Classes="danger small" Content="{DynamicResource Worlds_TrashDelete}"
+                                                    IsEnabled="{Binding IsMeasured}"
                                                     Command="{Binding ConfirmDeleteCommand}"/>
-                                            <Button Classes="plain small" Content="{DynamicResource Common_Cancel}"
+                                            <Button Classes="ghost small" Content="{DynamicResource Common_Cancel}"
                                                     Command="{Binding CancelDeleteCommand}"/>
                                         </StackPanel>
-                                    </StackPanel>
-
-                                    <!-- The world's backups. Each comes back as a world of its own. -->
-                                    <StackPanel Spacing="6" IsVisible="{Binding IsBackupsOpen}">
-                                        <Border Classes="hairline"/>
-                                        <TextBlock Text="{DynamicResource Worlds_RestoreBackupHint}" Classes="faint" FontSize="11" TextWrapping="Wrap"/>
-                                        <ItemsControl ItemsSource="{Binding Backups}">
-                                            <ItemsControl.ItemsPanel>
-                                                <ItemsPanelTemplate>
-                                                    <StackPanel Spacing="4"/>
-                                                </ItemsPanelTemplate>
-                                            </ItemsControl.ItemsPanel>
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate x:DataType="vm:WorldBackupItem">
-                                                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-                                                        <TextBlock Text="{Binding DateLabel}" FontSize="12" VerticalAlignment="Center"/>
-                                                        <TextBlock Grid.Column="1" Text="{Binding SizeLabel}" Classes="faint" FontSize="12" VerticalAlignment="Center"/>
-                                                        <Button Grid.Column="2" Classes="ghost small" Content="{DynamicResource Worlds_RestoreBackup}"
-                                                                Command="{Binding RestoreCommand}"/>
-                                                    </Grid>
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
-                                    </StackPanel>
-                                </StackPanel>
+                                    </Grid>
+                                </Panel>
                             </Border>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
+            </ScrollViewer>
+        </Border>
 
-                <!-- The launcher's trash. The strip says how many worlds lie there and what
-                     they take, opened or not: nothing leaves it unless the player says so,
-                     so it must not be possible to forget it is filling a disk. -->
-                <StackPanel Spacing="8" IsVisible="{Binding HasTrashedWorlds}">
-                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
-                        <Button Classes="plain small" Command="{Binding ToggleWorldsTrashCommand}">
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <TextBlock Text="{Binding TrashLabel}"/>
-                                <PathIcon Data="{StaticResource IconChevronDown}" Width="9" Height="9"/>
-                            </StackPanel>
-                        </Button>
-                        <TextBlock Grid.Column="1" Text="{DynamicResource Worlds_TrashNote}" Classes="faint" FontSize="12"
-                                   TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
-                        <Button Grid.Column="2" Classes="ghost small" Content="{DynamicResource Worlds_TrashEmpty}"
-                                IsEnabled="{Binding !IsWorldsBusy}" IsVisible="{Binding !IsConfirmingEmptyTrash}"
-                                Command="{Binding AskEmptyWorldsTrashCommand}"/>
-                    </Grid>
-
-                    <!-- Emptying asks once, with the count and the size it is about to remove. -->
-                    <Border Classes="mod-line" IsVisible="{Binding IsConfirmingEmptyTrash}">
-                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                            <TextBlock Text="{Binding TrashEmptyAskLabel}" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Center"/>
-                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                <Button Classes="danger small" Content="{DynamicResource Worlds_TrashEmptyConfirm}"
-                                        IsEnabled="{Binding IsTrashMeasured}"
-                                        Command="{Binding ConfirmEmptyWorldsTrashCommand}"/>
-                                <Button Classes="plain small" Content="{DynamicResource Common_Cancel}"
-                                        Command="{Binding CancelEmptyWorldsTrashCommand}"/>
-                            </StackPanel>
-                        </Grid>
-                    </Border>
-
-                    <ItemsControl ItemsSource="{Binding TrashedWorlds}" IsVisible="{Binding IsWorldsTrashOpen}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Spacing="6"/>
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="vm:TrashedWorldItem">
-                                <!-- Not dimmed like a switched-off mod: the row carries two live buttons. -->
-                                <Border Classes="mod-line">
-                                    <Panel>
-                                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6" IsVisible="{Binding !IsConfirmingDelete}">
-                                            <StackPanel Spacing="2" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-                                                <TextBlock Text="{Binding DetailLabel}" Classes="faint" FontSize="12"/>
-                                            </StackPanel>
-                                            <Button Grid.Column="1" Classes="ghost small" Content="{DynamicResource Worlds_TrashRestore}"
-                                                    Command="{Binding RestoreCommand}"/>
-                                            <Button Grid.Column="2" Classes="plain small" Content="{DynamicResource Worlds_TrashDelete}"
-                                                    Command="{Binding AskDeleteCommand}"/>
-                                        </Grid>
-
-                                        <!-- The question names the world and what it takes; the size is counted before "yes" is offered. -->
-                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" IsVisible="{Binding IsConfirmingDelete}">
-                                            <TextBlock Text="{Binding DeleteAskLabel}" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Center"/>
-                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                                <Button Classes="danger small" Content="{DynamicResource Worlds_TrashDelete}"
-                                                        IsEnabled="{Binding IsMeasured}"
-                                                        Command="{Binding ConfirmDeleteCommand}"/>
-                                                <Button Classes="plain small" Content="{DynamicResource Common_Cancel}"
-                                                        Command="{Binding CancelDeleteCommand}"/>
-                                            </StackPanel>
-                                        </Grid>
-                                    </Panel>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+        <!-- Emptying asks once, with the count and the size it is about to remove. -->
+        <Border Grid.Row="4" BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="0,1,0,0" Padding="0,10"
+                IsVisible="{Binding IsConfirmingEmptyTrash}">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                <TextBlock Text="{Binding TrashEmptyAskLabel}" Classes="ask" VerticalAlignment="Center"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                    <Button Classes="danger small" Content="{DynamicResource Worlds_TrashEmptyConfirm}"
+                            IsEnabled="{Binding IsTrashMeasured}"
+                            Command="{Binding ConfirmEmptyWorldsTrashCommand}"/>
+                    <Button Classes="ghost small" Content="{DynamicResource Common_Cancel}"
+                            Command="{Binding CancelEmptyWorldsTrashCommand}"/>
                 </StackPanel>
-            </StackPanel>
-        </ScrollViewer>
+            </Grid>
+        </Border>
+
+        <!-- The trash, as one line at the foot. It says how many worlds lie there and what
+             they take, opened or not: nothing leaves it unless the player says so, so it
+             must not be possible to forget it is filling a disk. -->
+        <Border Grid.Row="5" BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="0,1,0,0" Padding="0,11,0,14"
+                IsVisible="{Binding HasTrashedWorlds}">
+            <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="12">
+                <TextBlock Text="{Binding TrashLabel}" Classes="sub" VerticalAlignment="Center"
+                           ToolTip.Tip="{DynamicResource Worlds_TrashNote}"/>
+                <Button Grid.Column="1" Classes="link" FontSize="12.5" Command="{Binding ToggleWorldsTrashCommand}">
+                    <Panel>
+                        <TextBlock Text="{DynamicResource Worlds_TrashOpen}" FontSize="12.5"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" IsVisible="{Binding !IsWorldsTrashOpen}"/>
+                        <TextBlock Text="{DynamicResource Worlds_TrashHide}" FontSize="12.5"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" IsVisible="{Binding IsWorldsTrashOpen}"/>
+                    </Panel>
+                </Button>
+                <TextBlock Grid.Column="2" Text="{DynamicResource Worlds_TrashNote}" Classes="sub" VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" HorizontalAlignment="Right"/>
+                <Button Grid.Column="3" Classes="link" FontSize="12.5" Content="{DynamicResource Worlds_TrashEmpty}"
+                        IsEnabled="{Binding !IsWorldsBusy}" IsVisible="{Binding !IsConfirmingEmptyTrash}"
+                        Command="{Binding AskEmptyWorldsTrashCommand}"/>
+            </Grid>
+        </Border>
     </Grid>
 </UserControl>

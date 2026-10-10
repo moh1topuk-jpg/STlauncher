@@ -19,6 +19,9 @@ public partial class WorldsView : UserControl
         InitializeComponent();
     }
 
+    /// <summary>The "..." beside a world's name opens the world's own right-click menu.</summary>
+    private void OnMoreClick(object? sender, RoutedEventArgs e) => RowMenu.OpenFrom(sender);
+
     private static FilePickerFileType ZipType() =>
         new(MainWindowViewModel.Localize("Worlds_ZipType", "World archive (zip)"))
         {
