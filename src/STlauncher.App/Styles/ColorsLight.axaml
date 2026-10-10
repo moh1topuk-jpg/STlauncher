@@ -69,6 +69,7 @@
     <!-- A quiet button is grey here, not the mockup's white: half the pages still stand on
          white cards, where a white button is only its text. -->
     <SolidColorBrush x:Key="ControlBrush" Color="#ECE6E9"/>
+    <SolidColorBrush x:Key="DialogBrush" Color="#FFFFFF"/>
     <SolidColorBrush x:Key="ControlHoverBrush" Color="#E2DADE"/>
     <SolidColorBrush x:Key="ControlPressedBrush" Color="#D9CFD5"/>
     <BoxShadows x:Key="RowLineShadow">0 -1 0 0 #E4DCE0</BoxShadows>

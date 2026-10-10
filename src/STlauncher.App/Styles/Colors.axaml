@@ -76,6 +76,8 @@
     <SolidColorBrush x:Key="HairlineBrush" Color="{StaticResource DividerColor}"/>
     <!-- A quiet button and its states. -->
     <SolidColorBrush x:Key="ControlBrush" Color="#1B161A"/>
+    <!-- A dialog stands a step below the quiet button, so a quiet button on it stays a button. -->
+    <SolidColorBrush x:Key="DialogBrush" Color="#141014"/>
     <SolidColorBrush x:Key="ControlHoverBrush" Color="#262026"/>
     <SolidColorBrush x:Key="ControlPressedBrush" Color="#171216"/>
     <!-- The hairline above a row: a shadow, so it follows the row's rounded corners and

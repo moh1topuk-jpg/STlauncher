@@ -516,7 +516,7 @@
         <Setter Property="Background" Value="{DynamicResource OverlayScrimBrush}"/>
     </Style>
     <Style Selector="Border.dialog">
-        <Setter Property="Background" Value="{DynamicResource RaisedBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource DialogBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushSubtle}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="CornerRadius" Value="18"/>
@@ -1885,6 +1885,17 @@
     <!-- Red stays red under the pointer, whatever else the button is. -->
     <Style Selector="Button.danger:pointerover /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
+    </Style>
+
+    <!-- The theme's own radio button keeps its dark-theme words and ring in the light theme. -->
+    <Style Selector="RadioButton">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+    </Style>
+    <Style Selector="RadioButton /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+    </Style>
+    <Style Selector="RadioButton:not(:checked) /template/ Ellipse#OuterEllipse">
+        <Setter Property="Stroke" Value="{DynamicResource TextMutedBrush}"/>
     </Style>
 
 </Styles>
