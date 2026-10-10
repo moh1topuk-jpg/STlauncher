@@ -29,7 +29,8 @@ public static class ModFolderInspector
 
     public static Verdict? Inspect(string modsDirectory)
     {
-        if (string.IsNullOrWhiteSpace(modsDirectory) || !Directory.Exists(modsDirectory))
+        // A mods folder that is a link, or a jar that is one, leads out of the build.
+        if (string.IsNullOrWhiteSpace(modsDirectory) || !LinkGuard.IsRealDirectory(modsDirectory))
         {
             return null;
         }
@@ -38,7 +39,10 @@ public static class ModFolderInspector
 
         try
         {
-            jars = Directory.EnumerateFiles(modsDirectory, "*.jar", SearchOption.TopDirectoryOnly).Take(MaxJars).ToList();
+            jars = Directory.EnumerateFiles(modsDirectory, "*.jar", SearchOption.TopDirectoryOnly)
+                .Where(jar => !LinkGuard.IsLink(jar))
+                .Take(MaxJars)
+                .ToList();
         }
         catch (Exception)
         {

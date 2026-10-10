@@ -833,6 +833,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 Width = SelectedInstance?.Width,
                 Height = SelectedInstance?.Height,
                 ExtraGameArgs = SplitArguments(SelectedInstance?.ExtraGameArgs),
+                ExtraJvmArgs = LaunchJvmArgs(SelectedInstance),
                 JavaPath = SelectedJavaChoice?.Path,
                 ForceUpdate = ForceUpdate,
                 // A friend's server, when "Play" was pressed on it, goes before the build's own.
@@ -1015,6 +1016,7 @@ public partial class MainWindowViewModel : ViewModelBase
         // its version, and the list of what "Add" would bring, are not this build's.
         CloseProjectIfBuildChanged();
 
+        OnPropertyChanged(nameof(BuildJvmArgs));
         OnPropertyChanged(nameof(BuildModCount));
         OnPropertyChanged(nameof(BuildModCountLabel));
         OnPropertyChanged(nameof(IsProfileBuild));

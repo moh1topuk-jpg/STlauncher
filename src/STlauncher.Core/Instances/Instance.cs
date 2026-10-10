@@ -73,6 +73,14 @@ public sealed class Instance
     [JsonPropertyName("extraGameArgs")]
     public string? ExtraGameArgs { get; set; }
 
+    /// <summary>
+    /// Extra JVM arguments, space-separated: garbage collector switches and the like,
+    /// usually carried over from another launcher. Never trusted as stored - whoever
+    /// starts the game passes them through <c>JvmArgumentAllowlist</c> first.
+    /// </summary>
+    [JsonPropertyName("extraJvmArgs")]
+    public string? ExtraJvmArgs { get; set; }
+
     /// <summary>Catalog item ids that this build installs before every launch.</summary>
     [JsonPropertyName("enabledCatalogItems")]
     public List<string> EnabledCatalogItems { get; set; } = new();
