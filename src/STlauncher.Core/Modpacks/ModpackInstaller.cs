@@ -109,7 +109,10 @@ public sealed class ModpackInstaller
             }
 
             Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-            entry.ExtractToFile(target, overwrite: true);
+
+            // Not ExtractToFile(overwrite: true): an override may land on a mod the build
+            // shares with others, and writing into it would change it for all of them.
+            Storage.FileReplace.Extract(entry, target);
         }
     }
 

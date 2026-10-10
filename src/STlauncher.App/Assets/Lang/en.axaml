@@ -675,6 +675,25 @@
     <x:String x:Key="DataFolder_Done">Moved {0} file(s). Restarting the launcher…</x:String>
     <x:String x:Key="DataFolder_Failed">Could not move the data: {0}</x:String>
 
+    <!-- Shared files: one copy on disk for all builds -->
+    <x:String x:Key="Settings_SharedFiles">Keep identical mods and packs once</x:String>
+    <x:String x:Key="Settings_SharedFilesHint">A mod, resource pack or shader that several builds have takes disk space once. Removing a mod or a build does not touch the others. The switch only affects new downloads; on a FAT32 or exFAT disk files are kept the old way.</x:String>
+    <x:String x:Key="Settings_SharedFilesClean">Free up space</x:String>
+    <x:String x:Key="Settings_SharedFilesCleanHint">Compares mods and packs across all builds, joins identical files into one and removes from the store those no build needs. Nothing is deleted from a build.</x:String>
+    <x:String x:Key="SharedFiles_Empty">No shared files yet.</x:String>
+    <x:String x:Key="SharedFiles_Summary">Shared files: {0}, {1} on disk. Saves {2}.</x:String>
+    <x:String x:Key="SharedFiles_SummaryPlain">Shared files: {0}, {1} on disk.</x:String>
+    <x:String x:Key="SharedFiles_Unused">No build needs {0} of that.</x:String>
+    <x:String x:Key="SharedFiles_Scanning">Looking through the builds…</x:String>
+    <x:String x:Key="SharedFiles_Comparing">Comparing files: {0} of {1}</x:String>
+    <x:String x:Key="SharedFiles_Linking">Joining identical files: {0} of {1}</x:String>
+    <x:String x:Key="SharedFiles_Removing">Removing what no build uses: {0} of {1}</x:String>
+    <x:String x:Key="SharedFiles_Nothing">Nothing to free: the builds have no identical files kept apart.</x:String>
+    <x:String x:Key="SharedFiles_Done">Freed {0}. Identical files joined: {1}; removed from the store: {2}.</x:String>
+    <x:String x:Key="SharedFiles_Skipped">Could not join {0}: the file is in use or this disk cannot share files.</x:String>
+    <x:String x:Key="SharedFiles_Cancelled">Stopped. What was done stays; the builds are intact.</x:String>
+    <x:String x:Key="SharedFiles_Failed">Could not finish: {0}</x:String>
+
     <!-- Build change notice and usage statistics -->
     <x:String x:Key="BuildChange_Title">Build updated</x:String>
     <x:String x:Key="BuildChange_TitleFor">"{0}" updated from the catalog</x:String>

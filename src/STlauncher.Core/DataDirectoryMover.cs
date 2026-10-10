@@ -15,6 +15,15 @@ public sealed record DataMoveResult(int Files, long Bytes, IReadOnlyList<string>
 /// source is deleted only after the last file is in place: a move that dies halfway
 /// through - the disk fills up, the cable comes out - must leave the old folder whole.
 /// </summary>
+/// <remarks>
+/// Mods and packs that several builds share are hard links to one file (see
+/// <see cref="Storage.SharedFileStore"/>). A plain copy would turn every link into a full
+/// file and the data would arrive several times its size, so a file with more than one
+/// name is copied once and linked again on the other side. Where that cannot be done -
+/// the new disk cannot link, or the system does not say which names belong together -
+/// each name becomes a full copy, which is only bigger, and the clean-up in Settings
+/// links them again later.
+/// </remarks>
 public static class DataDirectoryMover
 {
     /// <summary>Files that belong to the location, not the data, and stay behind.</summary>
@@ -63,6 +72,7 @@ public static class DataDirectoryMover
 
         var files = 0;
         long bytes = 0;
+        var linked = new Dictionary<(uint, ulong), string>();
 
         foreach (var entry in entries)
         {
@@ -74,7 +84,7 @@ public static class DataDirectoryMover
 
             if (Directory.Exists(entry))
             {
-                CopyDirectory(entry, target, ref files, ref bytes, progress, cancellationToken);
+                CopyDirectory(entry, target, linked, ref files, ref bytes, progress, cancellationToken);
             }
             else
             {
@@ -114,6 +124,7 @@ public static class DataDirectoryMover
     private static void CopyDirectory(
         string source,
         string target,
+        Dictionary<(uint, ulong), string> linked,
         ref int files,
         ref long bytes,
         IProgress<string>? progress,
@@ -126,9 +137,12 @@ public static class DataDirectoryMover
             cancellationToken.ThrowIfCancellationRequested();
 
             var destination = Path.Combine(target, Path.GetFileName(file));
-            File.Copy(file, destination, overwrite: false);
             files++;
-            bytes += new FileInfo(destination).Length;
+
+            if (CopyOrLink(file, destination, linked))
+            {
+                bytes += new FileInfo(destination).Length;
+            }
 
             if (files % 200 == 0)
             {
@@ -138,8 +152,36 @@ public static class DataDirectoryMover
 
         foreach (var directory in Directory.EnumerateDirectories(source))
         {
-            CopyDirectory(directory, Path.Combine(target, Path.GetFileName(directory)), ref files, ref bytes, progress, cancellationToken);
+            CopyDirectory(directory, Path.Combine(target, Path.GetFileName(directory)), linked, ref files, ref bytes, progress, cancellationToken);
         }
+    }
+
+    /// <summary>
+    /// Copies a file, unless it is another name of one already copied: then the copy gets
+    /// a second name instead.
+    /// </summary>
+    /// <returns>True when bytes were copied, false when a link was enough.</returns>
+    private static bool CopyOrLink(string file, string destination, Dictionary<(uint, ulong), string> linked)
+    {
+        // Nothing smaller is ever shared, and asking costs opening the file: thousands of
+        // small assets are spared the question.
+        if (new FileInfo(file).Length >= Storage.SharedFileStore.MinimumSize &&
+            Storage.HardLink.TryGetIdentity(file) is { Links: > 1 } identity)
+        {
+            var key = (identity.Volume, identity.Index);
+
+            if (linked.TryGetValue(key, out var first) && Storage.HardLink.TryCreate(first, destination))
+            {
+                return false;
+            }
+
+            File.Copy(file, destination, overwrite: false);
+            linked.TryAdd(key, destination);
+            return true;
+        }
+
+        File.Copy(file, destination, overwrite: false);
+        return true;
     }
 
     /// <summary>Bytes the move will copy, for the confirmation line.</summary>
@@ -152,10 +194,18 @@ public static class DataDirectoryMover
                 return 0;
             }
 
+            // Several names of one file are one file's worth of bytes to carry.
+            var seen = new HashSet<(uint, ulong)>();
+
+            bool IsCounted(FileInfo file)
+                => file.Length < Storage.SharedFileStore.MinimumSize ||
+                   Storage.HardLink.TryGetIdentity(file.FullName) is not { Links: > 1 } identity ||
+                   seen.Add((identity.Volume, identity.Index));
+
             return Directory.EnumerateFileSystemEntries(from)
                 .Where(e => !Skipped.Contains(Path.GetFileName(e), StringComparer.OrdinalIgnoreCase))
                 .Sum(e => Directory.Exists(e)
-                    ? new DirectoryInfo(e).EnumerateFiles("*", SearchOption.AllDirectories).Sum(f => f.Length)
+                    ? new DirectoryInfo(e).EnumerateFiles("*", SearchOption.AllDirectories).Where(IsCounted).Sum(f => f.Length)
                     : new FileInfo(e).Length);
         }
         catch (Exception)

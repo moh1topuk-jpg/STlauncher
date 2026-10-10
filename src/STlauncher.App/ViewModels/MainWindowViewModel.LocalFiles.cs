@@ -171,7 +171,9 @@ public partial class MainWindowViewModel
                         continue;
                     }
 
-                    File.Copy(source, target, overwrite: true);
+                    // A new file renamed over the old one: the old one may be shared with
+                    // other builds, and copying into it would change theirs too.
+                    STlauncher.Core.Storage.FileReplace.Copy(source, target);
                     AppendConsole($"[drop] copied {folder}/{fileName} from {source}");
 
                     if (folder == ModManager.ModsFolderName)
