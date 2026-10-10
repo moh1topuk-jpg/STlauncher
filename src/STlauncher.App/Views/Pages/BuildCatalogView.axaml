@@ -1,0 +1,442 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:STlauncher.App.ViewModels"
+             xmlns:mods="using:STlauncher.Core.Mods"
+             xmlns:conv="using:STlauncher.App.Converters"
+             xmlns:controls="using:STlauncher.App.Controls"
+             xmlns:sys="using:System"
+             x:Class="STlauncher.App.Views.Pages.BuildCatalogView"
+             x:DataType="vm:MainWindowViewModel">
+
+    <!-- The catalog of the builds page: where mods, resource packs and shaders are looked
+         for and added. It is a detour, not a tab: a content tab's "add" opens it on that
+         kind, and the first thing in it is the way back. Results are rows; the row that is
+         picked opens beside the list with what "Add" will bring, read before anything is
+         downloaded. -->
+
+    <UserControl.Styles>
+        <!-- A fact about what will be installed: what it is on the left, the value on the right. -->
+        <Style Selector="TextBlock.fact">
+            <Setter Property="FontSize" Value="12.5"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
+        <Style Selector="Border.note">
+            <Setter Property="Background" Value="{DynamicResource FieldBrush}"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="14,10"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto,*,Auto" Margin="12,0,0,0">
+        <StackPanel Spacing="10" Margin="0,0,0,10">
+            <!-- The way back to the tab the catalog was opened from, what kind of thing is
+                 being looked for, and where. Packs and shaders go to their own folders and
+                 fit a vanilla build too. A wrap panel: in a narrow window the pickers drop
+                 under the way back. -->
+            <WrapPanel ItemSpacing="12" LineSpacing="8">
+                <Button Classes="ghost small" Padding="8,6,12,6" Command="{Binding CloseCatalogCommand}" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <PathIcon Data="{StaticResource IconChevronLeft}" Width="11" Height="11"/>
+                        <TextBlock Name="BackLabel" Text="{DynamicResource Catalog_Back}" FontWeight="Bold"/>
+                    </StackPanel>
+                </Button>
+                <Border Classes="segments" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <Button Classes="segment" Classes.active="{Binding IsBrowsingMods}"
+                                Content="{DynamicResource Content_Mods}"
+                                Command="{Binding SelectBrowserKindCommand}" CommandParameter="mod"/>
+                        <Button Classes="segment" Classes.active="{Binding IsBrowsingResourcePacks}"
+                                Content="{DynamicResource Content_ResourcePacks}"
+                                Command="{Binding SelectBrowserKindCommand}" CommandParameter="resourcepack"/>
+                        <Button Classes="segment" Classes.active="{Binding IsBrowsingShaders}"
+                                Content="{DynamicResource Content_Shaders}"
+                                Command="{Binding SelectBrowserKindCommand}" CommandParameter="shader"/>
+                    </StackPanel>
+                </Border>
+                <!-- Where the catalog looks, and only once there is a second place to look. -->
+                <Border Classes="segments" VerticalAlignment="Center" IsVisible="{Binding IsCurseForgeAvailable}"
+                        ToolTip.Tip="{DynamicResource Catalog_SourceHint}">
+                    <StackPanel Orientation="Horizontal">
+                        <Button Classes="segment" Classes.active="{Binding IsSourceAll}"
+                                Content="{DynamicResource Catalog_SourceAll}"
+                                Command="{Binding SelectBrowserSourceCommand}" CommandParameter="All"/>
+                        <Button Classes="segment" Classes.active="{Binding IsSourceModrinth}"
+                                Content="Modrinth"
+                                Command="{Binding SelectBrowserSourceCommand}" CommandParameter="Modrinth"/>
+                        <Button Classes="segment" Classes.active="{Binding IsSourceCurseForge}"
+                                Content="CurseForge"
+                                Command="{Binding SelectBrowserSourceCommand}" CommandParameter="CurseForge"/>
+                    </StackPanel>
+                </Border>
+            </WrapPanel>
+
+            <Border Classes="note" IsVisible="{Binding !IsBuildConfigured}">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                    <TextBlock Text="{DynamicResource Builds_NotConfigured}" Foreground="{DynamicResource TextSecondaryBrush}"
+                               TextWrapping="Wrap" VerticalAlignment="Center"/>
+                    <Button Grid.Column="1" Classes="small" VerticalAlignment="Center"
+                            Content="{DynamicResource Builds_TabSettings}"
+                            Command="{Binding OpenBuildSettingsCommand}"/>
+                </Grid>
+            </Border>
+
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <Border Classes="field">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                        <PathIcon Data="{StaticResource IconSearch}" Classes="small muted" VerticalAlignment="Center"/>
+                        <TextBox Grid.Column="1" Classes="bare" Text="{Binding ModSearchQuery}"
+                                 Watermark="{DynamicResource Mods_SearchPlaceholder}">
+                            <TextBox.KeyBindings>
+                                <KeyBinding Gesture="Enter" Command="{Binding SearchModsCommand}"/>
+                            </TextBox.KeyBindings>
+                        </TextBox>
+                        <!-- With one source its name sits here; with two the switch above says it. -->
+                        <TextBlock Grid.Column="2" Text="Modrinth" Classes="sub" VerticalAlignment="Center"
+                                   IsVisible="{Binding !IsCurseForgeAvailable}"/>
+                    </Grid>
+                </Border>
+                <Button Grid.Column="1" Height="36" Padding="16,0" FontWeight="Bold"
+                        Content="{DynamicResource Mods_Search}"
+                        Command="{Binding SearchModsCommand}" IsEnabled="{Binding !IsBrowserBusy}"/>
+            </Grid>
+
+            <!-- One row of chips that scrolls sideways: wrapped, nineteen of them
+                 took a third of a small window. -->
+            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+                <ScrollViewer HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled"
+                              PointerWheelChanged="OnChipWheel">
+                    <ItemsControl ItemsSource="{Binding ModCategories}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" Spacing="6"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:ModCategoryOption">
+                                <Button Classes="chip" Classes.active="{Binding IsSelected}"
+                                        Content="{Binding Display}"
+                                        Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).SelectCategoryCommand}"
+                                        CommandParameter="{Binding}"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+                <ComboBox Grid.Column="1" ItemsSource="{Binding ModSortOptions}" SelectedItem="{Binding SelectedModSort}"
+                          MinWidth="150" VerticalAlignment="Center">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:ModSortOption">
+                            <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis"/>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <CheckBox Grid.Column="2" Content="{DynamicResource Mods_HideInstalled}"
+                          IsChecked="{Binding HideInstalledMods}" VerticalAlignment="Center"/>
+            </Grid>
+        </StackPanel>
+
+        <Grid Grid.Row="1" Name="Body" ColumnDefinitions="*,Auto" SizeChanged="OnBodySizeChanged">
+
+            <!-- Results -->
+            <Panel Name="ListPane">
+                <TextBlock Text="{DynamicResource Catalog_Empty}" Foreground="{DynamicResource TextSecondaryBrush}"
+                           TextWrapping="Wrap" Margin="12,14,12,0" VerticalAlignment="Top"
+                           IsVisible="{Binding IsBrowserEmpty}"/>
+
+                <ScrollViewer>
+                    <ItemsControl Name="BrowserItems" ItemsSource="{Binding ModBrowserItems}" VerticalAlignment="Top">
+                        <!-- A row the "hide installed" tick takes away gives up its place too. -->
+                        <ItemsControl.Styles>
+                            <Style Selector="ItemsControl#BrowserItems > ContentPresenter" x:DataType="vm:ModBrowserItem">
+                                <Setter Property="IsVisible" Value="{Binding !IsHidden}"/>
+                            </Style>
+                        </ItemsControl.Styles>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:ModBrowserItem">
+                                <Border Classes="row" Classes.selected="{Binding IsSelected}"
+                                        PointerPressed="OnModRowPressed" Cursor="Hand">
+                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                                        <!-- The logo; a letter on the mod's colour holds its place
+                                             until it loads, or when there is none. -->
+                                        <Border Classes="icon-tile" Width="42" Height="42" CornerRadius="11" VerticalAlignment="Top"
+                                                Background="{Binding Result.Slug, Converter={x:Static conv:TintBrushConverter.Instance}}">
+                                            <Panel>
+                                                <TextBlock Text="{Binding Initial}" Classes="tile-letter" IsVisible="{Binding !HasIcon}"/>
+                                                <Border Background="{DynamicResource FieldBrush}" IsVisible="{Binding HasIcon}">
+                                                    <Image Source="{Binding Icon}" Stretch="UniformToFill"/>
+                                                </Border>
+                                            </Panel>
+                                        </Border>
+
+                                        <Grid Grid.Column="1" RowDefinitions="Auto,Auto,Auto" RowSpacing="2" VerticalAlignment="Center">
+                                            <TextBlock Classes="strong" Text="{Binding Result.Title}" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Grid.Row="1" Text="{Binding DisplayDescription}" FontSize="12.5"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                            <!-- Who made it, how many have taken it, where it is from, what it is about. -->
+                                            <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="6" ClipToBounds="True">
+                                                <TextBlock Classes="sub" Text="{Binding Result.Author}" MaxWidth="150" TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock Classes="sub" Text="·"/>
+                                                <StackPanel Orientation="Horizontal" Spacing="4" ToolTip.Tip="{Binding DownloadsLabel}">
+                                                    <PathIcon Data="{StaticResource IconDownload}" Classes="muted" Width="10" Height="10"/>
+                                                    <TextBlock Classes="sub" Text="{Binding DownloadsShort}"/>
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal" Spacing="6"
+                                                            IsVisible="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).IsCurseForgeAvailable}">
+                                                    <TextBlock Classes="sub" Text="·"/>
+                                                    <Border Width="7" Height="7" CornerRadius="4" VerticalAlignment="Center"
+                                                            Background="{DynamicResource ModrinthDotBrush}" IsVisible="{Binding IsModrinth}"/>
+                                                    <Border Width="7" Height="7" CornerRadius="4" VerticalAlignment="Center"
+                                                            Background="{DynamicResource CurseForgeDotBrush}" IsVisible="{Binding IsCurseForge}"/>
+                                                    <TextBlock Classes="sub" Text="{Binding SourceLabel}"/>
+                                                </StackPanel>
+                                                <ItemsControl ItemsSource="{Binding CategoryLabels}">
+                                                    <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate>
+                                                            <StackPanel Orientation="Horizontal" Spacing="6"/>
+                                                        </ItemsPanelTemplate>
+                                                    </ItemsControl.ItemsPanel>
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate x:DataType="sys:String">
+                                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                                <TextBlock Classes="sub" Text="·"/>
+                                                                <TextBlock Classes="sub" Text="{Binding}"/>
+                                                            </StackPanel>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
+                                        </Grid>
+
+                                        <!-- One state at a time: add it, it is being added, it is in. -->
+                                        <Panel Grid.Column="2" VerticalAlignment="Center" MinWidth="96">
+                                            <Button Classes="small" HorizontalAlignment="Right" IsVisible="{Binding NotInstalled}"
+                                                    Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).InstallBrowserItemCommand}"
+                                                    CommandParameter="{Binding}">
+                                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                                    <PathIcon Data="{StaticResource IconPlus}" Width="10" Height="10"/>
+                                                    <TextBlock Text="{DynamicResource Mods_Add}" FontWeight="Bold"/>
+                                                </StackPanel>
+                                            </Button>
+                                            <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right" Margin="0,0,10,0"
+                                                        IsVisible="{Binding Installed}">
+                                                <PathIcon Data="{StaticResource IconCheck}" Width="11" Height="11" VerticalAlignment="Center"
+                                                          Foreground="{DynamicResource SuccessBrush}"/>
+                                                <TextBlock Classes="sub" Text="{DynamicResource Mods_InBuild}" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                            <ProgressBar IsIndeterminate="True" Height="3" VerticalAlignment="Bottom" Margin="0,0,0,-7"
+                                                         IsVisible="{Binding IsInstalling}"/>
+                                        </Panel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Panel>
+
+            <!-- Details of the row that was picked. What "Add" will bring - the file, where it
+                 is from, how big, and what comes with it - is the first thing under the
+                 title, before the description: it is read before anything is downloaded.
+                 Only while a row is open: an empty panel took a third of a small window
+                 for a hint nobody needed twice. -->
+            <Border Grid.Column="1" Name="DetailsPane" Width="320" Margin="18,0,0,0" Padding="18,0,0,0"
+                    BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1,0,0,0"
+                    IsVisible="{Binding IsProjectOpen}">
+                <Grid RowDefinitions="Auto,*,Auto">
+                    <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" Margin="0,2,0,12">
+                        <Border Classes="icon-tile" Width="44" Height="44" CornerRadius="11" Margin="0,0,12,0"
+                                Background="{DynamicResource FieldBrush}">
+                            <Image Source="{Binding OpenedProjectIcon}" Stretch="Uniform"/>
+                        </Border>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding OpenedProject.Title}" Classes="strong" FontSize="15"
+                                       TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding OpenedProjectByline}" Classes="sub"
+                                       TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                        <Button Grid.Column="2" Classes="icon" Command="{Binding TranslateProjectCommand}"
+                                ToolTip.Tip="{DynamicResource Builds_Translate}">
+                            <PathIcon Data="{StaticResource IconGlobe}"/>
+                        </Button>
+                        <Button Grid.Column="3" Classes="icon" Command="{Binding OpenProjectPageCommand}"
+                                ToolTip.Tip="{Binding OpenProjectPageLabel}">
+                            <PathIcon Data="{StaticResource IconOpenExternal}"/>
+                        </Button>
+                        <Button Grid.Column="4" Classes="icon"
+                                Command="{Binding CloseProjectCommand}" ToolTip.Tip="{DynamicResource Common_Close2}">
+                            <PathIcon Data="{StaticResource IconClose}"/>
+                        </Button>
+                    </Grid>
+
+                    <ScrollViewer Grid.Row="1" Name="ProjectScroll">
+                        <StackPanel Spacing="14" Margin="0,0,12,12">
+
+                            <!-- A file its author keeps to the site: said plainly, with the way to get it. -->
+                            <Border Classes="note" IsVisible="{Binding IsOpenedProjectBlocked}">
+                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                    <PathIcon Data="{StaticResource IconWarning}" Classes="small gold" VerticalAlignment="Top" Margin="0,2,0,0"/>
+                                    <TextBlock Grid.Column="1" Text="{DynamicResource Mods_BlockedNote}" FontSize="12.5"
+                                               TextWrapping="Wrap" LineHeight="18"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- What pressing "Add" will download: the file, where it is from,
+                                 and everything that comes with it. -->
+                            <StackPanel Spacing="7">
+                                <controls:Caption Text="{DynamicResource Catalog_PlanTitle}"/>
+                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                    <TextBlock Text="{Binding VersionForLabel}" Classes="sub"/>
+                                    <TextBlock Grid.Column="1" Classes="fact" Text="{Binding OpenedProjectFileLabel}"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                    <TextBlock Text="{DynamicResource Mods_From}" Classes="sub"/>
+                                    <TextBlock Grid.Column="1" Classes="fact" Text="{Binding OpenedProjectSourceLabel}"/>
+                                </Grid>
+                                <ItemsControl ItemsSource="{Binding OpenedProjectDependencies}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Spacing="7"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:ModDependencyItem">
+                                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                                <TextBlock Text="{DynamicResource Mods_Requires}" Classes="sub"
+                                                           IsVisible="{Binding Required}"/>
+                                                <TextBlock Text="{DynamicResource Mods_WorksWith}" Classes="sub"
+                                                           IsVisible="{Binding !Required}"/>
+                                                <StackPanel Grid.Column="1" Spacing="1">
+                                                    <TextBlock Classes="fact" Text="{Binding Title}"/>
+                                                    <TextBlock Text="{Binding StateLabel}" FontSize="11.5" HorizontalAlignment="Right"
+                                                               TextTrimming="CharacterEllipsis"
+                                                               Foreground="{DynamicResource WarningBrush}"
+                                                               IsVisible="{Binding !OffersPage}"/>
+                                                    <!-- A needed mod the launcher may not fetch: the words open its page. -->
+                                                    <Button Classes="link" HorizontalAlignment="Right" Cursor="Hand" FontSize="11.5"
+                                                            IsVisible="{Binding OffersPage}"
+                                                            ToolTip.Tip="{DynamicResource Mods_OpenModPage}"
+                                                            Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).OpenUrlCommand}"
+                                                            CommandParameter="{Binding PageUrl}">
+                                                        <TextBlock Text="{Binding StateLabel}" FontSize="11.5"
+                                                                   Foreground="{DynamicResource WarningBrush}"/>
+                                                    </Button>
+                                                </StackPanel>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <TextBlock Text="{Binding OpenedProjectTotalLabel}" Classes="strong" FontSize="12.5"
+                                           TextWrapping="Wrap" IsVisible="{Binding HasOpenedProjectTotal}"/>
+                                <!-- The list above may be short of a file: "Add" waits for a whole one. -->
+                                <TextBlock Text="{DynamicResource Mods_DepsIncomplete}" FontSize="12.5" TextWrapping="Wrap"
+                                           LineHeight="18" Foreground="{DynamicResource WarningBrush}"
+                                           IsVisible="{Binding IsOpenedProjectListIncomplete}"/>
+                                <!-- The source marks this mod, or one it brings, as not going with a mod of the build. -->
+                                <TextBlock Text="{Binding OpenedProjectConflictLabel}" FontSize="12.5" TextWrapping="Wrap"
+                                           LineHeight="18" Foreground="{DynamicResource WarningBrush}"
+                                           IsVisible="{Binding HasOpenedProjectConflict}"/>
+                            </StackPanel>
+
+                            <!-- Every compatible version, when asked for. -->
+                            <ItemsControl ItemsSource="{Binding OpenedProjectVersions}" IsVisible="{Binding ShowOtherVersions}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="mods:ModVersion">
+                                        <Border Classes="row" Padding="0,8">
+                                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                                <StackPanel VerticalAlignment="Center">
+                                                    <TextBlock Classes="mono" Text="{Binding VersionNumber}" Foreground="{DynamicResource TextPrimaryBrush}"
+                                                               TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Text="{Binding Name}" Classes="sub" TextTrimming="CharacterEllipsis"/>
+                                                </StackPanel>
+                                                <Button Grid.Column="1" Classes="small" Content="{DynamicResource Mods_UseVersion}" VerticalAlignment="Center"
+                                                        Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).InstallVersionCommand}"
+                                                        CommandParameter="{Binding}"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="{Binding OpenedProjectDescription}" Foreground="{DynamicResource TextSecondaryBrush}"
+                                           TextWrapping="Wrap" LineHeight="20" MaxHeight="{Binding DescriptionMaxHeight}"
+                                           TextTrimming="CharacterEllipsis"/>
+                                <!-- Bodies run to pages; the panel opens with a preview and unfolds on request. -->
+                                <Button Classes="link" HorizontalAlignment="Left"
+                                        Command="{Binding ToggleDescriptionCommand}"
+                                        IsVisible="{Binding OpenedProjectDescription, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                    <Panel>
+                                        <TextBlock Text="{DynamicResource Mods_ShowFullDescription}" FontSize="12.5"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}" IsVisible="{Binding !IsDescriptionExpanded}"/>
+                                        <TextBlock Text="{DynamicResource Mods_ShowLessDescription}" FontSize="12.5"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}" IsVisible="{Binding IsDescriptionExpanded}"/>
+                                    </Panel>
+                                </Button>
+                            </StackPanel>
+
+                            <!-- Screenshots: a click opens the same image over the whole window. -->
+                            <ItemsControl ItemsSource="{Binding OpenedProjectGallery}" IsVisible="{Binding OpenedProjectGallery.Count}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6"/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Classes="plain" Padding="0" Cursor="Hand"
+                                                ToolTip.Tip="{DynamicResource Gallery_Open}"
+                                                Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).OpenGalleryImageCommand}"
+                                                CommandParameter="{Binding}">
+                                            <Border Width="90" Height="54" CornerRadius="8" Background="{DynamicResource FieldBrush}"
+                                                    ClipToBounds="True">
+                                                <Image Source="{Binding}" Stretch="UniformToFill"/>
+                                            </Border>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <StackPanel Grid.Row="2" Margin="0,8,0,12" Spacing="8">
+                        <ProgressBar IsIndeterminate="True" Height="3" IsVisible="{Binding IsProjectBusy}"/>
+                        <!-- Nothing to install from here: the mod's own page is the offer. -->
+                        <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                IsVisible="{Binding OffersModPageInstead}"
+                                Command="{Binding OpenProjectPageCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <PathIcon Data="{StaticResource IconOpenExternal}" Classes="small"/>
+                                <TextBlock Text="{DynamicResource Mods_OpenModPage}" FontWeight="Bold"/>
+                            </StackPanel>
+                        </Button>
+                        <!-- The quiet button takes what its words need; the one that acts gets the rest. -->
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                            <Button Classes="ghost" Content="{DynamicResource Mods_OtherVersions}"
+                                    Command="{Binding ToggleOtherVersionsCommand}" IsEnabled="{Binding HasOpenedProjectVersion}"/>
+                            <Button Grid.Column="1" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" FontWeight="Bold"
+                                    IsVisible="{Binding CanInstallOpenedProject}" IsEnabled="{Binding CanAddOpenedProject}"
+                                    Content="{DynamicResource Mods_AddToBuild}" Command="{Binding InstallOpenedProjectCommand}"/>
+                            <Button Grid.Column="1" Classes="danger" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                    IsVisible="{Binding OpenedProjectInstalled}"
+                                    Content="{DynamicResource Mods_RemoveFromBuild}" Command="{Binding UninstallOpenedProjectCommand}"/>
+                        </Grid>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Pages -->
+        <Border Grid.Row="2" BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="0,1,0,0" Padding="12,8,0,10">
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="10">
+                <TextBlock Text="{Binding BrowserSummary}" Classes="sub" VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis"/>
+                <Button Grid.Column="1" Classes="ghost small" Content="{DynamicResource Mods_PrevPage}"
+                        Command="{Binding PreviousBrowserPageCommand}" IsEnabled="{Binding CanGoToPreviousPage}"/>
+                <TextBlock Grid.Column="2" Text="{Binding BrowserPageLabel}" Classes="mono" VerticalAlignment="Center"/>
+                <Button Grid.Column="3" Classes="ghost small" Content="{DynamicResource Mods_NextPage}"
+                        Command="{Binding NextBrowserPageCommand}" IsEnabled="{Binding CanGoToNextPage}"/>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>
