@@ -1,4 +1,4 @@
-﻿<ResourceDictionary xmlns="https://github.com/avaloniaui"
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!-- Shell -->
@@ -507,6 +507,14 @@
     <x:String x:Key="Crash_DiskFull">Диск заполнен</x:String>
     <x:String x:Key="Crash_DiskFullAdvice">Освободите место на диске, где лежат файлы лаунчера.</x:String>
     <x:String x:Key="Crash_UnknownAdvice">Скопируйте отчёт и отправьте в поддержку сервера — в нём есть всё нужное.</x:String>
+    <x:String x:Key="Crash_SystemMemory">Компьютер не смог выделить игре {0} МБ памяти</x:String>
+    <x:String x:Key="Crash_SystemMemoryAdvice">Остальную занимают другие программы. Выделите игре меньше памяти или закройте браузер и другие тяжёлые программы.</x:String>
+    <x:String x:Key="Crash_LoaderTooOld">Моду «{0}» нужен {1} {2} или новее</x:String>
+    <x:String x:Key="Crash_LoaderTooOldAdvice">В сборке стоит {0}. Поднимите версию загрузчика в настройках сборки или выключите мод.</x:String>
+    <x:String x:Key="Crash_FixLoader">Перейти на {0} {1}</x:String>
+    <x:String x:Key="Crash_LoaderApplied">Сборка теперь на {0} {1} — попробуйте снова</x:String>
+    <x:String x:Key="Crash_FixDisableMod">Выключить «{0}»</x:String>
+    <x:String x:Key="Crash_ModDisabled">«{0}» выключен — попробуйте снова. Включить обратно можно в модах сборки.</x:String>
     <x:String x:Key="Crash_FixMemory">Выделить {0} МБ</x:String>
     <x:String x:Key="Crash_FixJava">Java: автоматически</x:String>
     <x:String x:Key="Crash_FixReinstall">Скачать файлы игры заново</x:String>

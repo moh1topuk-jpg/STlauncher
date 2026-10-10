@@ -28,6 +28,15 @@ public enum CrashCause
 
     OutOfMemory,
 
+    /// <summary>
+    /// The computer could not give Java the memory it was told to take: the opposite of
+    /// OutOfMemory, and cured by asking for less, not more.
+    /// </summary>
+    SystemMemory,
+
+    /// <summary>A mod needs a newer mod loader than the build has. Detail is the version it asks for.</summary>
+    LoaderTooOld,
+
     /// <summary>The Java that ran the game is older than the game needs.</summary>
     JavaTooOld,
 
@@ -49,6 +58,9 @@ public sealed record CrashDiagnosis(
     string? Detail = null,
     string? Evidence = null)
 {
+    /// <summary>The mod's id as the loader prints it, when the line has one: steadier than a title for finding its file.</summary>
+    public string? ModId { get; init; }
+
     public static readonly CrashDiagnosis None = new(CrashCause.Unknown);
 }
 
@@ -66,6 +78,14 @@ public static class CrashAnalyzer
     private static readonly Regex FabricRequires = new(
         @"Mod '(?<mod>.+?)' \((?<modId>[^)]+)\)[^\n]*? requires [^\n]*? of (?:mod )?'?(?<dep>[A-Za-z0-9_\-\.]+)'?[^\n]*?which is missing",
         Options);
+
+    // "Mod 'A' (a) 1.0 requires version 0.19.5 or later of mod 'Fabric Loader' (fabricloader),
+    // but only the wrong version is present: 0.19.2!"
+    private static readonly Regex FabricWrongVersion = new(
+        @"Mod '(?<mod>.+?)' \((?<modId>[^)]+)\)[^\n]*? requires (?:version )?(?<need>[^\s,]+)[^\n]*? of (?:mod )?'(?<depName>[^']+)' \((?<dep>[^)]+)\), but only the wrong version is present: (?<have>[^!\s]+)",
+        Options);
+
+    private static readonly Regex RangeFloor = new(@"^[\[(]\s*(?<floor>[0-9][^,\])]*)", Options);
 
     private static readonly Regex FabricIncompatible = new(
         @"Mod '(?<mod>.+?)' \((?<modId>[^)]+)\)[^\n]* is incompatible with[^\n]*'(?<dep>[^']+)'",
@@ -168,16 +188,33 @@ public static class CrashAnalyzer
 
     private static void Inspect(string line, List<CrashDiagnosis> findings)
     {
+        var wrong = FabricWrongVersion.Match(line);
+
+        if (wrong.Success)
+        {
+            var dep = wrong.Groups["dep"].Value.Trim();
+            var mod = wrong.Groups["mod"].Value;
+            var modId = wrong.Groups["modId"].Value;
+
+            // A mod that wants a newer loader is not "for another version": the build's
+            // loader can simply be raised, and that is one click.
+            findings.Add(IsLoader(dep)
+                ? new CrashDiagnosis(CrashCause.LoaderTooOld, mod, wrong.Groups["need"].Value, line.Trim()) { ModId = modId }
+                : new CrashDiagnosis(CrashCause.ModForOtherVersion, mod, IsPlatform(dep) ? dep : wrong.Groups["depName"].Value, line.Trim()) { ModId = modId });
+            return;
+        }
+
         var fabric = FabricRequires.Match(line);
 
         if (fabric.Success)
         {
             var dep = fabric.Groups["dep"].Value.Trim();
             var mod = fabric.Groups["mod"].Value;
+            var modId = fabric.Groups["modId"].Value;
 
             findings.Add(IsPlatform(dep)
-                ? new CrashDiagnosis(CrashCause.ModForOtherVersion, mod, dep, line.Trim())
-                : new CrashDiagnosis(CrashCause.MissingDependency, mod, dep, line.Trim()));
+                ? new CrashDiagnosis(CrashCause.ModForOtherVersion, mod, dep, line.Trim()) { ModId = modId }
+                : new CrashDiagnosis(CrashCause.MissingDependency, mod, dep, line.Trim()) { ModId = modId });
             return;
         }
 
@@ -189,7 +226,7 @@ public static class CrashAnalyzer
                 CrashCause.IncompatibleMods,
                 incompatible.Groups["mod"].Value,
                 incompatible.Groups["dep"].Value,
-                line.Trim()));
+                line.Trim()) { ModId = incompatible.Groups["modId"].Value });
             return;
         }
 
@@ -197,7 +234,7 @@ public static class CrashAnalyzer
 
         if (replace.Success)
         {
-            findings.Add(new CrashDiagnosis(CrashCause.ModForOtherVersion, replace.Groups["mod"].Value, null, line.Trim()));
+            findings.Add(new CrashDiagnosis(CrashCause.ModForOtherVersion, replace.Groups["mod"].Value, null, line.Trim()) { ModId = replace.Groups["modId"].Value });
             return;
         }
 
@@ -210,9 +247,27 @@ public static class CrashAnalyzer
             var actual = forge.Groups["actual"].Value;
             var missing = string.IsNullOrEmpty(actual) || actual.Contains("MISSING", StringComparison.OrdinalIgnoreCase);
 
+            // "Expected range: '[47.2.0,)'" on the loader itself: the floor is the version to raise it to.
+            if (IsLoader(dep) && !missing && RangeFloor.Match(forge.Groups["range"].Value) is { Success: true } floor)
+            {
+                findings.Add(new CrashDiagnosis(CrashCause.LoaderTooOld, mod, floor.Groups["floor"].Value.Trim(), line.Trim()) { ModId = mod });
+                return;
+            }
+
             findings.Add(IsPlatform(dep) || !missing
                 ? new CrashDiagnosis(CrashCause.ModForOtherVersion, mod, dep, line.Trim())
                 : new CrashDiagnosis(CrashCause.MissingDependency, mod, dep, line.Trim()));
+            return;
+        }
+
+        // Checked before "out of memory": these say the computer has no room for the heap
+        // that was asked for, and giving the game more would make it worse.
+        if (line.Contains("Could not reserve enough space", StringComparison.OrdinalIgnoreCase) ||
+            line.Contains("insufficient memory for the Java Runtime Environment", StringComparison.OrdinalIgnoreCase) ||
+            line.Contains("Native memory allocation", StringComparison.OrdinalIgnoreCase) ||
+            line.Contains("paging file is too small", StringComparison.OrdinalIgnoreCase))
+        {
+            findings.Add(new CrashDiagnosis(CrashCause.SystemMemory, null, null, line.Trim()));
             return;
         }
 
@@ -303,8 +358,17 @@ public static class CrashAnalyzer
         _ => false
     };
 
+    /// <summary>The mod loader itself, as a dependency.</summary>
+    private static bool IsLoader(string id) => id.ToLowerInvariant() switch
+    {
+        "fabricloader" or "fabric-loader" or "quilt_loader" or "forge" or "neoforge" => true,
+        _ => false
+    };
+
     private static int Priority(CrashCause cause) => cause switch
     {
+        CrashCause.LoaderTooOld => -2,
+        CrashCause.SystemMemory => -1,
         CrashCause.MissingDependency => 0,
         CrashCause.ModForOtherVersion => 1,
         CrashCause.IncompatibleMods => 2,

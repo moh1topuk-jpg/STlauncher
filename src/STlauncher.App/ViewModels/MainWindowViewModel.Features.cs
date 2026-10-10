@@ -399,6 +399,7 @@ public partial class MainWindowViewModel
         _gameLauncher.GameStarted += OnStarted;
 
         int exitCode;
+        _gameLaunchedAtUtc = DateTime.UtcNow;
 
         try
         {

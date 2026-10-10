@@ -1,4 +1,4 @@
-﻿<ResourceDictionary xmlns="https://github.com/avaloniaui"
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!-- Shell -->
@@ -507,6 +507,14 @@
     <x:String x:Key="Crash_DiskFull">The disk is full</x:String>
     <x:String x:Key="Crash_DiskFullAdvice">Free some space on the disk where the launcher keeps its files.</x:String>
     <x:String x:Key="Crash_UnknownAdvice">Copy the report and send it to the server's support - it has everything they need.</x:String>
+    <x:String x:Key="Crash_SystemMemory">The computer could not give the game {0} MB of memory</x:String>
+    <x:String x:Key="Crash_SystemMemoryAdvice">Other programs hold the rest. Give the game less memory, or close the browser and other heavy programs.</x:String>
+    <x:String x:Key="Crash_LoaderTooOld">&quot;{0}&quot; needs {1} {2} or newer</x:String>
+    <x:String x:Key="Crash_LoaderTooOldAdvice">The build has {0}. Raise the loader version in the build's settings, or switch the mod off.</x:String>
+    <x:String x:Key="Crash_FixLoader">Switch to {0} {1}</x:String>
+    <x:String x:Key="Crash_LoaderApplied">The build now uses {0} {1} - try again</x:String>
+    <x:String x:Key="Crash_FixDisableMod">Switch off &quot;{0}&quot;</x:String>
+    <x:String x:Key="Crash_ModDisabled">&quot;{0}&quot; is switched off - try again. It can be switched back on in the build's mods.</x:String>
     <x:String x:Key="Crash_FixMemory">Give the game {0} MB</x:String>
     <x:String x:Key="Crash_FixJava">Java: automatic</x:String>
     <x:String x:Key="Crash_FixReinstall">Re-download the game files</x:String>

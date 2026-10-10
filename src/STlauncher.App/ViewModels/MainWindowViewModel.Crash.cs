@@ -18,6 +18,9 @@ public partial class MainWindowViewModel
 {
     private CrashDiagnosis _crash = CrashDiagnosis.None;
     private IReadOnlyList<string> _crashLogLines = Array.Empty<string>();
+
+    /// <summary>When the game process was last started; a crash report older than this is not this crash.</summary>
+    private DateTime _gameLaunchedAtUtc = DateTime.UtcNow;
     private IReadOnlyList<string> _crashReportLines = Array.Empty<string>();
     private int _crashExitCode;
 
@@ -54,7 +57,7 @@ public partial class MainWindowViewModel
 
         // The game's own crash report has the stack trace and the mod list in one place;
         // the launcher log only has what went to the console.
-        CrashReportPath = CrashAnalyzer.FindCrashReportPath(_crashLogLines) ?? NewestCrashReport(gameDirectory);
+        CrashReportPath = CrashAnalyzer.FindCrashReportPath(_crashLogLines) ?? NewestCrashReport(gameDirectory, _gameLaunchedAtUtc);
         _crashReportLines = ReadLines(CrashReportPath, 400);
 
         _crash = CrashAnalyzer.Analyze(_crashReportLines.Concat(_crashLogLines));
@@ -121,6 +124,8 @@ public partial class MainWindowViewModel
             ? Localize("Crash_MixinPlain", "A mod failed to patch the game - most likely it is for another version")
             : Localize("Crash_Mixin", "\"{0}\" failed to patch the game - most likely it is for another version", d.Subject),
         CrashCause.OutOfMemory => Localize("Crash_OutOfMemory", "The game ran out of memory"),
+        CrashCause.SystemMemory => Localize("Crash_SystemMemory", "The computer could not give the game {0} MB of memory", (int)MaxMemoryMb),
+        CrashCause.LoaderTooOld => Localize("Crash_LoaderTooOld", "\"{0}\" needs {1} {2} or newer", d.Subject, SelectedLoader, d.Detail),
         CrashCause.JavaTooOld => d.Detail is null
             ? Localize("Crash_JavaTooOldPlain", "The Java that ran the game is too old for it")
             : Localize("Crash_JavaTooOld", "The game needs Java {0}, an older one was used", d.Detail),
@@ -138,6 +143,8 @@ public partial class MainWindowViewModel
         CrashCause.DuplicateMod => Localize("Crash_DuplicateModAdvice", "Delete the older file in the mods folder."),
         CrashCause.MixinFailure => Localize("Crash_MixinAdvice", "Switch it off in the build's mods, or install a version for {0}.", SelectedInstance?.VersionId ?? "?"),
         CrashCause.OutOfMemory => Localize("Crash_OutOfMemoryAdvice", "Give the game more memory in the settings, or remove heavy mods."),
+        CrashCause.SystemMemory => Localize("Crash_SystemMemoryAdvice", "Other programs hold the rest. Give the game less memory, or close the browser and other heavy programs."),
+        CrashCause.LoaderTooOld => Localize("Crash_LoaderTooOldAdvice", "The build has {0}. Raise the loader version in the build's settings, or switch the mod off.", SelectedLoaderVersion?.Version ?? "?"),
         CrashCause.JavaTooOld => Localize("Crash_JavaTooOldAdvice", "Let the launcher pick Java itself: it downloads the right one."),
         CrashCause.Graphics => Localize("Crash_GraphicsAdvice", "Update the graphics driver. On a laptop, run the game on the discrete card."),
         CrashCause.BrokenInstallation => Localize("Crash_BrokenInstallationAdvice", "Re-download the game files: the launcher checks every file and replaces the bad ones."),
@@ -151,8 +158,61 @@ public partial class MainWindowViewModel
         CrashCause.JavaTooOld when SelectedJavaChoice?.Path is { Length: > 0 } => Localize("Crash_FixJava", "Java: automatic"),
         CrashCause.BrokenInstallation when !ForceUpdate => Localize("Crash_FixReinstall", "Re-download the game files"),
         CrashCause.MissingDependency when d.Detail is { Length: > 0 } => Localize("Crash_FixFindMod", "Find \"{0}\" in the catalog", d.Detail),
+        CrashCause.SystemMemory when LowerMemoryAfterCrash() is { } less => Localize("Crash_FixMemory", "Give the game {0} MB", less),
+        CrashCause.LoaderTooOld when LoaderForCrash() is { } loader => Localize("Crash_FixLoader", "Switch to {0} {1}", SelectedLoader, loader.Version),
+        CrashCause.ModForOtherVersion or CrashCause.MixinFailure or CrashCause.IncompatibleMods or CrashCause.LoaderTooOld
+            when CrashMod() is { Enabled: true } mod => Localize("Crash_FixDisableMod", "Switch off \"{0}\"", mod.DisplayName),
         _ => string.Empty
     };
+
+    /// <summary>A step down: what the launcher recommends for this machine, or half of what was asked.</summary>
+    private int? LowerMemoryAfterCrash()
+    {
+        var current = (int)MaxMemoryMb;
+        var candidate = RecommendedMemoryMb < current ? RecommendedMemoryMb : current / 2;
+        candidate = Math.Max(1024, candidate / 256 * 256);
+
+        return candidate < current ? candidate : null;
+    }
+
+    /// <summary>The newest loader version that is at least what the mod asked for; stable ones first.</summary>
+    private Core.Loaders.LoaderVersion? LoaderForCrash()
+    {
+        if (_crash.Detail is not { Length: > 0 } needed)
+        {
+            return null;
+        }
+
+        var fits = LoaderVersions
+            .Where(v => Core.Mods.VersionRange.CompareVersions(v.Version, needed) >= 0)
+            .ToList();
+
+        var pick = fits.FirstOrDefault(v => v.Stable) ?? fits.FirstOrDefault();
+
+        return pick is not null && pick.Version != SelectedLoaderVersion?.Version ? pick : null;
+    }
+
+    /// <summary>The file of the mod the crash names, found by its id or its title. Null when it is not clearly one file.</summary>
+    private InstalledModItem? CrashMod()
+    {
+        static string Squash(string? text) => new((text ?? string.Empty).Where(char.IsLetterOrDigit).Select(char.ToLowerInvariant).ToArray());
+
+        var title = Squash(_crash.Subject);
+        var id = Squash(_crash.ModId);
+
+        if (title.Length < 3 && id.Length < 3)
+        {
+            return null;
+        }
+
+        var matches = InstalledMods
+            .Where(m => m.IsMod)
+            .Where(m => (title.Length >= 3 && Squash(m.DisplayName) == title) ||
+                        (id.Length >= 3 && (Squash(m.DisplayName) == id || Squash(Path.GetFileNameWithoutExtension(m.FileName)).StartsWith(id, StringComparison.Ordinal))))
+            .ToList();
+
+        return matches.Count == 1 ? matches[0] : null;
+    }
 
     /// <summary>A step up from the current allocation, within what the machine has.</summary>
     private int? SuggestedMemoryAfterCrash()
@@ -186,6 +246,31 @@ public partial class MainWindowViewModel
             case CrashCause.BrokenInstallation:
                 ForceUpdate = true;
                 Status = Localize("Crash_ReinstallApplied", "The game files will be re-checked on the next launch - press Play");
+                break;
+
+            case CrashCause.SystemMemory:
+                if (LowerMemoryAfterCrash() is { } less)
+                {
+                    MaxMemoryMb = less;
+                    Status = Localize("Crash_MemoryApplied", "Memory set to {0} MB - try again", less);
+                }
+
+                break;
+
+            case CrashCause.LoaderTooOld when LoaderForCrash() is { } loader:
+                SelectedLoaderVersion = LoaderVersions.FirstOrDefault(v => v.Version == loader.Version) ?? SelectedLoaderVersion;
+                Status = Localize("Crash_LoaderApplied", "The build now uses {0} {1} - try again", SelectedLoader, loader.Version);
+                break;
+
+            case CrashCause.ModForOtherVersion or CrashCause.MixinFailure or CrashCause.IncompatibleMods or CrashCause.LoaderTooOld:
+                if (CrashMod() is { Enabled: true } mod)
+                {
+                    // Switched off, not deleted: the file stays and can be switched back on.
+                    var name = mod.DisplayName;
+                    ToggleMod(mod);
+                    Status = Localize("Crash_ModDisabled", "\"{0}\" is switched off - try again. It can be switched back on in the build's mods.", name);
+                }
+
                 break;
 
             case CrashCause.MissingDependency:
@@ -286,7 +371,7 @@ public partial class MainWindowViewModel
     }
 
     /// <summary>The crash report written in the last few minutes, if the log did not name one.</summary>
-    private static string? NewestCrashReport(string gameDirectory)
+    private static string? NewestCrashReport(string gameDirectory, DateTime launchedAtUtc)
     {
         try
         {
@@ -302,7 +387,9 @@ public partial class MainWindowViewModel
                 .OrderByDescending(f => f.LastWriteTimeUtc)
                 .FirstOrDefault();
 
-            return newest is not null && DateTime.UtcNow - newest.LastWriteTimeUtc < TimeSpan.FromMinutes(10)
+            // Written by this run, not by one before it: a report from last week named a
+            // mod that has nothing to do with today's crash.
+            return newest is not null && newest.LastWriteTimeUtc >= launchedAtUtc.AddSeconds(-30)
                 ? newest.FullName
                 : null;
         }

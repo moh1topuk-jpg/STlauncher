@@ -135,6 +135,8 @@ public static class CrashReport
         CrashCause.DuplicateMod => ("duplicate mod " + diagnosis.Subject).TrimEnd(),
         CrashCause.MixinFailure => $"mixin failure in {diagnosis.Subject ?? "a mod"}",
         CrashCause.OutOfMemory => "out of memory",
+        CrashCause.SystemMemory => "the computer could not give Java the memory asked for",
+        CrashCause.LoaderTooOld => $"loader too old: {diagnosis.Subject} needs {diagnosis.Detail ?? "a newer one"}",
         CrashCause.JavaTooOld => $"Java too old (needs Java {diagnosis.Detail ?? "?"})",
         CrashCause.Graphics => "graphics driver",
         CrashCause.BrokenInstallation => ("broken game file " + diagnosis.Subject).TrimEnd(),
