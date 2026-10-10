@@ -11,10 +11,49 @@ public partial class GamePage : UserControl
     public GamePage()
     {
         InitializeComponent();
+
+        BuildTitle.PropertyChanged += (_, e) =>
+        {
+            if (e.Property == TextBlock.TextProperty)
+            {
+                FitTitle();
+            }
+        };
+        SizeChanged += (_, _) => FitTitle();
     }
 
-    /// <summary>The button over the stage: the figure moves on to its next clip.</summary>
+    /// <summary>The button beside the pose list: the figure moves on to its next clip.</summary>
     private void OnNextPoseClick(object? sender, RoutedEventArgs e) => Stage.NextPose();
+
+    // ===================== The build's name =====================
+
+    /// <summary>
+    /// The name stands at full size while two lines can hold it. A longer one gives up size
+    /// first, and only then letters: a build called after its whole mod list should still
+    /// be told apart from its neighbour. A narrow window moves every name one step down.
+    /// </summary>
+    private void FitTitle()
+    {
+        var length = BuildTitle.Text?.Length ?? 0;
+        var step = length > 44 ? 2 : length > 26 ? 1 : 0;
+
+        if (Bounds.Width is > 0 and < 960 && length > 12)
+        {
+            step++;
+        }
+
+        BuildTitle.Classes.Set("long", step == 1);
+        BuildTitle.Classes.Set("longer", step >= 2);
+    }
+
+    // ===================== What is new =====================
+
+    /// <summary>"Got it" under the list of changes: the list closes, and the line that led to it goes with it.</summary>
+    private void OnWhatsNewRead(object? sender, RoutedEventArgs e)
+    {
+        WhatsNewButton.Flyout?.Hide();
+        (DataContext as MainWindowViewModel)?.DismissWhatsNewCommand.Execute(null);
+    }
 
     // ===================== Emotes =====================
 
@@ -26,7 +65,7 @@ public partial class GamePage : UserControl
     }
 
     /// <summary>
-    /// One of the figure's own poses, picked from the list on the pose pill. The list
+    /// One of the figure's own poses, picked from the list on the pose button. The list
     /// stays open: it is beside the stage, and the next thing a player does is try another.
     /// </summary>
     private void OnPosePick(object? sender, RoutedEventArgs e)
@@ -46,7 +85,7 @@ public partial class GamePage : UserControl
         }
     }
 
-    /// <summary>Skins: the link in the "My skin" flyout. The flyout is closed first, or it would hang over the new page.</summary>
+    /// <summary>Skins: the link in the "Change skin" flyout. The flyout is closed first, or it would hang over the new page.</summary>
     private void OnOpenSkinsClick(object? sender, RoutedEventArgs e)
     {
         MySkinButton.Flyout?.Hide();
