@@ -35,6 +35,15 @@ public partial class MainWindowViewModel
 
     public bool CanRevertPreset => HasPresetRecord && !IsApplyingPreset;
 
+    /// <summary>The preset applied last and not taken back, for the picker to mark. Nothing is decided by it.</summary>
+    private string? MarkedPreset => HasPresetRecord ? SelectedInstance?.Preset?.Preset : null;
+
+    public bool IsPresetLow => string.Equals(MarkedPreset, nameof(PerformancePreset.Low), StringComparison.OrdinalIgnoreCase);
+
+    public bool IsPresetBalanced => string.Equals(MarkedPreset, nameof(PerformancePreset.Balanced), StringComparison.OrdinalIgnoreCase);
+
+    public bool IsPresetHigh => string.Equals(MarkedPreset, nameof(PerformancePreset.High), StringComparison.OrdinalIgnoreCase);
+
     /// <summary>Another build is open, or the record changed: the button reads its state again.</summary>
     private void RaisePresetState(bool buildChanged = false)
     {
@@ -46,6 +55,9 @@ public partial class MainWindowViewModel
 
         OnPropertyChanged(nameof(HasPresetRecord));
         OnPropertyChanged(nameof(CanRevertPreset));
+        OnPropertyChanged(nameof(IsPresetLow));
+        OnPropertyChanged(nameof(IsPresetBalanced));
+        OnPropertyChanged(nameof(IsPresetHigh));
     }
 
     [RelayCommand]

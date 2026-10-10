@@ -4,26 +4,66 @@
              x:Class="STlauncher.App.Views.Pages.ConsolePage"
              x:DataType="vm:MainWindowViewModel">
 
-    <Grid Margin="24" RowDefinitions="Auto,*" RowSpacing="12">
+    <!-- The technical log: a title with its three actions, and the lines in mono on the
+         field ground. No frame: the ground is the only thing that sets the log apart. -->
 
-        <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Text="{DynamicResource Nav_Console}" Classes="h2" VerticalAlignment="Center"/>
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
-                <Button Classes="ghost small" Content="{DynamicResource Console_OpenLog}"
-                        Command="{Binding OpenLauncherLogCommand}"/>
+    <UserControl.Styles>
+        <!-- A log line is text, not a list item: close together, a faint tone when aimed at. -->
+        <Style Selector="ListBox.log ListBoxItem">
+            <Setter Property="Padding" Value="14,2"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="CornerRadius" Value="0"/>
+        </Style>
+        <Style Selector="ListBox.log ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="CornerRadius" Value="0"/>
+        </Style>
+        <Style Selector="ListBox.log ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="CornerRadius" Value="0"/>
+        </Style>
+        <Style Selector="ListBox.log ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="CornerRadius" Value="0"/>
+        </Style>
+        <Style Selector="ListBox.log ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="CornerRadius" Value="0"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid Margin="30,8,30,22" RowDefinitions="Auto,*" RowSpacing="14">
+
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+            <TextBlock Text="{DynamicResource Nav_Console}" Classes="page-title" VerticalAlignment="Center"/>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                <Button Classes="ghost small" Click="OnCopyClick" ToolTip.Tip="{DynamicResource Console_CopyHint}">
+                    <StackPanel Orientation="Horizontal" Spacing="7">
+                        <PathIcon Data="{StaticResource IconCopy}" Classes="small"/>
+                        <TextBlock Text="{DynamicResource Console_Copy}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
                 <Button Classes="ghost small" Content="{DynamicResource Console_Clear}"
                         Command="{Binding ClearConsoleCommand}"/>
+                <Button Classes="small" Command="{Binding OpenLauncherLogCommand}">
+                    <StackPanel Orientation="Horizontal" Spacing="7">
+                        <PathIcon Data="{StaticResource IconFolder}" Classes="small"/>
+                        <TextBlock Text="{DynamicResource Console_OpenLog}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
             </StackPanel>
         </Grid>
 
-        <Border Grid.Row="1" Classes="panel" Padding="0">
-            <ListBox ItemsSource="{Binding Console}" Background="Transparent" Padding="8">
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <TextBlock Text="{Binding}" Classes="mono" TextWrapping="Wrap"/>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
+        <Border Grid.Row="1" Background="{DynamicResource FieldBrush}" CornerRadius="12" ClipToBounds="True">
+            <Panel>
+                <ListBox Name="Lines" Classes="log" ItemsSource="{Binding Console}" SelectionMode="Multiple"
+                         Background="Transparent" Padding="0,10">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}" Classes="mono" TextWrapping="Wrap"/>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                <TextBlock Text="{DynamicResource Console_Empty}" Classes="sub" IsVisible="{Binding !Console.Count}"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False"/>
+            </Panel>
         </Border>
     </Grid>
 </UserControl>

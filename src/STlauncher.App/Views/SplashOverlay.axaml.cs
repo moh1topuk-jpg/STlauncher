@@ -29,8 +29,10 @@ public partial class SplashOverlay : UserControl
     private readonly SplashFrame _frame = new();
     private readonly ScaleTransform _markScale = new(1, 1);
     private readonly TranslateTransform _markShift = new();
-    private readonly SolidColorBrush _stage = new(Stage);
-    private static readonly Color Stage = Color.FromRgb(0x0C, 0x0A, 0x0D);
+    private readonly SolidColorBrush _stage = new(Color.FromRgb(0x0C, 0x0A, 0x0D));
+
+    /// <summary>The ground of the theme in use; the dark one until the overlay is on screen and can ask.</summary>
+    private Color _stageColour = Color.FromRgb(0x0C, 0x0A, 0x0D);
     private double _flashStart = -1;
     private bool _done;
 
@@ -60,6 +62,7 @@ public partial class SplashOverlay : UserControl
 
         AttachedToVisualTree += (_, _) =>
         {
+            TakeThemeColours();
             _clock.Restart();
             NextFrame();
         };
@@ -70,6 +73,36 @@ public partial class SplashOverlay : UserControl
     {
         get => GetValue(IsReadyProperty);
         set => SetValue(IsReadyProperty, value);
+    }
+
+    /// <summary>
+    /// The stage is the window's own ground, so the screen that shows through at the end
+    /// is the same colour: dark in the dark theme, light in the light one. The glow behind
+    /// the mark is that ground with a quarter of the accent in it. The theme is applied
+    /// before the window exists, so asking once is enough.
+    /// </summary>
+    private void TakeThemeColours()
+    {
+        if (this.TryFindResource("AppBgBrush", ActualThemeVariant, out var ground) && ground is ISolidColorBrush { Color: var stage })
+        {
+            _stageColour = Color.FromRgb(stage.R, stage.G, stage.B);
+            _stage.Color = _stageColour;
+        }
+
+        var accent = this.TryFindResource("AccentBrush", ActualThemeVariant, out var found) && found is ISolidColorBrush { Color: var colour }
+            ? colour
+            : Color.FromRgb(0xB5, 0x29, 0x4A);
+
+        byte Mix(byte from, byte to) => (byte)(from + (to - from) * 0.24);
+
+        Glow.Background = new RadialGradientBrush
+        {
+            GradientStops =
+            {
+                new GradientStop(Color.FromRgb(Mix(_stageColour.R, accent.R), Mix(_stageColour.G, accent.G), Mix(_stageColour.B, accent.B)), 0),
+                new GradientStop(Color.FromArgb(0, _stageColour.R, _stageColour.G, _stageColour.B), 0.6)
+            }
+        };
     }
 
     /// <summary>Raised once, when the overlay has faded out.</summary>
@@ -166,7 +199,7 @@ public partial class SplashOverlay : UserControl
             // pieces fade one by one rather than the overlay as a whole, which would need
             // an off-screen copy of the window on every frame.
             var reveal = Math.Clamp((since - FlashMs - ReleaseMs + 120) / RevealMs, 0, 1);
-            _stage.Color = Color.FromArgb((byte)(255 * (1 - reveal)), Stage.R, Stage.G, Stage.B);
+            _stage.Color = Color.FromArgb((byte)(255 * (1 - reveal)), _stageColour.R, _stageColour.G, _stageColour.B);
             Glow.Opacity = 1 - reveal;
             _frame.Alpha = 1 - reveal;
             Mark.Opacity = 1 - Math.Clamp((reveal - 0.5) * 2, 0, 1);

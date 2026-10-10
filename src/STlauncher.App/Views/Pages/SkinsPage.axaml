@@ -7,443 +7,586 @@
              x:DataType="vm:MainWindowViewModel"
              DragDrop.AllowDrop="True">
 
-    <!-- Skins. The library on one side, the chosen skin on a small stage on the other;
-         the editor takes the whole page while it is open. Nothing here moves by itself:
-         the figures stand still until the player turns them. -->
+    <!-- Skins. The figure on the stage is the page: on the left the skins there are to put
+         on it (the library, or the public feed), as pictures; on the right the one that
+         is chosen, with its one accent action. The editor takes the whole page while it
+         is open. Nothing here moves by itself: the figures stand still until turned. -->
+
+    <UserControl.Styles>
+        <!-- A skin as a picture: no card around it, the picture's outline says "chosen". -->
+        <Style Selector="Button.skin-tile">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+            <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+        </Style>
+        <Style Selector="Button.skin-tile /template/ Border#PART_Root">
+            <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
+        </Style>
+        <Style Selector="Button.skin-tile:pressed">
+            <Setter Property="RenderTransform" Value="scale(1)"/>
+        </Style>
+        <Style Selector="Border.pic">
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Background" Value="{DynamicResource FieldBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource GhostBrush}"/>
+            <Setter Property="BorderThickness" Value="1.5"/>
+        </Style>
+        <Style Selector="Button.skin-tile:pointerover Border.pic">
+            <Setter Property="Background" Value="{DynamicResource RowHoverBrush}"/>
+        </Style>
+        <Style Selector="Button.skin-tile.selected Border.pic">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}"/>
+        </Style>
+
+        <!-- An action lying over a picture: a dark pill in both themes, as over a world's picture. -->
+        <Style Selector="Button.over">
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="MinWidth" Value="28"/>
+            <Setter Property="Padding" Value="10,0"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+        </Style>
+        <Style Selector="Button.over /template/ Border#PART_Root">
+            <Setter Property="Background" Value="#C70A080B"/>
+        </Style>
+        <Style Selector="Button.over:pointerover /template/ Border#PART_Root">
+            <Setter Property="Background" Value="#F00A080B"/>
+        </Style>
+        <Style Selector="Button.over:flyout-open /template/ Border#PART_Root">
+            <Setter Property="Background" Value="#F00A080B"/>
+        </Style>
+        <Style Selector="Button.over /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+        </Style>
+        <Style Selector="Button.over > PathIcon">
+            <Setter Property="Width" Value="14"/>
+            <Setter Property="Height" Value="14"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+        </Style>
+        <Style Selector="Button.over.square">
+            <Setter Property="Width" Value="28"/>
+            <Setter Property="Padding" Value="0"/>
+        </Style>
+
+        <!-- The editor's tool in hand is toned, not filled: the accent on that screen is "Save". -->
+        <Style Selector="Button.tool /template/ Border#PART_Root">
+            <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource GhostBrush}"/>
+        </Style>
+        <Style Selector="Button.tool:pointerover /template/ Border#PART_Root">
+            <Setter Property="Background" Value="{DynamicResource ControlBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource GhostBrush}"/>
+        </Style>
+        <Style Selector="Button.tool.active">
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        </Style>
+        <Style Selector="Button.tool.active TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        </Style>
+        <Style Selector="Button.tool.active PathIcon">
+            <Setter Property="Foreground" Value="{DynamicResource AccentHoverBrush}"/>
+        </Style>
+        <Style Selector="Button.tool.active /template/ Border#PART_Root">
+            <Setter Property="Background" Value="{DynamicResource RowHoverBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource GhostBrush}"/>
+        </Style>
+    </UserControl.Styles>
+
     <Panel>
 
         <Border IsHitTestVisible="False" Background="{DynamicResource HomeGlowBrush}"/>
 
-        <!-- ================= Library ================= -->
-        <ScrollViewer IsVisible="{Binding !IsSkinEditorOpen}">
-            <Grid Margin="40,30,28,22" ColumnDefinitions="*,340" ColumnSpacing="22" MaxWidth="1240">
+        <!-- ================= The skins and the stage ================= -->
+        <Grid ColumnDefinitions="*,360" IsVisible="{Binding !IsSkinEditorOpen}">
 
-                <StackPanel Grid.Column="0" Spacing="16" VerticalAlignment="Top">
+            <Grid Margin="30,8,10,0" RowDefinitions="Auto,Auto,Auto,*">
 
-                    <StackPanel Spacing="6">
-                        <TextBlock Text="{DynamicResource Skins_Title}" Classes="greeting"/>
-                        <TextBlock Text="{DynamicResource Skins_Subtitle}" Classes="muted wrap" FontSize="13"
-                                   MaxWidth="620" HorizontalAlignment="Left"/>
+                <TextBlock Text="{DynamicResource Skins_Title}" Classes="page-title" HorizontalAlignment="Left"
+                           Margin="0,0,0,16" ToolTip.Tip="{DynamicResource Skins_Subtitle}"/>
+
+                <!-- Where the skins come from. -->
+                <Border Grid.Row="1" Classes="tabs">
+                    <StackPanel Orientation="Horizontal" Spacing="22">
+                        <Button Name="LibraryTabButton" Classes="tab active" Click="OnTabClick" Tag="library">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="{DynamicResource Skins_TabLibrary}"/>
+                                <TextBlock Classes="count" Text="{Binding LibrarySkins.Count}" IsVisible="{Binding HasLibrarySkins}"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Name="RandomTabButton" Classes="tab" Click="OnTabClick" Tag="random"
+                                Content="{DynamicResource Skins_TabRandom}"/>
                     </StackPanel>
+                </Border>
 
-                    <!-- Ways to get a skin into the library. -->
-                    <WrapPanel ItemSpacing="8" LineSpacing="8">
-                        <Button Name="NewSkinButton" Classes="primary" Height="40" Padding="16,0">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <PathIcon Data="{StaticResource IconPlus}" Classes="small"/>
-                                <TextBlock Text="{DynamicResource Skins_New}" Foreground="{DynamicResource TextOnAccentBrush}" VerticalAlignment="Center"/>
-                            </StackPanel>
-                            <Button.Flyout>
-                                <controls:RevealFlyout Placement="BottomEdgeAlignedLeft">
-                                    <StackPanel Spacing="8" Width="260">
-                                        <TextBlock Text="{DynamicResource Skins_NewFrom}" Classes="label"/>
-                                        <Button Classes="ghost" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                                                Click="OnNewSkinClick" Tag="classic">
-                                            <StackPanel Spacing="2">
-                                                <TextBlock Text="{DynamicResource Skins_NewSteve}" FontWeight="SemiBold"/>
-                                                <TextBlock Text="{DynamicResource Skins_NewSteveHint}" Classes="faint"/>
-                                            </StackPanel>
-                                        </Button>
-                                        <Button Classes="ghost" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                                                Click="OnNewSkinClick" Tag="slim">
-                                            <StackPanel Spacing="2">
-                                                <TextBlock Text="{DynamicResource Skins_NewAlex}" FontWeight="SemiBold"/>
-                                                <TextBlock Text="{DynamicResource Skins_NewAlexHint}" Classes="faint"/>
-                                            </StackPanel>
-                                        </Button>
-                                    </StackPanel>
-                                </controls:RevealFlyout>
-                            </Button.Flyout>
+                <!-- What just happened, or why a file was refused. -->
+                <Border Grid.Row="2" Padding="0,12,0,0" IsVisible="{Binding HasSkinsNotice}">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                        <PathIcon Data="{StaticResource IconCheck}" Classes="small" Foreground="{DynamicResource SuccessBrush}"
+                                  VerticalAlignment="Top" Margin="0,3,0,0" IsVisible="{Binding !IsSkinsNoticeProblem}"/>
+                        <PathIcon Data="{StaticResource IconWarning}" Classes="small" Foreground="{DynamicResource WarningBrush}"
+                                  VerticalAlignment="Top" Margin="0,3,0,0" IsVisible="{Binding IsSkinsNoticeProblem}"/>
+                        <TextBlock Grid.Column="1" Text="{Binding SkinsNotice}" TextWrapping="Wrap" LineHeight="19"/>
+                        <Button Grid.Column="2" Classes="icon" VerticalAlignment="Top"
+                                Command="{Binding DismissSkinsNoticeCommand}" ToolTip.Tip="{DynamicResource Common_Close}">
+                            <PathIcon Data="{StaticResource IconClose}"/>
                         </Button>
+                    </Grid>
+                </Border>
 
-                        <Button Classes="ghost" Height="40" Padding="14,0" Click="OnAddPngClick"
-                                ToolTip.Tip="{DynamicResource Skins_AddPngHint}">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <PathIcon Data="{StaticResource IconFolder}" Classes="small"/>
-                                <TextBlock Text="{DynamicResource Skins_AddPng}" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
+                <!-- ======== My skins ======== -->
+                <ScrollViewer Grid.Row="3" Name="LibraryTab">
+                    <StackPanel Margin="0,14,14,22" Spacing="16">
 
-                        <Button Classes="ghost" Height="40" Padding="14,0" ToolTip.Tip="{DynamicResource Skins_ByNickHint}">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <PathIcon Data="{StaticResource IconSearch}" Classes="small"/>
-                                <TextBlock Text="{DynamicResource Skins_ByNick}" VerticalAlignment="Center"/>
-                            </StackPanel>
-                            <Button.Flyout>
-                                <controls:RevealFlyout Placement="BottomEdgeAlignedLeft">
-                                    <StackPanel Spacing="10" Width="300">
-                                        <TextBlock Text="{DynamicResource Skins_ByNickTitle}" Classes="label"/>
-                                        <TextBlock Text="{DynamicResource Skins_ByNickHint}" Classes="faint wrap" LineHeight="17"/>
-                                        <TextBox Text="{Binding SkinNickQuery}" Watermark="{DynamicResource Skins_ByNickWatermark}" MaxLength="32">
-                                            <TextBox.KeyBindings>
-                                                <KeyBinding Gesture="Enter" Command="{Binding AddSkinByNickCommand}"/>
-                                            </TextBox.KeyBindings>
-                                        </TextBox>
-                                        <Button Classes="primary" HorizontalAlignment="Stretch" Height="38"
-                                                Command="{Binding AddSkinByNickCommand}" IsEnabled="{Binding !IsFindingSkin}">
-                                            <TextBlock Text="{DynamicResource Skins_ByNickAdd}" Foreground="{DynamicResource TextOnAccentBrush}"/>
-                                        </Button>
-                                    </StackPanel>
-                                </controls:RevealFlyout>
-                            </Button.Flyout>
-                        </Button>
-
-                        <Button Classes="ghost" Height="40" Padding="14,0"
-                                Command="{Binding SaveCurrentSkinCommand}" IsEnabled="{Binding CanSaveCurrentSkin}"
-                                ToolTip.Tip="{DynamicResource Skins_SaveCurrentHint}">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <PathIcon Data="{StaticResource IconSkinSave}" Classes="small"/>
-                                <TextBlock Text="{DynamicResource Skins_SaveCurrent}" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
-                    </WrapPanel>
-
-                    <!-- What just happened, or why a file was refused. -->
-                    <Border Classes="card glass" Padding="14,12" IsVisible="{Binding HasSkinsNotice}">
-                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                            <PathIcon Data="{StaticResource IconCheck}" Foreground="{DynamicResource SuccessBrush}"
-                                      VerticalAlignment="Top" Margin="0,2,0,0" IsVisible="{Binding !IsSkinsNoticeProblem}"/>
-                            <PathIcon Data="{StaticResource IconWarning}" Foreground="{DynamicResource WarningBrush}"
-                                      VerticalAlignment="Top" Margin="0,2,0,0" IsVisible="{Binding IsSkinsNoticeProblem}"/>
-                            <TextBlock Grid.Column="1" Text="{Binding SkinsNotice}" TextWrapping="Wrap" LineHeight="19"/>
-                            <Button Grid.Column="2" Classes="plain small" VerticalAlignment="Top"
-                                    Command="{Binding DismissSkinsNoticeCommand}" ToolTip.Tip="{DynamicResource Common_Close}">
-                                <PathIcon Data="{StaticResource IconClose}" Classes="small"/>
-                            </Button>
-                        </Grid>
-                    </Border>
-
-                    <!-- The library itself. -->
-                    <ItemsControl ItemsSource="{Binding LibrarySkins}" IsVisible="{Binding HasLibrarySkins}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel ItemSpacing="12" LineSpacing="12"/>
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="vm:SkinItem">
-                                <Button Classes="skin-card" Classes.selected="{Binding IsSelected}" Width="156"
-                                        Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).SelectLibrarySkinCommand}"
-                                        CommandParameter="{Binding}">
-                                    <StackPanel Spacing="8">
-                                        <Panel Height="168">
-                                            <Border CornerRadius="12" Background="{DynamicResource GlassBrush}"/>
-                                            <!-- The card is the button; the figure is turned on the stage beside the grid. -->
-                                            <controls:SkinViewer Skin="{Binding Skin}" AutoRotate="False" IsHitTestVisible="False" Margin="8"/>
-                                            <Border Classes="tag installed" IsVisible="{Binding IsWorn}"
-                                                    HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8">
-                                                <TextBlock Text="{DynamicResource Skins_WornTag}"/>
-                                            </Border>
-                                        </Panel>
-                                        <StackPanel Spacing="2" Margin="4,0,4,2">
-                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="13.5" TextTrimming="CharacterEllipsis"/>
-                                            <TextBlock Text="{Binding ModelShortLabel}" Classes="faint"/>
-                                        </StackPanel>
-                                    </StackPanel>
-                                </Button>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-
-                    <!-- Nothing yet: say what belongs here and how it gets here. -->
-                    <Border Classes="card glass" Padding="26" IsVisible="{Binding !HasLibrarySkins}">
-                        <StackPanel Spacing="8">
-                            <TextBlock Text="{DynamicResource Skins_EmptyTitle}" Classes="h2"/>
-                            <TextBlock Text="{DynamicResource Skins_EmptyText}" Classes="muted wrap" FontSize="13" LineHeight="20"/>
-                        </StackPanel>
-                    </Border>
-
-                    <TextBlock Text="{DynamicResource Skins_DropHint}" Classes="faint wrap"/>
-
-                    <!-- Random skins: asked for by a press, kept by a press. -->
-                    <Border Classes="card glass" Padding="18">
-                        <StackPanel Spacing="12">
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                                <StackPanel Spacing="3">
-                                    <TextBlock Text="{DynamicResource Skins_RandomTitle}" Classes="h2"/>
-                                    <TextBlock Text="{DynamicResource Skins_RandomText}" Classes="muted wrap" FontSize="12.5" LineHeight="18"/>
+                        <!-- Ways to get a skin into the library. -->
+                        <WrapPanel ItemSpacing="8" LineSpacing="8">
+                            <Button Name="NewSkinButton" Classes="small">
+                                <StackPanel Orientation="Horizontal" Spacing="7">
+                                    <PathIcon Data="{StaticResource IconPlus}" Classes="small"/>
+                                    <TextBlock Text="{DynamicResource Skins_New}" VerticalAlignment="Center"/>
                                 </StackPanel>
-                                <Button Grid.Column="1" Classes="ghost" Height="38" Padding="16,0" VerticalAlignment="Top"
-                                        Command="{Binding LoadRandomSkinsCommand}" IsEnabled="{Binding CanLoadRandomSkins}">
-                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <PathIcon Data="{StaticResource IconRefresh}" Classes="small"/>
-                                        <TextBlock Text="{Binding RandomSkinsButtonText}" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-                            </Grid>
+                                <Button.Flyout>
+                                    <controls:RevealFlyout Placement="BottomEdgeAlignedLeft">
+                                        <StackPanel Spacing="4" Width="260">
+                                            <TextBlock Text="{DynamicResource Skins_NewFrom}" Classes="caption" Margin="10,2,0,4"/>
+                                            <Button Classes="ghost" Padding="10,8" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                                                    Click="OnNewSkinClick" Tag="classic">
+                                                <StackPanel Spacing="2">
+                                                    <TextBlock Text="{DynamicResource Skins_NewSteve}" Classes="strong"/>
+                                                    <TextBlock Text="{DynamicResource Skins_NewSteveHint}" Classes="sub"/>
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Classes="ghost" Padding="10,8" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                                                    Click="OnNewSkinClick" Tag="slim">
+                                                <StackPanel Spacing="2">
+                                                    <TextBlock Text="{DynamicResource Skins_NewAlex}" Classes="strong"/>
+                                                    <TextBlock Text="{DynamicResource Skins_NewAlexHint}" Classes="sub"/>
+                                                </StackPanel>
+                                            </Button>
+                                        </StackPanel>
+                                    </controls:RevealFlyout>
+                                </Button.Flyout>
+                            </Button>
 
-                            <TextBlock Text="{DynamicResource Skins_RandomLoading}" Classes="faint" IsVisible="{Binding IsLoadingRandomSkins}"/>
-                            <TextBlock Text="{Binding RandomSkinsProblem}" Classes="muted wrap" IsVisible="{Binding HasRandomSkinsProblem}"/>
+                            <Button Classes="ghost small" Click="OnAddPngClick" ToolTip.Tip="{DynamicResource Skins_AddPngHint}">
+                                <StackPanel Orientation="Horizontal" Spacing="7">
+                                    <PathIcon Data="{StaticResource IconFolder}" Classes="small"/>
+                                    <TextBlock Text="{DynamicResource Skins_AddPng}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
 
-                            <ItemsControl ItemsSource="{Binding RandomSkins}" IsVisible="{Binding HasRandomSkins}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <WrapPanel ItemSpacing="10" LineSpacing="10"/>
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:RandomSkinItem">
-                                        <StackPanel Spacing="6" Width="128">
-                                            <!-- The card opens the skin on the big stage, where it can be turned. -->
-                                            <Button Classes="skin-card" Classes.selected="{Binding IsPreviewed}" Padding="4" HorizontalAlignment="Stretch"
-                                                    ToolTip.Tip="{DynamicResource Skins_RandomPreviewHint}"
+                            <Button Classes="ghost small" ToolTip.Tip="{DynamicResource Skins_ByNickHint}">
+                                <StackPanel Orientation="Horizontal" Spacing="7">
+                                    <PathIcon Data="{StaticResource IconSearch}" Classes="small"/>
+                                    <TextBlock Text="{DynamicResource Skins_ByNick}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <Button.Flyout>
+                                    <controls:RevealFlyout Placement="BottomEdgeAlignedLeft">
+                                        <StackPanel Spacing="10" Width="300">
+                                            <TextBlock Text="{DynamicResource Skins_ByNickTitle}" Classes="caption"/>
+                                            <TextBlock Text="{DynamicResource Skins_ByNickHint}" Classes="sub" TextWrapping="Wrap" LineHeight="17"/>
+                                            <TextBox Text="{Binding SkinNickQuery}" Watermark="{DynamicResource Skins_ByNickWatermark}" MaxLength="32">
+                                                <TextBox.KeyBindings>
+                                                    <KeyBinding Gesture="Enter" Command="{Binding AddSkinByNickCommand}"/>
+                                                </TextBox.KeyBindings>
+                                            </TextBox>
+                                            <!-- The flyout is a small dialog of its own, and this is its one action. -->
+                                            <Button Classes="primary" HorizontalAlignment="Stretch" Content="{DynamicResource Skins_ByNickAdd}"
+                                                    Command="{Binding AddSkinByNickCommand}" IsEnabled="{Binding !IsFindingSkin}"/>
+                                        </StackPanel>
+                                    </controls:RevealFlyout>
+                                </Button.Flyout>
+                            </Button>
+
+                            <Button Classes="ghost small"
+                                    Command="{Binding SaveCurrentSkinCommand}" IsEnabled="{Binding CanSaveCurrentSkin}"
+                                    ToolTip.Tip="{DynamicResource Skins_SaveCurrentHint}">
+                                <StackPanel Orientation="Horizontal" Spacing="7">
+                                    <PathIcon Data="{StaticResource IconSkinSave}" Classes="small"/>
+                                    <TextBlock Text="{DynamicResource Skins_SaveCurrent}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                        </WrapPanel>
+
+                        <!-- The library: pictures. Aimed at, a picture offers its two usual actions;
+                             the "..." on it has them all, for the keyboard and for touch. -->
+                        <ItemsControl ItemsSource="{Binding LibrarySkins}" IsVisible="{Binding HasLibrarySkins}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel ItemSpacing="14" LineSpacing="16"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:SkinItem">
+                                    <Panel Classes="reveal-host" Width="134">
+                                        <Button Classes="skin-tile" Classes.selected="{Binding IsSelected}"
+                                                Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).SelectLibrarySkinCommand}"
+                                                CommandParameter="{Binding}">
+                                            <StackPanel Spacing="8">
+                                                <Border Classes="pic" Height="158">
+                                                    <!-- The tile is the button; the figure is turned on the stage beside the grid. -->
+                                                    <controls:SkinViewer Skin="{Binding Skin}" AutoRotate="False" IsHitTestVisible="False" Margin="8,8,8,4"/>
+                                                </Border>
+                                                <StackPanel Margin="3,0,3,2">
+                                                    <TextBlock Text="{Binding Name}" Classes="strong" TextTrimming="CharacterEllipsis"/>
+                                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                                        <Ellipse Classes="dot" IsVisible="{Binding IsWorn}"/>
+                                                        <TextBlock Text="{DynamicResource Skins_WornTag}" Classes="sub" IsVisible="{Binding IsWorn}"/>
+                                                        <TextBlock Text="{Binding ModelShortLabel}" Classes="sub" IsVisible="{Binding !IsWorn}"
+                                                                   TextTrimming="CharacterEllipsis"/>
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Button>
+
+                                        <StackPanel Classes="reveal" Orientation="Horizontal" Spacing="4"
+                                                    HorizontalAlignment="Left" VerticalAlignment="Top" Margin="7,123,0,0">
+                                            <Button Classes="over" Content="{DynamicResource Skins_Wear}" IsVisible="{Binding !IsWorn}"
+                                                    Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).WearSkinCommand}"
+                                                    CommandParameter="{Binding}"/>
+                                            <Button Classes="over square" ToolTip.Tip="{DynamicResource Skins_Edit}"
+                                                    Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).EditSkinCommand}"
+                                                    CommandParameter="{Binding}">
+                                                <PathIcon Data="{StaticResource IconEdit}"/>
+                                            </Button>
+                                        </StackPanel>
+
+                                        <Button Classes="over square" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,7,7,0"
+                                                ToolTip.Tip="{DynamicResource Builds_More}">
+                                            <PathIcon Data="{StaticResource IconDots}"/>
+                                            <Button.Flyout>
+                                                <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                                    <MenuItem Header="{DynamicResource Skins_Wear}" Click="OnSkinMenuClick" Tag="wear" IsVisible="{Binding !IsWorn}"/>
+                                                    <MenuItem Header="{DynamicResource Skins_TakeOff}" Click="OnSkinMenuClick" Tag="takeoff" IsVisible="{Binding IsWorn}"/>
+                                                    <MenuItem Header="{DynamicResource Skins_Edit}" Click="OnSkinMenuClick" Tag="edit"/>
+                                                    <MenuItem Header="{DynamicResource Skins_Duplicate}" Click="OnSkinMenuClick" Tag="duplicate"/>
+                                                    <MenuItem Header="{DynamicResource Skins_Rename}" Click="OnSkinMenuClick" Tag="rename"/>
+                                                    <Separator/>
+                                                    <MenuItem Classes="danger" Header="{DynamicResource Skins_Delete}" Click="OnSkinMenuClick" Tag="delete"/>
+                                                </MenuFlyout>
+                                            </Button.Flyout>
+                                        </Button>
+                                    </Panel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- Nothing yet: say what belongs here and how it gets here. -->
+                        <StackPanel Spacing="6" MaxWidth="520" HorizontalAlignment="Left" Margin="0,18,0,0"
+                                    IsVisible="{Binding !HasLibrarySkins}">
+                            <TextBlock Text="{DynamicResource Skins_EmptyTitle}" Classes="group"/>
+                            <TextBlock Text="{DynamicResource Skins_EmptyText}" Classes="muted wrap" LineHeight="20"/>
+                        </StackPanel>
+
+                        <TextBlock Text="{DynamicResource Skins_DropHint}" Classes="sub" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- ======== Random skins: asked for by a press, kept by a press ======== -->
+                <ScrollViewer Grid.Row="3" Name="RandomTab" IsVisible="False">
+                    <StackPanel Margin="0,14,14,22" Spacing="16">
+
+                        <!-- Where they come from and when the network is asked: said in full. -->
+                        <TextBlock Text="{DynamicResource Skins_RandomText}" Classes="muted wrap" LineHeight="19"
+                                   MaxWidth="620" HorizontalAlignment="Left"/>
+
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Button Classes="small" Command="{Binding LoadRandomSkinsCommand}" IsEnabled="{Binding CanLoadRandomSkins}">
+                                <StackPanel Orientation="Horizontal" Spacing="7">
+                                    <PathIcon Data="{StaticResource IconRefresh}" Classes="small"/>
+                                    <TextBlock Text="{Binding RandomSkinsButtonText}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <TextBlock Text="{DynamicResource Skins_RandomLoading}" Classes="sub" VerticalAlignment="Center"
+                                       IsVisible="{Binding IsLoadingRandomSkins}"/>
+                        </StackPanel>
+
+                        <TextBlock Text="{Binding RandomSkinsProblem}" Classes="muted wrap" IsVisible="{Binding HasRandomSkinsProblem}"/>
+
+                        <ItemsControl ItemsSource="{Binding RandomSkins}" IsVisible="{Binding HasRandomSkins}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel ItemSpacing="14" LineSpacing="16"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:RandomSkinItem">
+                                    <Panel Classes="reveal-host" Width="134">
+                                        <!-- The picture opens the skin on the big stage, where it can be turned. -->
+                                        <Button Classes="skin-tile" Classes.selected="{Binding IsPreviewed}"
+                                                ToolTip.Tip="{DynamicResource Skins_RandomPreviewHint}"
+                                                Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).PreviewRandomSkinCommand}"
+                                                CommandParameter="{Binding}">
+                                            <StackPanel Spacing="6">
+                                                <Border Classes="pic" Height="158">
+                                                    <controls:SkinViewer Skin="{Binding Skin}" AutoRotate="False" IsHitTestVisible="False" Margin="8,8,8,4"/>
+                                                </Border>
+                                                <Panel Height="18" Margin="3,0">
+                                                    <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding IsSaved}">
+                                                        <Ellipse Classes="dot"/>
+                                                        <TextBlock Text="{DynamicResource Skins_RandomSavedMark}" Classes="sub"/>
+                                                    </StackPanel>
+                                                </Panel>
+                                            </StackPanel>
+                                        </Button>
+
+                                        <StackPanel Classes="reveal" Orientation="Horizontal" Spacing="4"
+                                                    HorizontalAlignment="Left" VerticalAlignment="Top" Margin="7,123,0,0">
+                                            <Button Classes="over" Content="{DynamicResource Skins_RandomSave}" IsVisible="{Binding CanSave}"
+                                                    Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).SaveRandomSkinCommand}"
+                                                    CommandParameter="{Binding}"/>
+                                            <Button Classes="over square" ToolTip.Tip="{DynamicResource Skins_RandomPreviewHint}"
                                                     Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).PreviewRandomSkinCommand}"
                                                     CommandParameter="{Binding}">
-                                                <Panel Height="146">
-                                                    <Border CornerRadius="12" Background="{DynamicResource GlassBrush}"/>
-                                                    <controls:SkinViewer Skin="{Binding Skin}" AutoRotate="False" IsHitTestVisible="False" Margin="6"/>
-                                                </Panel>
+                                                <PathIcon Data="{StaticResource IconEye}"/>
                                             </Button>
-                                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-                                                <Button Classes="ghost small" MinWidth="36" Padding="8,0"
-                                                        ToolTip.Tip="{DynamicResource Skins_RandomPreviewHint}"
-                                                        Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).PreviewRandomSkinCommand}"
-                                                        CommandParameter="{Binding}">
-                                                    <PathIcon Data="{StaticResource IconEye}" Classes="small"/>
-                                                </Button>
-                                                <Button Grid.Column="1" Classes="ghost small" HorizontalAlignment="Stretch" IsVisible="{Binding CanSave}"
-                                                        Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).SaveRandomSkinCommand}"
-                                                        CommandParameter="{Binding}">
-                                                    <TextBlock Text="{DynamicResource Skins_RandomSave}"/>
-                                                </Button>
-                                                <TextBlock Grid.Column="1" Text="{DynamicResource Skins_RandomSavedMark}" Classes="faint"
-                                                           HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding IsSaved}"/>
-                                            </Grid>
                                         </StackPanel>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
 
-                <!-- ======== The chosen skin, on its own small stage ======== -->
-                <StackPanel Grid.Column="1" Spacing="12" VerticalAlignment="Top" IsVisible="{Binding HasSelectedLibrarySkin}">
-                    <Panel Height="286">
+                                        <Button Classes="over square" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,7,7,0"
+                                                ToolTip.Tip="{DynamicResource Builds_More}">
+                                            <PathIcon Data="{StaticResource IconDots}"/>
+                                            <Button.Flyout>
+                                                <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                                    <MenuItem Header="{DynamicResource Skins_RandomPreviewHint}" Click="OnRandomMenuClick" Tag="view"/>
+                                                    <MenuItem Header="{DynamicResource Skins_RandomSaveToLibrary}" Click="OnRandomMenuClick" Tag="save"
+                                                              IsEnabled="{Binding CanSave}"/>
+                                                </MenuFlyout>
+                                            </Button.Flyout>
+                                        </Button>
+                                    </Panel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
+
+            <!-- ======== The stage: the chosen skin, or the one the figure wears now ======== -->
+            <ScrollViewer Grid.Column="1">
+                <StackPanel Margin="0,0,0,20">
+                    <Panel Height="372">
                         <Path IsHitTestVisible="False" Fill="{DynamicResource StageConeBrush}" Stretch="Fill"
-                              Width="230" Height="262" VerticalAlignment="Top" HorizontalAlignment="Center"
+                              Width="270" Height="340" VerticalAlignment="Top" HorizontalAlignment="Center"
                               Data="M 114,0 L 186,0 L 300,440 L 0,440 Z"/>
-                        <Ellipse IsHitTestVisible="False" Width="210" Height="44" VerticalAlignment="Bottom" Margin="0,0,0,10"
+                        <Ellipse IsHitTestVisible="False" Width="230" Height="40" VerticalAlignment="Bottom" Margin="0,0,0,12"
                                  Fill="{DynamicResource PedestalBrush}" Stroke="{DynamicResource PedestalRimBrush}" StrokeThickness="1"/>
-                        <Ellipse IsHitTestVisible="False" Width="130" Height="18" VerticalAlignment="Bottom" Margin="0,0,0,26"
+                        <Ellipse IsHitTestVisible="False" Width="140" Height="18" VerticalAlignment="Bottom" Margin="0,0,0,26"
                                  Fill="{DynamicResource PedestalShadowBrush}"/>
 
                         <controls:SkinViewer Skin="{Binding SelectedLibrarySkin.Skin}" AutoRotate="False"
-                                             Width="240" Height="256" VerticalAlignment="Bottom" Margin="0,0,0,18"
+                                             Width="300" Height="336" VerticalAlignment="Bottom" Margin="0,0,0,18"
+                                             IsVisible="{Binding HasSelectedLibrarySkin}"
                                              ToolTip.Tip="{DynamicResource Game_ViewerHint}"/>
-
-                        <Border Classes="pill" HorizontalAlignment="Left" VerticalAlignment="Top"
-                                IsVisible="{Binding SelectedLibrarySkin.IsWorn}">
-                            <StackPanel Orientation="Horizontal" Spacing="7">
-                                <Border Width="7" Height="7" CornerRadius="4" VerticalAlignment="Center"
-                                        Background="{DynamicResource SuccessBrush}"/>
-                                <TextBlock Text="{DynamicResource Skins_WornPill}" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Border>
+                        <controls:SkinViewer Skin="{Binding PlayerSkin}" AutoRotate="False"
+                                             Width="300" Height="336" VerticalAlignment="Bottom" Margin="0,0,0,18"
+                                             IsVisible="{Binding !HasSelectedLibrarySkin}"
+                                             ToolTip.Tip="{DynamicResource Game_ViewerHint}"/>
                     </Panel>
 
-                    <!-- The name, and everything that can be done with this skin. -->
-                    <Border Classes="plate" Padding="16">
-                        <StackPanel Spacing="12">
-
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" IsVisible="{Binding !IsRenamingSkin}">
-                                <StackPanel Spacing="3" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding SelectedLibrarySkin.Name}" Classes="h3" FontSize="18"
-                                               TextTrimming="CharacterEllipsis"/>
-                                    <TextBlock Text="{Binding SelectedLibrarySkin.FactsLabel}" Classes="faint wrap"/>
-                                </StackPanel>
-                                <Button Grid.Column="1" Classes="glass-icon" VerticalAlignment="Center"
-                                        Command="{Binding BeginRenameSkinCommand}"
-                                        ToolTip.Tip="{DynamicResource Skins_Rename}">
-                                    <PathIcon Data="{StaticResource IconEdit}" Classes="small"/>
-                                </Button>
-                            </Grid>
-
-                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6" IsVisible="{Binding IsRenamingSkin}">
-                                <TextBox Name="RenameBox" Text="{Binding SkinRenameText}" MaxLength="40"
-                                         Watermark="{DynamicResource Skins_RenameHint}">
-                                    <TextBox.KeyBindings>
-                                        <KeyBinding Gesture="Enter" Command="{Binding CommitRenameSkinCommand}"/>
-                                        <KeyBinding Gesture="Escape" Command="{Binding CancelRenameSkinCommand}"/>
-                                    </TextBox.KeyBindings>
-                                </TextBox>
-                                <Button Grid.Column="1" Classes="primary small" Height="36" MinWidth="36"
-                                        Command="{Binding CommitRenameSkinCommand}" ToolTip.Tip="{DynamicResource Game_NicknameDone}">
-                                    <PathIcon Data="{StaticResource IconCheck}" Classes="small"/>
-                                </Button>
-                                <Button Grid.Column="2" Classes="plain small" Height="36" MinWidth="36"
-                                        Command="{Binding CancelRenameSkinCommand}" ToolTip.Tip="{DynamicResource Common_Cancel}">
-                                    <PathIcon Data="{StaticResource IconClose}" Classes="small"/>
-                                </Button>
-                            </Grid>
-
-                            <Button Classes="primary" HorizontalAlignment="Stretch" Height="44" FontSize="14"
-                                    Content="{DynamicResource Skins_Wear}"
-                                    IsVisible="{Binding !SelectedLibrarySkin.IsWorn}"
-                                    Command="{Binding WearSkinCommand}" CommandParameter="{Binding SelectedLibrarySkin}"/>
-                            <Button Classes="ghost" HorizontalAlignment="Stretch" Height="44"
-                                    Content="{DynamicResource Skins_TakeOff}"
-                                    ToolTip.Tip="{DynamicResource Skins_TakeOffHint}"
-                                    IsVisible="{Binding SelectedLibrarySkin.IsWorn}"
-                                    Command="{Binding TakeOffSkinCommand}"/>
-
-                            <!-- Whether the game itself shows this skin: said when it does, and a
-                                 quiet way to the build's switch when it does not. -->
-                            <StackPanel Orientation="Horizontal" Spacing="7" HorizontalAlignment="Center"
-                                        IsVisible="{Binding IsSkinInGameLineVisible}">
-                                <Border Width="7" Height="7" CornerRadius="4" VerticalAlignment="Center"
-                                        Background="{DynamicResource SuccessBrush}"/>
-                                <TextBlock Text="{Binding SkinInGameLine}" Classes="faint" TextWrapping="Wrap"
-                                           MaxWidth="250" VerticalAlignment="Center"/>
-                            </StackPanel>
-                            <Button Classes="plain small" HorizontalAlignment="Center" Padding="8,4"
-                                    IsVisible="{Binding IsSkinInGameLinkVisible}"
-                                    ToolTip.Tip="{DynamicResource SkinInGame_LinkHint}"
-                                    Command="{Binding OpenBuildSettingsCommand}">
-                                <TextBlock Text="{DynamicResource SkinInGame_Link}" Classes="faint"
-                                           TextDecorations="Underline"/>
-                            </Button>
-
-                            <Grid ColumnDefinitions="*,*,Auto" ColumnSpacing="8">
-                                <Button Classes="ghost" HorizontalAlignment="Stretch" Height="38" Padding="8,0"
-                                        Command="{Binding EditSkinCommand}" CommandParameter="{Binding SelectedLibrarySkin}">
-                                    <StackPanel Orientation="Horizontal" Spacing="7">
-                                        <PathIcon Data="{StaticResource IconEdit}" Classes="small"/>
-                                        <TextBlock Text="{DynamicResource Skins_Edit}" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-                                <Button Grid.Column="1" Classes="ghost" HorizontalAlignment="Stretch" Height="38" Padding="8,0"
-                                        Command="{Binding DuplicateSkinCommand}" CommandParameter="{Binding SelectedLibrarySkin}">
-                                    <StackPanel Orientation="Horizontal" Spacing="7">
-                                        <PathIcon Data="{StaticResource IconCopy}" Classes="small"/>
-                                        <TextBlock Text="{DynamicResource Skins_Duplicate}" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-                                <Button Grid.Column="2" Classes="glass-icon icon-danger" Width="38" Height="38"
-                                        Command="{Binding AskDeleteSkinCommand}" ToolTip.Tip="{DynamicResource Skins_Delete}">
-                                    <PathIcon Data="{StaticResource IconSkinDelete}" Classes="small"/>
-                                </Button>
-                            </Grid>
-
-                            <!-- Delete asks once, right here; the answer is the second click. -->
-                            <Border Classes="panel" Padding="12" IsVisible="{Binding IsConfirmingSkinDelete}">
-                                <StackPanel Spacing="10">
-                                    <TextBlock Text="{DynamicResource Skins_DeleteAsk}" TextWrapping="Wrap"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <Button Classes="danger small" Content="{DynamicResource Skins_DeleteConfirm}"
-                                                Command="{Binding DeleteSkinCommand}"/>
-                                        <Button Classes="ghost small" Content="{DynamicResource Common_Cancel}"
-                                                Command="{Binding CancelDeleteSkinCommand}"/>
-                                    </StackPanel>
-                                </StackPanel>
-                            </Border>
+                    <!-- Nothing chosen: the figure as it is now, and the way to keep its skin. -->
+                    <StackPanel Margin="30,6,30,0" Spacing="10" IsVisible="{Binding !HasSelectedLibrarySkin}">
+                        <StackPanel Spacing="3">
+                            <TextBlock Text="{Binding Username}" Classes="title" FontSize="20" FontWeight="ExtraBold"
+                                       HorizontalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{DynamicResource Skins_OnFigure}" Classes="sub" HorizontalAlignment="Center"/>
                         </StackPanel>
-                    </Border>
+                        <Button HorizontalAlignment="Center" Content="{DynamicResource Skins_SaveCurrent}"
+                                Command="{Binding SaveCurrentSkinCommand}" IsEnabled="{Binding CanSaveCurrentSkin}"
+                                ToolTip.Tip="{DynamicResource Skins_SaveCurrentHint}"/>
+                        <TextBlock Text="{DynamicResource Skins_PickHint}" Classes="sub" TextWrapping="Wrap" TextAlignment="Center"
+                                   IsVisible="{Binding HasLibrarySkins}"/>
+                    </StackPanel>
 
-                    <!-- Putting the skin on an account is done on the service's own site, as everywhere:
-                         one quiet button with the three places behind it, so the editor stays the point. -->
-                    <StackPanel Spacing="8">
-                        <Button Classes="ghost" HorizontalAlignment="Stretch" Height="38"
-                                ToolTip.Tip="{DynamicResource Skins_PublishIntro}">
-                            <StackPanel Orientation="Horizontal" Spacing="7">
-                                <PathIcon Data="{StaticResource IconOpenExternal}" Classes="small"/>
-                                <TextBlock Text="{DynamicResource Skins_PublishButton}" VerticalAlignment="Center"/>
-                                <PathIcon Data="{StaticResource IconChevronDown}" Classes="small"/>
+                    <!-- The name, and everything that can be done with this skin. -->
+                    <StackPanel Margin="30,6,30,0" Spacing="12" IsVisible="{Binding HasSelectedLibrarySkin}">
+
+                        <StackPanel Spacing="3" IsVisible="{Binding !IsRenamingSkin}">
+                            <TextBlock Text="{Binding SelectedLibrarySkin.Name}" Classes="title" FontSize="20" FontWeight="ExtraBold"
+                                       HorizontalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding SelectedLibrarySkin.FactsLabel}" Classes="sub" TextWrapping="Wrap"
+                                       TextAlignment="Center" HorizontalAlignment="Center"/>
+                            <StackPanel Orientation="Horizontal" Spacing="7" HorizontalAlignment="Center" Margin="0,2,0,0"
+                                        IsVisible="{Binding SelectedLibrarySkin.IsWorn}">
+                                <Ellipse Classes="dot"/>
+                                <TextBlock Text="{DynamicResource Skins_WornPill}" Classes="sub"/>
                             </StackPanel>
-                            <Button.Flyout>
-                                <MenuFlyout Placement="TopEdgeAlignedLeft">
-                                    <MenuItem Header="{DynamicResource Skins_PublishMicrosoft}"
-                                              Command="{Binding PublishSkinCommand}" CommandParameter="Microsoft"/>
-                                    <MenuItem Header="Ely.by"
-                                              Command="{Binding PublishSkinCommand}" CommandParameter="ElyBy"/>
-                                    <MenuItem Header="TLauncher"
-                                              Command="{Binding PublishSkinCommand}" CommandParameter="TLauncher"/>
-                                </MenuFlyout>
-                            </Button.Flyout>
-                        </Button>
-                        <Border Classes="panel" Padding="12" IsVisible="{Binding HasSkinPublishHint}">
-                            <TextBlock Text="{Binding SkinPublishHint}" TextWrapping="Wrap" LineHeight="19"/>
+                        </StackPanel>
+
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6" IsVisible="{Binding IsRenamingSkin}">
+                            <TextBox Name="RenameBox" Text="{Binding SkinRenameText}" MaxLength="40"
+                                     Watermark="{DynamicResource Skins_RenameHint}">
+                                <TextBox.KeyBindings>
+                                    <KeyBinding Gesture="Enter" Command="{Binding CommitRenameSkinCommand}"/>
+                                    <KeyBinding Gesture="Escape" Command="{Binding CancelRenameSkinCommand}"/>
+                                </TextBox.KeyBindings>
+                            </TextBox>
+                            <Button Grid.Column="1" Classes="icon" Width="36" Height="36"
+                                    Command="{Binding CommitRenameSkinCommand}" ToolTip.Tip="{DynamicResource Game_NicknameDone}">
+                                <PathIcon Data="{StaticResource IconCheck}"/>
+                            </Button>
+                            <Button Grid.Column="2" Classes="icon" Width="36" Height="36"
+                                    Command="{Binding CancelRenameSkinCommand}" ToolTip.Tip="{DynamicResource Common_Cancel}">
+                                <PathIcon Data="{StaticResource IconClose}"/>
+                            </Button>
+                        </Grid>
+
+                        <!-- The one accent of the page. -->
+                        <Button Classes="primary" HorizontalAlignment="Stretch" Height="44" FontSize="14.5"
+                                Content="{DynamicResource Skins_Wear}"
+                                IsVisible="{Binding !SelectedLibrarySkin.IsWorn}"
+                                Command="{Binding WearSkinCommand}" CommandParameter="{Binding SelectedLibrarySkin}"/>
+                        <Button HorizontalAlignment="Stretch" Height="44"
+                                Content="{DynamicResource Skins_TakeOff}"
+                                ToolTip.Tip="{DynamicResource Skins_TakeOffHint}"
+                                IsVisible="{Binding SelectedLibrarySkin.IsWorn}"
+                                Command="{Binding TakeOffSkinCommand}"/>
+
+                        <!-- Whether the game itself shows this skin: said when it does, and a
+                             quiet way to the build's switch when it does not. -->
+                        <StackPanel Orientation="Horizontal" Spacing="7" HorizontalAlignment="Center"
+                                    IsVisible="{Binding IsSkinInGameLineVisible}">
+                            <Ellipse Classes="dot"/>
+                            <TextBlock Text="{Binding SkinInGameLine}" Classes="sub" TextWrapping="Wrap"
+                                       MaxWidth="250" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <Button Classes="link" HorizontalAlignment="Center"
+                                IsVisible="{Binding IsSkinInGameLinkVisible}"
+                                Content="{DynamicResource SkinInGame_Link}"
+                                ToolTip.Tip="{DynamicResource SkinInGame_LinkHint}"
+                                Command="{Binding OpenBuildSettingsCommand}"/>
+
+                        <!-- The rest, quiet: edit, put on an account, and the rare things behind "...". -->
+                        <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="2" Margin="-10,0">
+                            <Button Classes="ghost" Padding="10,10" Content="{DynamicResource Skins_Edit}"
+                                    Command="{Binding EditSkinCommand}" CommandParameter="{Binding SelectedLibrarySkin}"/>
+                            <!-- Putting the skin on an account is done on the service's own site, as
+                                 everywhere: one quiet button with the three places behind it. -->
+                            <Button Grid.Column="1" Classes="ghost" Padding="10,10"
+                                    ToolTip.Tip="{DynamicResource Skins_PublishIntro}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Text="{DynamicResource Skins_PublishButton}" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                    <PathIcon Data="{StaticResource IconChevronDown}" Width="10" Height="10" Classes="muted"/>
+                                </StackPanel>
+                                <Button.Flyout>
+                                    <MenuFlyout Placement="TopEdgeAlignedLeft">
+                                        <MenuItem Header="{DynamicResource Skins_PublishMicrosoft}"
+                                                  Command="{Binding PublishSkinCommand}" CommandParameter="Microsoft"/>
+                                        <MenuItem Header="Ely.by"
+                                                  Command="{Binding PublishSkinCommand}" CommandParameter="ElyBy"/>
+                                        <MenuItem Header="TLauncher"
+                                                  Command="{Binding PublishSkinCommand}" CommandParameter="TLauncher"/>
+                                    </MenuFlyout>
+                                </Button.Flyout>
+                            </Button>
+                            <Button Grid.Column="3" Classes="icon more" Width="36" Height="36" VerticalAlignment="Center"
+                                    ToolTip.Tip="{DynamicResource Builds_More}">
+                                <PathIcon Data="{StaticResource IconDots}"/>
+                                <Button.Flyout>
+                                    <MenuFlyout Placement="TopEdgeAlignedRight">
+                                        <MenuItem Header="{DynamicResource Skins_Duplicate}"
+                                                  Command="{Binding DuplicateSkinCommand}" CommandParameter="{Binding SelectedLibrarySkin}"/>
+                                        <MenuItem Header="{DynamicResource Skins_Rename}" Command="{Binding BeginRenameSkinCommand}"/>
+                                        <Separator/>
+                                        <MenuItem Classes="danger" Header="{DynamicResource Skins_Delete}" Command="{Binding AskDeleteSkinCommand}"/>
+                                    </MenuFlyout>
+                                </Button.Flyout>
+                            </Button>
+                        </Grid>
+
+                        <!-- Delete asks once, right here; the answer is the second click. -->
+                        <Border Classes="panel" Padding="14,12" IsVisible="{Binding IsConfirmingSkinDelete}">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="{DynamicResource Skins_DeleteAsk}" TextWrapping="Wrap"/>
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Button Classes="danger small" Content="{DynamicResource Skins_DeleteConfirm}"
+                                            Command="{Binding DeleteSkinCommand}"/>
+                                    <Button Classes="ghost small" Content="{DynamicResource Common_Cancel}"
+                                            Command="{Binding CancelDeleteSkinCommand}"/>
+                                </StackPanel>
+                            </StackPanel>
                         </Border>
+
+                        <!-- What to do on the site that has just been opened. -->
+                        <TextBlock Text="{Binding SkinPublishHint}" Classes="muted wrap" LineHeight="19"
+                                   IsVisible="{Binding HasSkinPublishHint}"/>
                     </StackPanel>
                 </StackPanel>
-            </Grid>
-        </ScrollViewer>
+            </ScrollViewer>
+        </Grid>
 
         <!-- A PNG held over the page. -->
-        <Border IsVisible="{Binding IsSkinDropHover}" IsHitTestVisible="False"
-                Background="{DynamicResource OverlayScrimBrush}">
-            <Border Classes="card" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="28,22">
+        <Border Classes="scrim" IsVisible="{Binding IsSkinDropHover}" IsHitTestVisible="False">
+            <Border Classes="dialog" Padding="28,22">
                 <StackPanel Spacing="8" HorizontalAlignment="Center">
                     <PathIcon Data="{StaticResource IconDownload}" Classes="large accent" HorizontalAlignment="Center"/>
                     <TextBlock Text="{DynamicResource Skins_DropHere}" Classes="h3" HorizontalAlignment="Center"/>
-                    <TextBlock Text="{DynamicResource Skins_DropHereHint}" Classes="faint" HorizontalAlignment="Center"/>
+                    <TextBlock Text="{DynamicResource Skins_DropHereHint}" Classes="sub" HorizontalAlignment="Center"/>
                 </StackPanel>
             </Border>
         </Border>
 
         <!-- ================= Editor ================= -->
-        <Grid IsVisible="{Binding IsSkinEditorOpen}" RowDefinitions="Auto,*" RowSpacing="14" Margin="28,20,28,16">
+        <Grid IsVisible="{Binding IsSkinEditorOpen}" RowDefinitions="Auto,*" RowSpacing="14" Margin="24,8,24,16">
 
             <StackPanel Spacing="10">
                 <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto" ColumnSpacing="10">
-                    <Button Classes="glass-icon" Command="{Binding CloseSkinEditorCommand}"
+                    <Button Classes="icon" Width="36" Height="36" Command="{Binding CloseSkinEditorCommand}"
                             ToolTip.Tip="{DynamicResource Skins_BackToLibrary}">
-                        <PathIcon Data="{StaticResource IconSkinBack}" Classes="small"/>
+                        <PathIcon Data="{StaticResource IconSkinBack}"/>
                     </Button>
 
-                    <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
-                        <TextBlock Text="{DynamicResource Skins_EditorLabel}" Classes="label"/>
-                        <TextBlock Text="{Binding EditorTitle}" Classes="h2" FontSize="20" TextTrimming="CharacterEllipsis"/>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="{DynamicResource Skins_EditorLabel}" Classes="caption"/>
+                        <TextBlock Text="{Binding EditorTitle}" Classes="page-title" FontSize="20"/>
                     </StackPanel>
 
-                    <Border Grid.Column="2" Classes="pill small" VerticalAlignment="Center">
-                        <StackPanel Orientation="Horizontal" Spacing="7">
-                            <Border Width="7" Height="7" CornerRadius="4" VerticalAlignment="Center"
-                                    Background="{DynamicResource SuccessBrush}" IsVisible="{Binding !IsSkinEditorDirty}"/>
-                            <Border Width="7" Height="7" CornerRadius="4" VerticalAlignment="Center"
-                                    Background="{DynamicResource WarningBrush}" IsVisible="{Binding IsSkinEditorDirty}"/>
-                            <TextBlock Text="{Binding EditorStateLabel}" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Border>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="7" VerticalAlignment="Center" Margin="0,0,6,0">
+                        <Ellipse Classes="dot" IsVisible="{Binding !IsSkinEditorDirty}"/>
+                        <Ellipse Classes="dot warn" IsVisible="{Binding IsSkinEditorDirty}"/>
+                        <TextBlock Text="{Binding EditorStateLabel}" Classes="sub" VerticalAlignment="Center"/>
+                    </StackPanel>
 
-                    <Button Grid.Column="3" Classes="glass-icon" Command="{Binding UndoSkinCommand}"
+                    <Button Grid.Column="3" Classes="icon" Width="36" Height="36" Command="{Binding UndoSkinCommand}"
                             IsEnabled="{Binding CanUndoSkin}" ToolTip.Tip="{DynamicResource Skins_Undo}">
-                        <PathIcon Data="{StaticResource IconSkinUndo}" Classes="small"/>
+                        <PathIcon Data="{StaticResource IconSkinUndo}"/>
                     </Button>
-                    <Button Grid.Column="4" Classes="glass-icon" Command="{Binding RedoSkinCommand}"
+                    <Button Grid.Column="4" Classes="icon" Width="36" Height="36" Command="{Binding RedoSkinCommand}"
                             IsEnabled="{Binding CanRedoSkin}" ToolTip.Tip="{DynamicResource Skins_Redo}">
-                        <PathIcon Data="{StaticResource IconSkinRedo}" Classes="small"/>
+                        <PathIcon Data="{StaticResource IconSkinRedo}"/>
                     </Button>
                     <Button Grid.Column="5" Classes="primary" Height="40" Padding="18,0"
                             Command="{Binding SaveSkinCommand}" ToolTip.Tip="{DynamicResource Skins_SaveHint}">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <PathIcon Data="{StaticResource IconSkinSave}" Classes="small"/>
-                            <TextBlock Text="{DynamicResource Skins_Save}" Foreground="{DynamicResource TextOnAccentBrush}" VerticalAlignment="Center"/>
+                            <TextBlock Text="{DynamicResource Skins_Save}" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
                 </Grid>
 
                 <!-- A save that did not happen is said here: the library's notice is behind the editor. -->
-                <Border Classes="card glass" Padding="14,12" IsVisible="{Binding HasSkinEditorProblem}">
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
-                        <PathIcon Data="{StaticResource IconWarning}" Foreground="{DynamicResource WarningBrush}"
-                                  VerticalAlignment="Top" Margin="0,2,0,0"/>
-                        <TextBlock Grid.Column="1" Text="{Binding SkinEditorProblem}" TextWrapping="Wrap" LineHeight="19"/>
-                    </Grid>
-                </Border>
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" IsVisible="{Binding HasSkinEditorProblem}">
+                    <PathIcon Data="{StaticResource IconWarning}" Classes="small" Foreground="{DynamicResource WarningBrush}"
+                              VerticalAlignment="Top" Margin="0,3,0,0"/>
+                    <TextBlock Grid.Column="1" Text="{Binding SkinEditorProblem}" TextWrapping="Wrap" LineHeight="19"/>
+                </Grid>
             </StackPanel>
 
-            <Grid Grid.Row="1" Name="EditorBody" ColumnDefinitions="252,*,Auto" ColumnSpacing="14"
+            <Grid Grid.Row="1" Name="EditorBody" ColumnDefinitions="236,*,Auto" ColumnSpacing="0"
                   SizeChanged="OnEditorSizeChanged">
 
                 <!-- ======== Tools and colour ======== -->
-                <Border Classes="card glass" Padding="0">
+                <Border BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="0,0,1,0">
                     <ScrollViewer>
-                        <StackPanel Spacing="14" Margin="16">
+                        <StackPanel Spacing="16" Margin="0,4,18,4">
 
                             <StackPanel Spacing="8">
-                                <TextBlock Text="{DynamicResource Skins_Tool}" Classes="label"/>
-                                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="6" RowSpacing="6">
+                                <TextBlock Text="{DynamicResource Skins_Tool}" Classes="caption"/>
+                                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="4" RowSpacing="4" Margin="-8,0,0,0">
                                     <Button Classes="tool" Classes.active="{Binding IsSkinToolPencil}"
                                             Command="{Binding SelectSkinToolCommand}" CommandParameter="Pencil">
                                         <StackPanel Orientation="Horizontal" Spacing="7">
@@ -479,19 +622,18 @@
                             </StackPanel>
 
                             <StackPanel Spacing="8">
-                                <TextBlock Text="{DynamicResource Skins_Colour}" Classes="label"/>
+                                <TextBlock Text="{DynamicResource Skins_Colour}" Classes="caption"/>
                                 <controls:ColourField Colour="{Binding EditorColour}" Height="150"/>
                                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
                                     <Border Width="36" Height="36" CornerRadius="10" Background="{Binding EditorColourBrush}"
-                                            BorderBrush="{DynamicResource GlassBorderBrush}" BorderThickness="1"/>
-                                    <TextBox Grid.Column="1" Text="{Binding EditorHex}" MaxLength="7"
-                                             FontFamily="Consolas, Menlo, monospace"
+                                            BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1"/>
+                                    <TextBox Grid.Column="1" Classes="mono" Text="{Binding EditorHex}" MaxLength="7"
                                              Watermark="#RRGGBB" ToolTip.Tip="{DynamicResource Skins_HexHint}"/>
                                 </Grid>
                             </StackPanel>
 
                             <StackPanel Spacing="8">
-                                <TextBlock Text="{DynamicResource Skins_Recent}" Classes="label"/>
+                                <TextBlock Text="{DynamicResource Skins_Recent}" Classes="caption"/>
                                 <ItemsControl ItemsSource="{Binding RecentColours}">
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate>
@@ -523,51 +665,50 @@
                 </Border>
 
                 <!-- ======== The texture, part by part ======== -->
-                <Border Grid.Column="1" Classes="card glass" Padding="16">
-                    <Grid RowDefinitions="Auto,*,Auto" RowSpacing="10">
-                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                            <Border Classes="panel" Padding="3">
-                                <StackPanel Orientation="Horizontal" Spacing="2">
-                                    <Button Classes="segment small" Classes.active="{Binding IsSkinLayerBase}"
-                                            Content="{DynamicResource Skins_LayerBase}"
-                                            Command="{Binding SelectSkinLayerCommand}" CommandParameter="Base"/>
-                                    <Button Classes="segment small" Classes.active="{Binding IsSkinLayerOverlay}"
-                                            Content="{DynamicResource Skins_LayerOverlay}"
-                                            Command="{Binding SelectSkinLayerCommand}" CommandParameter="Overlay"/>
-                                </StackPanel>
-                            </Border>
-                            <Panel Grid.Column="1" VerticalAlignment="Center">
-                                <TextBlock Text="{DynamicResource Skins_LayerBaseHint}" Classes="faint wrap" MaxLines="2"
-                                           IsVisible="{Binding IsSkinLayerBase}"/>
-                                <TextBlock Text="{DynamicResource Skins_LayerOverlayHint}" Classes="faint wrap" MaxLines="2"
-                                           IsVisible="{Binding IsSkinLayerOverlay}"/>
-                            </Panel>
-                        </Grid>
-
-                        <controls:SkinCanvas Grid.Row="1" Name="Sheet"
-                                             Document="{Binding EditorDocument}"
-                                             Layer="{Binding EditorLayer}"
-                                             Tool="{Binding EditorTool}"
-                                             Colour="{Binding EditorColour}"
-                                             ShowGrid="{Binding EditorGrid}"
-                                             LabelBrush="{DynamicResource TextSecondaryBrush}"
-                                             OutlineBrush="{DynamicResource SkinOutlineBrush}"
-                                             GridBrush="{DynamicResource SkinGridBrush}"
-                                             PaperBrush="{DynamicResource SkinPaperBrush}"
-                                             PaperAltBrush="{DynamicResource SkinPaperAltBrush}"/>
-
-                        <Grid Grid.Row="2" ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                            <TextBlock Text="{Binding #Sheet.HoverText}" Classes="muted" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="1" Text="{DynamicResource Skins_KeysHint}" Classes="faint" VerticalAlignment="Center"/>
-                        </Grid>
+                <Grid Grid.Column="1" RowDefinitions="Auto,*,Auto" RowSpacing="10" Margin="18,4,18,0">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                        <Border Classes="segments">
+                            <StackPanel Orientation="Horizontal">
+                                <Button Classes="segment" Classes.active="{Binding IsSkinLayerBase}"
+                                        Content="{DynamicResource Skins_LayerBase}"
+                                        Command="{Binding SelectSkinLayerCommand}" CommandParameter="Base"/>
+                                <Button Classes="segment" Classes.active="{Binding IsSkinLayerOverlay}"
+                                        Content="{DynamicResource Skins_LayerOverlay}"
+                                        Command="{Binding SelectSkinLayerCommand}" CommandParameter="Overlay"/>
+                            </StackPanel>
+                        </Border>
+                        <Panel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="{DynamicResource Skins_LayerBaseHint}" Classes="sub" TextWrapping="Wrap" MaxLines="2"
+                                       IsVisible="{Binding IsSkinLayerBase}"/>
+                            <TextBlock Text="{DynamicResource Skins_LayerOverlayHint}" Classes="sub" TextWrapping="Wrap" MaxLines="2"
+                                       IsVisible="{Binding IsSkinLayerOverlay}"/>
+                        </Panel>
                     </Grid>
-                </Border>
+
+                    <controls:SkinCanvas Grid.Row="1" Name="Sheet"
+                                         Document="{Binding EditorDocument}"
+                                         Layer="{Binding EditorLayer}"
+                                         Tool="{Binding EditorTool}"
+                                         Colour="{Binding EditorColour}"
+                                         ShowGrid="{Binding EditorGrid}"
+                                         LabelBrush="{DynamicResource TextSecondaryBrush}"
+                                         OutlineBrush="{DynamicResource SkinOutlineBrush}"
+                                         GridBrush="{DynamicResource SkinGridBrush}"
+                                         PaperBrush="{DynamicResource SkinPaperBrush}"
+                                         PaperAltBrush="{DynamicResource SkinPaperAltBrush}"/>
+
+                    <Grid Grid.Row="2" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <TextBlock Text="{Binding #Sheet.HoverText}" Classes="muted" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="{DynamicResource Skins_KeysHint}" Classes="sub" VerticalAlignment="Center"/>
+                    </Grid>
+                </Grid>
 
                 <!-- ======== The figure, as it will look ======== -->
-                <Border Grid.Column="2" Name="PreviewPanel" Width="256" Classes="card glass" Padding="0">
+                <Border Grid.Column="2" Name="PreviewPanel" Width="250"
+                        BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1,0,0,0">
                     <ScrollViewer>
-                        <StackPanel Spacing="8" Margin="16">
-                            <TextBlock Text="{DynamicResource Skins_Preview}" Classes="label"/>
+                        <StackPanel Spacing="8" Margin="18,4,0,4">
+                            <TextBlock Text="{DynamicResource Skins_Preview}" Classes="caption"/>
 
                             <!-- Fixed sizes on purpose: the figure stands a tenth of its box above
                                  the box's foot, and the pedestal's middle is put exactly there. -->
@@ -576,22 +717,21 @@
                                          Fill="{DynamicResource PedestalBrush}" Stroke="{DynamicResource PedestalRimBrush}" StrokeThickness="1"/>
                                 <controls:SkinViewer Skin="{Binding EditorPreviewSkin}" AutoRotate="False"
                                                      Height="320" VerticalAlignment="Bottom" Margin="0,0,0,6"
-                                                     ToolTip.Tip="{DynamicResource Game_ViewerHint}"/>
+                                                     ToolTip.Tip="{DynamicResource Skins_PreviewHint}"/>
                             </Panel>
 
-                            <TextBlock Text="{DynamicResource Skins_PreviewHint}" Classes="faint wrap" TextAlignment="Center"/>
-                            <TextBlock Text="{DynamicResource Skins_Model}" Classes="label" Margin="0,6,0,0"/>
-                            <Border Classes="panel" Padding="3" HorizontalAlignment="Left">
-                                <StackPanel Orientation="Horizontal" Spacing="2">
-                                    <Button Classes="segment small" Classes.active="{Binding IsEditorModelClassic}"
+                            <TextBlock Text="{DynamicResource Skins_Model}" Classes="caption" Margin="0,6,0,0"
+                                       ToolTip.Tip="{DynamicResource Skins_ModelHint}"/>
+                            <Border Classes="segments" HorizontalAlignment="Left" ToolTip.Tip="{DynamicResource Skins_ModelHint}">
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Classes="segment" Classes.active="{Binding IsEditorModelClassic}"
                                             Content="{DynamicResource Skins_ModelClassicShort}"
                                             Command="{Binding SelectSkinModelCommand}" CommandParameter="Classic"/>
-                                    <Button Classes="segment small" Classes.active="{Binding IsEditorModelSlim}"
+                                    <Button Classes="segment" Classes.active="{Binding IsEditorModelSlim}"
                                             Content="{DynamicResource Skins_ModelSlimShort}"
                                             Command="{Binding SelectSkinModelCommand}" CommandParameter="Slim"/>
                                 </StackPanel>
                             </Border>
-                            <TextBlock Text="{DynamicResource Skins_ModelHint}" Classes="faint wrap" LineHeight="18"/>
                         </StackPanel>
                     </ScrollViewer>
                 </Border>
@@ -599,18 +739,17 @@
         </Grid>
 
         <!-- ============ A random skin on the big stage ============ -->
-        <Border Background="{DynamicResource OverlayScrimBrush}" IsVisible="{Binding HasRandomPreview}"
-                controls:Reveal.OnVisible="True">
-            <Border Classes="card" Width="420" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="22">
+        <Border Classes="scrim" IsVisible="{Binding HasRandomPreview}" controls:Reveal.OnVisible="True">
+            <Border Classes="dialog" Width="420" Padding="22">
                 <StackPanel Spacing="14">
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Spacing="3">
-                            <TextBlock Text="{DynamicResource Skins_RandomPreviewTitle}" FontSize="17" FontWeight="SemiBold"/>
-                            <TextBlock Text="{DynamicResource Skins_RandomPreviewText}" Classes="muted wrap" FontSize="12.5"/>
+                            <TextBlock Text="{DynamicResource Skins_RandomPreviewTitle}" Classes="group"/>
+                            <TextBlock Text="{DynamicResource Skins_RandomPreviewText}" Classes="sub" TextWrapping="Wrap"/>
                         </StackPanel>
-                        <Button Grid.Column="1" Classes="glass-icon" VerticalAlignment="Top"
+                        <Button Grid.Column="1" Classes="icon" VerticalAlignment="Top"
                                 Command="{Binding CloseRandomPreviewCommand}" ToolTip.Tip="{DynamicResource Common_Close}">
-                            <PathIcon Data="{StaticResource IconClose}" Classes="small"/>
+                            <PathIcon Data="{StaticResource IconClose}"/>
                         </Button>
                     </Grid>
 
@@ -630,11 +769,13 @@
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                         <Button Classes="primary" HorizontalAlignment="Stretch" Height="42"
                                 IsVisible="{Binding PreviewedRandomSkin.CanSave}"
-                                Command="{Binding SaveRandomSkinCommand}" CommandParameter="{Binding PreviewedRandomSkin}">
-                            <TextBlock Text="{DynamicResource Skins_RandomSaveToLibrary}" Foreground="{DynamicResource TextOnAccentBrush}"/>
-                        </Button>
-                        <TextBlock Text="{DynamicResource Skins_RandomSavedMark}" Classes="muted" VerticalAlignment="Center"
-                                   IsVisible="{Binding PreviewedRandomSkin.IsSaved}"/>
+                                Content="{DynamicResource Skins_RandomSaveToLibrary}"
+                                Command="{Binding SaveRandomSkinCommand}" CommandParameter="{Binding PreviewedRandomSkin}"/>
+                        <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center"
+                                    IsVisible="{Binding PreviewedRandomSkin.IsSaved}">
+                            <Ellipse Classes="dot"/>
+                            <TextBlock Text="{DynamicResource Skins_RandomSavedMark}" Classes="muted"/>
+                        </StackPanel>
                         <Button Grid.Column="1" Classes="ghost" Height="42" Content="{DynamicResource Common_Close}"
                                 Command="{Binding CloseRandomPreviewCommand}"/>
                     </Grid>
@@ -643,17 +784,16 @@
         </Border>
 
         <!-- ============ Leaving with unsaved changes ============ -->
-        <Border Background="{DynamicResource OverlayScrimBrush}" IsVisible="{Binding IsSkinUnsavedPromptOpen}"
-                controls:Reveal.OnVisible="True">
-            <Border Classes="card" Width="540" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="22">
+        <Border Classes="scrim" IsVisible="{Binding IsSkinUnsavedPromptOpen}" controls:Reveal.OnVisible="True">
+            <Border Classes="dialog" Width="540">
                 <StackPanel Spacing="14">
-                    <TextBlock Text="{DynamicResource Skins_UnsavedTitle}" FontSize="17" FontWeight="SemiBold"/>
-                    <TextBlock Text="{DynamicResource Skins_UnsavedText}" Classes="muted wrap" FontSize="13" LineHeight="19"/>
+                    <TextBlock Text="{DynamicResource Skins_UnsavedTitle}" Classes="h1" FontSize="20"/>
+                    <TextBlock Text="{DynamicResource Skins_UnsavedText}" Classes="muted wrap" LineHeight="19"/>
                     <!-- "Save and leave" did not save: the question stays, with the reason. -->
                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" IsVisible="{Binding HasSkinEditorProblem}">
-                        <PathIcon Data="{StaticResource IconWarning}" Foreground="{DynamicResource WarningBrush}"
-                                  VerticalAlignment="Top" Margin="0,2,0,0"/>
-                        <TextBlock Grid.Column="1" Text="{Binding SkinEditorProblem}" TextWrapping="Wrap" FontSize="13" LineHeight="19"/>
+                        <PathIcon Data="{StaticResource IconWarning}" Classes="small" Foreground="{DynamicResource WarningBrush}"
+                                  VerticalAlignment="Top" Margin="0,3,0,0"/>
+                        <TextBlock Grid.Column="1" Text="{Binding SkinEditorProblem}" TextWrapping="Wrap" LineHeight="19"/>
                     </Grid>
                     <WrapPanel ItemSpacing="8" LineSpacing="8" HorizontalAlignment="Right">
                         <Button Classes="ghost" Content="{DynamicResource Skins_UnsavedStay}"

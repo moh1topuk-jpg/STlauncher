@@ -125,6 +125,24 @@ public partial class MainWindowViewModel
 
     public bool HasBoostNote => BoostNote.Length > 0;
 
+    /// <summary>What the switch brought into this build, read from its record: the list behind "What changed".</summary>
+    public IReadOnlyList<BoostLine> BoostAppliedModLines
+        => SelectedInstance?.Boost is { Active: true } record
+            ? record.Jars
+                .Select(jar => new BoostLine(jar.Title is { Length: > 0 } title ? title : jar.FileName, jar.FileName, Indented: jar.Dependency))
+                .ToList()
+            : Array.Empty<BoostLine>();
+
+    /// <summary>The settings the switch wrote, each with what it was before.</summary>
+    public IReadOnlyList<BoostLine> BoostAppliedOptionLines
+        => SelectedInstance?.Boost is { Active: true } record
+            ? record.Options
+                .Select(option => new BoostLine(
+                    BoostOptionLabel(option.Key),
+                    $"{BoostValue(option.Key, option.Previous)} → {BoostValue(option.Key, option.Written)}"))
+                .ToList()
+            : Array.Empty<BoostLine>();
+
     /// <summary>Another build is open, or the game started or stopped: the switch reads its state again.</summary>
     private void RaiseBoostState(bool buildChanged = false)
     {
@@ -140,6 +158,8 @@ public partial class MainWindowViewModel
         OnPropertyChanged(nameof(CanToggleBoost));
         OnPropertyChanged(nameof(BoostNote));
         OnPropertyChanged(nameof(HasBoostNote));
+        OnPropertyChanged(nameof(BoostAppliedModLines));
+        OnPropertyChanged(nameof(BoostAppliedOptionLines));
     }
 
     partial void OnIsApplyingPresetChanged(bool value) => OnPropertyChanged(nameof(CanToggleBoost));

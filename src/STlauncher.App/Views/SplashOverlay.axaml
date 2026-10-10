@@ -3,19 +3,13 @@
              xmlns:controls="using:STlauncher.App.Controls"
              x:Class="STlauncher.App.Views.SplashOverlay">
 
-    <!-- The first two seconds: a dark stage, the sparks gather into a ring around the
-         mark while the build is prepared, a flash when it is ready, and the mark flies to
-         its place in the rail as the screen shows through. Positions are set in code from
-         the real window size, so the mark lands exactly on the rail logo. -->
+    <!-- The first two seconds: the window's own ground as a stage, the sparks gather into a
+         ring around the mark while the build is prepared, a flash when it is ready, and the
+         mark flies to its place in the rail as the screen shows through. Positions are set
+         in code from the real window size, so the mark lands exactly on the rail logo; the
+         stage and the glow take the theme's colours in code as well. -->
     <Canvas Name="Root">
-        <Border Name="Glow" Width="900" Height="600" Opacity="0" IsHitTestVisible="False">
-            <Border.Background>
-                <RadialGradientBrush Center="50%,50%" GradientOrigin="50%,50%" RadiusX="50%" RadiusY="50%">
-                    <GradientStop Offset="0" Color="#34191F"/>
-                    <GradientStop Offset="0.6" Color="#000C0A0D"/>
-                </RadialGradientBrush>
-            </Border.Background>
-        </Border>
+        <Border Name="Glow" Width="900" Height="600" Opacity="0" IsHitTestVisible="False"/>
 
         <controls:SplashEmbers Name="Embers"/>
 
@@ -36,7 +30,8 @@
             <Image Source="/Assets/server-logo.png" Stretch="UniformToFill"/>
         </Border>
 
-        <TextBlock Name="Caption" Text="{DynamicResource Splash_Loading}" Opacity="0"
-                   FontSize="12" LetterSpacing="1.4" Foreground="#A99BA3"/>
+        <!-- A caption in the look's own voice: mono, spaced, muted in either theme. -->
+        <TextBlock Name="Caption" Text="{DynamicResource Splash_Loading}" Opacity="0" Classes="caption"
+                   Foreground="{DynamicResource TextSecondaryBrush}"/>
     </Canvas>
 </UserControl>
