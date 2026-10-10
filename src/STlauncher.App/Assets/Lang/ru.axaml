@@ -1069,11 +1069,20 @@
     <x:String x:Key="Perf_BalancedHint">прорисовка 10, как задумано игрой</x:String>
     <x:String x:Key="Perf_High">Максимум</x:String>
     <x:String x:Key="Perf_HighHint">прорисовка 16, всё включено</x:String>
-    <x:String x:Key="Perf_ModsHint">В эту сборку «Слабый ПК» и «Сбалансированно» ещё добавят моды оптимизации: Sodium, Lithium, FerriteCore, Entity Culling, ImmediatelyFast.</x:String>
+    <x:String x:Key="Perf_ModsHint">Моды пресеты не добавляют. Моды для скорости добавляет «Ускорение» ниже: оно сначала показывает список и выключается обратно.</x:String>
     <x:String x:Key="Perf_Applied">Готово: настройки графики и {0} МБ памяти. Игра прочитает их при следующем запуске.</x:String>
-    <x:String x:Key="Perf_AppliedWithMods">Готово: настройки графики, {0} МБ памяти, добавлено модов оптимизации: {1}</x:String>
-    <x:String x:Key="Perf_Installing">Добавляю {0}…</x:String>
     <x:String x:Key="Perf_Failed">Не удалось применить: {0}</x:String>
+    <!-- A preset that can be taken back; the renderer the catalog brings; two renderers in the build check -->
+    <x:String x:Key="Perf_Revert">Вернуть настройки как были до пресета</x:String>
+    <x:String x:Key="Perf_GameRunning">Игра запущена: при выходе она запишет свои настройки поверх этих. Сначала закройте её.</x:String>
+    <x:String x:Key="Perf_OptionsUnreadable">options.txt не читается как текст, поэтому пресет ничего не изменил.</x:String>
+    <x:String x:Key="Perf_RevertedMemory">Память: снова {0} МБ.</x:String>
+    <x:String x:Key="Perf_RevertLeftMemory">Память оставлена такой, как вы её выставили.</x:String>
+    <x:String x:Key="Boost_Opt_graphicsMode">Качество графики</x:String>
+    <x:String x:Key="Boost_Opt_screenEffectScale">Эффекты искажения</x:String>
+    <x:String x:Key="Boost_RendererSteppedAside">В сборке теперь есть {0} из каталога, поэтому {1} от «Ускорения» отключён: два рендерера вместе роняют игру. Файл остался в папке модов.</x:String>
+    <x:String x:Key="Check_TwoRenderers">Два мода-рендерера сразу: «{0}» и «{1}». Вместе они роняют игру — оставьте один.</x:String>
+    <x:String x:Key="Check_FixDisableNamed">Выключить {0}</x:String>
     <!-- "Ускорение": the per-build switch that can be switched back off -->
     <x:String x:Key="Boost_Title">Ускорение</x:String>
     <x:String x:Key="Boost_Hint">Добавит в эту сборку моды, которые ускоряют игру и ничего в ней не меняют, и снизит настройки, которые стоят кадров. Сначала покажет список. Выключите — моды отключатся, а настройки вернутся к прежним.</x:String>

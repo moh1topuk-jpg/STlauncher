@@ -159,7 +159,7 @@ public static class BoostJars
     }
 
     /// <summary>True when the file exists and is byte for byte what was installed. Without a recorded hash nothing is claimed.</summary>
-    private static bool IsUnchanged(string path, BoostJarRecord jar)
+    internal static bool IsUnchanged(string path, BoostJarRecord jar)
         => !string.IsNullOrEmpty(jar.Sha1) &&
            File.Exists(path) &&
            string.Equals(ModManager.TryComputeSha1(path), jar.Sha1, StringComparison.OrdinalIgnoreCase);

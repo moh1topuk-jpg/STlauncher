@@ -209,6 +209,11 @@ public partial class MainWindowViewModel
         {
             Status = Localize("Builds_SyncReady", "Build is up to date - ready to play");
         }
+
+        if (_syncRendererNote is not null)
+        {
+            Status = WithRendererNote(Status);
+        }
     }
 
     // ===================== The offer =====================
@@ -513,9 +518,9 @@ public partial class MainWindowViewModel
             RefreshBackups();
             RefreshMods();
 
-            Status = isNew
+            Status = WithRendererNote(isNew
                 ? Localize("Builds_ImportDone", "Build \"{0}\" added ({1} item(s))", instance!.Name, build.Items.Count)
-                : Localize("Builds_ImportUpdated", "Build \"{0}\" is up to date ({1} item(s))", instance!.Name, build.Items.Count);
+                : Localize("Builds_ImportUpdated", "Build \"{0}\" is up to date ({1} item(s))", instance!.Name, build.Items.Count));
 
             AppendConsole($"[builds] '{instance!.Name}' synced with the catalog");
         }
@@ -666,6 +671,9 @@ public partial class MainWindowViewModel
     /// <summary>Carries a plan out: removes what left the catalog, downloads what it lists.</summary>
     private async Task<int> ApplyBuildSyncPlanAsync(Instance instance, BuildSyncPlan plan)
     {
+        // A note nobody showed belongs to an earlier sync, not to this one.
+        _syncRendererNote = null;
+
         if (!plan.Any)
         {
             AppendConsole($"[build] {instance.EnabledCatalogItems.Count} item(s) checked, nothing to do");
@@ -737,6 +745,10 @@ public partial class MainWindowViewModel
                 Required = item.Required,
                 Version = result.Version
             });
+
+            // A renderer from the catalog next to the one "Ускорение" added would crash
+            // the game: the switch's own is switched off and the status line says so.
+            StepBoostRendererAside(instance, directory, item, fileName);
 
             // Only files that actually came down the wire are counted: a verified file
             // reported as "downloaded" is how a no-op sync looked like a full reinstall.

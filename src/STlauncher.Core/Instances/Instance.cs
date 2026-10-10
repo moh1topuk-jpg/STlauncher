@@ -108,6 +108,14 @@ public sealed class Instance
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public STlauncher.Core.Boost.BoostRecord? Boost { get; set; }
 
+    /// <summary>
+    /// What a performance preset changed in this build, so that it can be put back.
+    /// Null when no preset was applied, or its changes were taken back.
+    /// </summary>
+    [JsonPropertyName("preset")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public STlauncher.Core.Boost.PresetRecord? Preset { get; set; }
+
     /// <summary>Last time this build was launched, for sorting and display.</summary>
     [JsonPropertyName("lastPlayedAt")]
     public DateTimeOffset? LastPlayedAt { get; set; }

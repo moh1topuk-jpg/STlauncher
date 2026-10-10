@@ -184,6 +184,27 @@ public partial class BuildsPage : UserControl
     }
 
     /// <summary>
+    /// The menu of a pack row has one entry, "bring back the previous version", and it is
+    /// there only for a pack that was updated. For any other row the request stops here:
+    /// an empty menu is a grey square under the cursor. This handler is attached before
+    /// the menu's own, so it is asked first.
+    /// </summary>
+    private void OnPackMenuRequested(object? sender, ContextRequestedEventArgs e)
+    {
+        var hasPrevious = (sender as Control)?.DataContext switch
+        {
+            ResourcePackItem pack => pack.HasPrevious,
+            ShaderPackItem shader => shader.HasPrevious,
+            _ => false
+        };
+
+        if (!hasPrevious)
+        {
+            e.Handled = true;
+        }
+    }
+
+    /// <summary>
     /// Cards per row from the width there is: one below 450px, two to 740, three above.
     /// The numbers leave a card room for its title beside the logo; with the details panel
     /// open the default window still shows two. XAML has no width queries, so the count is

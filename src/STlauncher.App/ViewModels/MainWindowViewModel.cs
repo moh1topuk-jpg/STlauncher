@@ -1050,7 +1050,7 @@ public partial class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(nameof(CanRepairBuild));
         OnPropertyChanged(nameof(LastPlayedLabel));
         RaisePlaytimeLabels();
-        OnPropertyChanged(nameof(CanInstallOptimizationMods));
+        RaisePresetState(buildChanged: true);
         RaiseBoostState(buildChanged: true);
         RefreshOtherInstances();
         ScreenshotCount = Core.Screenshots.ScreenshotFolder.List(InstanceDirectory).Count;
