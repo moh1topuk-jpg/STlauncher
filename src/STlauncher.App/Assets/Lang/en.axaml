@@ -1069,11 +1069,20 @@
     <x:String x:Key="Perf_BalancedHint">render distance 10, as the game intends</x:String>
     <x:String x:Key="Perf_High">Maximum</x:String>
     <x:String x:Key="Perf_HighHint">render distance 16, everything on</x:String>
-    <x:String x:Key="Perf_ModsHint">In this build, “Weak PC” and “Balanced” also add the optimisation mods: Sodium, Lithium, FerriteCore, Entity Culling, ImmediatelyFast.</x:String>
+    <x:String x:Key="Perf_ModsHint">Presets add no mods. Mods for speed are added by “Speed-up” below: it shows the list first and can be switched back off.</x:String>
     <x:String x:Key="Perf_Applied">Done: graphics settings and {0} MB of memory. The game reads them on the next start.</x:String>
-    <x:String x:Key="Perf_AppliedWithMods">Done: graphics settings, {0} MB of memory, {1} optimisation mods added</x:String>
-    <x:String x:Key="Perf_Installing">Adding {0}…</x:String>
     <x:String x:Key="Perf_Failed">Could not apply: {0}</x:String>
+    <!-- A preset that can be taken back; the renderer the catalog brings; two renderers in the build check -->
+    <x:String x:Key="Perf_Revert">Put the settings back as they were before the preset</x:String>
+    <x:String x:Key="Perf_GameRunning">The game is running: on exit it would write its own settings over these. Close it first.</x:String>
+    <x:String x:Key="Perf_OptionsUnreadable">options.txt cannot be read as text, so the preset changed nothing.</x:String>
+    <x:String x:Key="Perf_RevertedMemory">Memory: {0} MB again.</x:String>
+    <x:String x:Key="Perf_RevertLeftMemory">Memory is left as you set it.</x:String>
+    <x:String x:Key="Boost_Opt_graphicsMode">Graphics quality</x:String>
+    <x:String x:Key="Boost_Opt_screenEffectScale">Distortion effects</x:String>
+    <x:String x:Key="Boost_RendererSteppedAside">The build now has {0} from the catalog, so {1} added by “Speed-up” is switched off: two renderers together crash the game. Its file stays in the mods folder.</x:String>
+    <x:String x:Key="Check_TwoRenderers">Two renderer mods at once: “{0}” and “{1}”. Together they crash the game - keep one.</x:String>
+    <x:String x:Key="Check_FixDisableNamed">Switch off {0}</x:String>
     <!-- "Ускорение": the per-build switch that can be switched back off -->
     <x:String x:Key="Boost_Title">Speed-up</x:String>
     <x:String x:Key="Boost_Hint">Adds the mods that make the game faster without changing how it plays, and lowers the settings that cost frames. It shows the list first. Switch it off and the mods are switched off and the settings go back to what they were.</x:String>

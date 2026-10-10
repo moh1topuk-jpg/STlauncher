@@ -27,7 +27,14 @@ public enum BuildIssueKind
     Incompatible,
 
     /// <summary>The same, said softly (Fabric "conflicts", NeoForge "discouraged"): the loader only warns.</summary>
-    Discouraged
+    Discouraged,
+
+    /// <summary>
+    /// Two mods that both replace the game's renderer (Sodium, Embeddium, Rubidium) are
+    /// switched on. They rarely declare each other, so the loader lets them through and
+    /// the game crashes while it starts.
+    /// </summary>
+    TwoRenderers
 }
 
 /// <summary>What is wrong, which file, and what would fix it.</summary>
@@ -62,7 +69,7 @@ public sealed record BuildIssue(
     public bool FixableBySwitch => Kind switch
     {
         BuildIssueKind.MissingDependency => DisabledFileName is not null,
-        BuildIssueKind.Incompatible or BuildIssueKind.Discouraged => false,
+        BuildIssueKind.Incompatible or BuildIssueKind.Discouraged or BuildIssueKind.TwoRenderers => false,
         _ => true
     };
 }
@@ -248,6 +255,8 @@ public static class BuildChecker
             }
         }
 
+        AddTwoRenderers(issues, jars, loader, gameVersion);
+
         return issues
             .GroupBy(i => (i.Kind, i.FileName, i.Detail))
             .Select(g => g.First())
@@ -255,6 +264,60 @@ public static class BuildChecker
             .ThenBy(i => i.Kind)
             .ThenBy(i => i.Subject, StringComparer.OrdinalIgnoreCase)
             .ToList();
+    }
+
+    /// <summary>
+    /// Two renderers switched on at once, said as that. What a renderer is, is asked of
+    /// the same recogniser the "Ускорение" switch fills its slot by. Two files of one and
+    /// the same mod are left to the duplicate check; a conflict the two mods declare
+    /// against each other is dropped, because this line already says it, and plainer.
+    /// </summary>
+    private static void AddTwoRenderers(List<BuildIssue> issues, IReadOnlyList<BuildJar> jars, LoaderKind loader, string? gameVersion)
+    {
+        var renderers = jars
+            .Where(j => j.Enabled && Boost.BoostRenderer.IsRenderer(j, loader, gameVersion))
+            .OrderBy(j => j.FileName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (renderers.Count < 2)
+        {
+            return;
+        }
+
+        ModMetadata? Section(BuildJar jar) => ModMetadataReader.SectionFor(jar.Sections, loader, gameVersion) ?? jar.Sections.FirstOrDefault();
+
+        var first = renderers[0];
+        var firstSection = Section(first);
+        var found = false;
+
+        foreach (var other in renderers.Skip(1))
+        {
+            var section = Section(other);
+
+            if (section is not null && firstSection is not null &&
+                string.Equals(section.Id, firstSection.Id, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            found = true;
+
+            issues.Add(new BuildIssue(BuildIssueKind.TwoRenderers, section?.Name ?? other.FileName, other.FileName, firstSection?.Name ?? first.FileName)
+            {
+                OtherFileName = first.FileName
+            });
+        }
+
+        if (!found)
+        {
+            return;
+        }
+
+        var files = renderers.Select(r => r.FileName).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        issues.RemoveAll(i => i.Kind is BuildIssueKind.Incompatible or BuildIssueKind.Discouraged &&
+                              files.Contains(i.FileName) &&
+                              i.OtherFileName is not null && files.Contains(i.OtherFileName));
     }
 
     private sealed record Provider(string Name, string? Version, string FileName);

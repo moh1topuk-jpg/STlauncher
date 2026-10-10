@@ -33,6 +33,7 @@ public sealed class BuildIssueItem
                     issue.Subject, issue.Detail, issue.OtherVersion, issue.Range),
             BuildIssueKind.Incompatible => MainWindowViewModel.Localize("Check_Incompatible", "“{0}” does not work together with “{1}”", issue.Subject, issue.Detail),
             BuildIssueKind.Discouraged => MainWindowViewModel.Localize("Check_Discouraged", "“{0}” may misbehave together with “{1}”", issue.Subject, issue.Detail),
+            BuildIssueKind.TwoRenderers => MainWindowViewModel.Localize("Check_TwoRenderers", "Two renderer mods at once: “{0}” and “{1}”. Together they crash the game - keep one.", issue.Detail, issue.Subject),
             _ =>MainWindowViewModel.Localize("Check_WrongVersion", "“{0}” was made for {1}, not this game version", issue.Subject, issue.Detail)
         };
 
@@ -41,6 +42,9 @@ public sealed class BuildIssueItem
             BuildIssueKind.MissingDependency when issue.DisabledFileName is not null => MainWindowViewModel.Localize("Check_FixEnable", "Switch on"),
             BuildIssueKind.MissingDependency => MainWindowViewModel.Localize("Check_FixFind", "Find in the catalog"),
             BuildIssueKind.DuplicateMod => MainWindowViewModel.Localize("Check_FixDisableOld", "Switch off the older one"),
+
+            // Either of the two would do, so the button says which one it takes.
+            BuildIssueKind.TwoRenderers => MainWindowViewModel.Localize("Check_FixDisableNamed", "Switch off {0}", issue.Subject),
             _ => MainWindowViewModel.Localize("Check_FixDisable", "Switch off")
         };
     }
@@ -201,6 +205,7 @@ public partial class MainWindowViewModel
                 case BuildIssueKind.WrongGameVersion:
                 case BuildIssueKind.Incompatible:
                 case BuildIssueKind.Discouraged:
+                case BuildIssueKind.TwoRenderers:
                     // For a conflict this is the mod that declared it, and only on the
                     // row's own button: "fix everything" leaves that choice to the player.
                     ToggleModByFileName(issue.FileName);

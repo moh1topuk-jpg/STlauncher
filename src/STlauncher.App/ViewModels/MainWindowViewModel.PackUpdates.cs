@@ -192,6 +192,9 @@ public partial class MainWindowViewModel
                 shader.ProjectId = known.ProjectId;
             }
         }
+
+        // The same refresh says whether there is a version to go back to.
+        RestoreKnownPackPrevious();
     }
 
     [RelayCommand]

@@ -61,8 +61,9 @@
                             <TextBlock Grid.Column="1" Text="{Binding GameSettingsScopeLabel}" Classes="faint" VerticalAlignment="Center"/>
                         </Grid>
 
-                        <!-- One button instead of twelve settings. Writes options.txt and the memory;
-                             for an own Fabric build also adds the optimisation mods. -->
+                        <!-- One button instead of twelve settings. Writes options.txt and the memory,
+                             remembers what they were, and offers the way back. Adds no mods:
+                             that is the switch below. -->
                         <StackPanel Spacing="8" controls:SettingsSearch.Keywords="производительность графика фпс fps лаги тормозит оптимизация качество performance graphics preset lag">
                             <TextBlock Text="{DynamicResource Perf_Title}" FontWeight="SemiBold"/>
                             <WrapPanel ItemSpacing="8" LineSpacing="8">
@@ -89,8 +90,11 @@
                                 </Button>
                             </WrapPanel>
                             <TextBlock Text="{DynamicResource Perf_Hint}" Classes="faint" TextWrapping="Wrap"/>
-                            <TextBlock Text="{DynamicResource Perf_ModsHint}" Classes="faint" TextWrapping="Wrap"
-                                       IsVisible="{Binding CanInstallOptimizationMods}"/>
+                            <TextBlock Text="{DynamicResource Perf_ModsHint}" Classes="faint" TextWrapping="Wrap"/>
+                            <Button Classes="ghost small" HorizontalAlignment="Left"
+                                    Content="{DynamicResource Perf_Revert}"
+                                    IsVisible="{Binding HasPresetRecord}" IsEnabled="{Binding CanRevertPreset}"
+                                    Command="{Binding RevertPerformancePresetCommand}"/>
                             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8"
                                   IsVisible="{Binding PresetStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                                 <ProgressBar IsIndeterminate="True" Width="60" Height="3" VerticalAlignment="Center" IsVisible="{Binding IsApplyingPreset}"/>

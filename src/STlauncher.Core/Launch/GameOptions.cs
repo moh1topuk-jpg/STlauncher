@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using STlauncher.Core.Boost;
 
 namespace STlauncher.Core.Launch;
 
@@ -22,7 +23,8 @@ public enum PerformancePreset
 /// Prepares options.txt before the first launch so a player skips the language picker
 /// and the accessibility onboarding, and starts with the server resource pack accepted.
 /// Existing values are never overwritten - only missing keys are added. The presets and
-/// the copy between builds are the exception: they write on purpose.
+/// the copy between builds are the exception: they write on purpose, and a preset says
+/// what it overwrote so that it can be taken back.
 /// </summary>
 public static class GameOptions
 {
@@ -68,19 +70,91 @@ public static class GameOptions
     /// touched: view distance, clouds, particles, shadows, smooth lighting, mipmaps.
     /// Controls, sound and everything else stay as the player left them.
     /// </summary>
-    public static void ApplyPerformancePreset(string gameDirectory, PerformancePreset preset)
+    /// <remarks>
+    /// The file is edited as bytes (<see cref="OptionsFile"/>): an old game's options.txt
+    /// in the system code page keeps every byte the preset does not set. What each key
+    /// said before is returned, so the caller can keep it and offer the way back.
+    /// </remarks>
+    /// <param name="earlier">
+    /// The record of the preset applied before this one, if it was not taken back. A key
+    /// that still holds what that preset wrote keeps its older "previous": the way back
+    /// leads to before the first preset, not to the one in between.
+    /// </param>
+    /// <returns>
+    /// One record per key that now differs from what it was before the presets. Null when
+    /// options.txt cannot be read as text; such a file is left untouched.
+    /// </returns>
+    public static List<BoostOptionRecord>? ApplyPerformancePreset(
+        string gameDirectory,
+        PerformancePreset preset,
+        IReadOnlyList<BoostOptionRecord>? earlier = null)
     {
         Directory.CreateDirectory(gameDirectory);
 
         var path = Path.Combine(gameDirectory, FileName);
-        var lines = File.Exists(path) ? File.ReadAllLines(path).ToList() : new List<string>();
+
+        if (OptionsFile.TryLoad(path) is not { } file)
+        {
+            return null;
+        }
+
+        var records = new List<BoostOptionRecord>();
 
         foreach (var (key, value) in PresetValues(preset))
         {
-            Set(lines, key, value);
+            var current = file.Get(key);
+            var before = current;
+
+            if (current is not null &&
+                earlier?.FirstOrDefault(r => r.Key == key) is { } known &&
+                string.Equals(current.Trim(), known.Written.Trim(), StringComparison.Ordinal))
+            {
+                before = known.Previous;
+            }
+
+            if (current is null || !string.Equals(current.Trim(), value, StringComparison.Ordinal))
+            {
+                file.Set(key, value);
+            }
+
+            // A key that ends up where it started has nothing to be taken back.
+            if (before is null || !string.Equals(before.Trim(), value, StringComparison.Ordinal))
+            {
+                records.Add(new BoostOptionRecord { Key = key, Previous = before, Written = value });
+            }
         }
 
-        AtomicFile.WriteAllLines(path, lines);
+        if (file.Changed)
+        {
+            file.Save(path);
+        }
+
+        return records;
+    }
+
+    /// <summary>
+    /// Takes a preset back, key by key: the value from before it, or no line where there
+    /// had been none. A key that no longer says what the preset wrote was changed since,
+    /// in the game's menu or by hand, and stays as it is. Null when options.txt cannot be
+    /// read as text; nothing is written then.
+    /// </summary>
+    public static BoostOptionsRevert? RevertPerformancePreset(string gameDirectory, IEnumerable<BoostOptionRecord> records)
+    {
+        var path = Path.Combine(gameDirectory, FileName);
+
+        if (OptionsFile.TryLoad(path) is not { } file)
+        {
+            return null;
+        }
+
+        var result = BoostOptions.Revert(file, records);
+
+        if (file.Changed)
+        {
+            file.Save(path);
+        }
+
+        return result;
     }
 
     public static IReadOnlyList<(string Key, string Value)> PresetValues(PerformancePreset preset) => preset switch

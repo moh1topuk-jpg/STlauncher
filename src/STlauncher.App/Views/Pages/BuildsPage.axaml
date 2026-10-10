@@ -85,7 +85,17 @@
              a pack that is off is not dimmed, its list's heading already says so. -->
         <DataTemplate x:Key="ResourcePackCard" x:DataType="vm:ResourcePackItem">
             <Border Classes="mod-line" Classes.selected="{Binding IsSelected}"
-                    Cursor="Hand" PointerPressed="OnPackRowPressed">
+                    Cursor="Hand" PointerPressed="OnPackRowPressed" ContextRequested="OnPackMenuRequested">
+                <!-- The same entry the mod list has. A pack that was never updated has
+                     nothing to go back to, and then no menu opens at all. -->
+                <Border.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="{Binding PreviousLabel}"
+                                  IsVisible="{Binding HasPrevious}"
+                                  Command="{Binding RestorePreviousCommand}"
+                                  CommandParameter="{Binding}"/>
+                    </ContextMenu>
+                </Border.ContextMenu>
                 <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
                     <Border Width="44" Height="44" CornerRadius="11" ClipToBounds="True"
                             Background="{DynamicResource ElevatedBrush}" VerticalAlignment="Center">
@@ -856,7 +866,16 @@
                                     </ItemsControl.ItemsPanel>
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="vm:ShaderPackItem">
-                                            <Border Classes="mod-line" Classes.selected="{Binding IsActive}">
+                                            <Border Classes="mod-line" Classes.selected="{Binding IsActive}"
+                                                    ContextRequested="OnPackMenuRequested">
+                                                <Border.ContextMenu>
+                                                    <ContextMenu>
+                                                        <MenuItem Header="{Binding PreviousLabel}"
+                                                                  IsVisible="{Binding HasPrevious}"
+                                                                  Command="{Binding RestorePreviousCommand}"
+                                                                  CommandParameter="{Binding}"/>
+                                                    </ContextMenu>
+                                                </Border.ContextMenu>
                                                 <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto" ColumnSpacing="10">
                                                     <Border Width="44" Height="44" CornerRadius="11" Background="{DynamicResource ElevatedBrush}">
                                                         <PathIcon Data="{StaticResource IconStar}" Classes="muted"/>
