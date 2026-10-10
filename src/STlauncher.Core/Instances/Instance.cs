@@ -84,6 +84,14 @@ public sealed class Instance
     [JsonPropertyName("installedMods")]
     public List<InstalledModRecord> InstalledMods { get; set; } = new();
 
+    /// <summary>
+    /// "Show my skin in the game" for this build: off (null) until the player asks. See
+    /// <see cref="STlauncher.Core.Skins.InGameSkin"/>.
+    /// </summary>
+    [JsonPropertyName("skinInGame")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public STlauncher.Core.Skins.InGameSkinSettings? SkinInGame { get; set; }
+
     /// <summary>Last time this build was launched, for sorting and display.</summary>
     [JsonPropertyName("lastPlayedAt")]
     public DateTimeOffset? LastPlayedAt { get; set; }

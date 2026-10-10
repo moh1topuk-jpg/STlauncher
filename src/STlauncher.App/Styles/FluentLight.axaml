@@ -100,4 +100,10 @@
     <SolidColorBrush x:Key="ToggleSwitchFillOffPointerOver" Color="#DECFD7"/>
     <SolidColorBrush x:Key="ToggleSwitchStrokeOffPointerOver" Color="#6B5C65"/>
 
+    <!-- A switch that cannot be flipped is still there to be seen: the stock disabled
+         colours are white on white on this theme. -->
+    <SolidColorBrush x:Key="ToggleSwitchFillOffDisabled" Color="#F1E9ED"/>
+    <SolidColorBrush x:Key="ToggleSwitchStrokeOffDisabled" Color="#CFC1C9"/>
+    <SolidColorBrush x:Key="ToggleSwitchKnobFillOffDisabled" Color="#B7A4AE"/>
+
 </ResourceDictionary>

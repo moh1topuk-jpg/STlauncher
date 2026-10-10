@@ -309,7 +309,9 @@ public partial class MainWindowViewModel
 
             RefreshWornSkinFlags();
             OnPropertyChanged(nameof(SkinSourceLabel));
-            SaySkins(Localize("Skins_WornNotice", "«{0}» is now on your figure in the launcher. Other players will see it only after you publish it to the skin system your server uses.", item.Name));
+            SaySkins(IsSkinInGameOn
+                ? Localize("SkinInGame_WornNotice", "«{0}» is now on your figure in the launcher, and in the game in the build «{1}» from its next launch. Other players will see it only after you publish it to the skin system your server uses.", item.Name, SelectedInstance?.Name)
+                : Localize("Skins_WornNotice", "«{0}» is now on your figure in the launcher. Other players will see it only after you publish it to the skin system your server uses.", item.Name));
         }
         catch (Exception ex)
         {

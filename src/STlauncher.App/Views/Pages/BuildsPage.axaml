@@ -1605,6 +1605,26 @@
                                 </StackPanel>
                             </StackPanel>
 
+                            <Border Classes="hairline"/>
+
+                            <!-- The skin in the game: off until asked for, and the click is the consent
+                                 to a download - so what it downloads and who sees the skin is said here. -->
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="{DynamicResource SkinInGame_Title}" Classes="label"/>
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                    <TextBlock Text="{DynamicResource SkinInGame_Switch}" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding SkinInGameSwitch}"
+                                                  OnContent="" OffContent="" MinWidth="0" VerticalAlignment="Center"
+                                                  IsEnabled="{Binding CanToggleSkinInGame}"/>
+                                </Grid>
+                                <TextBlock Text="{DynamicResource SkinInGame_About}" Classes="faint" TextWrapping="Wrap"/>
+                                <TextBlock Text="{Binding SkinInGameNote}" TextWrapping="Wrap" FontSize="12.5"
+                                           IsVisible="{Binding HasSkinInGameNote}"/>
+                                <TextBlock Text="{Binding SkinInGameProblem}" TextWrapping="Wrap" FontSize="12.5"
+                                           Foreground="{DynamicResource DangerBrush}"
+                                           IsVisible="{Binding HasSkinInGameProblem}"/>
+                            </StackPanel>
+
                             <Border Classes="hairline" IsVisible="{Binding HasOtherInstances}"/>
 
                             <StackPanel Spacing="10" IsVisible="{Binding HasOtherInstances}">

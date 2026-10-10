@@ -80,6 +80,7 @@ public static class LauncherHost
         services.AddSingleton<STlauncher.Core.Server.ServerStatsClient>();
         services.AddSingleton<CatalogInstaller>();
         services.AddSingleton<LaunchService>();
+        services.AddSingleton<STlauncher.Core.Skins.InGameSkin>();
         services.AddSingleton<SkinService>();
         services.AddSingleton<RemoteImageService>();
         services.AddSingleton<TranslationService>();

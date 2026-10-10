@@ -58,12 +58,16 @@ public sealed class SkinService
     private PlayerSkin? _worn;
     private string? _wornId;
 
-    public SkinService(HttpClient http, LauncherPaths paths)
+    public SkinService(HttpClient http, LauncherPaths paths, InGameSkin inGame)
     {
         _http = http ?? throw new ArgumentNullException(nameof(http));
         _cacheDirectory = Path.Combine((paths ?? throw new ArgumentNullException(nameof(paths))).Meta, "skins");
         Library = new SkinLibrary(Path.Combine(paths.Root, "skins"));
+        InGame = inGame ?? throw new ArgumentNullException(nameof(inGame));
     }
+
+    /// <summary>"Show my skin in the game" for a build: the worn skin handed to the CustomSkinLoader mod.</summary>
+    public InGameSkin InGame { get; }
 
     /// <summary>What <see cref="PlayerSkin.Source"/> says for a skin taken from the library.</summary>
     public const string LibrarySource = "library";

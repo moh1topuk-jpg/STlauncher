@@ -130,6 +130,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
         // My server: see MainWindowViewModel.Host.cs.
         AttachHosting(hosting);
+
+        // The skin in the game: see MainWindowViewModel.SkinInGame.cs.
+        AttachSkinInGame();
     }
 
     public ObservableCollection<Instance> Instances { get; } = new();
@@ -817,6 +820,9 @@ public partial class MainWindowViewModel : ViewModelBase
                 await EnsureBuildItemsInstalledAsync(SelectedInstance);
                 RefreshMods();
             }
+
+            // A build with "show my skin in the game" on gets the worn skin now.
+            PrepareSkinInGame(SelectedInstance);
 
             var settings = new LaunchSettings
             {
