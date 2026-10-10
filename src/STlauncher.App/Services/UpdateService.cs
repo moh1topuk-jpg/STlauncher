@@ -33,7 +33,7 @@ public sealed record UpdateStatus(
 /// check asks the mirrors first and GitHub last, each with a short deadline, and keeps
 /// whichever answered for the download. One blocked host used to be the end of it.
 /// </summary>
-public sealed class UpdateService
+public sealed partial class UpdateService
 {
     public const string RepositoryUrl = "https://github.com/moh1topuk-jpg/STlauncher";
 

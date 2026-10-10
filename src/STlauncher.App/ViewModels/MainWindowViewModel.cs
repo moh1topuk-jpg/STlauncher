@@ -1152,12 +1152,16 @@ public partial class MainWindowViewModel : ViewModelBase
         previous?.Cancel();
         previous?.Dispose();
 
+        // Taken now: the next keystroke disposes this source, and asking a disposed
+        // source for its token throws.
+        var token = cts.Token;
+
         // Something is on screen at once; the real skin replaces it when it arrives.
         PlayerSkin ??= _skins.Default;
 
         try
         {
-            await Task.Delay(400, cts.Token);
+            await Task.Delay(400, token);
 
             // The face changes with the name at once: what the launcher already knows
             // about the new name, or Steve. A player who switched nicknames used to look
@@ -1169,7 +1173,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 await Dispatcher.UIThread.InvokeAsync(() => PlayerSkin = known);
             }
 
-            var skin = await _skins.GetSkinAsync(Username, SelectedSkinSource, cts.Token);
+            var skin = await _skins.GetSkinAsync(Username, SelectedSkinSource, token);
 
             if (!cts.IsCancellationRequested)
             {

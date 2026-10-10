@@ -29,6 +29,28 @@ public partial class App : Application
         {
             DisableAvaloniaDataAnnotationValidation();
 
+            // A previous start that never reached a usable window is asked about first;
+            // the usual start then follows from the answer. See App.Health.cs.
+            if (!AskAboutFailedStart(desktop))
+            {
+                StartLauncher(desktop, showNow: false);
+            }
+        }
+
+        base.OnFrameworkInitializationCompleted();
+    }
+
+    /// <summary>
+    /// The usual start: services, the view model, the main window.
+    /// <paramref name="showNow"/> is for a start that follows the repair question: by then
+    /// the lifetime has already shown its first window and will not show this one itself.
+    /// </summary>
+    private void StartLauncher(IClassicDesktopStyleApplicationLifetime desktop, bool showNow)
+    {
+        {
+            // Written before anything that can fail, so a start that dies here is on record.
+            _startupGuard?.MarkStarting();
+
             _services = LauncherHost.Build();
 
             // The language must be applied before the window is created so that the
@@ -40,6 +62,11 @@ public partial class App : Application
             var viewModel = _services.GetRequiredService<MainWindowViewModel>();
 
             var window = new MainWindow { DataContext = viewModel };
+
+            // The launcher watching itself: freezes of this window and whether this start
+            // gets ready. Subscribed before the other exit handlers on purpose: the
+            // watchdog must be off before the exit starts taking its time.
+            WatchHealth(desktop, window, viewModel, _services.GetRequiredService<STlauncher.Core.LauncherPaths>().Root);
 
             // The window icon follows the server artwork: the launcher PNG when present,
             // otherwise the icon the server reports.
@@ -159,9 +186,12 @@ public partial class App : Application
             desktop.Exit += (_, _) => viewModel.StopHostingForExit(TimeSpan.FromSeconds(40));
 
             desktop.MainWindow = window;
-        }
 
-        base.OnFrameworkInitializationCompleted();
+            if (showNow)
+            {
+                window.Show();
+            }
+        }
     }
 
     /// <summary>

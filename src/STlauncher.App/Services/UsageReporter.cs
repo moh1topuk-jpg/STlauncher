@@ -27,8 +27,10 @@ public sealed class UsageReporter
     /// feature. <paramref name="updateOutcome"/> is what the update check found -
     /// "ok:mirror" or "fail:GitHub=Blocked;mirror=Timeout" - which is how the owner learns
     /// what players behind a block actually hit, without asking anyone for a log.
+    /// <paramref name="freezes"/> is how many times the interface froze over the last
+    /// week: the number only, never what a freeze report says.
     /// </summary>
-    public async Task ReportAsync(string? statsUrl, string installId, string version, string language, string updateOutcome, CancellationToken cancellationToken = default)
+    public async Task ReportAsync(string? statsUrl, string installId, string version, string language, string updateOutcome, int freezes = 0, CancellationToken cancellationToken = default)
     {
         if (_sent || string.IsNullOrWhiteSpace(statsUrl) || string.IsNullOrWhiteSpace(installId))
         {
@@ -50,7 +52,8 @@ public sealed class UsageReporter
                 v = version,
                 os = OperatingSystem.IsWindows() ? "windows" : OperatingSystem.IsLinux() ? "linux" : OperatingSystem.IsMacOS() ? "macos" : "other",
                 lang = language,
-                update = updateOutcome
+                update = updateOutcome,
+                freezes
             }, timeout.Token).ConfigureAwait(false);
         }
         catch (Exception)
