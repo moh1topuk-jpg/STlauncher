@@ -874,6 +874,7 @@ public partial class MainWindowViewModel : ViewModelBase
             ApplyDiscordPresence(playing: true, joinServer);
             var playedInstance = SelectedInstance;
             var playedFrom = DateTimeOffset.Now;
+            BeginLocationTracking(playedFrom);
             var exitCode = await LaunchAndReactAsync(command, settings);
             ApplyDiscordPresence(playing: false, joinServer: false);
             RecordPlaytime(playedInstance, playedFrom);

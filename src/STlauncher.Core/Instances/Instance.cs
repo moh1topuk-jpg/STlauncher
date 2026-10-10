@@ -112,6 +112,10 @@ public sealed class Instance
     [JsonPropertyName("playSessions")]
     public List<PlaySession> PlaySessions { get; set; } = new();
 
+    /// <summary>Where that time went: per server and in single-player, read from the game's output.</summary>
+    [JsonPropertyName("playPlaces")]
+    public List<PlayPlace> PlayPlaces { get; set; } = new();
+
     /// <summary>
     /// Mods in the build, switched off ones included: the files in its folder. The catalog
     /// list stands in only until the first install, when the folder is still empty. It used

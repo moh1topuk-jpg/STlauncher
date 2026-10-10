@@ -12,7 +12,20 @@
         <!-- ======== Index ======== -->
         <Border Grid.Column="0" Padding="16,28" BorderBrush="{DynamicResource IndexBorderBrush}" BorderThickness="0,0,1,0">
             <Grid RowDefinitions="Auto,Auto,*,Auto">
-                <TextBlock Text="{DynamicResource Nav_Settings}" Classes="h2" FontSize="22" Margin="10,0,0,14"/>
+                <StackPanel>
+                    <TextBlock Text="{DynamicResource Nav_Settings}" Classes="h2" FontSize="22" Margin="10,0,0,14"/>
+
+                    <!-- Search over the rows on the right: by what a row says and by its
+                         SettingsSearch.Keywords. A new row needs that one attribute, or nothing. -->
+                    <Border Classes="field" Margin="0,0,0,12">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                            <PathIcon Data="{StaticResource IconSearch}" Classes="small muted" VerticalAlignment="Center"/>
+                            <TextBox Grid.Column="1" Name="SearchBox" Classes="bare"
+                                     Watermark="{DynamicResource Settings_Search}"
+                                     TextChanged="OnSearchChanged" KeyDown="OnSearchKeyDown"/>
+                        </Grid>
+                    </Border>
+                </StackPanel>
 
                 <StackPanel Grid.Row="1" Spacing="2">
                     <Button Classes="index" Content="{DynamicResource Settings_TabGame}" Click="OnIndexClick" Tag="GameSection"/>
@@ -33,17 +46,24 @@
         <ScrollViewer Grid.Column="1" Name="SettingsScroll">
             <StackPanel Margin="40,28" Spacing="16" MaxWidth="820" HorizontalAlignment="Left">
 
+                <TextBlock Name="SearchEmpty" Text="{DynamicResource Settings_SearchEmpty}" Classes="muted"
+                           IsVisible="False" Margin="4,0"/>
+
+                <!-- The searched part. Rows carry SettingsSearch.Keywords: words a player might
+                     type that the row itself does not show, in both languages. -->
+                <StackPanel Name="SearchRoot" Spacing="16">
+
                 <!-- ======== Game: the one button, then memory and the window ======== -->
                 <Border Name="GameSection" Classes="card" Padding="24,22">
                     <StackPanel Spacing="18">
-                        <Grid ColumnDefinitions="*,Auto">
+                        <Grid ColumnDefinitions="*,Auto" controls:SettingsSearch.Heading="True">
                             <TextBlock Text="{DynamicResource Settings_TabGame}" Classes="h3" FontSize="17"/>
                             <TextBlock Grid.Column="1" Text="{Binding GameSettingsScopeLabel}" Classes="faint" VerticalAlignment="Center"/>
                         </Grid>
 
                         <!-- One button instead of twelve settings. Writes options.txt and the memory;
                              for an own Fabric build also adds the optimisation mods. -->
-                        <StackPanel Spacing="8">
+                        <StackPanel Spacing="8" controls:SettingsSearch.Keywords="производительность графика фпс fps лаги тормозит оптимизация качество performance graphics preset lag">
                             <TextBlock Text="{DynamicResource Perf_Title}" FontWeight="SemiBold"/>
                             <WrapPanel ItemSpacing="8" LineSpacing="8">
                                 <Button Classes="ghost" Command="{Binding ApplyPerformancePresetCommand}" CommandParameter="Low"
@@ -81,7 +101,7 @@
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="28">
                             <!-- Memory: a slider with the recommendation marked, instead of two
                                  number boxes with no hint of what is sensible. -->
-                            <StackPanel Spacing="10">
+                            <StackPanel Spacing="10" controls:SettingsSearch.Keywords="память ram озу оперативка оперативная гб мб memory gb mb xmx heap">
                                 <Grid ColumnDefinitions="*,Auto">
                                     <TextBlock Text="{DynamicResource Settings_MemoryTitle}" FontWeight="SemiBold"/>
                                     <Button Grid.Column="1" Classes="plain small" Foreground="{DynamicResource GoldBrush}"
@@ -96,7 +116,7 @@
                                 </StackPanel>
                             </StackPanel>
 
-                            <StackPanel Grid.Column="1" Spacing="10">
+                            <StackPanel Grid.Column="1" Spacing="10" controls:SettingsSearch.Keywords="разрешение окно размер экран ширина высота полный resolution window size width height fullscreen">
                                 <TextBlock Text="{DynamicResource Settings_ResolutionTitle}" FontWeight="SemiBold"/>
                                 <CheckBox Content="{DynamicResource Settings_ResolutionDefault}"
                                           IsChecked="{Binding UseDefaultResolution}"/>
@@ -117,10 +137,11 @@
                 <!-- ======== Look: theme, accent, language, the live background ======== -->
                 <Border Name="LookSection" Classes="card" Padding="24,22">
                     <StackPanel Spacing="16">
-                        <TextBlock Text="{DynamicResource Settings_SectionLook}" Classes="h3" FontSize="17"/>
+                        <TextBlock Text="{DynamicResource Settings_SectionLook}" Classes="h3" FontSize="17"
+                                   controls:SettingsSearch.Heading="True"/>
 
                         <Grid ColumnDefinitions="*,*,*" ColumnSpacing="24">
-                            <StackPanel Spacing="8">
+                            <StackPanel Spacing="8" controls:SettingsSearch.Keywords="тема темная светлая ночная дневная theme dark light night">
                                 <TextBlock Text="{DynamicResource Settings_Theme}" FontWeight="SemiBold"/>
                                 <Border Classes="panel" Padding="4" HorizontalAlignment="Left">
                                     <StackPanel Orientation="Horizontal" Spacing="2">
@@ -133,7 +154,7 @@
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
-                            <StackPanel Grid.Column="1" Spacing="10">
+                            <StackPanel Grid.Column="1" Spacing="10" controls:SettingsSearch.Keywords="цвет акцент оформление красный синий color colour accent">
                                 <TextBlock Text="{DynamicResource Settings_Accent}" FontWeight="SemiBold"/>
                                 <ItemsControl ItemsSource="{Binding AccentOptions}">
                                     <ItemsControl.ItemsPanel>
@@ -155,7 +176,7 @@
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
                             </StackPanel>
-                            <StackPanel Grid.Column="2" Spacing="8">
+                            <StackPanel Grid.Column="2" Spacing="8" controls:SettingsSearch.Keywords="язык русский английский перевод language russian english locale">
                                 <TextBlock Text="{DynamicResource Settings_Language}" FontWeight="SemiBold"/>
                                 <ComboBox ItemsSource="{Binding LanguageOptions}"
                                           SelectedItem="{Binding SelectedLanguageOption}"
@@ -170,7 +191,7 @@
                         </Grid>
 
                         <!-- 100 % is the designed size; the others are for a 4K desk or a small laptop. -->
-                        <StackPanel Spacing="8">
+                        <StackPanel Spacing="8" controls:SettingsSearch.Keywords="масштаб размер интерфейса шрифт мелко крупно 4k scale zoom font size dpi">
                             <TextBlock Text="{DynamicResource Settings_UiScale}" FontWeight="SemiBold"/>
                             <Border Classes="panel" Padding="4" HorizontalAlignment="Left">
                                 <StackPanel Orientation="Horizontal" Spacing="2">
@@ -187,17 +208,19 @@
                             <TextBlock Text="{DynamicResource Settings_UiScaleHint}" Classes="faint" TextWrapping="Wrap"/>
                         </StackPanel>
 
-                        <CheckBox Content="{DynamicResource Settings_AnimatedBackground}" IsChecked="{Binding AnimatedBackground}"/>
+                        <CheckBox Content="{DynamicResource Settings_AnimatedBackground}" IsChecked="{Binding AnimatedBackground}"
+                                  controls:SettingsSearch.Keywords="фон анимация искры живой background animation embers"/>
                     </StackPanel>
                 </Border>
 
                 <!-- ======== Launcher: three things, not twelve ======== -->
                 <Border Name="LauncherSection" Classes="card" Padding="24,22">
                     <StackPanel Spacing="16">
-                        <TextBlock Text="{DynamicResource Settings_SectionLauncher}" Classes="h3" FontSize="17"/>
+                        <TextBlock Text="{DynamicResource Settings_SectionLauncher}" Classes="h3" FontSize="17"
+                                   controls:SettingsSearch.Heading="True"/>
 
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="28">
-                            <StackPanel Spacing="8">
+                            <StackPanel Spacing="8" controls:SettingsSearch.Keywords="после запуска закрывать сворачивать скрывать трей after launch close hide minimize tray">
                                 <TextBlock Text="{DynamicResource Settings_AfterLaunch}" FontWeight="SemiBold"/>
                                 <ComboBox ItemsSource="{Binding AfterLaunchOptions}"
                                           SelectedItem="{Binding SelectedAfterLaunchOption}"
@@ -210,12 +233,12 @@
                                 </ComboBox>
                             </StackPanel>
                             <StackPanel Grid.Column="1" Spacing="10">
-                                <StackPanel Spacing="4">
+                                <StackPanel Spacing="4" controls:SettingsSearch.Keywords="дискорд статус активность discord presence status rpc">
                                     <CheckBox Content="{DynamicResource Settings_DiscordPresence}" IsChecked="{Binding DiscordPresence}"/>
                                     <TextBlock Text="{DynamicResource Settings_DiscordPresenceHint}" Classes="faint"
                                                TextWrapping="Wrap" Margin="28,0,0,0"/>
                                 </StackPanel>
-                                <StackPanel Spacing="4">
+                                <StackPanel Spacing="4" controls:SettingsSearch.Keywords="статистика телеметрия анонимно приватность данные statistics telemetry privacy analytics">
                                     <CheckBox Content="{DynamicResource Settings_UsageStats}" IsChecked="{Binding UsageStats}"/>
                                     <TextBlock Text="{DynamicResource Settings_UsageStatsHint}" Classes="faint"
                                                TextWrapping="Wrap" Margin="28,0,0,0"/>
@@ -226,7 +249,8 @@
                 </Border>
 
                 <!-- ======== Backups: one line, the rest folded ======== -->
-                <Border Name="BackupsSection" Classes="card" Padding="24,22">
+                <Border Name="BackupsSection" Classes="card" Padding="24,22"
+                        controls:SettingsSearch.Keywords="бэкап бекап резервная копия копии сохранения миры восстановить откат backup restore saves worlds">
                     <StackPanel Spacing="14">
                         <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
                             <ToggleSwitch IsChecked="{Binding BackupsEnabled}"
@@ -358,7 +382,7 @@
                 <Border Name="MoreSection" Classes="card" Padding="24,18">
                     <StackPanel Spacing="16">
                         <Button Classes="plain" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="0"
-                                Command="{Binding ToggleMoreSettingsCommand}">
+                                Command="{Binding ToggleMoreSettingsCommand}" controls:SettingsSearch.Heading="True">
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                 <StackPanel Spacing="3">
                                     <TextBlock Text="{DynamicResource Settings_SectionMore}" Classes="h3" FontSize="17"/>
@@ -374,9 +398,9 @@
                             </Grid>
                         </Button>
 
-                        <StackPanel Spacing="18" IsVisible="{Binding IsMoreSettingsOpen}">
+                        <StackPanel Spacing="18" IsVisible="{Binding IsMoreSettingsOpen}" controls:SettingsSearch.Expand="True">
                             <!-- Where the gigabytes live. Moving copies everything, then restarts. -->
-                            <StackPanel Spacing="8">
+                            <StackPanel Spacing="8" controls:SettingsSearch.Keywords="папка данных диск место перенести переместить путь хранение data folder directory disk drive move location storage">
                                 <TextBlock Text="{DynamicResource Settings_DataFolder}" FontWeight="SemiBold"/>
                                 <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
                                     <TextBox Text="{Binding DataDirectory, Mode=OneWay}" IsReadOnly="True"/>
@@ -400,7 +424,7 @@
                             </StackPanel>
 
                             <!-- One copy on disk for the mods and packs several builds share. -->
-                            <StackPanel Spacing="8">
+                            <StackPanel Spacing="8" controls:SettingsSearch.Keywords="общие файлы место диск дубликаты очистка освободить shared files disk space duplicates cleanup dedupe">
                                 <CheckBox Content="{DynamicResource Settings_SharedFiles}" IsChecked="{Binding ShareFiles}"/>
                                 <TextBlock Text="{DynamicResource Settings_SharedFilesHint}" Classes="faint" TextWrapping="Wrap"/>
                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
@@ -424,7 +448,8 @@
                                 </Grid>
                             </StackPanel>
 
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8"
+                                  controls:SettingsSearch.Keywords="папка игры сборки minecraft каталог открыть game folder directory instance open">
                                 <StackPanel Spacing="8">
                                     <TextBlock Text="{DynamicResource Settings_GameDirectory}" FontWeight="SemiBold"/>
                                     <TextBox Text="{Binding InstanceDirectory, Mode=OneWay}" IsReadOnly="True"/>
@@ -437,7 +462,7 @@
                             </Grid>
 
                             <Grid ColumnDefinitions="*,*" ColumnSpacing="28">
-                                <StackPanel Spacing="8">
+                                <StackPanel Spacing="8" controls:SettingsSearch.Keywords="версии снапшоты снапшот старые альфа бета versions snapshots old alpha beta">
                                     <TextBlock Text="{DynamicResource Settings_Versions}" FontWeight="SemiBold"/>
                                     <WrapPanel>
                                         <CheckBox Content="{DynamicResource Settings_VersionsSnapshot}"
@@ -450,7 +475,7 @@
                                                   IsChecked="{Binding ShowAlpha}"/>
                                     </WrapPanel>
                                 </StackPanel>
-                                <StackPanel Grid.Column="1" Spacing="8">
+                                <StackPanel Grid.Column="1" Spacing="8" controls:SettingsSearch.Keywords="аргументы параметры запуска ключи arguments args launch options flags">
                                     <TextBlock Text="{DynamicResource Settings_ExtraArgs}" FontWeight="SemiBold"/>
                                     <TextBox Text="{Binding ExtraGameArgs}" Watermark="--fullscreen --width 1920"/>
                                     <TextBlock Text="{DynamicResource Settings_ExtraArgsHint}" Classes="faint" TextWrapping="Wrap"/>
@@ -459,7 +484,7 @@
 
                             <!-- "Nothing downloads": probe every host the launcher uses and say which answer.
                                  It also runs by itself when a download fails. -->
-                            <StackPanel Spacing="8">
+                            <StackPanel Spacing="8" controls:SettingsSearch.Keywords="сеть интернет соединение прокси впн не скачивается загрузка network internet connection proxy vpn download">
                                 <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
                                     <StackPanel Spacing="2" VerticalAlignment="Center">
                                         <TextBlock Text="{DynamicResource Settings_NetworkCheck}" FontWeight="SemiBold"/>
@@ -497,7 +522,9 @@
                             </StackPanel>
 
                             <!-- Everything the admin asks for, in one file. -->
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8"
+                                  controls:SettingsSearch.Keywords="отчет поддержка помощь логи журнал админ ошибка report support help logs admin bug">
+
                                 <StackPanel Spacing="2" VerticalAlignment="Center">
                                     <TextBlock Text="{DynamicResource Report_Title}" FontWeight="SemiBold"/>
                                     <TextBlock Text="{DynamicResource Report_Hint}" Classes="faint" TextWrapping="Wrap"/>
@@ -528,13 +555,15 @@
                                 </Border>
 
                             <StackPanel Spacing="10">
-                                <StackPanel Spacing="4">
+                                <StackPanel Spacing="4" controls:SettingsSearch.Keywords="видеокарта дискретная графика ноутбук gpu nvidia amd radeon geforce graphics card laptop">
                                     <CheckBox Content="{DynamicResource Settings_DiscreteGpu}" IsChecked="{Binding PreferDiscreteGpu}"/>
                                     <TextBlock Text="{DynamicResource Settings_DiscreteGpuHint}" Classes="faint"
                                                TextWrapping="Wrap" Margin="28,0,0,0"/>
                                 </StackPanel>
-                                <CheckBox Content="{DynamicResource Settings_ForceUpdate}" IsChecked="{Binding ForceUpdate}"/>
-                                <StackPanel Spacing="4">
+                                <CheckBox Content="{DynamicResource Settings_ForceUpdate}" IsChecked="{Binding ForceUpdate}"
+                                          controls:SettingsSearch.Keywords="перекачать переустановить файлы игры починить проверить redownload reinstall repair verify files"/>
+                                <!-- Java and the update buttons live in the section this switch shows. -->
+                                <StackPanel Spacing="4" controls:SettingsSearch.Keywords="консоль разработчика лог журнал java джава обновления console developer log debug updates">
                                     <CheckBox Content="{DynamicResource Settings_DevConsole}" IsChecked="{Binding ShowDeveloperConsole}"/>
                                     <TextBlock Text="{DynamicResource Settings_DevConsoleHint}" Classes="faint"
                                                TextWrapping="Wrap" Margin="28,0,0,0"/>
@@ -547,12 +576,13 @@
                 <!-- ======== Developers: under "More", only while the console is on ======== -->
                 <Border Name="DevSection" Classes="card" Padding="24,22" IsVisible="{Binding ShowDeveloperConsole}">
                     <StackPanel Spacing="16">
-                        <StackPanel Spacing="3">
+                        <StackPanel Spacing="3" controls:SettingsSearch.Heading="True">
                             <TextBlock Text="{DynamicResource Settings_Advanced}" Classes="h3" FontSize="17"/>
                             <TextBlock Text="{DynamicResource Settings_AdvancedHint}" Classes="faint" TextWrapping="Wrap"/>
                         </StackPanel>
 
-                        <StackPanel Spacing="8" MaxWidth="400" HorizontalAlignment="Left">
+                        <StackPanel Spacing="8" MaxWidth="400" HorizontalAlignment="Left"
+                                    controls:SettingsSearch.Keywords="java джава ява jdk jre jvm">
                             <TextBlock Text="{DynamicResource Settings_TabJava}" FontWeight="SemiBold"/>
                             <ComboBox ItemsSource="{Binding JavaChoices}" SelectedItem="{Binding SelectedJavaChoice}"
                                       HorizontalAlignment="Stretch">
@@ -574,7 +604,7 @@
                             <TextBlock Text="{Binding LauncherUsageLabel}" Classes="gold" TextWrapping="Wrap"/>
                         </StackPanel>
 
-                        <StackPanel Spacing="8">
+                        <StackPanel Spacing="8" controls:SettingsSearch.Keywords="обновление обновить версия лаунчера update upgrade version release">
                             <TextBlock Text="{DynamicResource Settings_Updates}" FontWeight="SemiBold"/>
                             <TextBlock Text="{Binding UpdateStatus}" Classes="faint" TextWrapping="Wrap"/>
                             <WrapPanel>
@@ -592,6 +622,8 @@
                         </StackPanel>
                     </StackPanel>
                 </Border>
+
+                </StackPanel>
             </StackPanel>
         </ScrollViewer>
     </Grid>

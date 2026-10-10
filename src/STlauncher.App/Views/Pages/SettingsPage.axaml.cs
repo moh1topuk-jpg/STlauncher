@@ -26,4 +26,37 @@ public partial class SettingsPage : UserControl
 
         section.BringIntoView();
     }
+
+    /// <summary>One pass over the rows per keystroke: the page is a few dozen controls.</summary>
+    private void OnSearchChanged(object? sender, TextChangedEventArgs e) => ApplySearch();
+
+    private void OnSearchKeyDown(object? sender, Avalonia.Input.KeyEventArgs e)
+    {
+        if (e.Key == Avalonia.Input.Key.Escape && sender is TextBox { Text.Length: > 0 } box)
+        {
+            box.Text = string.Empty;
+            e.Handled = true;
+        }
+    }
+
+    private void ApplySearch()
+    {
+        if (this.FindControl<Control>("SearchRoot") is not { } root ||
+            this.FindControl<TextBox>("SearchBox") is not { } box)
+        {
+            return;
+        }
+
+        var matched = Controls.SettingsSearch.Filter(root, box.Text);
+
+        if (this.FindControl<Control>("SearchEmpty") is { } empty)
+        {
+            empty.IsVisible = matched == 0;
+        }
+
+        if (matched > 0)
+        {
+            this.FindControl<ScrollViewer>("SettingsScroll")?.ScrollToHome();
+        }
+    }
 }

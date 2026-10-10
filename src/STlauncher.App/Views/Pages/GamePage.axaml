@@ -34,7 +34,26 @@
                                        Foreground="{DynamicResource NickGradientBrush}"/>
                         </StackPanel>
                         <Border Classes="pill" VerticalAlignment="Center" Margin="0,4,0,4" IsVisible="{Binding HasPlaytime}"
-                                ToolTip.Tip="{Binding PlaytimeAllLabel}">
+                                ToolTip.ServiceEnabled="{Binding HasPlaytimeDetails}">
+                            <!-- On hover: all builds together, and where the hours of this one went.
+                                 The addresses are read from the game's log and stay on this computer. -->
+                            <ToolTip.Tip>
+                                <StackPanel Spacing="6" MinWidth="220">
+                                    <TextBlock Text="{Binding PlaytimeAllLabel}" IsVisible="{Binding HasPlaytimeAllLabel}"/>
+                                    <TextBlock Text="{DynamicResource Game_PlaytimePlaces}" FontWeight="SemiBold"
+                                               IsVisible="{Binding HasPlaytimePlaces}"/>
+                                    <ItemsControl ItemsSource="{Binding PlaytimePlaces}" IsVisible="{Binding HasPlaytimePlaces}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:PlaytimePlaceRow">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18" Margin="0,1">
+                                                    <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" MaxWidth="260"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding Time}" Classes="faint"/>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </ToolTip.Tip>
                             <StackPanel Orientation="Horizontal" Spacing="7">
                                 <PathIcon Data="{StaticResource IconClock}" Classes="small gold"/>
                                 <TextBlock Text="{Binding PlaytimeLabel}" VerticalAlignment="Center"/>
@@ -326,6 +345,10 @@
                                             <TextBlock Text="{DynamicResource Crash_CopyReport}"/>
                                         </StackPanel>
                                     </Button>
+                                    <!-- Opens the note below; nothing leaves the computer on this click. -->
+                                    <Button Classes="ghost small" Margin="0,0,8,6"
+                                            Content="{DynamicResource LogShare_Open}"
+                                            Command="{Binding OpenLogShareCommand}"/>
                                     <Button Classes="ghost small" Margin="0,0,8,6"
                                             Content="{DynamicResource Game_OpenLog}"
                                             Command="{Binding OpenLastGameLogCommand}"/>
@@ -342,6 +365,27 @@
                                             Content="{DynamicResource Crash_OpenReport}"
                                             Command="{Binding OpenCrashReportCommand}"/>
                                 </WrapPanel>
+                                <!-- "Share the log": where it goes and who can read it, then the button that sends. -->
+                                <Border Classes="panel" Padding="14,12" IsVisible="{Binding IsLogShareOpen}" controls:Reveal.OnVisible="True">
+                                    <StackPanel Spacing="10">
+                                        <TextBlock Text="{DynamicResource LogShare_Note}" Classes="muted" FontSize="13" TextWrapping="Wrap"/>
+                                        <WrapPanel ItemSpacing="8" LineSpacing="6">
+                                            <Button Classes="primary small" Content="{DynamicResource LogShare_Publish}"
+                                                    Command="{Binding ShareCrashLogCommand}" IsEnabled="{Binding !IsLogSharing}"/>
+                                            <Button Classes="plain small" Content="{DynamicResource Common_Cancel}"
+                                                    Command="{Binding CancelLogShareCommand}" IsEnabled="{Binding !IsLogSharing}"/>
+                                            <ProgressBar IsIndeterminate="True" Width="60" Height="3" VerticalAlignment="Center"
+                                                         IsVisible="{Binding IsLogSharing}"/>
+                                        </WrapPanel>
+                                    </StackPanel>
+                                </Border>
+                                <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding HasLogShareLink}">
+                                    <TextBlock Text="{Binding LogShareLink}" Classes="mono" FontSize="13" VerticalAlignment="Center"/>
+                                    <Button Classes="plain small" ToolTip.Tip="{DynamicResource LogShare_CopyLink}"
+                                            Command="{Binding CopyLogShareLinkCommand}">
+                                        <PathIcon Data="{StaticResource IconCopy}" Classes="small"/>
+                                    </Button>
+                                </StackPanel>
                                 <!-- "Send to the admin": what goes, a line from the player, and the button. -->
                                 <Border Classes="panel" Padding="14,12" IsVisible="{Binding IsReportSendOpen}" controls:Reveal.OnVisible="True">
                                     <StackPanel Spacing="10">

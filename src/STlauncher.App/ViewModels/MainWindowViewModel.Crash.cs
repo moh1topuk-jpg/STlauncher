@@ -53,6 +53,9 @@ public partial class MainWindowViewModel
     private void AnalyzeCrash(int exitCode, string gameDirectory)
     {
         _crashExitCode = exitCode;
+        // A link on the card is to the log of the crash it stands under, never an older one.
+        LogShareLink = string.Empty;
+        IsLogShareOpen = false;
         _crashLogLines = ReadLines(LastGameLogPath, 20000);
 
         // The game's own crash report has the stack trace and the mod list in one place;
@@ -291,23 +294,29 @@ public partial class MainWindowViewModel
         CrashFixLabel = string.Empty;
     }
 
+    /// <summary>The report as text: what "Copy report" copies and what "Share the log" publishes.</summary>
+    private string BuildCrashReportText()
+    {
+        var context = new CrashReportContext(
+            _updates.CurrentVersion ?? "dev",
+            SelectedInstance?.Name ?? "?",
+            SelectedInstance?.VersionId,
+            SelectedInstance?.Loader.ToString() ?? "Vanilla",
+            SelectedInstance?.LoaderVersion,
+            SelectedJavaChoice?.Path,
+            (int)MaxMemoryMb,
+            _crashExitCode,
+            InstalledMods.Where(m => m.IsMod).Select(m => m.FileName).ToList());
+
+        return CrashReport.Build(context, _crash, _crashLogLines, _crashReportLines);
+    }
+
     [RelayCommand]
     private async Task CopyCrashReportAsync()
     {
         try
         {
-            var context = new CrashReportContext(
-                _updates.CurrentVersion ?? "dev",
-                SelectedInstance?.Name ?? "?",
-                SelectedInstance?.VersionId,
-                SelectedInstance?.Loader.ToString() ?? "Vanilla",
-                SelectedInstance?.LoaderVersion,
-                SelectedJavaChoice?.Path,
-                (int)MaxMemoryMb,
-                _crashExitCode,
-                InstalledMods.Where(m => m.IsMod).Select(m => m.FileName).ToList());
-
-            var report = CrashReport.Build(context, _crash, _crashLogLines, _crashReportLines);
+            var report = BuildCrashReportText();
 
             var clipboard = Avalonia.Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime { MainWindow: { } window }
                 ? window.Clipboard
