@@ -277,8 +277,10 @@ public class WorldManagerTests
     [Fact]
     public void AWorldTheGameHoldsOpen_IsLeftAlone()
     {
-        // The byte-range lock is how the game marks a world as open; macOS has no such call in .NET.
-        if (OperatingSystem.IsMacOS())
+        // The byte-range lock is how the game marks a world as open. On Linux such a lock never
+        // conflicts inside one process, so only another process (the game) shows there; macOS
+        // has no such call in .NET.
+        if (!OperatingSystem.IsWindows())
         {
             return;
         }
