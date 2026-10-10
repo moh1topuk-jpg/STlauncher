@@ -528,7 +528,11 @@ public class CurseForgeClientTests : IDisposable
 
         var release = (await client.GetVersionsAsync("238222", "1.21.1", LoaderKind.Fabric)).Single(v => v.Id == "5846880");
 
-        await Assert.ThrowsAsync<IOException>(() => client.InstallAsync(release, _root, "mods"));
+        // Still an IOException for every caller that catches one; now it also says why.
+        var error = await Assert.ThrowsAnyAsync<IOException>(() => client.InstallAsync(release, _root, "mods"));
+        Assert.Equal(
+            STlauncher.Core.Http.NetworkFailureCause.HashMismatch,
+            Assert.IsType<STlauncher.Core.Http.DownloadFailedException>(error).Failure.Cause);
         Assert.Empty(Directory.GetFiles(Path.Combine(_root, "mods")));
     }
 

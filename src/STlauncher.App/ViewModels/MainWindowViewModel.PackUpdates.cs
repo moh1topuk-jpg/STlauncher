@@ -225,7 +225,7 @@ public partial class MainWindowViewModel
         catch (Exception ex)
         {
             item.IsUpdating = false;
-            Status = Localize("Error_Packs", "Failed to change the resource packs: {0}", ex.Message);
+            Status = Localize("Error_Packs", "Failed to change the resource packs: {0}", DescribeFailure(ex));
             AppendConsole(ex.ToString());
         }
     }
@@ -257,12 +257,16 @@ public partial class MainWindowViewModel
         catch (Exception ex)
         {
             item.IsUpdating = false;
-            Status = Localize("Error_Shaders", "Failed to change the shaders: {0}", ex.Message);
+            Status = Localize("Error_Shaders", "Failed to change the shaders: {0}", DescribeFailure(ex));
             AppendConsole(ex.ToString());
         }
     }
 
-    /// <summary>Downloads the newer file, removes the old one and moves the record over. Returns the new file name.</summary>
+    /// <summary>
+    /// Puts the newer file in the old one's place and moves the record over. The old pack
+    /// stays where it is until the new one is downloaded, checked and under its name;
+    /// then it goes to the build's keep, not to the bin. Returns the new file name.
+    /// </summary>
     private async Task<string?> ReplacePackFileAsync(
         ModVersion version, string? projectId, InstalledModRecord? record,
         string oldPath, string oldFileName, string title, string folder)
@@ -277,11 +281,18 @@ public partial class MainWindowViewModel
 
         await MaybeBackupAsync(BackupTrigger.BeforeModChange);
         Status = Localize("Packs_Updating", "Updating {0} to {1}…", title, version.VersionNumber);
-        await _mods.InstallAsync(InstanceDirectory, folder, file.FileName, file.Url, file.Sha1, file.Size);
+
+        // An unpacked pack is a folder and is not a file to swap: the new zip only joins it.
+        await Replacer.ReplaceAsync(
+            new ModReplaceRequest(InstanceDirectory, folder, System.IO.File.Exists(oldPath) ? oldPath : null, file.FileName, file.Url, file.Sha1, file.Size)
+            {
+                Sha512 = file.Sha512,
+                Key = projectId ?? record?.Id,
+                OldLabel = record?.Version
+            });
 
         if (!string.Equals(file.FileName, oldFileName, StringComparison.OrdinalIgnoreCase))
         {
-            _mods.Uninstall(oldPath);
             ForgetRecord(oldFileName);
         }
 

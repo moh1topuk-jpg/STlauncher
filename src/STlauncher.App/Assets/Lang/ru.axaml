@@ -603,7 +603,32 @@
     <x:String x:Key="Mods_UpdatesFailed">Не удалось проверить обновления: {0}</x:String>
     <x:String x:Key="Mods_Updating">Обновляю {0} до {1}…</x:String>
     <x:String x:Key="Mods_Updated">{0} обновлён до {1}</x:String>
-    <x:String x:Key="Mods_UpdatedKeptOld">{0} обновлён до {1}. Старая версия выключена и осталась в списке модов — её можно вернуть.</x:String>
+    <!-- Updates that never leave a build without the mod, and downloads that say why they failed -->
+    <x:String x:Key="Mods_UpdatedKeptPrevious">{0} обновлён до {1}. Прежняя версия сохранена: правый щелчок по моду — «Вернуть прежнюю версию».</x:String>
+    <x:String x:Key="Mods_UpdateFailedKept">{0} не обновлён и остался как был. {1}</x:String>
+    <x:String x:Key="Mods_UpdateAllDone">Обновлено модов: {0}</x:String>
+    <x:String x:Key="Mods_UpdateAllPartly">Обновлено {0} из {1}. Остались как были: {2}</x:String>
+    <x:String x:Key="Mods_RestorePrevious">Вернуть прежнюю версию ({0})</x:String>
+    <x:String x:Key="Mods_RestoredPrevious">{0}: прежняя версия возвращена. Новый файл сохранён, так что вернуть его можно тем же способом.</x:String>
+    <x:String x:Key="Mods_RestoreFailed">{0} остался как был. {1}</x:String>
+    <x:String x:Key="Mods_ReplaceGameRunning">Игра запущена: закройте её и повторите.</x:String>
+    <x:String x:Key="Mods_ReplaceRestore">Сохранённый файл не удалось вернуть на место: {0}</x:String>
+    <x:String x:Key="Mods_ReplaceFiles">Файл не удалось поставить на место, всё возвращено как было: {0}</x:String>
+    <x:String x:Key="Mods_NoPrevious">Прежней версии нет: мод ещё не обновлялся</x:String>
+    <x:String x:Key="Status_ModpackInstalledPartly">Модпак «{0}» установлен без {1} файл(ов): {2}. Причины — в журнале.</x:String>
+    <x:String x:Key="Net_CauseWithUrl">{0} Адрес: {1}</x:String>
+    <x:String x:Key="Net_AfterFailureCause">Не удалось скачать {0}. {1}</x:String>
+    <x:String x:Key="Net_AfterFailureCauseHosts">Не удалось скачать {0}. {1} Не отвечают: {2}.</x:String>
+    <x:String x:Key="Net_CauseDns">Адрес сайта не найден (DNS). Проверьте интернет; если включён VPN или прокси, переключите его.</x:String>
+    <x:String x:Key="Net_CauseRefused">Соединение отклонено. Если в Windows задан прокси или VPN, проверьте, что он запущен.</x:String>
+    <x:String x:Key="Net_CauseReset">Соединение оборвалось по пути. Так бывает при блокировке у провайдера или из-за защитной программы.</x:String>
+    <x:String x:Key="Net_CauseUnreachable">До сайта нет пути. Проверьте подключение к интернету.</x:String>
+    <x:String x:Key="Net_CauseCertificate">Windows не доверяет сертификату, который показал сайт. Обычно это антивирус или прокси, проверяющий HTTPS: отключите в нём эту проверку или добавьте лаунчер в исключения.</x:String>
+    <x:String x:Key="Net_CauseTls">Защищённое соединение установить не удалось. Мешать могут антивирус, прокси или провайдер.</x:String>
+    <x:String x:Key="Net_CauseTimeout">Сайт не ответил вовремя.</x:String>
+    <x:String x:Key="Net_CauseHttp">Сайт ответил ошибкой: {0}.</x:String>
+    <x:String x:Key="Net_CauseHash">Пришёл не тот файл, что был обещан: контрольная сумма не совпала.</x:String>
+    <x:String x:Key="Net_CauseRedirect">Сайт перенаправил загрузку на адрес, по которому лаунчер не ходит: {0}.</x:String>
     <x:String x:Key="Mods_CatalogPinnedHint">Версию этого мода задаёт каталог сервера — обновления приходят вместе со сборкой.</x:String>
 
     <!-- Backup restore -->

@@ -117,6 +117,37 @@ public partial class InstalledModItem : ObservableObject
     /// <summary>Just added: outlined in the list for a while, so it can be found without reading every row.</summary>
     [ObservableProperty]
     private bool _isNew;
+
+    /// <summary>The file this one replaced at an update, while the launcher still keeps it.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasPrevious))]
+    [NotifyPropertyChangedFor(nameof(PreviousLabel))]
+    private ReplacedModFile? _previous;
+
+    public bool HasPrevious => Previous is not null;
+
+    /// <summary>"Bring back the previous version (0.5.8)": the menu entry names what comes back.</summary>
+    public string PreviousLabel
+    {
+        get
+        {
+            if (Previous is null)
+            {
+                return MainWindowViewModel.Localize("Mods_NoPrevious", "No previous version: this mod has not been updated yet");
+            }
+
+            return MainWindowViewModel.Localize(
+                "Mods_RestorePrevious",
+                "Bring back the previous version ({0})",
+                Previous.Label is { Length: > 0 } label ? label : Previous.FileName);
+        }
+    }
+
+    /// <summary>
+    /// The row's menu opens in a popup, out of reach of a binding to the page: the command
+    /// is handed to the row itself.
+    /// </summary>
+    public System.Windows.Input.ICommand? RestorePreviousCommand { get; set; }
 }
 
 /// <summary>
@@ -251,48 +282,109 @@ public partial class MainWindowViewModel
 
     /// <summary>Puts the newer version in place of the file, with anything it now needs.</summary>
     [RelayCommand]
-    private Task UpdateModAsync(InstalledModItem? item) => UpdateModIntoAsync(item, CurrentInstallTarget());
+    private async Task UpdateModAsync(InstalledModItem? item)
+    {
+        if (item is null)
+        {
+            return;
+        }
+
+        var name = item.DisplayName;
+
+        if (await UpdateModIntoAsync(item, CurrentInstallTarget()) is { } failure)
+        {
+            Status = Localize("Mods_UpdateFailedKept", "{0} was not updated and stays as it was. {1}", name, DescribeFailure(failure));
+
+            // The check adds which sites do not answer; it has nothing to add to a cause
+            // that is not about reaching them.
+            _ = ExplainDownloadFailureAsync(Localize("Net_WhatMod", "the mod"), failure);
+        }
+    }
 
     [RelayCommand]
     private async Task UpdateAllModsAsync()
     {
         var pending = InstalledMods.Where(m => m.HasUpdate).ToList();
 
+        if (pending.Count == 0)
+        {
+            return;
+        }
+
         // The list was read from one build: every update goes into that one, even if
         // another build is opened before the last of them is done.
         var target = CurrentInstallTarget();
+        var failed = new List<string>();
 
         foreach (var item in pending)
         {
-            await UpdateModIntoAsync(item, target);
+            var name = item.DisplayName;
+
+            // One mod that does not come must not stop the rest, and must not go unsaid.
+            if (await UpdateModIntoAsync(item, target) is { } failure)
+            {
+                var reason = DescribeFailure(failure);
+                failed.Add(name + ": " + reason);
+                AppendConsole($"[mods] {name} was not updated, left as it was: {reason}");
+            }
+        }
+
+        Status = failed.Count == 0
+            ? Localize("Mods_UpdateAllDone", "Updated: {0}", pending.Count)
+            : Localize(
+                "Mods_UpdateAllPartly",
+                "Updated {0} of {1}. Left as they were: {2}",
+                pending.Count - failed.Count,
+                pending.Count,
+                string.Join("; ", failed));
+    }
+
+    /// <summary>
+    /// The one replacer, told what the launcher knows about a running game. Today that is
+    /// "a game is running", whichever build it is: the per-build check
+    /// (Core/Launch/RunningGames) plugs in here, in this one line.
+    /// </summary>
+    private ModFileReplacer Replacer
+    {
+        get
+        {
+            _mods.Replacer.IsGameRunning ??= _ => IsGameRunning;
+            return _mods.Replacer;
         }
     }
 
-    private async Task UpdateModIntoAsync(InstalledModItem? item, InstallTarget target)
+    /// <returns>What went wrong, or null. The mod is as it was whenever this is not null.</returns>
+    private async Task<Exception?> UpdateModIntoAsync(InstalledModItem? item, InstallTarget target)
     {
         if (item?.Update is null || item.IsUpdating || target.Instance is null)
         {
-            return;
+            return null;
         }
 
         try
         {
             item.IsUpdating = true;
             await ApplyModUpdateAsync(item, target);
+            return null;
         }
         catch (Exception ex)
         {
-            Status = Localize("Error_InstallMod", "Mod install failed: {0}", ex.Message);
-            _ = ExplainDownloadFailureAsync(Localize("Net_WhatMod", "the mod"), ex);
             AppendConsole(ex.ToString());
             item.IsUpdating = false;
+            return ex;
         }
     }
 
+    /// <summary>
+    /// The new version takes the old one's place, and nothing in the build moves until
+    /// every file of the update is downloaded and checked. A mod that now needs another
+    /// one gets it in the same step; if any of the files does not come, none is placed.
+    /// </summary>
     private async Task ApplyModUpdateAsync(InstalledModItem item, InstallTarget target)
     {
         var version = item.Update!;
         var oldFile = item.FileName;
+        var instance = target.Instance!;
 
         var project = item.ProjectId is { Length: > 0 } id
             ? await _modrinth.GetProjectAsync(id)
@@ -303,21 +395,111 @@ public partial class MainWindowViewModel
 
         Status = Localize("Mods_Updating", "Updating {0} to {1}…", title, version.VersionNumber);
 
-        // The same path a fresh install takes: file, then whatever it requires.
-        await InstallProjectWithDependenciesAsync(version, slug, title, project?.IconUrl ?? item.Record?.IconUrl, target: target);
+        var plan = await ResolveInstallPlanAsync(version, slug, title, project?.IconUrl ?? item.Record?.IconUrl, ProjectTypes.Mod, target);
 
-        var newFile = ModrinthClient.SelectFile(version, target.GameVersion, target.Loader)?.FileName;
-
-        var replaced = newFile is not null && !string.Equals(newFile, oldFile, StringComparison.OrdinalIgnoreCase);
-
-        // The install already switched the old file off by its mod id. A jar whose id
-        // could not be read is switched off here by name, so the two never run together.
-        // Nothing is deleted: the old version stays in the list for rolling back.
-        if (replaced && System.IO.File.Exists(item.Path) && _mods.SetEnabled(item.Path, false))
+        if (plan.Failure is { } failure)
         {
-            AppendConsole($"[mods] switched off {oldFile}: updated to {newFile}, kept for rolling back");
-            MarkRecordDisabled(target.Instance!, oldFile);
-            _instances.Save(target.Instance!);
+            throw new InvalidOperationException(failure);
+        }
+
+        if (plan.Root.State != ModPlanState.Install || plan.Root.File is not { } rootFile)
+        {
+            throw new InvalidOperationException(Localize("Status_NoCompatibleFile", "No compatible file for this version and loader"));
+        }
+
+        if (plan.Missing.FirstOrDefault() is { } missing)
+        {
+            throw new InvalidOperationException(
+                Localize("Error_DependencyMissing", "{0} needs {1}, which has no version for this build", missing.RequiredBy ?? title, missing.Title));
+        }
+
+        _modsLeftToThePlayer.Clear();
+        await MaybeBackupAsync(BackupTrigger.BeforeModChange, instance);
+
+        var replacer = Replacer;
+        var staged = new List<(ModPlanItem Item, StagedModFile File)>();
+        ModReplaceResult result;
+
+        try
+        {
+            // First everything is fetched and checked, under hidden names. What the new
+            // version requires comes before it, as in a fresh install.
+            foreach (var needed in plan.Required)
+            {
+                if (needed.State == ModPlanState.Blocked)
+                {
+                    LeaveToThePlayer(needed);
+                    continue;
+                }
+
+                if (needed.State != ModPlanState.Install || needed.File is not { } file ||
+                    (needed.Slug.Length > 0 && IsProjectInstalled(instance, needed.Slug)))
+                {
+                    continue;
+                }
+
+                Status = Localize("Status_ResolvingDependency", "Adding {0}, which {1} needs…", needed.Title, needed.RequiredBy ?? title);
+
+                staged.Add((needed, await replacer.StageAsync(
+                    new ModReplaceRequest(target.Directory, ProjectTypes.FolderFor(needed.ProjectType), null, file.FileName, file.Url, file.Sha1, file.Size)
+                    {
+                        Sha512 = file.Sha512
+                    })));
+            }
+
+            Status = Localize("Mods_Updating", "Updating {0} to {1}…", title, version.VersionNumber);
+
+            var root = await replacer.StageAsync(
+                new ModReplaceRequest(target.Directory, ModManager.ModsFolderName, item.Path, rootFile.FileName, rootFile.Url, rootFile.Sha1, rootFile.Size)
+                {
+                    Sha512 = rootFile.Sha512,
+                    Key = item.ProjectId ?? (slug.Length > 0 ? slug : null),
+                    OldLabel = item.VersionLabel
+                });
+
+            staged.Add((plan.Root, root));
+
+            // Then the renames, which is all that is left: local and quick.
+            foreach (var (_, file) in staged)
+            {
+                file.Commit();
+            }
+
+            result = root.Result!;
+        }
+        catch
+        {
+            // Back to exactly what was there: placed files are taken out again, the old
+            // one returns to its name, hidden ones are removed.
+            for (var i = staged.Count - 1; i >= 0; i--)
+            {
+                staged[i].File.Undo();
+            }
+
+            throw;
+        }
+
+        // The record of the old file leaves with it; the new one's is written below.
+        if (!string.Equals(result.NewFileName, oldFile, StringComparison.OrdinalIgnoreCase))
+        {
+            instance.InstalledMods.RemoveAll(m => string.Equals(m.FileName, oldFile, StringComparison.OrdinalIgnoreCase));
+        }
+
+        foreach (var (planItem, file) in staged)
+        {
+            var isRoot = ReferenceEquals(planItem, plan.Root);
+
+            RecordPlanItem(
+                planItem,
+                planItem.File!,
+                target,
+                file.Result!.NewFileName,
+                disabledByUser: isRoot && !result.Enabled && (item.Record?.DisabledByUser ?? true));
+        }
+
+        if (result.Previous is { } kept)
+        {
+            AppendConsole($"[mods] {oldFile} moved to {kept.StoredPath}: replaced by {result.NewFileName}, kept for going back");
         }
 
         _knownModUpdates.Remove(oldFile);
@@ -328,9 +510,95 @@ public partial class MainWindowViewModel
             RefreshMods();
         }
 
-        Status = replaced
-            ? Localize("Mods_UpdatedKeptOld", "{0} updated to {1}. The old version is switched off and stays in the list, so you can go back.", title, version.VersionNumber)
+        ReportModsLeftToThePlayer(title);
+
+        Status = result.Previous is not null
+            ? Localize("Mods_UpdatedKeptPrevious", "{0} updated to {1}. The previous version is kept: right-click the mod to bring it back.", title, version.VersionNumber)
             : Localize("Mods_Updated", "{0} updated to {1}", title, version.VersionNumber);
+    }
+
+    /// <summary>
+    /// "Bring back the previous version": the file the last update moved aside returns,
+    /// and the newer one is kept in its turn. Nothing is downloaded.
+    /// </summary>
+    [RelayCommand]
+    private async Task RestorePreviousModAsync(InstalledModItem? item)
+    {
+        if (item?.Previous is not { } previous || item.IsUpdating || SelectedInstance is not { } instance)
+        {
+            return;
+        }
+
+        var target = CurrentInstallTarget();
+        var name = item.DisplayName;
+        var fileName = item.FileName;
+        var label = item.VersionLabel;
+        var hadUpdate = item.Update is not null;
+
+        try
+        {
+            item.IsUpdating = true;
+            await MaybeBackupAsync(BackupTrigger.BeforeModChange, instance);
+
+            var replacer = Replacer;
+            var result = await Task.Run(() => replacer.Restore(target.Directory, previous, label));
+
+            // The record follows the file, as it does when a mod is switched off.
+            if (instance.InstalledMods.FirstOrDefault(m => string.Equals(m.FileName, fileName, StringComparison.OrdinalIgnoreCase)) is { } record)
+            {
+                record.FileName = result.NewFileName;
+                record.Version = previous.Label;
+                _instances.Save(instance);
+            }
+
+            AppendConsole($"[mods] {previous.FileName} is back in place of {fileName}; that one is kept the same way");
+
+            if (_knownModUpdates.Remove(fileName) && hadUpdate)
+            {
+                ModUpdateCount = Math.Max(0, ModUpdateCount - 1);
+            }
+
+            if (IsSelectedBuild(target))
+            {
+                RefreshMods();
+            }
+
+            item.IsUpdating = false;
+            Status = Localize("Mods_RestoredPrevious", "{0}: the previous version is back. The newer file is kept, so this can be undone the same way.", name);
+        }
+        catch (Exception ex)
+        {
+            item.IsUpdating = false;
+            Status = Localize("Mods_RestoreFailed", "{0} stays as it was. {1}", name, DescribeFailure(ex));
+            AppendConsole(ex.ToString());
+        }
+    }
+
+    /// <summary>
+    /// A failed download or replacement in the player's words: what happened first, the
+    /// address last. Anything that is neither is told as it tells itself.
+    /// </summary>
+    private static string DescribeFailure(Exception exception)
+    {
+        for (var current = exception; current is not null; current = current.InnerException)
+        {
+            switch (current)
+            {
+                case ModReplaceException { Step: ModReplaceStep.GameRunning }:
+                    return Localize("Mods_ReplaceGameRunning", "The game is running: close it and try again.");
+
+                case ModReplaceException { Step: ModReplaceStep.Restore } restore:
+                    return Localize("Mods_ReplaceRestore", "The kept file could not be put back: {0}", STlauncher.Core.Http.NetworkFailures.InnermostMessage(restore));
+
+                case ModReplaceException replace:
+                    return Localize("Mods_ReplaceFiles", "The file could not be put in place, everything was returned: {0}", STlauncher.Core.Http.NetworkFailures.InnermostMessage(replace));
+
+                case STlauncher.Core.Http.DownloadFailedException download:
+                    return Localize("Net_CauseWithUrl", "{0} Address: {1}", DownloadCauseText(download.Failure), download.Url);
+            }
+        }
+
+        return exception.Message;
     }
 
     /// <summary>Called by the list refresh so a check survives it.</summary>
@@ -340,6 +608,13 @@ public partial class MainWindowViewModel
         {
             item.Update = known.Version;
             item.ProjectId = known.ProjectId;
+        }
+
+        // The same refresh says whether there is a version to go back to.
+        if (item.IsMod && !item.IsCatalog && SelectedInstance is not null)
+        {
+            item.Previous = _mods.Replacer.FindPrevious(InstanceDirectory, item.Mod.Folder, item.FileName);
+            item.RestorePreviousCommand = RestorePreviousModCommand;
         }
     }
 

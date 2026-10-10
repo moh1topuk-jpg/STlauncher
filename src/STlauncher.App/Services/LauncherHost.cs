@@ -43,16 +43,9 @@ public static class LauncherHost
 
         services.AddSingleton(_ =>
         {
-            var handler = new System.Net.Http.SocketsHttpHandler
-            {
-                // Pick up DNS changes during a long-running session instead of pinning the
-                // first resolved address for the process lifetime.
-                PooledConnectionLifetime = TimeSpan.FromMinutes(5),
-
-                // A host that drops packets instead of refusing must not hold a request
-                // for the full five minutes before the launcher tries the next address.
-                ConnectTimeout = TimeSpan.FromSeconds(15)
-            };
+            // Follows the system proxy as it changes, recycles connections, trusts what
+            // Windows trusts: all of it lives in one place with its reasons.
+            var handler = LauncherHttp.CreateHandler();
 
             // Long enough for a large asset download, short enough that a stalled API
             // request cannot hang the UI for half an hour.
