@@ -817,6 +817,8 @@
     <!-- Update sources -->
     <x:String x:Key="Update_OpenGithub">Страница релизов на GitHub</x:String>
     <x:String x:Key="Console_NoLogYet">Лог-файл ещё не записан</x:String>
+    <x:String x:Key="Console_Copy">Скопировать</x:String>
+    <x:String x:Key="Console_CopyHint">Копирует выделенные строки, а без выделения весь журнал</x:String>
 
     <!-- Update diagnostics -->
     <x:String x:Key="Settings_UpdateOutcomes">Проверки обновлений за 7 дней:</x:String>
@@ -1188,6 +1190,20 @@
     <x:String x:Key="Discord_SinglePlayer">В одиночной игре</x:String>
     <x:String x:Key="Settings_Search">Поиск настройки</x:String>
     <x:String x:Key="Settings_SearchEmpty">Ничего не нашлось. Попробуйте другое слово; Esc очищает поиск.</x:String>
+    <x:String x:Key="Settings_SectionStorage">Копии и место</x:String>
+    <x:String x:Key="Settings_PerfTitle">Графика</x:String>
+    <x:String x:Key="Settings_PerfSub">Выставит графику в игре и память под этот компьютер</x:String>
+    <x:String x:Key="Settings_BoostSub">Добавит моды для скорости и снизит дорогие настройки. Сначала покажет список; выключите, и всё вернётся.</x:String>
+    <x:String x:Key="Settings_BoostChanges">Что изменено</x:String>
+    <x:String x:Key="Settings_BoostChangesMods">Добавленные моды</x:String>
+    <x:String x:Key="Settings_BoostChangesOptions">Изменённые настройки</x:String>
+    <x:String x:Key="Settings_BoostChangesNone">ничего</x:String>
+    <x:String x:Key="Settings_ResolutionSub">Размер окна игры при запуске</x:String>
+    <x:String x:Key="Settings_ResolutionCustom">Свой</x:String>
+    <x:String x:Key="Settings_DiscordSub">Статус «Играет на Showtime», пока игра запущена и Discord открыт</x:String>
+    <x:String x:Key="Settings_BackupsLimits">Сколько хранить</x:String>
+    <x:String x:Key="Settings_SharedFilesSub">Мод или пак, который есть в нескольких сборках, занимает место один раз</x:String>
+    <x:String x:Key="Settings_DiscreteGpuSub">На ноутбуке с двумя видеокартами игра иначе идёт на встроенной</x:String>
     <x:String x:Key="LogShare_Open">Поделиться журналом</x:String>
     <x:String x:Key="LogShare_Note">Отчёт будет опубликован на mclo.gs, и его прочитает любой, у кого есть ссылка. Имя пользователя Windows, токен сессии и чужие адреса из него убираются, ник остаётся. Пока вы не нажали «Опубликовать», ничего не отправляется.</x:String>
     <x:String x:Key="LogShare_Publish">Опубликовать и скопировать ссылку</x:String>

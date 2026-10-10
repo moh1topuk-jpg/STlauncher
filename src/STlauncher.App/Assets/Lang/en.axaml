@@ -817,6 +817,8 @@
     <!-- Update sources -->
     <x:String x:Key="Update_OpenGithub">Releases page on GitHub</x:String>
     <x:String x:Key="Console_NoLogYet">The log file has not been written yet</x:String>
+    <x:String x:Key="Console_Copy">Copy</x:String>
+    <x:String x:Key="Console_CopyHint">Copies the selected lines, or the whole log when nothing is selected</x:String>
 
     <!-- Update diagnostics -->
     <x:String x:Key="Settings_UpdateOutcomes">Update checks over 7 days:</x:String>
@@ -1188,6 +1190,20 @@
     <x:String x:Key="Discord_SinglePlayer">In single-player</x:String>
     <x:String x:Key="Settings_Search">Search settings</x:String>
     <x:String x:Key="Settings_SearchEmpty">Nothing found. Try another word; Esc clears the search.</x:String>
+    <x:String x:Key="Settings_SectionStorage">Backups and space</x:String>
+    <x:String x:Key="Settings_PerfTitle">Graphics</x:String>
+    <x:String x:Key="Settings_PerfSub">Sets the in-game graphics and the memory for this computer</x:String>
+    <x:String x:Key="Settings_BoostSub">Adds speed mods and lowers the costly settings. Shows the list first; switch it off and everything goes back.</x:String>
+    <x:String x:Key="Settings_BoostChanges">What changed</x:String>
+    <x:String x:Key="Settings_BoostChangesMods">Mods added</x:String>
+    <x:String x:Key="Settings_BoostChangesOptions">Settings changed</x:String>
+    <x:String x:Key="Settings_BoostChangesNone">nothing</x:String>
+    <x:String x:Key="Settings_ResolutionSub">The size of the game window at start</x:String>
+    <x:String x:Key="Settings_ResolutionCustom">Custom</x:String>
+    <x:String x:Key="Settings_DiscordSub">A “Playing on Showtime” status while the game runs and Discord is open</x:String>
+    <x:String x:Key="Settings_BackupsLimits">How much to keep</x:String>
+    <x:String x:Key="Settings_SharedFilesSub">A mod or pack that several builds have takes disk space once</x:String>
+    <x:String x:Key="Settings_DiscreteGpuSub">On a laptop with two graphics cards the game otherwise runs on the built-in one</x:String>
     <x:String x:Key="LogShare_Open">Share the log</x:String>
     <x:String x:Key="LogShare_Note">The report will be published at mclo.gs, and anyone with the link can read it. Your Windows user name, the session token and other people's addresses are removed from it; the nickname stays. Nothing is sent until you press “Publish”.</x:String>
     <x:String x:Key="LogShare_Publish">Publish and copy the link</x:String>

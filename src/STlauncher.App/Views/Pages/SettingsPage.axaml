@@ -5,126 +5,212 @@
              x:Class="STlauncher.App.Views.Pages.SettingsPage"
              x:DataType="vm:MainWindowViewModel">
 
-    <!-- Five sections, in the order they are needed: what changes a game session comes
-         first, what changes once a year is folded away at the bottom. -->
-    <Grid ColumnDefinitions="220,*">
+    <!-- Settings as one column of rows: the name and one muted line on the left, the control
+         on the right, a hairline below. Groups come in the order they are needed: what
+         changes a game session first, what changes once a year folded away at the bottom.
+         A standing explanation is one line under the name or a tooltip on the row; what
+         says what will happen to the player's files stays on screen in full. -->
 
-        <!-- ======== Index ======== -->
-        <Border Grid.Column="0" Padding="16,28" BorderBrush="{DynamicResource IndexBorderBrush}" BorderThickness="0,0,1,0">
-            <Grid RowDefinitions="Auto,Auto,*,Auto">
+    <UserControl.Styles>
+        <!-- A long name wraps instead of pushing the control out of the window. -->
+        <Style Selector="Border.setting TextBlock.strong">
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <!-- A group below another group stands apart from it. -->
+        <Style Selector="StackPanel.groups > StackPanel">
+            <Setter Property="Margin" Value="0,0,0,26"/>
+        </Style>
+        <!-- What a row is doing right now, or what just came of it. -->
+        <Style Selector="TextBlock.state">
+            <Setter Property="Foreground" Value="{DynamicResource GoldBrush}"/>
+            <Setter Property="FontSize" Value="12.5"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <!-- A path: the one muted line of its row, and it can be selected and copied. -->
+        <Style Selector="SelectableTextBlock.path">
+            <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+            <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Margin" Value="0,3,0,0"/>
+        </Style>
+        <Style Selector="Border.setting NumericUpDown">
+            <Setter Property="Width" Value="84"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid ColumnDefinitions="214,*">
+
+        <!-- ======== The title, the search, the groups ======== -->
+        <Grid Grid.Column="0" Margin="30,8,12,20" RowDefinitions="Auto,Auto,*,Auto">
+            <StackPanel>
+                <TextBlock Text="{DynamicResource Nav_Settings}" Classes="page-title" FontSize="24" Margin="0,0,0,14"/>
+
+                <!-- Search over the rows on the right: by what a row says and by its
+                     SettingsSearch.Keywords. A new row needs that one attribute, or nothing. -->
+                <Border Classes="field" Margin="0,0,0,12">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                        <PathIcon Data="{StaticResource IconSearch}" Classes="small muted" VerticalAlignment="Center"/>
+                        <TextBox Grid.Column="1" Name="SearchBox" Classes="bare"
+                                 Watermark="{DynamicResource Settings_Search}"
+                                 TextChanged="OnSearchChanged" KeyDown="OnSearchKeyDown"/>
+                    </Grid>
+                </Border>
+            </StackPanel>
+
+            <!-- The group on screen keeps the hover tone; a press scrolls to its group. -->
+            <StackPanel Grid.Row="1" Name="IndexPanel" Spacing="2" Margin="-12,0,0,0">
+                <Button Classes="index" Content="{DynamicResource Settings_TabGame}" Click="OnIndexClick" Tag="GameSection"/>
+                <Button Classes="index" Content="{DynamicResource Settings_SectionLook}" Click="OnIndexClick" Tag="LookSection"/>
+                <Button Classes="index" Content="{DynamicResource Settings_SectionLauncher}" Click="OnIndexClick" Tag="LauncherSection"/>
+                <Button Classes="index" Content="{DynamicResource Settings_SectionStorage}" Click="OnIndexClick" Tag="BackupsSection"/>
+                <Button Classes="index" Content="{DynamicResource Settings_SectionMore}" Click="OnIndexClick" Tag="MoreSection"/>
+                <Button Classes="index" Content="{DynamicResource Settings_Advanced}" Click="OnIndexClick" Tag="DevSection"
+                        IsVisible="{Binding ShowDeveloperConsole}"/>
+            </StackPanel>
+
+            <StackPanel Grid.Row="3" Spacing="8">
+                <Button Classes="link" HorizontalAlignment="Left" Content="{DynamicResource WhatsNew_Open}"
+                        Command="{Binding OpenWhatsNewCommand}" IsVisible="{Binding HasWhatsNew}"/>
+                <TextBlock Text="{Binding UpdateStateLabel}" Classes="sub" TextWrapping="Wrap"/>
+            </StackPanel>
+        </Grid>
+
+        <ScrollViewer Grid.Column="1" Name="SettingsScroll" ScrollChanged="OnSettingsScrolled">
+            <!-- One column, at most 760 wide with its margins, kept to the left. -->
+            <Grid Margin="30,8,40,28">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" MaxWidth="690"/>
+                    <ColumnDefinition Width="0"/>
+                </Grid.ColumnDefinitions>
                 <StackPanel>
-                    <TextBlock Text="{DynamicResource Nav_Settings}" Classes="h2" FontSize="22" Margin="10,0,0,14"/>
 
-                    <!-- Search over the rows on the right: by what a row says and by its
-                         SettingsSearch.Keywords. A new row needs that one attribute, or nothing. -->
-                    <Border Classes="field" Margin="0,0,0,12">
-                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-                            <PathIcon Data="{StaticResource IconSearch}" Classes="small muted" VerticalAlignment="Center"/>
-                            <TextBox Grid.Column="1" Name="SearchBox" Classes="bare"
-                                     Watermark="{DynamicResource Settings_Search}"
-                                     TextChanged="OnSearchChanged" KeyDown="OnSearchKeyDown"/>
-                        </Grid>
-                    </Border>
-                </StackPanel>
-
-                <StackPanel Grid.Row="1" Spacing="2">
-                    <Button Classes="index" Content="{DynamicResource Settings_TabGame}" Click="OnIndexClick" Tag="GameSection"/>
-                    <Button Classes="index" Content="{DynamicResource Settings_SectionLook}" Click="OnIndexClick" Tag="LookSection"/>
-                    <Button Classes="index" Content="{DynamicResource Settings_SectionLauncher}" Click="OnIndexClick" Tag="LauncherSection"/>
-                    <Button Classes="index" Content="{DynamicResource Settings_Backups}" Click="OnIndexClick" Tag="BackupsSection"/>
-                    <Button Classes="index" Content="{DynamicResource Settings_SectionMore}" Click="OnIndexClick" Tag="MoreSection"/>
-                </StackPanel>
-
-                <StackPanel Grid.Row="3" Spacing="6">
-                    <Button Classes="index" Content="{DynamicResource WhatsNew_Open}"
-                            Command="{Binding OpenWhatsNewCommand}" IsVisible="{Binding HasWhatsNew}"/>
-                    <TextBlock Text="{Binding UpdateStateLabel}" Classes="faint" Margin="10,0,0,0" TextWrapping="Wrap"/>
-                </StackPanel>
-            </Grid>
-        </Border>
-
-        <ScrollViewer Grid.Column="1" Name="SettingsScroll">
-            <StackPanel Margin="40,28" Spacing="16" MaxWidth="820" HorizontalAlignment="Left">
-
-                <TextBlock Name="SearchEmpty" Text="{DynamicResource Settings_SearchEmpty}" Classes="muted"
-                           IsVisible="False" Margin="4,0"/>
+                <TextBlock Name="SearchEmpty" Text="{DynamicResource Settings_SearchEmpty}" Classes="muted wrap"
+                           IsVisible="False" Margin="0,6,0,0"/>
 
                 <!-- The searched part. Rows carry SettingsSearch.Keywords: words a player might
                      type that the row itself does not show, in both languages. -->
-                <StackPanel Name="SearchRoot" Spacing="16">
+                <StackPanel Name="SearchRoot" Classes="groups">
 
-                <!-- ======== Game: the one button, then memory and the window ======== -->
-                <Border Name="GameSection" Classes="card" Padding="24,22">
-                    <StackPanel Spacing="18">
-                        <Grid ColumnDefinitions="*,Auto" controls:SettingsSearch.Heading="True">
-                            <TextBlock Text="{DynamicResource Settings_TabGame}" Classes="h3" FontSize="17"/>
-                            <TextBlock Grid.Column="1" Text="{Binding GameSettingsScopeLabel}" Classes="faint" VerticalAlignment="Center"/>
-                        </Grid>
+                <!-- ======== Game: graphics in one press, the boost, memory, the window ======== -->
+                <StackPanel Name="GameSection">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" Margin="0,0,0,4" controls:SettingsSearch.Heading="True">
+                        <TextBlock Text="{DynamicResource Settings_TabGame}" Classes="group"/>
+                        <TextBlock Grid.Column="1" Text="{Binding GameSettingsScopeLabel}" Classes="sub" VerticalAlignment="Bottom"
+                                   TextTrimming="CharacterEllipsis" MaxWidth="320"/>
+                    </Grid>
 
-                        <!-- One button instead of twelve settings. Writes options.txt and the memory,
-                             remembers what they were, and offers the way back. Adds no mods:
-                             that is the switch below. -->
-                        <StackPanel Spacing="8" controls:SettingsSearch.Keywords="производительность графика фпс fps лаги тормозит оптимизация качество performance graphics preset lag">
-                            <TextBlock Text="{DynamicResource Perf_Title}" FontWeight="SemiBold"/>
-                            <WrapPanel ItemSpacing="8" LineSpacing="8">
-                                <Button Classes="ghost" Command="{Binding ApplyPerformancePresetCommand}" CommandParameter="Low"
-                                        IsEnabled="{Binding !IsApplyingPreset}">
-                                    <StackPanel Spacing="2">
-                                        <TextBlock Text="{DynamicResource Perf_Low}" FontWeight="SemiBold"/>
-                                        <TextBlock Text="{DynamicResource Perf_LowHint}" Classes="faint" FontSize="11"/>
+                    <!-- One press instead of twelve settings. Writes options.txt and the memory,
+                         remembers what they were, and offers the way back. Adds no mods:
+                         that is the switch below. -->
+                    <Border Classes="setting" controls:SettingsSearch.Keywords="оптимизация одной кнопкой производительность графика фпс fps лаги тормозит качество пресет слабый пк performance graphics preset lag optimization">
+                        <StackPanel Spacing="10">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                                <StackPanel VerticalAlignment="Center" Background="Transparent">
+                                    <ToolTip.Tip>
+                                        <StackPanel Spacing="6" MaxWidth="340">
+                                            <TextBlock Text="{DynamicResource Perf_Hint}" TextWrapping="Wrap"/>
+                                            <TextBlock Text="{DynamicResource Perf_ModsHint}" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </ToolTip.Tip>
+                                    <TextBlock Classes="strong" Text="{DynamicResource Settings_PerfTitle}"/>
+                                    <TextBlock Classes="sub" Text="{DynamicResource Settings_PerfSub}"/>
+                                </StackPanel>
+                                <Border Grid.Column="1" Classes="segments" VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Classes="segment" Classes.active="{Binding IsPresetLow}"
+                                                Content="{DynamicResource Perf_Low}" ToolTip.Tip="{DynamicResource Perf_LowHint}"
+                                                Command="{Binding ApplyPerformancePresetCommand}" CommandParameter="Low"
+                                                IsEnabled="{Binding !IsApplyingPreset}"/>
+                                        <Button Classes="segment" Classes.active="{Binding IsPresetBalanced}"
+                                                Content="{DynamicResource Perf_Balanced}" ToolTip.Tip="{DynamicResource Perf_BalancedHint}"
+                                                Command="{Binding ApplyPerformancePresetCommand}" CommandParameter="Balanced"
+                                                IsEnabled="{Binding !IsApplyingPreset}"/>
+                                        <Button Classes="segment" Classes.active="{Binding IsPresetHigh}"
+                                                Content="{DynamicResource Perf_High}" ToolTip.Tip="{DynamicResource Perf_HighHint}"
+                                                Command="{Binding ApplyPerformancePresetCommand}" CommandParameter="High"
+                                                IsEnabled="{Binding !IsApplyingPreset}"/>
                                     </StackPanel>
-                                </Button>
-                                <Button Classes="ghost" Command="{Binding ApplyPerformancePresetCommand}" CommandParameter="Balanced"
-                                        IsEnabled="{Binding !IsApplyingPreset}">
-                                    <StackPanel Spacing="2">
-                                        <TextBlock Text="{DynamicResource Perf_Balanced}" FontWeight="SemiBold"/>
-                                        <TextBlock Text="{DynamicResource Perf_BalancedHint}" Classes="faint" FontSize="11"/>
-                                    </StackPanel>
-                                </Button>
-                                <Button Classes="ghost" Command="{Binding ApplyPerformancePresetCommand}" CommandParameter="High"
-                                        IsEnabled="{Binding !IsApplyingPreset}">
-                                    <StackPanel Spacing="2">
-                                        <TextBlock Text="{DynamicResource Perf_High}" FontWeight="SemiBold"/>
-                                        <TextBlock Text="{DynamicResource Perf_HighHint}" Classes="faint" FontSize="11"/>
-                                    </StackPanel>
-                                </Button>
-                            </WrapPanel>
-                            <TextBlock Text="{DynamicResource Perf_Hint}" Classes="faint" TextWrapping="Wrap"/>
-                            <TextBlock Text="{DynamicResource Perf_ModsHint}" Classes="faint" TextWrapping="Wrap"/>
-                            <Button Classes="ghost small" HorizontalAlignment="Left"
+                                </Border>
+                            </Grid>
+                            <Button Classes="link" HorizontalAlignment="Left"
                                     Content="{DynamicResource Perf_Revert}"
                                     IsVisible="{Binding HasPresetRecord}" IsEnabled="{Binding CanRevertPreset}"
                                     Command="{Binding RevertPerformancePresetCommand}"/>
                             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8"
                                   IsVisible="{Binding PresetStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                                 <ProgressBar IsIndeterminate="True" Width="60" Height="3" VerticalAlignment="Center" IsVisible="{Binding IsApplyingPreset}"/>
-                                <TextBlock Grid.Column="1" Text="{Binding PresetStatus}" Classes="gold" TextWrapping="Wrap"/>
+                                <TextBlock Grid.Column="1" Text="{Binding PresetStatus}" Classes="state"/>
                             </Grid>
                         </StackPanel>
+                    </Border>
 
-                        <!-- "Ускорение": the same wish as the presets, but a switch - what it adds
-                             and changes is listed before anything happens, written down, and
-                             taken back when it is switched off. -->
-                        <StackPanel Spacing="8">
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                                <TextBlock Text="{DynamicResource Boost_Title}" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding BoostSwitch}"
-                                              OnContent="" OffContent="" MinWidth="0" VerticalAlignment="Center"
+                    <!-- "Ускорение": the same wish as the presets, but a switch. What it adds and
+                         changes is listed before anything happens, written down, and taken
+                         back when it is switched off. -->
+                    <Border Classes="setting" controls:SettingsSearch.Keywords="ускорение ускорить моды для скорости sodium lithium фпс fps лаги boost speed faster optimization mods">
+                        <StackPanel Spacing="10">
+                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="16">
+                                <StackPanel VerticalAlignment="Center" Background="Transparent">
+                                    <ToolTip.Tip>
+                                        <TextBlock Text="{DynamicResource Boost_Hint}" TextWrapping="Wrap" MaxWidth="340"/>
+                                    </ToolTip.Tip>
+                                    <TextBlock Classes="strong" Text="{DynamicResource Boost_Title}"/>
+                                    <TextBlock Classes="sub" Text="{DynamicResource Settings_BoostSub}" IsVisible="{Binding !HasBoostNote}"/>
+                                    <TextBlock Classes="sub" Text="{Binding BoostNote}" IsVisible="{Binding HasBoostNote}"/>
+                                </StackPanel>
+
+                                <!-- What the switch has done to this build, from its record. -->
+                                <Button Grid.Column="1" Classes="link" VerticalAlignment="Center"
+                                        Content="{DynamicResource Settings_BoostChanges}" IsVisible="{Binding IsBoostOn}">
+                                    <Button.Flyout>
+                                        <Flyout Placement="BottomEdgeAlignedRight">
+                                            <StackPanel Spacing="8" Width="400">
+                                                <controls:Caption Text="{DynamicResource Settings_BoostChangesMods}"/>
+                                                <ItemsControl ItemsSource="{Binding BoostAppliedModLines}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate x:DataType="vm:BoostLine">
+                                                            <Grid ColumnDefinitions="170,*" ColumnSpacing="12" Margin="0,2">
+                                                                <TextBlock Text="{Binding Title}" Margin="{Binding Margin}" TextTrimming="CharacterEllipsis"/>
+                                                                <TextBlock Grid.Column="1" Text="{Binding Detail}" Classes="sub" TextTrimming="CharacterEllipsis"/>
+                                                            </Grid>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                                <TextBlock Text="{DynamicResource Settings_BoostChangesNone}" Classes="sub"
+                                                           IsVisible="{Binding !BoostAppliedModLines.Count}"/>
+                                                <controls:Caption Text="{DynamicResource Settings_BoostChangesOptions}" Margin="0,6,0,0"/>
+                                                <ItemsControl ItemsSource="{Binding BoostAppliedOptionLines}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate x:DataType="vm:BoostLine">
+                                                            <Grid ColumnDefinitions="170,*" ColumnSpacing="12" Margin="0,2">
+                                                                <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis"/>
+                                                                <TextBlock Grid.Column="1" Text="{Binding Detail}" Classes="sub" TextWrapping="Wrap"/>
+                                                            </Grid>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                                <TextBlock Text="{DynamicResource Settings_BoostChangesNone}" Classes="sub"
+                                                           IsVisible="{Binding !BoostAppliedOptionLines.Count}"/>
+                                            </StackPanel>
+                                        </Flyout>
+                                    </Button.Flyout>
+                                </Button>
+
+                                <ToggleSwitch Grid.Column="2" IsChecked="{Binding BoostSwitch}" VerticalAlignment="Center"
                                               IsEnabled="{Binding CanToggleBoost}"/>
                             </Grid>
-                            <TextBlock Text="{DynamicResource Boost_Hint}" Classes="faint" TextWrapping="Wrap"/>
-                            <TextBlock Text="{Binding BoostNote}" TextWrapping="Wrap" FontSize="12.5"
-                                       IsVisible="{Binding HasBoostNote}"/>
 
+                            <!-- The list read before agreeing. It is a question, so it keeps its frame. -->
                             <Border Classes="panel" Padding="16,14" IsVisible="{Binding IsBoostReviewOpen}">
                                 <StackPanel Spacing="10">
-                                    <TextBlock Text="{DynamicResource Boost_ReviewTitle}" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{DynamicResource Boost_ReviewTitle}" Classes="strong"/>
 
                                     <TextBlock Text="{Binding BoostModsHeader}" Classes="label" TextWrapping="Wrap"/>
                                     <ItemsControl ItemsSource="{Binding BoostModLines}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate x:DataType="vm:BoostLine">
-                                                <Grid ColumnDefinitions="230,*" ColumnSpacing="12" Margin="0,2" Opacity="{Binding Opacity}">
+                                                <Grid ColumnDefinitions="210,*" ColumnSpacing="12" Margin="0,2" Opacity="{Binding Opacity}">
                                                     <TextBlock Text="{Binding Title}" Margin="{Binding Margin}" TextTrimming="CharacterEllipsis"/>
                                                     <TextBlock Grid.Column="1" Text="{Binding Detail}" Classes="faint" TextWrapping="Wrap"/>
                                                 </Grid>
@@ -136,7 +222,7 @@
                                     <ItemsControl ItemsSource="{Binding BoostOptionLines}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate x:DataType="vm:BoostLine">
-                                                <Grid ColumnDefinitions="230,*" ColumnSpacing="12" Margin="0,2">
+                                                <Grid ColumnDefinitions="210,*" ColumnSpacing="12" Margin="0,2">
                                                     <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis"/>
                                                     <TextBlock Grid.Column="1" Text="{Binding Detail}" Classes="faint" TextWrapping="Wrap"/>
                                                 </Grid>
@@ -156,537 +242,649 @@
 
                             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" IsVisible="{Binding HasBoostStatus}">
                                 <ProgressBar IsIndeterminate="True" Width="60" Height="3" VerticalAlignment="Center" IsVisible="{Binding IsBoostBusy}"/>
-                                <TextBlock Grid.Column="1" Text="{Binding BoostStatus}" Classes="gold" TextWrapping="Wrap"/>
+                                <TextBlock Grid.Column="1" Text="{Binding BoostStatus}" Classes="state"/>
                             </Grid>
                         </StackPanel>
+                    </Border>
 
-                        <Grid ColumnDefinitions="*,*" ColumnSpacing="28">
-                            <!-- Memory: a slider with the recommendation marked, instead of two
-                                 number boxes with no hint of what is sensible. -->
-                            <StackPanel Spacing="10" controls:SettingsSearch.Keywords="память ram озу оперативка оперативная гб мб memory gb mb xmx heap">
-                                <Grid ColumnDefinitions="*,Auto">
-                                    <TextBlock Text="{DynamicResource Settings_MemoryTitle}" FontWeight="SemiBold"/>
-                                    <Button Grid.Column="1" Classes="plain small" Foreground="{DynamicResource GoldBrush}"
-                                            Content="{Binding RecommendedMemoryLabel}"
-                                            Command="{Binding UseRecommendedMemoryCommand}"/>
-                                </Grid>
+                    <!-- Memory: a slider with the recommendation one press away, instead of two
+                         number boxes with no hint of what is sensible. -->
+                    <Border Classes="setting" controls:SettingsSearch.Keywords="память ram озу оперативка оперативная гб мб memory gb mb xmx heap">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                            <StackPanel VerticalAlignment="Center" Background="Transparent"
+                                        ToolTip.Tip="{DynamicResource Settings_MemoryCeiling}">
+                                <TextBlock Classes="strong" Text="{DynamicResource Settings_MemoryTitle}"/>
+                                <TextBlock Classes="sub" Text="{Binding MemoryHint}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Width="220" Spacing="2" VerticalAlignment="Center">
                                 <Slider Minimum="1024" Maximum="{Binding MemorySliderMax}" TickFrequency="512" IsSnapToTickEnabled="True"
                                         Value="{Binding MaxMemoryMb}"/>
-                                <StackPanel Spacing="2">
-                                    <TextBlock Text="{Binding MemoryHint}" Classes="faint" TextWrapping="Wrap"/>
-                                    <TextBlock Text="{DynamicResource Settings_MemoryCeiling}" Classes="faint"/>
+                                <Button Classes="link" HorizontalAlignment="Right"
+                                        Content="{Binding RecommendedMemoryLabel}"
+                                        ToolTip.Tip="{DynamicResource Settings_MemoryCeiling}"
+                                        Command="{Binding UseRecommendedMemoryCommand}"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <Border Classes="setting" controls:SettingsSearch.Keywords="разрешение окно размер экран ширина высота полный resolution window size width height fullscreen">
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Classes="strong" Text="{DynamicResource Settings_ResolutionTitle}"/>
+                                <TextBlock Classes="sub" Text="{DynamicResource Settings_ResolutionSub}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center"
+                                        IsVisible="{Binding !UseDefaultResolution}">
+                                <NumericUpDown Value="{Binding Width}" Minimum="0" Maximum="7680"
+                                               Increment="10" FormatString="0" ShowButtonSpinner="False"/>
+                                <TextBlock Text="&#x00D7;" VerticalAlignment="Center" Classes="faint"/>
+                                <NumericUpDown Value="{Binding Height}" Minimum="0" Maximum="4320"
+                                               Increment="10" FormatString="0" ShowButtonSpinner="False"/>
+                            </StackPanel>
+                            <Border Grid.Column="2" Classes="segments" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Classes="segment" Classes.active="{Binding UseDefaultResolution}"
+                                            Content="{DynamicResource Settings_ResolutionDefault}" Click="OnResolutionModeClick" Tag="default"/>
+                                    <Button Classes="segment" Classes.active="{Binding !UseDefaultResolution}"
+                                            Content="{DynamicResource Settings_ResolutionCustom}" Click="OnResolutionModeClick" Tag="custom"/>
                                 </StackPanel>
-                            </StackPanel>
-
-                            <StackPanel Grid.Column="1" Spacing="10" controls:SettingsSearch.Keywords="разрешение окно размер экран ширина высота полный resolution window size width height fullscreen">
-                                <TextBlock Text="{DynamicResource Settings_ResolutionTitle}" FontWeight="SemiBold"/>
-                                <CheckBox Content="{DynamicResource Settings_ResolutionDefault}"
-                                          IsChecked="{Binding UseDefaultResolution}"/>
-                                <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="8" MaxWidth="240" HorizontalAlignment="Left"
-                                      IsEnabled="{Binding !UseDefaultResolution}">
-                                    <NumericUpDown Value="{Binding Width}" Minimum="0" Maximum="7680"
-                                                   Increment="10" FormatString="0" ShowButtonSpinner="False"/>
-                                    <TextBlock Grid.Column="1" Text="&#x00D7;" VerticalAlignment="Center" Classes="faint"/>
-                                    <NumericUpDown Grid.Column="2" Value="{Binding Height}" Minimum="0"
-                                                   Maximum="4320" Increment="10" FormatString="0"
-                                                   ShowButtonSpinner="False"/>
-                                </Grid>
-                            </StackPanel>
+                            </Border>
                         </Grid>
-                    </StackPanel>
-                </Border>
+                    </Border>
+                </StackPanel>
 
-                <!-- ======== Look: theme, accent, language, the live background ======== -->
-                <Border Name="LookSection" Classes="card" Padding="24,22">
-                    <StackPanel Spacing="16">
-                        <TextBlock Text="{DynamicResource Settings_SectionLook}" Classes="h3" FontSize="17"
-                                   controls:SettingsSearch.Heading="True"/>
+                <!-- ======== Look: theme, accent, language, scale, the live background ======== -->
+                <StackPanel Name="LookSection">
+                    <TextBlock Text="{DynamicResource Settings_SectionLook}" Classes="group" Margin="0,0,0,4"
+                               controls:SettingsSearch.Heading="True"/>
 
-                        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="24">
-                            <StackPanel Spacing="8" controls:SettingsSearch.Keywords="тема темная светлая ночная дневная theme dark light night">
-                                <TextBlock Text="{DynamicResource Settings_Theme}" FontWeight="SemiBold"/>
-                                <Border Classes="panel" Padding="4" HorizontalAlignment="Left">
-                                    <StackPanel Orientation="Horizontal" Spacing="2">
-                                        <Button Classes="segment" Classes.active="{Binding IsThemeDark}"
-                                                Content="{DynamicResource Settings_ThemeDark}"
-                                                Command="{Binding SelectThemeCommand}" CommandParameter="dark"/>
-                                        <Button Classes="segment" Classes.active="{Binding IsThemeLight}"
-                                                Content="{DynamicResource Settings_ThemeLight}"
-                                                Command="{Binding SelectThemeCommand}" CommandParameter="light"/>
-                                    </StackPanel>
-                                </Border>
-                            </StackPanel>
-                            <StackPanel Grid.Column="1" Spacing="10" controls:SettingsSearch.Keywords="цвет акцент оформление красный синий color colour accent">
-                                <TextBlock Text="{DynamicResource Settings_Accent}" FontWeight="SemiBold"/>
-                                <ItemsControl ItemsSource="{Binding AccentOptions}">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <!-- Wraps: eight swatches do not fit a third of a narrow window. -->
-                                            <WrapPanel ItemSpacing="8" LineSpacing="8"/>
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:AccentOption">
-                                            <Button Classes="swatch" Classes.selected="{Binding IsSelected}"
-                                                    Background="{Binding Brush}" ToolTip.Tip="{Binding Display}"
-                                                    Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).SelectAccentCommand}"
-                                                    CommandParameter="{Binding Key}">
-                                                <PathIcon Data="{StaticResource IconCheck}" Classes="small" Foreground="{DynamicResource TextOnAccentBrush}"
-                                                          IsVisible="{Binding IsSelected}"/>
-                                            </Button>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
-                            <StackPanel Grid.Column="2" Spacing="8" controls:SettingsSearch.Keywords="язык русский английский перевод language russian english locale">
-                                <TextBlock Text="{DynamicResource Settings_Language}" FontWeight="SemiBold"/>
-                                <ComboBox ItemsSource="{Binding LanguageOptions}"
-                                          SelectedItem="{Binding SelectedLanguageOption}"
-                                          HorizontalAlignment="Stretch">
-                                    <ComboBox.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:LanguageOption">
-                                            <TextBlock Text="{Binding Display}"/>
-                                        </DataTemplate>
-                                    </ComboBox.ItemTemplate>
-                                </ComboBox>
-                            </StackPanel>
+                    <Border Classes="setting" controls:SettingsSearch.Keywords="тема темная светлая ночная дневная theme dark light night">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                            <TextBlock Classes="strong" Text="{DynamicResource Settings_Theme}" VerticalAlignment="Center"/>
+                            <Border Grid.Column="1" Classes="segments" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Classes="segment" Classes.active="{Binding IsThemeDark}"
+                                            Content="{DynamicResource Settings_ThemeDark}"
+                                            Command="{Binding SelectThemeCommand}" CommandParameter="dark"/>
+                                    <Button Classes="segment" Classes.active="{Binding IsThemeLight}"
+                                            Content="{DynamicResource Settings_ThemeLight}"
+                                            Command="{Binding SelectThemeCommand}" CommandParameter="light"/>
+                                </StackPanel>
+                            </Border>
                         </Grid>
+                    </Border>
 
-                        <!-- 100 % is the designed size; the others are for a 4K desk or a small laptop. -->
-                        <StackPanel Spacing="8" controls:SettingsSearch.Keywords="масштаб размер интерфейса шрифт мелко крупно 4k scale zoom font size dpi">
-                            <TextBlock Text="{DynamicResource Settings_UiScale}" FontWeight="SemiBold"/>
-                            <Border Classes="panel" Padding="4" HorizontalAlignment="Left">
-                                <StackPanel Orientation="Horizontal" Spacing="2">
-                                    <Button Classes="segment" Classes.active="{Binding IsUiScale90}" Content="90 %"
+                    <Border Classes="setting" controls:SettingsSearch.Keywords="цвет акцент оформление красный синий color colour accent">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                            <TextBlock Classes="strong" Text="{DynamicResource Settings_Accent}" VerticalAlignment="Center"/>
+                            <ItemsControl Grid.Column="1" ItemsSource="{Binding AccentOptions}" VerticalAlignment="Center" MaxWidth="320">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <!-- Wraps: eight swatches do not fit beside the name in a narrow window. -->
+                                        <WrapPanel ItemSpacing="8" LineSpacing="8"/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:AccentOption">
+                                        <Button Classes="swatch" Classes.selected="{Binding IsSelected}"
+                                                Background="{Binding Brush}" ToolTip.Tip="{Binding Display}"
+                                                Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).SelectAccentCommand}"
+                                                CommandParameter="{Binding Key}">
+                                            <PathIcon Data="{StaticResource IconCheck}" Classes="small" Foreground="{DynamicResource TextOnAccentBrush}"
+                                                      IsVisible="{Binding IsSelected}"/>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Grid>
+                    </Border>
+
+                    <Border Classes="setting" controls:SettingsSearch.Keywords="язык русский английский перевод language russian english locale">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                            <TextBlock Classes="strong" Text="{DynamicResource Settings_Language}" VerticalAlignment="Center"/>
+                            <ComboBox Grid.Column="1" Width="200" VerticalAlignment="Center"
+                                      ItemsSource="{Binding LanguageOptions}"
+                                      SelectedItem="{Binding SelectedLanguageOption}">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:LanguageOption">
+                                        <TextBlock Text="{Binding Display}"/>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </Grid>
+                    </Border>
+
+                    <!-- 100 % is the designed size; the others are for a 4K desk or a small laptop. -->
+                    <Border Classes="setting" controls:SettingsSearch.Keywords="масштаб размер интерфейса шрифт мелко крупно 4k scale zoom font size dpi">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Classes="strong" Text="{DynamicResource Settings_UiScale}"/>
+                                <TextBlock Classes="sub" Text="{DynamicResource Settings_UiScaleHint}"/>
+                            </StackPanel>
+                            <Border Grid.Column="1" Classes="segments" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Classes="segment" Classes.active="{Binding IsUiScale90}" Content="90"
                                             Command="{Binding SelectUiScaleCommand}" CommandParameter="0.9"/>
-                                    <Button Classes="segment" Classes.active="{Binding IsUiScale100}" Content="100 %"
+                                    <Button Classes="segment" Classes.active="{Binding IsUiScale100}" Content="100"
                                             Command="{Binding SelectUiScaleCommand}" CommandParameter="1.0"/>
-                                    <Button Classes="segment" Classes.active="{Binding IsUiScale110}" Content="110 %"
+                                    <Button Classes="segment" Classes.active="{Binding IsUiScale110}" Content="110"
                                             Command="{Binding SelectUiScaleCommand}" CommandParameter="1.1"/>
-                                    <Button Classes="segment" Classes.active="{Binding IsUiScale125}" Content="125 %"
+                                    <Button Classes="segment" Classes.active="{Binding IsUiScale125}" Content="125"
                                             Command="{Binding SelectUiScaleCommand}" CommandParameter="1.25"/>
                                 </StackPanel>
                             </Border>
-                            <TextBlock Text="{DynamicResource Settings_UiScaleHint}" Classes="faint" TextWrapping="Wrap"/>
-                        </StackPanel>
+                        </Grid>
+                    </Border>
 
-                        <CheckBox Content="{DynamicResource Settings_AnimatedBackground}" IsChecked="{Binding AnimatedBackground}"
-                                  controls:SettingsSearch.Keywords="фон анимация искры живой background animation embers"/>
-                    </StackPanel>
-                </Border>
+                    <Border Classes="setting" controls:SettingsSearch.Keywords="фон анимация искры живой background animation embers">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                            <TextBlock Classes="strong" Text="{DynamicResource Settings_AnimatedBackground}" VerticalAlignment="Center"/>
+                            <ToggleSwitch Grid.Column="1" IsChecked="{Binding AnimatedBackground}" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Border>
+                </StackPanel>
 
                 <!-- ======== Launcher: three things, not twelve ======== -->
-                <Border Name="LauncherSection" Classes="card" Padding="24,22">
-                    <StackPanel Spacing="16">
-                        <TextBlock Text="{DynamicResource Settings_SectionLauncher}" Classes="h3" FontSize="17"
-                                   controls:SettingsSearch.Heading="True"/>
+                <StackPanel Name="LauncherSection">
+                    <TextBlock Text="{DynamicResource Settings_SectionLauncher}" Classes="group" Margin="0,0,0,4"
+                               controls:SettingsSearch.Heading="True"/>
 
-                        <Grid ColumnDefinitions="*,*" ColumnSpacing="28">
-                            <StackPanel Spacing="8" controls:SettingsSearch.Keywords="после запуска закрывать сворачивать скрывать трей after launch close hide minimize tray">
-                                <TextBlock Text="{DynamicResource Settings_AfterLaunch}" FontWeight="SemiBold"/>
-                                <ComboBox ItemsSource="{Binding AfterLaunchOptions}"
-                                          SelectedItem="{Binding SelectedAfterLaunchOption}"
-                                          HorizontalAlignment="Stretch">
-                                    <ComboBox.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:AfterLaunchOption">
-                                            <TextBlock Text="{Binding Display}"/>
-                                        </DataTemplate>
-                                    </ComboBox.ItemTemplate>
-                                </ComboBox>
-                            </StackPanel>
-                            <StackPanel Grid.Column="1" Spacing="10">
-                                <StackPanel Spacing="4" controls:SettingsSearch.Keywords="дискорд статус активность discord presence status rpc">
-                                    <CheckBox Content="{DynamicResource Settings_DiscordPresence}" IsChecked="{Binding DiscordPresence}"/>
-                                    <TextBlock Text="{DynamicResource Settings_DiscordPresenceHint}" Classes="faint"
-                                               TextWrapping="Wrap" Margin="28,0,0,0"/>
-                                </StackPanel>
-                                <StackPanel Spacing="4" controls:SettingsSearch.Keywords="статистика телеметрия анонимно приватность данные statistics telemetry privacy analytics">
-                                    <CheckBox Content="{DynamicResource Settings_UsageStats}" IsChecked="{Binding UsageStats}"/>
-                                    <TextBlock Text="{DynamicResource Settings_UsageStatsHint}" Classes="faint"
-                                               TextWrapping="Wrap" Margin="28,0,0,0"/>
-                                </StackPanel>
-                            </StackPanel>
+                    <Border Classes="setting" controls:SettingsSearch.Keywords="после запуска закрывать сворачивать скрывать трей after launch close hide minimize tray">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                            <TextBlock Classes="strong" Text="{DynamicResource Settings_AfterLaunch}" VerticalAlignment="Center"/>
+                            <ComboBox Grid.Column="1" Width="240" VerticalAlignment="Center"
+                                      ItemsSource="{Binding AfterLaunchOptions}"
+                                      SelectedItem="{Binding SelectedAfterLaunchOption}">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:AfterLaunchOption">
+                                        <TextBlock Text="{Binding Display}"/>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
                         </Grid>
-                    </StackPanel>
-                </Border>
+                    </Border>
 
-                <!-- ======== Backups: one line, the rest folded ======== -->
-                <Border Name="BackupsSection" Classes="card" Padding="24,22"
-                        controls:SettingsSearch.Keywords="бэкап бекап резервная копия копии сохранения миры восстановить откат backup restore saves worlds">
-                    <StackPanel Spacing="14">
-                        <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
-                            <ToggleSwitch IsChecked="{Binding BackupsEnabled}"
-                                          OnContent="" OffContent="" MinWidth="0" VerticalAlignment="Center"/>
-                            <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-                                <TextBlock Text="{DynamicResource Settings_BackupsTitle}" Classes="h3" FontSize="17"/>
-                                <TextBlock Text="{Binding BackupStatus}" Classes="faint" TextWrapping="Wrap"/>
+                    <Border Classes="setting" controls:SettingsSearch.Keywords="дискорд статус активность discord presence status rpc">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                            <StackPanel VerticalAlignment="Center" Background="Transparent">
+                                <ToolTip.Tip>
+                                    <TextBlock Text="{DynamicResource Settings_DiscordPresenceHint}" TextWrapping="Wrap" MaxWidth="340"/>
+                                </ToolTip.Tip>
+                                <TextBlock Classes="strong" Text="{DynamicResource Settings_DiscordPresence}"/>
+                                <TextBlock Classes="sub" Text="{DynamicResource Settings_DiscordSub}"/>
                             </StackPanel>
-                            <Button Grid.Column="2" Classes="ghost" ToolTip.Tip="{DynamicResource Settings_OpenFolder}"
-                                    Command="{Binding OpenBackupsFolderCommand}">
-                                <PathIcon Data="{StaticResource IconFolder}"/>
-                            </Button>
-                            <Button Grid.Column="3" Classes="ghost" Content="{DynamicResource Settings_BackupNow}"
-                                    Command="{Binding CreateBackupNowCommand}"/>
+                            <ToggleSwitch Grid.Column="1" IsChecked="{Binding DiscordPresence}" VerticalAlignment="Center"/>
                         </Grid>
+                    </Border>
 
-                        <Button Classes="plain small" HorizontalAlignment="Left" Padding="0"
-                                Command="{Binding ToggleBackupDetailsCommand}">
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <TextBlock Text="{DynamicResource Settings_BackupsDetails}" Foreground="{DynamicResource GoldBrush}" FontSize="12"/>
-                                <PathIcon Data="{StaticResource IconChevronRight}" Width="10" Height="10" Foreground="{DynamicResource GoldBrush}"
-                                          IsVisible="{Binding !IsBackupDetailsOpen}"/>
-                                <PathIcon Data="{StaticResource IconChevronDown}" Width="10" Height="10" Foreground="{DynamicResource GoldBrush}"
-                                          IsVisible="{Binding IsBackupDetailsOpen}"/>
+                    <!-- What is sent and what is not stays on screen in full: this is the consent. -->
+                    <Border Classes="setting" controls:SettingsSearch.Keywords="статистика телеметрия анонимно приватность данные statistics telemetry privacy analytics">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Classes="strong" Text="{DynamicResource Settings_UsageStats}"/>
+                                <TextBlock Classes="sub" Text="{DynamicResource Settings_UsageStatsHint}"/>
                             </StackPanel>
-                        </Button>
+                            <ToggleSwitch Grid.Column="1" IsChecked="{Binding UsageStats}" VerticalAlignment="Top" Margin="0,2,0,0"/>
+                        </Grid>
+                    </Border>
+                </StackPanel>
 
-                        <StackPanel Spacing="16" IsVisible="{Binding IsBackupDetailsOpen}">
-                            <Grid ColumnDefinitions="*,*" ColumnSpacing="28" IsEnabled="{Binding BackupsEnabled}">
-                                <StackPanel Spacing="4">
-                                    <TextBlock Text="{DynamicResource Settings_BackupsWhen}" FontWeight="SemiBold"/>
-                                    <CheckBox Content="{DynamicResource Settings_BackupsDaily}" IsChecked="{Binding BackupsDaily}"/>
-                                    <CheckBox Content="{DynamicResource Settings_BackupsBeforeMods}" IsChecked="{Binding BackupsBeforeModChanges}"/>
-                                    <CheckBox Content="{DynamicResource Settings_BackupsBeforeLaunch}" IsChecked="{Binding BackupsBeforeLaunch}"/>
+                <!-- ======== Backups and space: where the copies and the gigabytes live ======== -->
+                <StackPanel Name="BackupsSection">
+                    <TextBlock Text="{DynamicResource Settings_SectionStorage}" Classes="group" Margin="0,0,0,4"
+                               controls:SettingsSearch.Heading="True"/>
+
+                    <Border Classes="setting" controls:SettingsSearch.Keywords="бэкап бекап резервная копия копии сохранения миры восстановить откат backup restore saves worlds">
+                        <StackPanel Spacing="10">
+                            <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="10">
+                                <StackPanel VerticalAlignment="Center" Margin="0,0,10,0" Background="Transparent">
+                                    <ToolTip.Tip>
+                                        <TextBlock Text="{DynamicResource Settings_BackupsWhat}" TextWrapping="Wrap" MaxWidth="340"/>
+                                    </ToolTip.Tip>
+                                    <TextBlock Classes="strong" Text="{DynamicResource Settings_BackupsTitle}"/>
+                                    <TextBlock Classes="sub" Text="{Binding BackupStatus}"/>
                                 </StackPanel>
-                                <Grid Grid.Column="1" ColumnDefinitions="*,*" ColumnSpacing="12" VerticalAlignment="Top">
-                                    <StackPanel Spacing="6">
-                                        <TextBlock Text="{DynamicResource Settings_BackupsMax}" FontWeight="SemiBold"/>
-                                        <NumericUpDown Value="{Binding BackupsMaxCount}" Minimum="1" Maximum="200"
-                                                       Increment="1" FormatString="0" ShowButtonSpinner="False"/>
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="1" Spacing="6">
-                                        <TextBlock Text="{DynamicResource Settings_BackupsSize}" FontWeight="SemiBold"/>
-                                        <NumericUpDown Value="{Binding BackupsMaxTotalMb}" Minimum="64"
-                                                       Maximum="102400" Increment="256" FormatString="0"
-                                                       ShowButtonSpinner="False"/>
-                                    </StackPanel>
-                                </Grid>
+                                <Button Grid.Column="1" Classes="icon" VerticalAlignment="Center"
+                                        ToolTip.Tip="{DynamicResource Settings_OpenFolder}"
+                                        Command="{Binding OpenBackupsFolderCommand}">
+                                    <PathIcon Data="{StaticResource IconFolder}"/>
+                                </Button>
+                                <Button Grid.Column="2" Classes="small" VerticalAlignment="Center"
+                                        Content="{DynamicResource Settings_BackupNow}"
+                                        Command="{Binding CreateBackupNowCommand}"/>
+                                <ToggleSwitch Grid.Column="3" IsChecked="{Binding BackupsEnabled}" VerticalAlignment="Center" Margin="6,0,0,0"/>
                             </Grid>
 
-                            <TextBlock Text="{DynamicResource Settings_BackupsWhat}" Classes="faint" TextWrapping="Wrap"/>
+                            <Button Classes="link" HorizontalAlignment="Left" Command="{Binding ToggleBackupDetailsCommand}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Text="{DynamicResource Settings_BackupsDetails}" Classes="sub" Margin="0"/>
+                                    <PathIcon Data="{StaticResource IconChevronRight}" Width="9" Height="9" Classes="muted"
+                                              IsVisible="{Binding !IsBackupDetailsOpen}"/>
+                                    <PathIcon Data="{StaticResource IconChevronDown}" Width="9" Height="9" Classes="muted"
+                                              IsVisible="{Binding IsBackupDetailsOpen}"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Border>
 
-                            <!-- What there is to go back to. Each row offers the three ways back. -->
-                            <StackPanel Spacing="8" IsVisible="{Binding HasBackups}">
-                                <Grid ColumnDefinitions="*,Auto">
-                                    <TextBlock Text="{DynamicResource Settings_BackupsList}" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                    <ProgressBar Grid.Column="1" IsIndeterminate="True" Width="80" Height="3"
-                                                 IsVisible="{Binding IsRestoringBackup}" VerticalAlignment="Center"/>
-                                </Grid>
-                                <ItemsControl ItemsSource="{Binding Backups}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:BackupItem">
-                                            <Border Classes="panel" Padding="12,10" Margin="0,0,0,6">
-                                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
-                                                    <StackPanel Spacing="2" VerticalAlignment="Center">
-                                                        <StackPanel Orientation="Horizontal" Spacing="8">
-                                                            <TextBlock Text="{Binding BuildName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-                                                            <Border Classes="tag" IsVisible="{Binding !BuildExists}" VerticalAlignment="Center">
-                                                                <TextBlock Text="{DynamicResource Backup_BuildDeleted}"/>
-                                                            </Border>
-                                                        </StackPanel>
-                                                        <StackPanel Orientation="Horizontal" Spacing="6">
-                                                            <TextBlock Text="{Binding DateLabel}" Classes="faint"/>
-                                                            <TextBlock Text="·" Classes="faint"/>
-                                                            <TextBlock Text="{Binding SizeLabel}" Classes="faint"/>
-                                                            <TextBlock Text="·" Classes="faint" IsVisible="{Binding ContentsLabel, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                                                            <TextBlock Text="{Binding ContentsLabel}" Classes="faint"/>
-                                                        </StackPanel>
+                    <!-- The schedule, the limits and the list: folded until asked for; a search may open it. -->
+                    <StackPanel IsVisible="{Binding IsBackupDetailsOpen}" controls:SettingsSearch.Expand="True">
+                        <Border Classes="setting" controls:SettingsSearch.Keywords="бэкап расписание когда каждый день backup schedule daily">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20" IsEnabled="{Binding BackupsEnabled}">
+                                <TextBlock Classes="strong" Text="{DynamicResource Settings_BackupsDaily}" VerticalAlignment="Center"/>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding BackupsDaily}" VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+                        <Border Classes="setting" controls:SettingsSearch.Keywords="бэкап расписание когда моды backup schedule mods">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20" IsEnabled="{Binding BackupsEnabled}">
+                                <TextBlock Classes="strong" Text="{DynamicResource Settings_BackupsBeforeMods}" VerticalAlignment="Center"/>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding BackupsBeforeModChanges}" VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+                        <Border Classes="setting" controls:SettingsSearch.Keywords="бэкап расписание когда запуск backup schedule launch">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20" IsEnabled="{Binding BackupsEnabled}">
+                                <TextBlock Classes="strong" Text="{DynamicResource Settings_BackupsBeforeLaunch}" VerticalAlignment="Center"/>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding BackupsBeforeLaunch}" VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+                        <Border Classes="setting" controls:SettingsSearch.Keywords="бэкап лимит сколько хранить количество размер backup limit keep count size">
+                            <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto" ColumnSpacing="10" IsEnabled="{Binding BackupsEnabled}">
+                                <TextBlock Classes="strong" Text="{DynamicResource Settings_BackupsLimits}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <TextBlock Grid.Column="1" Classes="sub" Text="{DynamicResource Settings_BackupsMax}" VerticalAlignment="Center"/>
+                                <NumericUpDown Grid.Column="2" Value="{Binding BackupsMaxCount}" Minimum="1" Maximum="200"
+                                               Increment="1" FormatString="0" ShowButtonSpinner="False" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="3" Classes="sub" Text="{DynamicResource Settings_BackupsSize}" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                                <NumericUpDown Grid.Column="4" Value="{Binding BackupsMaxTotalMb}" Minimum="64"
+                                               Maximum="102400" Increment="256" FormatString="0"
+                                               ShowButtonSpinner="False" VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- What there is to go back to. Each row offers the three ways back;
+                             deleting is behind the "...". -->
+                        <StackPanel IsVisible="{Binding HasBackups}" Margin="0,14,0,0"
+                                    controls:SettingsSearch.Keywords="бэкап список сохраненные восстановить удалить backup list saved restore delete">
+                            <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,4">
+                                <controls:Caption Text="{DynamicResource Settings_BackupsList}" VerticalAlignment="Center"/>
+                                <ProgressBar Grid.Column="1" IsIndeterminate="True" Width="80" Height="3"
+                                             IsVisible="{Binding IsRestoringBackup}" VerticalAlignment="Center"/>
+                            </Grid>
+                            <ItemsControl ItemsSource="{Binding Backups}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:BackupItem">
+                                        <Border Classes="row" Margin="-12,0">
+                                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                                                <StackPanel VerticalAlignment="Center">
+                                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                                        <TextBlock Text="{Binding BuildName}" Classes="strong" TextTrimming="CharacterEllipsis"/>
+                                                        <TextBlock Classes="tag" Text="{DynamicResource Backup_BuildDeleted}"
+                                                                   IsVisible="{Binding !BuildExists}" VerticalAlignment="Center"/>
                                                     </StackPanel>
-                                                    <Button Grid.Column="1" Classes="ghost small" VerticalAlignment="Center">
-                                                        <StackPanel Orientation="Horizontal" Spacing="6">
-                                                            <PathIcon Data="{StaticResource IconRestore}" Classes="small"/>
-                                                            <TextBlock Text="{DynamicResource Backup_Restore}"/>
-                                                            <PathIcon Data="{StaticResource IconChevronDown}" Width="10" Height="10"/>
-                                                        </StackPanel>
-                                                        <Button.Flyout>
-                                                            <controls:RevealFlyout Placement="BottomEdgeAlignedRight">
-                                                                <StackPanel Spacing="4" Width="300">
-                                                                    <Button Classes="ghost small" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                                                                            Command="{Binding RestoreWorldsCommand}" IsEnabled="{Binding CanRestoreWorlds}">
-                                                                        <StackPanel Spacing="2">
-                                                                            <TextBlock Text="{DynamicResource Backup_RestoreWorlds}" FontWeight="SemiBold"/>
-                                                                            <TextBlock Text="{DynamicResource Backup_RestoreWorldsHint}" Classes="faint" TextWrapping="Wrap"/>
-                                                                        </StackPanel>
-                                                                    </Button>
-                                                                    <Button Classes="ghost small" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                                                                            Command="{Binding RestoreEverythingCommand}" IsEnabled="{Binding CanRestoreEverything}">
-                                                                        <StackPanel Spacing="2">
-                                                                            <TextBlock Text="{DynamicResource Backup_RestoreAll}" FontWeight="SemiBold"/>
-                                                                            <TextBlock Text="{DynamicResource Backup_RestoreAllHint}" Classes="faint" TextWrapping="Wrap"/>
-                                                                        </StackPanel>
-                                                                    </Button>
-                                                                    <Button Classes="ghost small" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                                                                            Command="{Binding RestoreAsNewBuildCommand}">
-                                                                        <StackPanel Spacing="2">
-                                                                            <TextBlock Text="{DynamicResource Backup_RestoreNew}" FontWeight="SemiBold"/>
-                                                                            <TextBlock Text="{DynamicResource Backup_RestoreNewHint}" Classes="faint" TextWrapping="Wrap"/>
-                                                                        </StackPanel>
-                                                                    </Button>
-                                                                </StackPanel>
-                                                            </controls:RevealFlyout>
-                                                        </Button.Flyout>
-                                                    </Button>
-                                                    <Button Grid.Column="2" Classes="plain small icon-danger" VerticalAlignment="Center"
-                                                            ToolTip.Tip="{DynamicResource Backup_Delete}" Command="{Binding DeleteCommand}">
-                                                        <PathIcon Data="{StaticResource IconClose}" Classes="small"/>
-                                                    </Button>
-                                                </Grid>
-                                            </Border>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
+                                                    <StackPanel Classes="meta" Spacing="7">
+                                                        <TextBlock Text="{Binding DateLabel}" Classes="sub"/>
+                                                        <Ellipse/>
+                                                        <TextBlock Text="{Binding SizeLabel}" Classes="sub"/>
+                                                        <Ellipse IsVisible="{Binding ContentsLabel, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                                        <TextBlock Text="{Binding ContentsLabel}" Classes="sub"/>
+                                                    </StackPanel>
+                                                </StackPanel>
+                                                <Button Grid.Column="1" Classes="small" VerticalAlignment="Center">
+                                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                                        <TextBlock Text="{DynamicResource Backup_Restore}"/>
+                                                        <PathIcon Data="{StaticResource IconChevronDown}" Width="10" Height="10"/>
+                                                    </StackPanel>
+                                                    <Button.Flyout>
+                                                        <controls:RevealFlyout Placement="BottomEdgeAlignedRight">
+                                                            <StackPanel Spacing="4" Width="300">
+                                                                <Button Classes="ghost" Height="NaN" Padding="10,8" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                                                                        Command="{Binding RestoreWorldsCommand}" IsEnabled="{Binding CanRestoreWorlds}">
+                                                                    <StackPanel Spacing="2">
+                                                                        <TextBlock Text="{DynamicResource Backup_RestoreWorlds}" Classes="strong"/>
+                                                                        <TextBlock Text="{DynamicResource Backup_RestoreWorldsHint}" Classes="sub" TextWrapping="Wrap"/>
+                                                                    </StackPanel>
+                                                                </Button>
+                                                                <Button Classes="ghost" Height="NaN" Padding="10,8" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                                                                        Command="{Binding RestoreEverythingCommand}" IsEnabled="{Binding CanRestoreEverything}">
+                                                                    <StackPanel Spacing="2">
+                                                                        <TextBlock Text="{DynamicResource Backup_RestoreAll}" Classes="strong"/>
+                                                                        <TextBlock Text="{DynamicResource Backup_RestoreAllHint}" Classes="sub" TextWrapping="Wrap"/>
+                                                                    </StackPanel>
+                                                                </Button>
+                                                                <Button Classes="ghost" Height="NaN" Padding="10,8" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                                                                        Command="{Binding RestoreAsNewBuildCommand}">
+                                                                    <StackPanel Spacing="2">
+                                                                        <TextBlock Text="{DynamicResource Backup_RestoreNew}" Classes="strong"/>
+                                                                        <TextBlock Text="{DynamicResource Backup_RestoreNewHint}" Classes="sub" TextWrapping="Wrap"/>
+                                                                    </StackPanel>
+                                                                </Button>
+                                                            </StackPanel>
+                                                        </controls:RevealFlyout>
+                                                    </Button.Flyout>
+                                                </Button>
+                                                <Button Grid.Column="2" Classes="icon more" VerticalAlignment="Center"
+                                                        ToolTip.Tip="{DynamicResource Builds_More}">
+                                                    <PathIcon Data="{StaticResource IconDots}"/>
+                                                    <Button.Flyout>
+                                                        <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                                            <MenuItem Classes="danger" Header="{DynamicResource Backup_Delete}" Command="{Binding DeleteCommand}"/>
+                                                        </MenuFlyout>
+                                                    </Button.Flyout>
+                                                </Button>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <Border Classes="hairline"/>
                         </StackPanel>
                     </StackPanel>
-                </Border>
+
+                    <!-- Where the gigabytes live. Moving copies everything, then restarts: said in full. -->
+                    <Border Classes="setting" controls:SettingsSearch.Keywords="папка данных диск место перенести переместить путь хранение data folder directory disk drive move location storage">
+                        <StackPanel Spacing="10">
+                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+                                <StackPanel VerticalAlignment="Center" Margin="0,0,10,0">
+                                    <TextBlock Classes="strong" Text="{DynamicResource Settings_DataFolder}"/>
+                                    <SelectableTextBlock Classes="path" Text="{Binding DataDirectory, Mode=OneWay}"/>
+                                    <TextBlock Classes="sub" Text="{DynamicResource Settings_DataFolderHint}" Margin="0,6,0,0"/>
+                                </StackPanel>
+                                <Button Grid.Column="1" Classes="icon" VerticalAlignment="Top"
+                                        ToolTip.Tip="{DynamicResource Settings_OpenFolder}"
+                                        Command="{Binding OpenDataDirectoryCommand}">
+                                    <PathIcon Data="{StaticResource IconFolder}"/>
+                                </Button>
+                                <Button Grid.Column="2" Classes="small" VerticalAlignment="Top"
+                                        Content="{DynamicResource Settings_DataFolderChange}"
+                                        Command="{Binding ChangeDataDirectoryCommand}" IsEnabled="{Binding !IsMovingData}"/>
+                            </Grid>
+                            <Button Classes="link" HorizontalAlignment="Left" Content="{DynamicResource Settings_DataFolderReset}"
+                                    Command="{Binding ResetDataDirectoryCommand}" IsEnabled="{Binding !IsMovingData}"
+                                    IsVisible="{Binding !IsDefaultDataDirectory}"/>
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8"
+                                  IsVisible="{Binding DataMoveStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                <ProgressBar IsIndeterminate="True" Width="60" Height="3" VerticalAlignment="Center"
+                                             IsVisible="{Binding IsMovingData}"/>
+                                <TextBlock Grid.Column="1" Text="{Binding DataMoveStatus}" Classes="state"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- One copy on disk for the mods and packs several builds share. -->
+                    <Border Classes="setting" controls:SettingsSearch.Keywords="общие файлы место диск дубликаты одинаковые shared files disk space duplicates dedupe">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                            <StackPanel VerticalAlignment="Center" Background="Transparent">
+                                <ToolTip.Tip>
+                                    <TextBlock Text="{DynamicResource Settings_SharedFilesHint}" TextWrapping="Wrap" MaxWidth="360"/>
+                                </ToolTip.Tip>
+                                <TextBlock Classes="strong" Text="{DynamicResource Settings_SharedFiles}"/>
+                                <TextBlock Classes="sub" Text="{DynamicResource Settings_SharedFilesSub}"/>
+                            </StackPanel>
+                            <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShareFiles}" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Border>
+
+                    <Border Classes="setting" controls:SettingsSearch.Keywords="освободить место очистка диск дубликаты хранилище общие файлы free space cleanup disk duplicates storage">
+                        <StackPanel Spacing="10">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Classes="strong" Text="{DynamicResource Settings_SharedFilesClean}"/>
+                                    <TextBlock Classes="sub" Text="{Binding SharedFilesSummary}"
+                                               IsVisible="{Binding SharedFilesSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                    <TextBlock Classes="sub" Text="{DynamicResource Settings_SharedFilesCleanHint}"/>
+                                </StackPanel>
+                                <Button Grid.Column="1" Classes="small" VerticalAlignment="Center"
+                                        Content="{DynamicResource Settings_SharedFilesClean}"
+                                        Command="{Binding FreeSharedSpaceCommand}" IsVisible="{Binding !IsSharedFilesBusy}"/>
+                                <Button Grid.Column="1" Classes="ghost small" VerticalAlignment="Center"
+                                        Content="{DynamicResource Common_Cancel}"
+                                        Command="{Binding CancelFreeSharedSpaceCommand}" IsVisible="{Binding IsSharedFilesBusy}"/>
+                            </Grid>
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8"
+                                  IsVisible="{Binding SharedFilesStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                <ProgressBar IsIndeterminate="True" Width="60" Height="3" VerticalAlignment="Center"
+                                             IsVisible="{Binding IsSharedFilesBusy}"/>
+                                <TextBlock Grid.Column="1" Text="{Binding SharedFilesStatus}" Classes="state"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
 
                 <!-- ======== More: the rare settings, one line until opened ======== -->
-                <Border Name="MoreSection" Classes="card" Padding="24,18">
-                    <StackPanel Spacing="16">
-                        <Button Classes="plain" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="0"
-                                Command="{Binding ToggleMoreSettingsCommand}" controls:SettingsSearch.Heading="True">
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                                <StackPanel Spacing="3">
-                                    <TextBlock Text="{DynamicResource Settings_SectionMore}" Classes="h3" FontSize="17"/>
-                                    <TextBlock Text="{DynamicResource Settings_MoreSummary}" Classes="faint" TextWrapping="Wrap"
-                                               IsVisible="{Binding !IsMoreSettingsOpen}"/>
-                                    <TextBlock Text="{DynamicResource Settings_MoreHint}" Classes="faint" TextWrapping="Wrap"
-                                               IsVisible="{Binding IsMoreSettingsOpen}"/>
-                                </StackPanel>
-                                <PathIcon Grid.Column="1" Data="{StaticResource IconChevronRight}" Classes="small muted" VerticalAlignment="Center"
-                                          IsVisible="{Binding !IsMoreSettingsOpen}"/>
-                                <PathIcon Grid.Column="1" Data="{StaticResource IconChevronDown}" Classes="small muted" VerticalAlignment="Center"
-                                          IsVisible="{Binding IsMoreSettingsOpen}"/>
-                            </Grid>
-                        </Button>
-
-                        <StackPanel Spacing="18" IsVisible="{Binding IsMoreSettingsOpen}" controls:SettingsSearch.Expand="True">
-                            <!-- Where the gigabytes live. Moving copies everything, then restarts. -->
-                            <StackPanel Spacing="8" controls:SettingsSearch.Keywords="папка данных диск место перенести переместить путь хранение data folder directory disk drive move location storage">
-                                <TextBlock Text="{DynamicResource Settings_DataFolder}" FontWeight="SemiBold"/>
-                                <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
-                                    <TextBox Text="{Binding DataDirectory, Mode=OneWay}" IsReadOnly="True"/>
-                                    <Button Grid.Column="1" Classes="ghost" ToolTip.Tip="{DynamicResource Settings_OpenFolder}"
-                                            Command="{Binding OpenDataDirectoryCommand}">
-                                        <PathIcon Data="{StaticResource IconFolder}"/>
-                                    </Button>
-                                    <Button Grid.Column="2" Classes="ghost" Content="{DynamicResource Settings_DataFolderChange}"
-                                            Command="{Binding ChangeDataDirectoryCommand}" IsEnabled="{Binding !IsMovingData}"/>
-                                    <Button Grid.Column="3" Classes="plain" Content="{DynamicResource Settings_DataFolderReset}"
-                                            Command="{Binding ResetDataDirectoryCommand}" IsEnabled="{Binding !IsMovingData}"
-                                            IsVisible="{Binding !IsDefaultDataDirectory}"/>
-                                </Grid>
-                                <TextBlock Text="{DynamicResource Settings_DataFolderHint}" Classes="faint" TextWrapping="Wrap"/>
-                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8"
-                                      IsVisible="{Binding DataMoveStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                                    <ProgressBar IsIndeterminate="True" Width="60" Height="3" VerticalAlignment="Center"
-                                                 IsVisible="{Binding IsMovingData}"/>
-                                    <TextBlock Grid.Column="1" Text="{Binding DataMoveStatus}" Classes="gold" TextWrapping="Wrap"/>
-                                </Grid>
+                <StackPanel Name="MoreSection">
+                    <Button Classes="plain" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="0" Height="NaN"
+                            Command="{Binding ToggleMoreSettingsCommand}" controls:SettingsSearch.Heading="True">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="{DynamicResource Settings_SectionMore}" Classes="group"/>
+                                <TextBlock Text="{DynamicResource Settings_MoreSummary}" Classes="sub" TextWrapping="Wrap"
+                                           IsVisible="{Binding !IsMoreSettingsOpen}"/>
                             </StackPanel>
+                            <PathIcon Grid.Column="1" Data="{StaticResource IconChevronRight}" Classes="small muted" VerticalAlignment="Center"
+                                      IsVisible="{Binding !IsMoreSettingsOpen}"/>
+                            <PathIcon Grid.Column="1" Data="{StaticResource IconChevronDown}" Classes="small muted" VerticalAlignment="Center"
+                                      IsVisible="{Binding IsMoreSettingsOpen}"/>
+                        </Grid>
+                    </Button>
+                    <Border Classes="hairline" Margin="0,12,0,0" IsVisible="{Binding !IsMoreSettingsOpen}"/>
 
-                            <!-- One copy on disk for the mods and packs several builds share. -->
-                            <StackPanel Spacing="8" controls:SettingsSearch.Keywords="общие файлы место диск дубликаты очистка освободить shared files disk space duplicates cleanup dedupe">
-                                <CheckBox Content="{DynamicResource Settings_SharedFiles}" IsChecked="{Binding ShareFiles}"/>
-                                <TextBlock Text="{DynamicResource Settings_SharedFilesHint}" Classes="faint" TextWrapping="Wrap"/>
-                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                    <StackPanel Spacing="2" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding SharedFilesSummary}" TextWrapping="Wrap"
-                                                   IsVisible="{Binding SharedFilesSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                                        <TextBlock Text="{DynamicResource Settings_SharedFilesCleanHint}" Classes="faint" TextWrapping="Wrap"/>
-                                    </StackPanel>
-                                    <Button Grid.Column="1" Classes="ghost" VerticalAlignment="Center"
-                                            Content="{DynamicResource Settings_SharedFilesClean}"
-                                            Command="{Binding FreeSharedSpaceCommand}" IsVisible="{Binding !IsSharedFilesBusy}"/>
-                                    <Button Grid.Column="1" Classes="plain" VerticalAlignment="Center"
-                                            Content="{DynamicResource Common_Cancel}"
-                                            Command="{Binding CancelFreeSharedSpaceCommand}" IsVisible="{Binding IsSharedFilesBusy}"/>
-                                </Grid>
-                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8"
-                                      IsVisible="{Binding SharedFilesStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                                    <ProgressBar IsIndeterminate="True" Width="60" Height="3" VerticalAlignment="Center"
-                                                 IsVisible="{Binding IsSharedFilesBusy}"/>
-                                    <TextBlock Grid.Column="1" Text="{Binding SharedFilesStatus}" Classes="gold" TextWrapping="Wrap"/>
-                                </Grid>
-                            </StackPanel>
+                    <StackPanel IsVisible="{Binding IsMoreSettingsOpen}" controls:SettingsSearch.Expand="True">
 
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8"
-                                  controls:SettingsSearch.Keywords="папка игры сборки minecraft каталог открыть game folder directory instance open">
-                                <StackPanel Spacing="8">
-                                    <TextBlock Text="{DynamicResource Settings_GameDirectory}" FontWeight="SemiBold"/>
-                                    <TextBox Text="{Binding InstanceDirectory, Mode=OneWay}" IsReadOnly="True"/>
+                        <Border Classes="setting" controls:SettingsSearch.Keywords="папка игры сборки minecraft каталог открыть game folder directory instance open">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Classes="strong" Text="{DynamicResource Settings_GameDirectory}"/>
+                                    <SelectableTextBlock Classes="path" Text="{Binding InstanceDirectory, Mode=OneWay}"/>
                                 </StackPanel>
-                                <Button Grid.Column="1" Classes="ghost" VerticalAlignment="Bottom"
+                                <Button Grid.Column="1" Classes="icon" VerticalAlignment="Center"
                                         ToolTip.Tip="{DynamicResource Settings_OpenFolder}"
                                         Command="{Binding OpenGameFolderCommand}">
                                     <PathIcon Data="{StaticResource IconFolder}"/>
                                 </Button>
                             </Grid>
+                        </Border>
 
-                            <Grid ColumnDefinitions="*,*" ColumnSpacing="28">
-                                <StackPanel Spacing="8" controls:SettingsSearch.Keywords="версии снапшоты снапшот старые альфа бета versions snapshots old alpha beta">
-                                    <TextBlock Text="{DynamicResource Settings_Versions}" FontWeight="SemiBold"/>
-                                    <WrapPanel>
-                                        <CheckBox Content="{DynamicResource Settings_VersionsSnapshot}"
-                                                  IsChecked="{Binding ShowSnapshots}" Margin="0,0,18,0"/>
-                                        <CheckBox Content="{DynamicResource Settings_VersionsRelease}"
-                                                  IsChecked="{Binding ShowOldReleases}" Margin="0,0,18,0"/>
-                                        <CheckBox Content="{DynamicResource Settings_VersionsBeta}"
-                                                  IsChecked="{Binding ShowBeta}" Margin="0,0,18,0"/>
-                                        <CheckBox Content="{DynamicResource Settings_VersionsAlpha}"
-                                                  IsChecked="{Binding ShowAlpha}"/>
-                                    </WrapPanel>
+                        <Border Classes="setting" controls:SettingsSearch.Keywords="версии снапшоты снапшот старые альфа бета versions snapshots old alpha beta">
+                            <StackPanel Spacing="8">
+                                <TextBlock Classes="strong" Text="{DynamicResource Settings_Versions}"/>
+                                <WrapPanel>
+                                    <CheckBox Content="{DynamicResource Settings_VersionsSnapshot}"
+                                              IsChecked="{Binding ShowSnapshots}" Margin="0,0,18,0"/>
+                                    <CheckBox Content="{DynamicResource Settings_VersionsRelease}"
+                                              IsChecked="{Binding ShowOldReleases}" Margin="0,0,18,0"/>
+                                    <CheckBox Content="{DynamicResource Settings_VersionsBeta}"
+                                              IsChecked="{Binding ShowBeta}" Margin="0,0,18,0"/>
+                                    <CheckBox Content="{DynamicResource Settings_VersionsAlpha}"
+                                              IsChecked="{Binding ShowAlpha}"/>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="setting" controls:SettingsSearch.Keywords="аргументы параметры запуска ключи arguments args launch options flags">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Classes="strong" Text="{DynamicResource Settings_ExtraArgs}"/>
+                                    <TextBlock Classes="sub" Text="{DynamicResource Settings_ExtraArgsHint}"/>
                                 </StackPanel>
-                                <StackPanel Grid.Column="1" Spacing="8" controls:SettingsSearch.Keywords="аргументы параметры запуска ключи arguments args launch options flags">
-                                    <TextBlock Text="{DynamicResource Settings_ExtraArgs}" FontWeight="SemiBold"/>
-                                    <TextBox Text="{Binding ExtraGameArgs}" Watermark="--fullscreen --width 1920"/>
-                                    <TextBlock Text="{DynamicResource Settings_ExtraArgsHint}" Classes="faint" TextWrapping="Wrap"/>
-                                </StackPanel>
+                                <TextBox Grid.Column="1" Width="250" VerticalAlignment="Center"
+                                         Text="{Binding ExtraGameArgs}" Watermark="--fullscreen --width 1920"/>
                             </Grid>
+                        </Border>
 
-                            <!-- "Nothing downloads": probe every host the launcher uses and say which answer.
-                                 It also runs by itself when a download fails. -->
-                            <StackPanel Spacing="8" controls:SettingsSearch.Keywords="сеть интернет соединение прокси впн не скачивается загрузка network internet connection proxy vpn download">
+                        <!-- "Nothing downloads": probe every host the launcher uses and say which answer.
+                             It also runs by itself when a download fails. -->
+                        <Border Classes="setting" controls:SettingsSearch.Keywords="сеть интернет соединение прокси впн не скачивается загрузка network internet connection proxy vpn download">
+                            <StackPanel Spacing="10">
                                 <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-                                    <StackPanel Spacing="2" VerticalAlignment="Center">
-                                        <TextBlock Text="{DynamicResource Settings_NetworkCheck}" FontWeight="SemiBold"/>
-                                        <TextBlock Text="{DynamicResource Settings_NetworkCheckHint}" Classes="faint" TextWrapping="Wrap"/>
+                                    <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                        <TextBlock Classes="strong" Text="{DynamicResource Settings_NetworkCheck}"/>
+                                        <TextBlock Classes="sub" Text="{DynamicResource Settings_NetworkCheckHint}"/>
                                     </StackPanel>
-                                    <Button Grid.Column="1" Classes="ghost" Content="{DynamicResource Settings_NetworkCopy}"
+                                    <Button Grid.Column="1" Classes="ghost small" VerticalAlignment="Center"
+                                            Content="{DynamicResource Settings_NetworkCopy}"
                                             Command="{Binding CopyNetworkReportCommand}" IsVisible="{Binding NetworkChecks.Count}"/>
-                                    <Button Grid.Column="2" Classes="ghost" Content="{DynamicResource Settings_NetworkRun}"
+                                    <Button Grid.Column="2" Classes="small" VerticalAlignment="Center"
+                                            Content="{DynamicResource Settings_NetworkRun}"
                                             Command="{Binding RunNetworkCheckCommand}" IsEnabled="{Binding !IsNetworkCheckRunning}"/>
                                 </Grid>
                                 <ItemsControl ItemsSource="{Binding NetworkChecks}" IsVisible="{Binding NetworkChecks.Count}">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <StackPanel Spacing="4"/>
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="vm:NetworkCheckItem">
-                                            <Border Classes="panel" Padding="12,8">
-                                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                                                    <Panel Width="10" Height="10" VerticalAlignment="Center">
-                                                        <Border CornerRadius="5" Background="{DynamicResource SuccessBrush}" IsVisible="{Binding IsOk}"/>
-                                                        <Border CornerRadius="5" Background="{DynamicResource DangerBrush}" IsVisible="{Binding IsFailed}"/>
-                                                        <Border CornerRadius="5" Background="{DynamicResource DividerBrush}" IsVisible="{Binding IsPending}"/>
-                                                    </Panel>
-                                                    <TextBlock Grid.Column="1" Text="{Binding Display}" VerticalAlignment="Center" FontSize="13"/>
-                                                    <TextBlock Grid.Column="2" Text="{Binding Verdict}" Classes="faint" VerticalAlignment="Center"/>
-                                                </Grid>
-                                            </Border>
+                                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Margin="0,4">
+                                                <Panel Width="7" Height="7" VerticalAlignment="Center">
+                                                    <Ellipse Classes="dot" IsVisible="{Binding IsOk}"/>
+                                                    <Ellipse Classes="dot" Fill="{DynamicResource DangerBrush}" IsVisible="{Binding IsFailed}"/>
+                                                    <Ellipse Classes="dot off" IsVisible="{Binding IsPending}"/>
+                                                </Panel>
+                                                <TextBlock Grid.Column="1" Text="{Binding Display}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock Grid.Column="2" Text="{Binding Verdict}" Classes="sub" VerticalAlignment="Center"/>
+                                            </Grid>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
-                                <TextBlock Text="{Binding NetworkCheckSummary}" Classes="gold" TextWrapping="Wrap"
+                                <TextBlock Text="{Binding NetworkCheckSummary}" Classes="state"
                                            IsVisible="{Binding NetworkCheckSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                             </StackPanel>
+                        </Border>
 
-                            <!-- Everything the admin asks for, in one file. -->
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8"
-                                  controls:SettingsSearch.Keywords="отчет поддержка помощь логи журнал админ ошибка report support help logs admin bug">
-
-                                <StackPanel Spacing="2" VerticalAlignment="Center">
-                                    <TextBlock Text="{DynamicResource Report_Title}" FontWeight="SemiBold"/>
-                                    <TextBlock Text="{DynamicResource Report_Hint}" Classes="faint" TextWrapping="Wrap"/>
-                                </StackPanel>
-                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                                    <Button Classes="ghost" Content="{DynamicResource Report_Collect}"
-                                            Command="{Binding CollectSupportReportCommand}"/>
-                                    <Button Classes="ghost" Content="{DynamicResource Report_SendOpen}" IsVisible="{Binding CanSendReport}"
+                        <!-- Everything the admin asks for, in one file. -->
+                        <Border Classes="setting" controls:SettingsSearch.Keywords="отчет поддержка помощь логи журнал админ ошибка отправить report support help logs admin bug send">
+                            <StackPanel Spacing="10">
+                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                                    <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                        <TextBlock Classes="strong" Text="{DynamicResource Report_Title}"/>
+                                        <TextBlock Classes="sub" Text="{DynamicResource Report_Hint}"/>
+                                    </StackPanel>
+                                    <Button Grid.Column="1" Classes="ghost small" VerticalAlignment="Center"
+                                            Content="{DynamicResource Report_SendOpen}" IsVisible="{Binding CanSendReport}"
                                             Command="{Binding OpenReportSendCommand}"/>
-                                </StackPanel>
-                            </Grid>
-                            <!-- "Send to the admin": what goes, a line from the player, and the button. -->
+                                    <Button Grid.Column="2" Classes="small" VerticalAlignment="Center"
+                                            Content="{DynamicResource Report_Collect}"
+                                            Command="{Binding CollectSupportReportCommand}"/>
+                                </Grid>
+                                <!-- "Send to the admin": what goes, a line from the player, and the button.
+                                     A question with consent in it, so it keeps its frame. -->
                                 <Border Classes="panel" Padding="14,12" IsVisible="{Binding IsReportSendOpen}" controls:Reveal.OnVisible="True">
                                     <StackPanel Spacing="10">
-                                        <TextBlock Text="{DynamicResource Report_SendTitle}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{DynamicResource Report_SendTitle}" Classes="strong"/>
                                         <TextBlock Text="{Binding ReportSendSummary}" Classes="muted" FontSize="13" TextWrapping="Wrap"/>
                                         <TextBox Text="{Binding ReportComment}" Watermark="{DynamicResource Report_CommentHint}"
                                                  AcceptsReturn="True" MaxLength="600" MinHeight="56" TextWrapping="Wrap"/>
                                         <WrapPanel ItemSpacing="8" LineSpacing="6">
                                             <Button Classes="primary small" Content="{DynamicResource Report_SendButton}"
                                                     Command="{Binding SendSupportReportCommand}" IsEnabled="{Binding !IsReportSending}"/>
-                                            <Button Classes="plain small" Content="{DynamicResource Common_Cancel}"
+                                            <Button Classes="ghost small" Content="{DynamicResource Common_Cancel}"
                                                     Command="{Binding CancelReportSendCommand}" IsEnabled="{Binding !IsReportSending}"/>
                                             <ProgressBar IsIndeterminate="True" Width="60" Height="3" VerticalAlignment="Center"
                                                          IsVisible="{Binding IsReportSending}"/>
                                         </WrapPanel>
                                     </StackPanel>
                                 </Border>
-
-                            <StackPanel Spacing="10">
-                                <StackPanel Spacing="4" controls:SettingsSearch.Keywords="видеокарта дискретная графика ноутбук gpu nvidia amd radeon geforce graphics card laptop">
-                                    <CheckBox Content="{DynamicResource Settings_DiscreteGpu}" IsChecked="{Binding PreferDiscreteGpu}"/>
-                                    <TextBlock Text="{DynamicResource Settings_DiscreteGpuHint}" Classes="faint"
-                                               TextWrapping="Wrap" Margin="28,0,0,0"/>
-                                </StackPanel>
-                                <CheckBox Content="{DynamicResource Settings_ForceUpdate}" IsChecked="{Binding ForceUpdate}"
-                                          controls:SettingsSearch.Keywords="перекачать переустановить файлы игры починить проверить redownload reinstall repair verify files"/>
-                                <!-- Java and the update buttons live in the section this switch shows. -->
-                                <StackPanel Spacing="4" controls:SettingsSearch.Keywords="консоль разработчика лог журнал java джава обновления console developer log debug updates">
-                                    <CheckBox Content="{DynamicResource Settings_DevConsole}" IsChecked="{Binding ShowDeveloperConsole}"/>
-                                    <TextBlock Text="{DynamicResource Settings_DevConsoleHint}" Classes="faint"
-                                               TextWrapping="Wrap" Margin="28,0,0,0"/>
-                                </StackPanel>
                             </StackPanel>
-                        </StackPanel>
+                        </Border>
+
+                        <Border Classes="setting" controls:SettingsSearch.Keywords="видеокарта дискретная графика ноутбук gpu nvidia amd radeon geforce graphics card laptop">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                                <StackPanel VerticalAlignment="Center" Background="Transparent">
+                                    <ToolTip.Tip>
+                                        <TextBlock Text="{DynamicResource Settings_DiscreteGpuHint}" TextWrapping="Wrap" MaxWidth="340"/>
+                                    </ToolTip.Tip>
+                                    <TextBlock Classes="strong" Text="{DynamicResource Settings_DiscreteGpu}"/>
+                                    <TextBlock Classes="sub" Text="{DynamicResource Settings_DiscreteGpuSub}"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding PreferDiscreteGpu}" VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+
+                        <Border Classes="setting" controls:SettingsSearch.Keywords="перекачать переустановить файлы игры починить проверить redownload reinstall repair verify files">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                                <TextBlock Classes="strong" Text="{DynamicResource Settings_ForceUpdate}" VerticalAlignment="Center"/>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding ForceUpdate}" VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Java and the update buttons live in the group this switch shows. -->
+                        <Border Classes="setting" controls:SettingsSearch.Keywords="консоль разработчика лог журнал java джава обновления console developer log debug updates">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Classes="strong" Text="{DynamicResource Settings_DevConsole}"/>
+                                    <TextBlock Classes="sub" Text="{DynamicResource Settings_DevConsoleHint}"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowDeveloperConsole}" VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
                     </StackPanel>
-                </Border>
+                </StackPanel>
 
                 <!-- ======== Developers: under "More", only while the console is on ======== -->
-                <Border Name="DevSection" Classes="card" Padding="24,22" IsVisible="{Binding ShowDeveloperConsole}">
-                    <StackPanel Spacing="16">
-                        <StackPanel Spacing="3" controls:SettingsSearch.Heading="True">
-                            <TextBlock Text="{DynamicResource Settings_Advanced}" Classes="h3" FontSize="17"/>
-                            <TextBlock Text="{DynamicResource Settings_AdvancedHint}" Classes="faint" TextWrapping="Wrap"/>
-                        </StackPanel>
+                <StackPanel Name="DevSection" IsVisible="{Binding ShowDeveloperConsole}">
+                    <StackPanel Spacing="2" Margin="0,0,0,4" controls:SettingsSearch.Heading="True">
+                        <TextBlock Text="{DynamicResource Settings_Advanced}" Classes="group"/>
+                        <TextBlock Text="{DynamicResource Settings_AdvancedHint}" Classes="sub" TextWrapping="Wrap"/>
+                    </StackPanel>
 
-                        <StackPanel Spacing="8" MaxWidth="400" HorizontalAlignment="Left"
-                                    controls:SettingsSearch.Keywords="java джава ява jdk jre jvm">
-                            <TextBlock Text="{DynamicResource Settings_TabJava}" FontWeight="SemiBold"/>
-                            <ComboBox ItemsSource="{Binding JavaChoices}" SelectedItem="{Binding SelectedJavaChoice}"
-                                      HorizontalAlignment="Stretch">
+                    <Border Classes="setting" controls:SettingsSearch.Keywords="java джава ява jdk jre jvm">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                            <TextBlock Classes="strong" Text="{DynamicResource Settings_TabJava}" VerticalAlignment="Center"/>
+                            <ComboBox Grid.Column="1" Width="300" VerticalAlignment="Center"
+                                      ItemsSource="{Binding JavaChoices}" SelectedItem="{Binding SelectedJavaChoice}">
                                 <ComboBox.ItemTemplate>
                                     <DataTemplate x:DataType="vm:JavaChoice">
                                         <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis"/>
                                     </DataTemplate>
                                 </ComboBox.ItemTemplate>
                             </ComboBox>
-                        </StackPanel>
+                        </Grid>
+                    </Border>
 
-                        <!-- The server owner's field. Players have no use for it and no way to tell
-                             what it does; it appears only with OwnerTools in settings.json. The catalog
-                             address is deliberately not here at all: the catalog is the server's. -->
-                        <StackPanel Spacing="8" IsVisible="{Binding ShowOwnerTools}">
-                            <TextBlock Text="{DynamicResource Settings_StatsUrl}" FontWeight="SemiBold"/>
-                            <TextBox Text="{Binding ServerStatsUrl}" Watermark="https://name.workers.dev/"/>
-                            <TextBlock Text="{DynamicResource Settings_StatsUrlHint}" Classes="faint" TextWrapping="Wrap"/>
-                            <TextBlock Text="{Binding LauncherUsageLabel}" Classes="gold" TextWrapping="Wrap"/>
+                    <!-- The server owner's field. Players have no use for it and no way to tell
+                         what it does; it appears only with OwnerTools in settings.json. The catalog
+                         address is deliberately not here at all: the catalog is the server's. -->
+                    <Border Classes="setting" IsVisible="{Binding ShowOwnerTools}">
+                        <StackPanel Spacing="8">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Classes="strong" Text="{DynamicResource Settings_StatsUrl}"/>
+                                    <TextBlock Classes="sub" Text="{DynamicResource Settings_StatsUrlHint}"/>
+                                </StackPanel>
+                                <TextBox Grid.Column="1" Width="280" VerticalAlignment="Center"
+                                         Text="{Binding ServerStatsUrl}" Watermark="https://name.workers.dev/"/>
+                            </Grid>
+                            <TextBlock Text="{Binding LauncherUsageLabel}" Classes="state"/>
                         </StackPanel>
+                    </Border>
 
-                        <StackPanel Spacing="8" controls:SettingsSearch.Keywords="обновление обновить версия лаунчера update upgrade version release">
-                            <TextBlock Text="{DynamicResource Settings_Updates}" FontWeight="SemiBold"/>
-                            <TextBlock Text="{Binding UpdateStatus}" Classes="faint" TextWrapping="Wrap"/>
-                            <WrapPanel>
-                                <Button Classes="ghost small" Margin="0,0,8,6" Content="{DynamicResource Settings_CheckUpdates}"
-                                        Command="{Binding CheckForUpdatesCommand}" IsEnabled="{Binding !IsUpdateBusy}"/>
-                                <Button Classes="ghost small" Margin="0,0,8,6" Content="{DynamicResource Settings_RestartUpdate}"
-                                        Command="{Binding InstallUpdateCommand}" IsEnabled="{Binding CanRestartToUpdate}"/>
-                                <Button Classes="ghost small" Margin="0,0,8,6" Content="{DynamicResource Update_DownloadManually}"
-                                        Command="{Binding OpenReleasesPageCommand}"/>
-                                <Button Classes="plain small" Margin="0,0,8,6" Content="{DynamicResource Update_OpenGithub}"
-                                        Command="{Binding OpenGithubReleasesCommand}"/>
-                                <Button Classes="plain small" Margin="0,0,8,6" Content="{DynamicResource Console_OpenLog}"
-                                        Command="{Binding OpenLauncherLogCommand}"/>
-                            </WrapPanel>
-                        </StackPanel>
-                    </StackPanel>
-                </Border>
+                    <!-- Checking is the one button; the rare ways to an update are behind the "...". -->
+                    <Border Classes="setting" controls:SettingsSearch.Keywords="обновление обновить версия лаунчера зеркало скачать вручную github update upgrade version release mirror">
+                        <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
+                            <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                <TextBlock Classes="strong" Text="{DynamicResource Settings_Updates}"/>
+                                <TextBlock Classes="sub" Text="{Binding UpdateStatus}"/>
+                            </StackPanel>
+                            <Button Grid.Column="1" Classes="small" VerticalAlignment="Center"
+                                    Content="{DynamicResource Settings_RestartUpdate}"
+                                    Command="{Binding InstallUpdateCommand}" IsVisible="{Binding CanRestartToUpdate}"/>
+                            <Button Grid.Column="2" Classes="small" VerticalAlignment="Center"
+                                    Content="{DynamicResource Settings_CheckUpdates}"
+                                    Command="{Binding CheckForUpdatesCommand}" IsEnabled="{Binding !IsUpdateBusy}"/>
+                            <Button Grid.Column="3" Classes="icon more" VerticalAlignment="Center"
+                                    ToolTip.Tip="{DynamicResource Builds_More}">
+                                <PathIcon Data="{StaticResource IconDots}"/>
+                                <Button.Flyout>
+                                    <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                        <MenuItem Header="{DynamicResource Update_DownloadManually}" Command="{Binding OpenReleasesPageCommand}"/>
+                                        <MenuItem Header="{DynamicResource Update_OpenGithub}" Command="{Binding OpenGithubReleasesCommand}"/>
+                                        <Separator/>
+                                        <MenuItem Header="{DynamicResource Console_OpenLog}" Command="{Binding OpenLauncherLogCommand}"/>
+                                    </MenuFlyout>
+                                </Button.Flyout>
+                            </Button>
+                        </Grid>
+                    </Border>
+                </StackPanel>
 
                 </StackPanel>
-            </StackPanel>
+                </StackPanel>
+            </Grid>
         </ScrollViewer>
     </Grid>
 </UserControl>
