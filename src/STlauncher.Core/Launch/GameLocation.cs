@@ -37,13 +37,14 @@ public enum GameLocationSignal
     SinglePlayerStopped,
 
     /// <summary>
-    /// A mod said it let go of the server. The game itself logs nothing when the player
+    /// A mod said it let go of the world. The game itself logs nothing when the player
     /// presses "Disconnect", so this is the only trace of it; the same line also appears
     /// when a proxy moves the player between its servers, so it counts only when
     /// <see cref="StillThere"/> does not follow.
     /// </summary>
     MaybeLeft,
 
+    /// <summary>A mod said it has a world again: the player is in one.</summary>
     StillThere
 }
 
@@ -118,19 +119,70 @@ public static class GameLocation
             return new GameLocationEvent(GameLocationSignal.Disconnected);
         }
 
-        // Simple Voice Chat, which the server's own build carries.
-        if (message.StartsWith("[voicechat] Disconnecting voicechat", StringComparison.Ordinal))
-        {
-            return new GameLocationEvent(GameLocationSignal.MaybeLeft);
-        }
-
-        if (message.StartsWith("[voicechat] Connecting to voice chat server", StringComparison.Ordinal))
-        {
-            return new GameLocationEvent(GameLocationSignal.StillThere);
-        }
-
-        return default;
+        return ModSignal(message);
     }
+
+    /// <summary>
+    /// What mods say when the world on screen goes away or a new one arrives. The game
+    /// itself prints nothing when the player leaves a server (checked on 1.21.8 Forge and
+    /// 1.21.11 with only OptiFine: the log is silent from the last line of play to the
+    /// next "Connecting to"), so without one of these mods a stay ends only at the next
+    /// join or when the game closes.
+    /// </summary>
+    /// <remarks>
+    /// Each pair was read from real logs of Minecraft 1.21.11 on Fabric and is spelled
+    /// exactly as printed there. All of them come in the same two shapes:
+    /// <code>
+    /// leaving for the menu      "let go" and then nothing
+    /// a proxy moving the player "let go", then "got a new one" within a few seconds
+    /// </code>
+    /// which is why a "let go" alone never ends a stay. Fabric prints no logger name, so
+    /// the message is all there is to match on; chat never gets this far.
+    /// </remarks>
+    private static GameLocationEvent ModSignal(string message)
+    {
+        message = message.TrimEnd();
+
+        // Simple Voice Chat 2.6. It asks every server it lands on for a secret, with or
+        // without voice chat there, and connects only where there is: the request alone
+        // already says the player is in a world.
+        if (message.StartsWith("[voicechat] ", StringComparison.Ordinal))
+        {
+            var voice = message["[voicechat] ".Length..];
+
+            return voice.StartsWith("Disconnecting voicechat", StringComparison.Ordinal)
+                ? new GameLocationEvent(GameLocationSignal.MaybeLeft)
+                : voice.StartsWith("Connecting to voice chat server", StringComparison.Ordinal) ||
+                  voice.StartsWith("Sending secret request to the server", StringComparison.Ordinal)
+                    ? new GameLocationEvent(GameLocationSignal.StillThere)
+                    : default;
+        }
+
+        switch (message)
+        {
+            // Sodium 0.8: its chunk builders stop when the world is taken away and start
+            // for the next one; a change of video settings does both at once.
+            case "Stopping worker threads":
+            // Xaero's Minimap 26.5.
+            case "Xaero hud session finalized.":
+            // Xaero's World Map 1.46.
+            case "World map session finalized.":
+                return new GameLocationEvent(GameLocationSignal.MaybeLeft);
+
+            case "New Xaero hud session initialized!":
+            case "New world map session initialized!":
+                return new GameLocationEvent(GameLocationSignal.StillThere);
+        }
+
+        return SodiumStarted.IsMatch(message)
+            ? new GameLocationEvent(GameLocationSignal.StillThere)
+            : default;
+    }
+
+    /// <summary>"Started 10 worker threads": Sodium has a world to build again.</summary>
+    private static readonly Regex SodiumStarted = new(
+        @"^Started \d{1,3} worker threads$",
+        RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
     /// <summary>The line without the time, thread and logger in front of it.</summary>
     private static string Message(string line)
@@ -221,11 +273,22 @@ public sealed class GameLocationTracker
     /// <summary>How long a "maybe left" waits for the mod to reconnect before it counts as leaving.</summary>
     public static readonly TimeSpan LeaveGrace = TimeSpan.FromSeconds(20);
 
+    /// <summary>
+    /// How long after such a leave a mod saying "I have a world again" still means the
+    /// same server. A proxy move that reloads a large resource pack on a slow computer
+    /// outlasts the grace; nothing announces the server again afterwards, so without this
+    /// the rest of the evening would count as the menu.
+    /// </summary>
+    public static readonly TimeSpan ReturnWindow = TimeSpan.FromMinutes(3);
+
     private readonly object _gate = new();
     private readonly Dictionary<GamePlace, TimeSpan> _spent = new();
     private GamePlace _place = GamePlace.Menu;
     private DateTimeOffset _since;
     private DateTimeOffset? _maybeLeftAt;
+
+    /// <summary>The place a mod's word took the player out of, and when: where a late "still there" puts them back.</summary>
+    private (GamePlace Place, DateTimeOffset At)? _letGo;
 
     public GameLocationTracker(DateTimeOffset startedAt)
     {
@@ -257,17 +320,25 @@ public sealed class GameLocationTracker
             {
                 case GameLocationSignal.Connecting:
                     CommitLeave();
+                    _letGo = null;
                     MoveTo(GamePlace.Server(seen.Address!), now);
                     break;
 
                 case GameLocationSignal.Disconnected when _place.Kind == GamePlaceKind.Server:
                 case GameLocationSignal.SinglePlayerStopped when _place.Kind == GamePlaceKind.SinglePlayer:
                     _maybeLeftAt = null;
+                    _letGo = null;
                     MoveTo(GamePlace.Menu, now);
+                    break;
+
+                // The game's own word that the stay is over, after a mod already ended it.
+                case GameLocationSignal.Disconnected:
+                    _letGo = null;
                     break;
 
                 case GameLocationSignal.SinglePlayerStarted:
                     CommitLeave();
+                    _letGo = null;
                     MoveTo(GamePlace.SinglePlayer, now);
                     break;
 
@@ -277,6 +348,14 @@ public sealed class GameLocationTracker
 
                 case GameLocationSignal.StillThere:
                     _maybeLeftAt = null;
+
+                    // Only the wait itself stays with the menu; it was a loading screen.
+                    if (_letGo is { } back && _place.Kind == GamePlaceKind.Menu && now - back.At <= ReturnWindow)
+                    {
+                        MoveTo(back.Place, now);
+                    }
+
+                    _letGo = null;
                     break;
             }
 
@@ -313,6 +392,7 @@ public sealed class GameLocationTracker
     {
         if (_maybeLeftAt is { } left)
         {
+            _letGo = (_place, left);
             MoveTo(GamePlace.Menu, left);
             _maybeLeftAt = null;
         }

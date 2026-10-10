@@ -388,7 +388,6 @@ public class WorldManagerTests
         Assert.Equal("World", listed.FolderName);
         Assert.Equal("База", listed.Name);
         Assert.Equal(trashed.DeletedAt, listed.DeletedAt);
-        Assert.Equal(listed.DeletedAt + WorldManager.TrashRetention, listed.ExpiresAt);
 
         var restored = manager.RestoreFromTrash(game, listed);
 
@@ -427,27 +426,148 @@ public class WorldManagerTests
     }
 
     [Fact]
-    public void Purge_RemovesOnlyWhatHasOutlivedTheRetention_AndOnlyWhatTheLauncherPutThere()
+    public void TheTrashKeepsAWorldHoweverOldItIs()
+    {
+        var game = NewGameDirectory();
+        var manager = new WorldManager();
+        var trash = WorldManager.TrashDirectory(game);
+        Directory.CreateDirectory(trash);
+
+        // Deleted three years ago, by the name the trash gave it then.
+        var oldStamp = DateTime.Now.AddDays(-1100).ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
+        var old = Path.Combine(trash, "Old-" + oldStamp);
+        Directory.Move(CreateWorld(game, "Old", name: "Старый"), old);
+
+        // Everything the Worlds tab does when it opens, and a few of the things a player does there.
+        manager.List(game);
+        manager.ListTrash(game);
+        manager.MoveToTrash(game, WorldInfo.Read(CreateWorld(game, "Fresh")));
+        manager.RestoreFromTrash(game, manager.ListTrash(game).Single(t => t.FolderName == "Fresh"));
+        manager.ListTrash(game);
+
+        Assert.True(File.Exists(Path.Combine(old, "region", "r.0.0.mca")));
+
+        var listed = Assert.Single(manager.ListTrash(game));
+        Assert.Equal("Старый", listed.Name);
+        Assert.True(DateTimeOffset.Now - listed.DeletedAt > TimeSpan.FromDays(1000));
+
+        // And it still comes back whole.
+        Assert.Equal("Старый", manager.RestoreFromTrash(game, listed).Name);
+    }
+
+    [Fact]
+    public void DeleteFromTrash_RemovesThatWorldAndNoOther()
+    {
+        var game = NewGameDirectory();
+        var manager = new WorldManager();
+
+        var kept = manager.MoveToTrash(game, WorldInfo.Read(CreateWorld(game, "Kept")));
+        var doomed = manager.MoveToTrash(game, WorldInfo.Read(CreateWorld(game, "Doomed")));
+        var playing = CreateWorld(game, "Playing");
+
+        // A world unpacked from some archives carries read-only files; "for good" still means it.
+        File.SetAttributes(Path.Combine(doomed.Directory, "level.dat"), FileAttributes.ReadOnly);
+
+        Assert.True(manager.DeleteFromTrash(game, doomed));
+
+        Assert.False(Directory.Exists(doomed.Directory));
+        Assert.True(Directory.Exists(kept.Directory));
+        Assert.True(Directory.Exists(playing));
+        Assert.Equal("Kept", Assert.Single(manager.ListTrash(game)).FolderName);
+
+        // Asked twice - a second click, a list gone stale - it is simply already gone.
+        Assert.False(manager.DeleteFromTrash(game, doomed));
+    }
+
+    [Fact]
+    public void DeleteFromTrash_RefusesAnythingThatIsNotAWorldInThisBuildsTrash()
+    {
+        var game = NewGameDirectory();
+        var manager = new WorldManager();
+        var world = CreateWorld(game, "World");
+        var stamp = DateTime.Now;
+
+        var trash = WorldManager.TrashDirectory(game);
+        var foreign = Path.Combine(trash, "something else");
+        Directory.CreateDirectory(foreign);
+
+        var otherGame = NewGameDirectory();
+        var elsewhere = new WorldManager().MoveToTrash(otherGame, WorldInfo.Read(CreateWorld(otherGame, "Theirs")));
+
+        foreach (var target in new[]
+                 {
+                     world,                                       // a world still being played
+                     WorldManager.SavesDirectory(game),           // the saves folder itself
+                     game,
+                     trash,                                       // the trash as a whole
+                     foreign,                                     // in the trash, but not put there by the launcher
+                     elsewhere.Directory,                         // another build's trash
+                     Path.Combine(trash, "..", "..", "..", "saves", "World")
+                 })
+        {
+            Assert.Throws<ArgumentException>(() => manager.DeleteFromTrash(game, new TrashedWorld(target, "World", "World", stamp)));
+        }
+
+        Assert.True(File.Exists(Path.Combine(world, "level.dat")));
+        Assert.True(Directory.Exists(foreign));
+        Assert.True(Directory.Exists(elsewhere.Directory));
+    }
+
+    [Fact]
+    public void EmptyTrash_DeletesTheWorldsItWasGiven_AndLeavesWhatCameLater()
     {
         var game = NewGameDirectory();
         var manager = new WorldManager();
         var trash = WorldManager.TrashDirectory(game);
 
-        var fresh = manager.MoveToTrash(game, WorldInfo.Read(CreateWorld(game, "Fresh")));
+        manager.MoveToTrash(game, WorldInfo.Read(CreateWorld(game, "One")));
+        manager.MoveToTrash(game, WorldInfo.Read(CreateWorld(game, "Two")));
 
-        var oldStamp = DateTime.Now.AddDays(-40).ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
-        var old = Path.Combine(trash, "Old-" + oldStamp);
-        Directory.Move(CreateWorld(game, "Old"), old);
+        // What the player was shown, and asked about.
+        var shown = manager.ListTrash(game);
 
+        var later = manager.MoveToTrash(game, WorldInfo.Read(CreateWorld(game, "Later")));
         var foreign = Path.Combine(trash, "something else");
         Directory.CreateDirectory(foreign);
+        var playing = CreateWorld(game, "Playing");
 
-        Assert.Equal(2, manager.ListTrash(game).Count);
-        Assert.Equal(1, manager.PurgeExpiredTrash(game, DateTimeOffset.Now));
+        var result = manager.EmptyTrash(game, shown);
 
-        Assert.False(Directory.Exists(old));
-        Assert.True(Directory.Exists(fresh.Directory));
+        Assert.Equal(2, result.Removed);
+        Assert.Empty(result.Failed);
+        Assert.Equal("Later", Assert.Single(manager.ListTrash(game)).FolderName);
+        Assert.True(Directory.Exists(later.Directory));
         Assert.True(Directory.Exists(foreign));
+        Assert.True(Directory.Exists(playing));
+    }
+
+    [Fact]
+    public void EmptyTrash_DoesNotReachThroughALinkInsideATrashedWorld()
+    {
+        var game = NewGameDirectory();
+        var manager = new WorldManager();
+        var world = CreateWorld(game, "World");
+
+        var outside = Path.Combine(Path.GetDirectoryName(game)!, "outside-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outside);
+        File.WriteAllText(Path.Combine(outside, "keep.txt"), "not part of the world");
+
+        try
+        {
+            Directory.CreateSymbolicLink(Path.Combine(world, "linked"), outside);
+        }
+        catch (Exception)
+        {
+            // Making a link needs a privilege this machine does not grant.
+            return;
+        }
+
+        manager.MoveToTrash(game, WorldInfo.Read(world));
+        var result = manager.EmptyTrash(game, manager.ListTrash(game));
+
+        Assert.Equal(1, result.Removed);
+        Assert.Empty(manager.ListTrash(game));
+        Assert.True(File.Exists(Path.Combine(outside, "keep.txt")));
     }
 
     // ===================== Export and import =====================

@@ -7,7 +7,8 @@
     <!-- The build's single-player worlds, one card each. Self-contained: the builds page
          only places it among its tabs, the view model's Worlds partial does the rest.
          The frequent things - a backup, the name - sit on the card; the rare ones are one
-         click deep under the dots. Nothing here replaces a world or deletes one for good. -->
+         click deep under the dots. Nothing here replaces a world; a world is deleted for
+         good only from the trash, by a button that says so and asks first. -->
     <Grid RowDefinitions="Auto,*" RowSpacing="10">
         <StackPanel Spacing="10">
             <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
@@ -220,14 +221,38 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
 
-                <!-- The launcher's trash: what was deleted here and can still come back. -->
+                <!-- The launcher's trash. The strip says how many worlds lie there and what
+                     they take, opened or not: nothing leaves it unless the player says so,
+                     so it must not be possible to forget it is filling a disk. -->
                 <StackPanel Spacing="8" IsVisible="{Binding HasTrashedWorlds}">
-                    <Button Classes="plain small" HorizontalAlignment="Left" Command="{Binding ToggleWorldsTrashCommand}">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <TextBlock Text="{Binding TrashLabel}"/>
-                            <PathIcon Data="{StaticResource IconChevronDown}" Width="9" Height="9"/>
-                        </StackPanel>
-                    </Button>
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                        <Button Classes="plain small" Command="{Binding ToggleWorldsTrashCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="{Binding TrashLabel}"/>
+                                <PathIcon Data="{StaticResource IconChevronDown}" Width="9" Height="9"/>
+                            </StackPanel>
+                        </Button>
+                        <TextBlock Grid.Column="1" Text="{DynamicResource Worlds_TrashNote}" Classes="faint" FontSize="12"
+                                   TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                        <Button Grid.Column="2" Classes="ghost small" Content="{DynamicResource Worlds_TrashEmpty}"
+                                IsEnabled="{Binding !IsWorldsBusy}" IsVisible="{Binding !IsConfirmingEmptyTrash}"
+                                Command="{Binding AskEmptyWorldsTrashCommand}"/>
+                    </Grid>
+
+                    <!-- Emptying asks once, with the count and the size it is about to remove. -->
+                    <Border Classes="mod-line" IsVisible="{Binding IsConfirmingEmptyTrash}">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                            <TextBlock Text="{Binding TrashEmptyAskLabel}" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                <Button Classes="danger small" Content="{DynamicResource Worlds_TrashEmptyConfirm}"
+                                        IsEnabled="{Binding IsTrashMeasured}"
+                                        Command="{Binding ConfirmEmptyWorldsTrashCommand}"/>
+                                <Button Classes="plain small" Content="{DynamicResource Common_Cancel}"
+                                        Command="{Binding CancelEmptyWorldsTrashCommand}"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
                     <ItemsControl ItemsSource="{Binding TrashedWorlds}" IsVisible="{Binding IsWorldsTrashOpen}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -236,15 +261,32 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:TrashedWorldItem">
-                                <Border Classes="mod-line off">
-                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                                        <StackPanel Spacing="2" VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-                                            <TextBlock Text="{Binding DetailLabel}" Classes="faint" FontSize="12"/>
-                                        </StackPanel>
-                                        <Button Grid.Column="1" Classes="ghost small" Content="{DynamicResource Worlds_TrashRestore}"
-                                                Command="{Binding RestoreCommand}"/>
-                                    </Grid>
+                                <!-- Not dimmed like a switched-off mod: the row carries two live buttons. -->
+                                <Border Classes="mod-line">
+                                    <Panel>
+                                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6" IsVisible="{Binding !IsConfirmingDelete}">
+                                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock Text="{Binding DetailLabel}" Classes="faint" FontSize="12"/>
+                                            </StackPanel>
+                                            <Button Grid.Column="1" Classes="ghost small" Content="{DynamicResource Worlds_TrashRestore}"
+                                                    Command="{Binding RestoreCommand}"/>
+                                            <Button Grid.Column="2" Classes="plain small" Content="{DynamicResource Worlds_TrashDelete}"
+                                                    Command="{Binding AskDeleteCommand}"/>
+                                        </Grid>
+
+                                        <!-- The question names the world and what it takes; the size is counted before "yes" is offered. -->
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" IsVisible="{Binding IsConfirmingDelete}">
+                                            <TextBlock Text="{Binding DeleteAskLabel}" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                                <Button Classes="danger small" Content="{DynamicResource Worlds_TrashDelete}"
+                                                        IsEnabled="{Binding IsMeasured}"
+                                                        Command="{Binding ConfirmDeleteCommand}"/>
+                                                <Button Classes="plain small" Content="{DynamicResource Common_Cancel}"
+                                                        Command="{Binding CancelDeleteCommand}"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Panel>
                                 </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>

@@ -8,7 +8,8 @@ namespace STlauncher.Core.Import;
 /// Tells a real folder from a symbolic link or a junction. The import never walks through
 /// one: a link inside somebody's build can point anywhere on the machine - the whole user
 /// profile, another drive - and scanning or copying "the build" would then read or
-/// duplicate files that were never part of it.
+/// duplicate files that were never part of it. The one exception is a launcher's root
+/// folder that is itself a link, which <see cref="LinkedRootResolver"/> resolves and vets.
 /// </summary>
 public static class LinkGuard
 {

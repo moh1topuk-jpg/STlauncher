@@ -142,6 +142,162 @@ public class GameLocationTests
         Assert.Equal(TimeSpan.FromMinutes(5), spent[GamePlace.Server("friend.example")]);
     }
 
+    // Lines below are from real logs of Minecraft 1.21.11 on Fabric with Sodium 0.8.12,
+    // Xaero's Minimap 26.5.0, Xaero's World Map 1.46.0 and Simple Voice Chat 2.6.22, in
+    // the order they were printed; only the times and the addresses are made up.
+
+    [Theory]
+    [InlineData("[11:22:16] [Render thread/INFO]: [voicechat] Disconnecting voicechat", GameLocationSignal.MaybeLeft)]
+    [InlineData("[11:22:16] [Render thread/INFO]: Xaero hud session finalized.", GameLocationSignal.MaybeLeft)]
+    [InlineData("[11:22:16] [Render thread/INFO]: World map session finalized.", GameLocationSignal.MaybeLeft)]
+    [InlineData("[11:22:16] [Render thread/INFO]: Stopping worker threads", GameLocationSignal.MaybeLeft)]
+    [InlineData("[11:22:04] [Render thread/INFO]: New Xaero hud session initialized!", GameLocationSignal.StillThere)]
+    [InlineData("[11:22:04] [Render thread/INFO]: New world map session initialized!", GameLocationSignal.StillThere)]
+    [InlineData("[11:22:04] [Render thread/INFO]: Started 10 worker threads", GameLocationSignal.StillThere)]
+    [InlineData("[11:22:04] [Render thread/INFO]: [voicechat] Sending secret request to the server", GameLocationSignal.StillThere)]
+    [InlineData("[12:50:16] [Render thread/INFO]: [voicechat] Connecting to voice chat server: '203.0.113.175:25592'", GameLocationSignal.StillThere)]
+    // Printed around the same moments, and saying nothing about where the player is.
+    [InlineData("[11:22:16] [Render thread/INFO]: Finalizing world map session...", GameLocationSignal.None)]
+    [InlineData("[11:22:16] [Thread-13/INFO]: World map cleaned normally!", GameLocationSignal.None)]
+    [InlineData("[11:22:16] [Render thread/INFO]: [voicechat] Clearing audio channels", GameLocationSignal.None)]
+    [InlineData("[11:22:16] [Render thread/INFO]: [voicechat] Stopping microphone thread", GameLocationSignal.None)]
+    [InlineData("[11:22:04] [Render thread/INFO]: [voicechat] Disconnecting from previous connection due to server change", GameLocationSignal.None)]
+    [InlineData("[11:22:36] [Render thread/INFO]: Sound engine started", GameLocationSignal.None)]
+    [InlineData("[11:22:36] [Render thread/INFO]: Reloading ResourceManager: vanilla, fabric-api", GameLocationSignal.None)]
+    [InlineData("[09:04:01] [Render thread/INFO]: Stopping!", GameLocationSignal.None)]
+    // A player or a server typing a mod's line into the chat moves nobody.
+    [InlineData("[11:22:16] [Render thread/INFO]: [System] [CHAT] Stopping worker threads", GameLocationSignal.None)]
+    [InlineData("[11:22:16] [Render thread/INFO]: [CHAT] <someone> World map session finalized.", GameLocationSignal.None)]
+    public void Mods_say_when_the_world_goes_and_when_one_arrives(string line, GameLocationSignal expected)
+    {
+        Assert.Equal(expected, GameLocation.Recognise(line).Signal);
+    }
+
+    private static void FeedAll(GameLocationTracker tracker, DateTimeOffset at, params string[] lines)
+    {
+        foreach (var line in lines)
+        {
+            tracker.Feed("[Render thread/INFO]: " + line, at);
+        }
+    }
+
+    [Theory]
+    [InlineData("Stopping worker threads")]
+    [InlineData("Xaero hud session finalized.")]
+    [InlineData("World map session finalized.")]
+    public void Without_voice_chat_another_mod_still_marks_leaving(string leaving)
+    {
+        var tracker = new GameLocationTracker(Start);
+        FeedAll(tracker, Start, "Connecting to play.example.org, 25565", "New Xaero hud session initialized!", "New world map session initialized!", "Started 10 worker threads");
+
+        tracker.Feed("[Render thread/INFO]: " + leaving, Start.AddMinutes(20));
+
+        // Back on the title screen for two hours; the next line of any kind settles it.
+        Assert.True(tracker.Feed("[Render thread/INFO]: Sound engine started", Start.AddMinutes(21)));
+        Assert.Equal(GamePlace.Menu, tracker.Place);
+
+        var spent = tracker.Finish(Start.AddHours(2));
+
+        Assert.Equal(TimeSpan.FromMinutes(20), spent[GamePlace.Server("play.example.org")]);
+    }
+
+    [Fact]
+    public void A_proxy_moving_the_player_is_not_leaving_even_where_the_new_server_has_no_voice_chat()
+    {
+        var tracker = new GameLocationTracker(Start);
+        tracker.Feed("[Render thread/INFO]: Connecting to mc.showtime.su, 25565", Start);
+
+        // The whole of one move, as printed. Voice chat lets go last and never connects:
+        // the lobby has none. It only asks for a secret.
+        FeedAll(
+            tracker,
+            Start.AddMinutes(10),
+            "Stopping worker threads",
+            "Previous hud session still active. Probably using MenuMobs. Forcing it to end...",
+            "Xaero hud session finalized.",
+            "Minimap required item set to nothing.",
+            "New Xaero hud session initialized!",
+            "Previous world map session still active. Probably using MenuMobs. Forcing it to end...",
+            "Finalizing world map session...",
+            "World map session finalized.",
+            "Fullscreen map required item set to nothing.",
+            "New world map session initialized!",
+            "Started 10 worker threads",
+            "[voicechat] Disconnecting from previous connection due to server change",
+            "[voicechat] Clearing audio channels",
+            "[voicechat] Stopping microphone thread",
+            "[voicechat] Disconnecting voicechat",
+            "[voicechat] Sending secret request to the server",
+            "Loaded 38 advancements",
+            "Stopping worker threads",
+            "Started 10 worker threads");
+
+        Assert.False(tracker.Feed("[Render thread/INFO]: Loaded 766 advancements", Start.AddMinutes(30)));
+        Assert.Equal(GamePlace.Server("mc.showtime.su"), tracker.Place);
+
+        // And then the real thing: every mod lets go and none takes it back.
+        FeedAll(
+            tracker,
+            Start.AddMinutes(40),
+            "[voicechat] Clearing audio channels",
+            "Xaero hud session finalized.",
+            "Finalizing world map session...",
+            "World map session finalized.",
+            "Stopping worker threads");
+
+        var spent = tracker.Finish(Start.AddHours(5));
+
+        Assert.Equal(TimeSpan.FromMinutes(40), spent[GamePlace.Server("mc.showtime.su")]);
+    }
+
+    [Fact]
+    public void A_slow_move_between_a_proxys_servers_brings_the_player_back_to_the_same_server()
+    {
+        var tracker = new GameLocationTracker(Start);
+        tracker.Feed("[Render thread/INFO]: Connecting to mc.showtime.su, 25565", Start);
+
+        // The world is taken away, a resource pack reloads for a minute, the world returns.
+        tracker.Feed("[Render thread/INFO]: Stopping worker threads", Start.AddMinutes(10));
+        Assert.True(tracker.Feed("[Render thread/INFO]: Reloading ResourceManager: vanilla", Start.AddMinutes(10).AddSeconds(30)));
+        Assert.Equal(GamePlace.Menu, tracker.Place);
+
+        Assert.True(tracker.Feed("[Render thread/INFO]: Started 10 worker threads", Start.AddMinutes(11)));
+        Assert.Equal(GamePlace.Server("mc.showtime.su"), tracker.Place);
+
+        var spent = tracker.Finish(Start.AddMinutes(31));
+
+        // Ten minutes before, twenty after; the minute of loading is nobody's.
+        Assert.Equal(TimeSpan.FromMinutes(30), spent[GamePlace.Server("mc.showtime.su")]);
+    }
+
+    [Fact]
+    public void A_world_arriving_long_after_leaving_is_not_the_old_server()
+    {
+        var tracker = new GameLocationTracker(Start);
+        tracker.Feed("[Render thread/INFO]: Connecting to mc.showtime.su, 25565", Start);
+        tracker.Feed("[Render thread/INFO]: Stopping worker threads", Start.AddMinutes(10));
+
+        tracker.Feed("[Render thread/INFO]: Started 10 worker threads", Start.AddMinutes(10) + GameLocationTracker.ReturnWindow + TimeSpan.FromSeconds(1));
+        Assert.Equal(GamePlace.Menu, tracker.Place);
+
+        Assert.Equal(TimeSpan.FromMinutes(10), tracker.Finish(Start.AddHours(1))[GamePlace.Server("mc.showtime.su")]);
+    }
+
+    [Fact]
+    public void A_kick_after_the_world_was_taken_away_is_final()
+    {
+        var tracker = new GameLocationTracker(Start);
+        tracker.Feed("[Render thread/INFO]: Connecting to mc.showtime.su, 25565", Start);
+
+        // As it happened in a real log: the move hung, and half a minute later the connection timed out.
+        tracker.Feed("[Render thread/INFO]: Stopping worker threads", Start.AddMinutes(10));
+        tracker.Feed("[Render thread/WARN]: Client disconnected with reason: Timed out", Start.AddMinutes(10).AddSeconds(34));
+        tracker.Feed("[Render thread/INFO]: Started 10 worker threads", Start.AddMinutes(11));
+
+        Assert.Equal(GamePlace.Menu, tracker.Place);
+        Assert.Equal(TimeSpan.FromMinutes(10), tracker.Finish(Start.AddHours(1))[GamePlace.Server("mc.showtime.su")]);
+    }
+
     [Fact]
     public void A_dedicated_server_stopping_elsewhere_does_not_end_a_multiplayer_stay()
     {

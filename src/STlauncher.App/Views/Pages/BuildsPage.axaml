@@ -1502,6 +1502,12 @@
                                                            TextTrimming="CharacterEllipsis"/>
                                                 <TextBlock Text="{Binding Summary}" Classes="faint"/>
 
+                                                <!-- Found behind a root that is a link: the real
+                                                     folder that will be read, said before the import. -->
+                                                <TextBlock Text="{Binding ReadsFromLabel}" Classes="faint"
+                                                           TextWrapping="Wrap"
+                                                           IsVisible="{Binding HasReadsFrom}"/>
+
                                                 <!-- A build that cannot be imported is still listed,
                                                      with the reason: one that vanishes looks like a
                                                      build the launcher lost. -->
