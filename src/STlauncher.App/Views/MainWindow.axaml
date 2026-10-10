@@ -189,7 +189,21 @@
                     </Panel>
 
                     <Panel Name="TopStripSlot" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center"
-                           Margin="12,0,12,0"/>
+                           Margin="12,0,12,0">
+                        <!-- The way into the search for everything. It looks like a field and
+                             is a button: the typing happens in the palette it opens. On a strip
+                             too narrow for it, the class "compact" (set from the window's code)
+                             leaves the icon. -->
+                        <Button Name="SearchEntry" Classes="search-entry" Command="{Binding OpenSearchCommand}"
+                                ToolTip.Tip="{DynamicResource Search_Entry}">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                                <PathIcon Data="{StaticResource IconSearch}" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="{DynamicResource Search_Entry}" VerticalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Grid.Column="2" Classes="kbd" Text="Ctrl K" VerticalAlignment="Center"/>
+                            </Grid>
+                        </Button>
+                    </Panel>
 
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Top">
                         <Button Classes="chrome" Click="OnMinimizeClick" ToolTip.Tip="{DynamicResource Common_Minimize}">
@@ -311,6 +325,10 @@
             </StackPanel>
         </Border>
     </Border>
+
+    <!-- The search for everything (Ctrl+K). Empty until it is first opened: the window's
+         code puts a SearchPalette in it then, so a search nobody uses costs nothing. -->
+    <ContentControl Name="SearchHost" IsVisible="{Binding IsSearchOpen}"/>
 
     <!-- The start: sparks, the mark, and the screen showing through when the build is ready. -->
     <views:SplashOverlay Name="Splash" IsReady="{Binding IsStartupReady}"/>

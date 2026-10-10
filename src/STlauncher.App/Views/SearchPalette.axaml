@@ -1,0 +1,103 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:STlauncher.App.ViewModels"
+             x:Class="STlauncher.App.Views.SearchPalette"
+             x:DataType="vm:MainWindowViewModel">
+
+    <!-- The search for everything: a field and a list near the top of the window, over a
+         scrim. Made the first time it is opened, not with the window. The keyboard never
+         leaves the field: the arrows move the highlight, Enter acts on it, Tab goes to the
+         row's button and back, Esc closes. It appears at once, without the pages' rise:
+         a thing called by a key should be there by the time the next key is pressed. -->
+
+    <UserControl.Styles>
+        <!-- One highlight, and it is the selected row: the pointer selects by moving,
+             so a row is never lit twice, once for the pointer and once for the keys. -->
+        <Style Selector="Border.row">
+            <Setter Property="Padding" Value="12,0"/>
+            <Setter Property="MinHeight" Value="40"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Border.row:pointerover">
+            <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
+        </Style>
+        <Style Selector="Border.row.selected">
+            <Setter Property="Background" Value="{DynamicResource RowHoverBrush}"/>
+        </Style>
+
+        <!-- The row's button while Tab is on it. -->
+        <Style Selector="Button.second">
+            <Setter Property="Padding" Value="12,4"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+        <Style Selector="Button.second.active /template/ Border#PART_Root">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Panel>
+        <Border Classes="scrim" PointerPressed="OnScrimPressed"/>
+
+        <Border Classes="dialog" Width="620" MaxHeight="560" Padding="0" ClipToBounds="True"
+                VerticalAlignment="Top" Margin="24,64,24,24">
+            <Grid RowDefinitions="52,Auto,Auto,*,Auto">
+
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Margin="20,0">
+                    <PathIcon Data="{StaticResource IconSearch}" Classes="muted" VerticalAlignment="Center"/>
+                    <TextBox Grid.Column="1" Name="QueryBox" Classes="bare" FontSize="15"
+                             Watermark="{DynamicResource Search_Entry}"
+                             Text="{Binding SearchQuery}" TextChanged="OnQueryChanged"/>
+                    <TextBlock Grid.Column="2" Classes="kbd" Text="Esc" VerticalAlignment="Center"/>
+                </Grid>
+
+                <Border Grid.Row="1" Classes="hairline"/>
+
+                <TextBlock Grid.Row="2" Classes="sub" Margin="20,12,20,0" TextWrapping="Wrap"
+                           Text="{Binding SearchNote}" IsVisible="{Binding HasSearchNote}"/>
+
+                <ScrollViewer Grid.Row="3" Name="Scroller" VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <Panel>
+                        <ItemsControl Name="Rows" ItemsSource="{Binding SearchRows}" Margin="8,4,8,10">
+                            <ItemsControl.DataTemplates>
+                                <DataTemplate DataType="vm:SearchCaption">
+                                    <TextBlock Classes="caption" Text="{Binding Text}" Margin="12,14,12,6"
+                                               TextTrimming="CharacterEllipsis"/>
+                                </DataTemplate>
+                                <DataTemplate DataType="vm:SearchRow">
+                                    <Border Classes="row flat" Classes.selected="{Binding IsSelected}"
+                                            Tapped="OnRowTapped" PointerMoved="OnRowPointerMoved">
+                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="12">
+                                            <PathIcon Data="{Binding Icon}" Classes="small muted" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Classes="strong" Text="{Binding Title}"
+                                                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Grid.Column="2" Classes="mono" Text="{Binding Meta}"
+                                                       IsVisible="{Binding HasMeta}" VerticalAlignment="Center"
+                                                       MaxWidth="180" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Grid.Column="3" Classes="sub" Text="{Binding Note}"
+                                                       IsVisible="{Binding HasNote}" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="4" Classes="small second" Classes.active="{Binding IsSecondaryFocused}"
+                                                    Focusable="False" IsVisible="{Binding HasSecondary}"
+                                                    Content="{Binding SecondaryLabel}" Click="OnSecondaryClick"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.DataTemplates>
+                        </ItemsControl>
+
+                        <StackPanel Spacing="4" Margin="24,30,24,34" IsVisible="{Binding IsSearchEmpty}">
+                            <TextBlock Classes="strong" Text="{DynamicResource Search_Empty}" HorizontalAlignment="Center"/>
+                            <TextBlock Classes="sub" Text="{DynamicResource Search_EmptyHint}" HorizontalAlignment="Center"
+                                       TextWrapping="Wrap" TextAlignment="Center"/>
+                        </StackPanel>
+                    </Panel>
+                </ScrollViewer>
+
+                <Border Grid.Row="4" BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="0,1,0,0" Padding="20,9">
+                    <TextBlock Classes="kbd" Text="{DynamicResource Search_Hints}" TextTrimming="CharacterEllipsis"/>
+                </Border>
+            </Grid>
+        </Border>
+    </Panel>
+</UserControl>
