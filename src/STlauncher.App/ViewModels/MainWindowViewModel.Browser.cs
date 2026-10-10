@@ -33,7 +33,10 @@ public enum BuildTab
     /// <summary>The pictures the game saved into this build.</summary>
     Screenshots,
 
-    Settings
+    Settings,
+
+    /// <summary>The build's single-player worlds.</summary>
+    Worlds
 }
 
 public sealed record ModSortOption(string Value, string Display);
@@ -213,6 +216,7 @@ public partial class MainWindowViewModel
     public bool IsBuildCatalog => BuildTab == BuildTab.Catalog;
     public bool IsBuildSettings => BuildTab == BuildTab.Settings;
     public bool IsBuildScreenshots => BuildTab == BuildTab.Screenshots;
+    public bool IsBuildWorlds => BuildTab == BuildTab.Worlds;
 
     partial void OnBuildTabChanged(BuildTab value)
     {
@@ -233,6 +237,13 @@ public partial class MainWindowViewModel
         if (value == BuildTab.Screenshots)
         {
             RefreshScreenshots();
+        }
+
+        OnPropertyChanged(nameof(IsBuildWorlds));
+
+        if (value == BuildTab.Worlds)
+        {
+            RefreshWorlds();
         }
 
         // A mirror that could not be reached at start gets one more question when the

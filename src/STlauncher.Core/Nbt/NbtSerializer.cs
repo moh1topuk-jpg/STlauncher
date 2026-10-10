@@ -5,123 +5,244 @@ using System.Text;
 
 namespace STlauncher.Core.Nbt;
 
+/// <summary>
+/// How much a single NBT document may ask of the reader. The files the launcher reads -
+/// servers.dat, level.dat - come from the player's disk, but also from archives someone
+/// else made, so a document is read on a budget rather than on trust.
+/// </summary>
+public static class NbtLimits
+{
+    /// <summary>The game itself refuses to nest deeper than this.</summary>
+    public const int MaxDepth = 512;
+
+    /// <summary>
+    /// The most a document may cost: its bytes after inflating, plus a charge per tag.
+    /// A heavily modded level.dat is a few megabytes; this leaves room and still stops a
+    /// gzip bomb long before it hurts.
+    /// </summary>
+    public const long MaxBudget = 64L * 1024 * 1024;
+
+    /// <summary>
+    /// What one tag costs on top of its bytes. A list of a million empty compounds is a
+    /// megabyte on disk and many times that in memory; the charge closes that gap.
+    /// </summary>
+    internal const int TagCharge = 16;
+}
+
 public static class NbtReader
 {
     public static NbtCompound Read(Stream stream, bool leaveOpen = true)
-    {
-        using var reader = new BinaryReader(stream, Encoding.UTF8, leaveOpen);
-        var type = (NbtTagType)reader.ReadByte();
+        => Read(stream, out _, NbtLimits.MaxBudget, leaveOpen);
 
-        if (type != NbtTagType.Compound)
+    /// <param name="rootName">The name of the root tag: empty in the game's own files, kept so a rewrite matches.</param>
+    /// <param name="maxBudget">See <see cref="NbtLimits.MaxBudget"/>.</param>
+    public static NbtCompound Read(Stream stream, out string rootName, long maxBudget = NbtLimits.MaxBudget, bool leaveOpen = true)
+    {
+        try
         {
-            throw new InvalidDataException($"Unexpected root tag type: {type}.");
+            var source = new Source(stream, maxBudget);
+            var type = (NbtTagType)source.ReadByte();
+
+            if (type != NbtTagType.Compound)
+            {
+                throw new InvalidDataException($"Unexpected root tag type: {type}.");
+            }
+
+            rootName = ReadString(source);
+
+            return ReadCompound(source, depth: 1);
+        }
+        finally
+        {
+            if (!leaveOpen)
+            {
+                stream.Dispose();
+            }
+        }
+    }
+
+    private static NbtTag ReadPayload(NbtTagType type, Source source, int depth)
+    {
+        source.Charge(NbtLimits.TagCharge);
+
+        return type switch
+        {
+            NbtTagType.Byte => new NbtByte((sbyte)source.ReadByte()),
+            NbtTagType.Short => new NbtShort(BinaryPrimitives.ReadInt16BigEndian(source.Read(2))),
+            NbtTagType.Int => new NbtInt(source.ReadInt32()),
+            NbtTagType.Long => new NbtLong(source.ReadInt64()),
+            NbtTagType.Float => new NbtFloat(BitConverter.Int32BitsToSingle(source.ReadInt32())),
+            NbtTagType.Double => new NbtDouble(BitConverter.Int64BitsToDouble(source.ReadInt64())),
+            NbtTagType.ByteArray => new NbtByteArray(source.ReadBytes(ReadLength(source, elementSize: 1))),
+            NbtTagType.String => new NbtString(ReadString(source)),
+            NbtTagType.List => ReadList(source, depth),
+            NbtTagType.Compound => ReadCompound(source, depth),
+            NbtTagType.IntArray => ReadIntArray(source),
+            NbtTagType.LongArray => ReadLongArray(source),
+            _ => throw new InvalidDataException($"Unsupported tag type: {(byte)type}.")
+        };
+    }
+
+    /// <summary>
+    /// A length is a claim until the bytes behind it have been paid for: an array that
+    /// says it holds two billion longs must not get its memory before the budget agrees.
+    /// </summary>
+    private static int ReadLength(Source source, int elementSize)
+    {
+        var length = source.ReadInt32();
+
+        if (length < 0)
+        {
+            throw new InvalidDataException("Negative length in an NBT tag.");
         }
 
-        ReadString(reader);
-
-        return (NbtCompound)ReadPayload(type, reader);
+        source.Require((long)length * elementSize);
+        return length;
     }
 
-    private static NbtTag ReadPayload(NbtTagType type, BinaryReader reader) => type switch
+    private static NbtIntArray ReadIntArray(Source source)
     {
-        NbtTagType.Byte => new NbtByte(reader.ReadSByte()),
-        NbtTagType.Short => new NbtShort(ReadInt16(reader)),
-        NbtTagType.Int => new NbtInt(ReadInt32(reader)),
-        NbtTagType.Long => new NbtLong(ReadInt64(reader)),
-        NbtTagType.Float => new NbtFloat(ReadSingle(reader)),
-        NbtTagType.Double => new NbtDouble(ReadDouble(reader)),
-        NbtTagType.ByteArray => ReadByteArray(reader),
-        NbtTagType.String => new NbtString(ReadString(reader)),
-        NbtTagType.List => ReadList(reader),
-        NbtTagType.Compound => ReadCompound(reader),
-        NbtTagType.IntArray => ReadIntArray(reader),
-        NbtTagType.LongArray => ReadLongArray(reader),
-        _ => throw new InvalidDataException($"Unsupported tag type: {type}.")
-    };
+        var values = new int[ReadLength(source, sizeof(int))];
 
-    private static NbtByteArray ReadByteArray(BinaryReader reader)
-    {
-        var length = ReadInt32(reader);
-        return new NbtByteArray(reader.ReadBytes(length));
-    }
-
-    private static NbtIntArray ReadIntArray(BinaryReader reader)
-    {
-        var length = ReadInt32(reader);
-        var values = new int[length];
-        for (var i = 0; i < length; i++)
+        for (var i = 0; i < values.Length; i++)
         {
-            values[i] = ReadInt32(reader);
+            values[i] = source.ReadInt32();
         }
 
         return new NbtIntArray(values);
     }
 
-    private static NbtLongArray ReadLongArray(BinaryReader reader)
+    private static NbtLongArray ReadLongArray(Source source)
     {
-        var length = ReadInt32(reader);
-        var values = new long[length];
-        for (var i = 0; i < length; i++)
+        var values = new long[ReadLength(source, sizeof(long))];
+
+        for (var i = 0; i < values.Length; i++)
         {
-            values[i] = ReadInt64(reader);
+            values[i] = source.ReadInt64();
         }
 
         return new NbtLongArray(values);
     }
 
-    private static NbtList ReadList(BinaryReader reader)
+    private static NbtList ReadList(Source source, int depth)
     {
-        var elementType = (NbtTagType)reader.ReadByte();
-        var length = ReadInt32(reader);
+        if (depth >= NbtLimits.MaxDepth)
+        {
+            throw new InvalidDataException("NBT is nested too deeply.");
+        }
+
+        var elementType = (NbtTagType)source.ReadByte();
+        var length = source.ReadInt32();
+
+        if (length < 0)
+        {
+            throw new InvalidDataException("Negative length in an NBT list.");
+        }
+
+        // Elements of type End take no bytes, so nothing else would bound such a list.
+        if (elementType == NbtTagType.End && length > 0)
+        {
+            throw new InvalidDataException("An NBT list of End tags cannot have elements.");
+        }
+
+        // Each element costs at least its charge; ask for all of it before the first one.
+        source.Require((long)length * NbtLimits.TagCharge);
+
+        // The element type is kept as read even when the list is empty: an empty list of
+        // compounds and an empty list of End are different bytes on the way back.
         var list = new NbtList(elementType);
 
         for (var i = 0; i < length; i++)
         {
-            list.Items.Add(ReadPayload(elementType, reader));
+            list.Items.Add(ReadPayload(elementType, source, depth + 1));
         }
 
         return list;
     }
 
-    private static NbtCompound ReadCompound(BinaryReader reader)
+    private static NbtCompound ReadCompound(Source source, int depth)
     {
+        if (depth >= NbtLimits.MaxDepth)
+        {
+            throw new InvalidDataException("NBT is nested too deeply.");
+        }
+
         var compound = new NbtCompound();
 
         while (true)
         {
-            var type = (NbtTagType)reader.ReadByte();
+            var type = (NbtTagType)source.ReadByte();
             if (type == NbtTagType.End)
             {
                 break;
             }
 
-            var name = ReadString(reader);
-            compound.Items[name] = ReadPayload(type, reader);
+            var name = ReadString(source);
+            compound.Set(name, ReadPayload(type, source, depth + 1));
         }
 
         return compound;
     }
 
-    private static string ReadString(BinaryReader reader)
+    private static string ReadString(Source source)
     {
-        var length = BinaryPrimitives.ReadUInt16BigEndian(reader.ReadBytes(2));
-        return Encoding.UTF8.GetString(reader.ReadBytes(length));
+        var length = BinaryPrimitives.ReadUInt16BigEndian(source.Read(2));
+        return ModifiedUtf8.Decode(source.ReadBytes(length));
     }
 
-    private static short ReadInt16(BinaryReader reader)
-        => BinaryPrimitives.ReadInt16BigEndian(reader.ReadBytes(2));
+    /// <summary>The stream, read exactly and on a budget.</summary>
+    private sealed class Source
+    {
+        private readonly Stream _stream;
+        private readonly byte[] _scratch = new byte[8];
+        private long _left;
 
-    private static int ReadInt32(BinaryReader reader)
-        => BinaryPrimitives.ReadInt32BigEndian(reader.ReadBytes(4));
+        public Source(Stream stream, long budget)
+        {
+            _stream = stream;
+            _left = budget;
+        }
 
-    private static long ReadInt64(BinaryReader reader)
-        => BinaryPrimitives.ReadInt64BigEndian(reader.ReadBytes(8));
+        public void Charge(long amount)
+        {
+            _left -= amount;
 
-    private static float ReadSingle(BinaryReader reader)
-        => BitConverter.Int32BitsToSingle(ReadInt32(reader));
+            if (_left < 0)
+            {
+                throw new InvalidDataException("The NBT document is larger than the reader accepts.");
+            }
+        }
 
-    private static double ReadDouble(BinaryReader reader)
-        => BitConverter.Int64BitsToDouble(ReadInt64(reader));
+        /// <summary>Fails now if what is about to be read cannot fit, without spending anything.</summary>
+        public void Require(long amount)
+        {
+            if (amount > _left)
+            {
+                throw new InvalidDataException("The NBT document is larger than the reader accepts.");
+            }
+        }
+
+        public ReadOnlySpan<byte> Read(int count)
+        {
+            Charge(count);
+            _stream.ReadExactly(_scratch, 0, count);
+            return _scratch.AsSpan(0, count);
+        }
+
+        public byte ReadByte() => Read(1)[0];
+
+        public int ReadInt32() => BinaryPrimitives.ReadInt32BigEndian(Read(4));
+
+        public long ReadInt64() => BinaryPrimitives.ReadInt64BigEndian(Read(8));
+
+        public byte[] ReadBytes(int count)
+        {
+            Charge(count);
+            var bytes = new byte[count];
+            _stream.ReadExactly(bytes, 0, count);
+            return bytes;
+        }
+    }
 }
 
 public static class NbtWriter
@@ -168,6 +289,12 @@ public static class NbtWriter
                 WriteInt32(writer, value.Items.Count);
                 foreach (var item in value.Items)
                 {
+                    if (item.Type != value.ElementType)
+                    {
+                        throw new InvalidOperationException(
+                            $"A list of {value.ElementType} cannot hold a {item.Type} tag.");
+                    }
+
                     WritePayload(writer, item);
                 }
 
@@ -205,7 +332,13 @@ public static class NbtWriter
 
     private static void WriteString(BinaryWriter writer, string value)
     {
-        var bytes = Encoding.UTF8.GetBytes(value);
+        var bytes = ModifiedUtf8.Encode(value);
+
+        if (bytes.Length > ushort.MaxValue)
+        {
+            throw new InvalidOperationException("An NBT string cannot be longer than 65535 bytes.");
+        }
+
         WriteUInt16(writer, (ushort)bytes.Length);
         writer.Write(bytes);
     }
@@ -237,4 +370,154 @@ public static class NbtWriter
         BinaryPrimitives.WriteInt64BigEndian(buffer, value);
         writer.Write(buffer);
     }
+}
+
+/// <summary>
+/// Java's "modified UTF-8", which is what NBT strings are written in. It differs from the
+/// real thing in two places: U+0000 is two bytes (C0 80), and a character outside the
+/// basic plane is its two surrogates, three bytes each, rather than one four-byte
+/// sequence. Reading a world name with an emoji through plain UTF-8 turned it into
+/// replacement characters, and writing it back made that permanent.
+/// </summary>
+public static class ModifiedUtf8
+{
+    public static string Decode(ReadOnlySpan<byte> bytes)
+    {
+        var chars = new StringBuilder(bytes.Length);
+
+        for (var i = 0; i < bytes.Length;)
+        {
+            int lead = bytes[i];
+
+            if (lead < 0x80)
+            {
+                chars.Append((char)lead);
+                i++;
+            }
+            else if ((lead & 0xE0) == 0xC0)
+            {
+                chars.Append((char)(((lead & 0x1F) << 6) | Continuation(bytes, i + 1)));
+                i += 2;
+            }
+            else if ((lead & 0xF0) == 0xE0)
+            {
+                chars.Append((char)(((lead & 0x0F) << 12) | (Continuation(bytes, i + 1) << 6) | Continuation(bytes, i + 2)));
+                i += 3;
+            }
+            else if ((lead & 0xF8) == 0xF0)
+            {
+                // Not something Java writes, but editors written in other languages do.
+                var point = ((lead & 0x07) << 18) | (Continuation(bytes, i + 1) << 12) |
+                            (Continuation(bytes, i + 2) << 6) | Continuation(bytes, i + 3);
+
+                if (point < 0x10000 || point > 0x10FFFF)
+                {
+                    throw new InvalidDataException("Malformed text in an NBT string.");
+                }
+
+                chars.Append(char.ConvertFromUtf32(point));
+                i += 4;
+            }
+            else
+            {
+                throw new InvalidDataException("Malformed text in an NBT string.");
+            }
+        }
+
+        return chars.ToString();
+    }
+
+    private static int Continuation(ReadOnlySpan<byte> bytes, int index)
+    {
+        if (index >= bytes.Length || (bytes[index] & 0xC0) != 0x80)
+        {
+            throw new InvalidDataException("Malformed text in an NBT string.");
+        }
+
+        return bytes[index] & 0x3F;
+    }
+
+    public static byte[] Encode(string value)
+    {
+        var length = 0;
+
+        foreach (var c in value)
+        {
+            length += c is >= (char)1 and <= (char)0x7F ? 1 : c <= 0x7FF ? 2 : 3;
+        }
+
+        var bytes = new byte[length];
+        var at = 0;
+
+        foreach (var c in value)
+        {
+            if (c is >= (char)1 and <= (char)0x7F)
+            {
+                bytes[at++] = (byte)c;
+            }
+            else if (c <= 0x7FF)
+            {
+                bytes[at++] = (byte)(0xC0 | (c >> 6));
+                bytes[at++] = (byte)(0x80 | (c & 0x3F));
+            }
+            else
+            {
+                bytes[at++] = (byte)(0xE0 | (c >> 12));
+                bytes[at++] = (byte)(0x80 | ((c >> 6) & 0x3F));
+                bytes[at++] = (byte)(0x80 | (c & 0x3F));
+            }
+        }
+
+        return bytes;
+    }
+}
+
+/// <summary>One NBT file as it was on disk: the tree, the root's name and whether it was gzipped.</summary>
+public sealed record NbtDocument(NbtCompound Root, string RootName, bool Gzipped);
+
+/// <summary>Reads and writes whole NBT files, gzipped (level.dat) or plain (servers.dat).</summary>
+public static class NbtFile
+{
+    public static NbtDocument Read(string path, long maxBudget = NbtLimits.MaxBudget)
+    {
+        using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        return Read(file, maxBudget);
+    }
+
+    /// <summary>Reads from a seekable stream, looking at the first two bytes to tell gzip from plain.</summary>
+    public static NbtDocument Read(Stream stream, long maxBudget = NbtLimits.MaxBudget)
+    {
+        Span<byte> magic = stackalloc byte[2];
+        var start = stream.Position;
+        var read = stream.ReadAtLeast(magic, 2, throwOnEndOfStream: false);
+        stream.Position = start;
+
+        var gzipped = read == 2 && magic[0] == 0x1f && magic[1] == 0x8b;
+
+        // The budget counts inflated bytes, so a small file that unpacks into gigabytes
+        // is stopped at the budget and not at the end of memory.
+        using var inflated = gzipped
+            ? new System.IO.Compression.GZipStream(stream, System.IO.Compression.CompressionMode.Decompress, leaveOpen: true)
+            : null;
+        using var buffered = new BufferedStream(inflated ?? stream, 16 * 1024);
+
+        var root = NbtReader.Read(buffered, out var rootName, maxBudget);
+        return new NbtDocument(root, rootName, gzipped);
+    }
+
+    /// <summary>Writes through a temporary file, so a crash mid-write leaves the old file whole.</summary>
+    public static void Write(string path, NbtDocument document)
+        => AtomicFile.Write(path, stream =>
+        {
+            if (document.Gzipped)
+            {
+                using var gzip = new System.IO.Compression.GZipStream(
+                    stream, System.IO.Compression.CompressionLevel.Optimal, leaveOpen: true);
+                NbtWriter.Write(gzip, document.Root, document.RootName);
+            }
+            else
+            {
+                NbtWriter.Write(stream, document.Root, document.RootName);
+            }
+        });
 }

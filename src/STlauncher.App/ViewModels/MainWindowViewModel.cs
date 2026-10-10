@@ -278,6 +278,7 @@ public partial class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(nameof(ShowLaunchProgress));
         OnPropertyChanged(nameof(CanRepairBuild));
         OnPropertyChanged(nameof(CanEditPacks));
+        OnWorldsGameStateChanged();
     }
 
     [ObservableProperty]
@@ -1035,6 +1036,8 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             RefreshScreenshots();
         }
+
+        OnWorldsBuildChanged();
 
         ApplyServerFromInstance();
 

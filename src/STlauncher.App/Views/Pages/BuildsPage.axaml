@@ -8,6 +8,7 @@
              xmlns:content="using:STlauncher.Core.Content"
              xmlns:conv="using:STlauncher.App.Converters"
              xmlns:controls="using:STlauncher.App.Controls"
+             xmlns:pages="using:STlauncher.App.Views.Pages"
              xmlns:sys="using:System"
              x:Class="STlauncher.App.Views.Pages.BuildsPage"
              x:DataType="vm:MainWindowViewModel"
@@ -385,6 +386,9 @@
                             <Button Classes="segment" Classes.active="{Binding IsBuildScreenshots}"
                                     Content="{Binding ScreenshotsTabLabel}"
                                     Command="{Binding SelectBuildTabCommand}" CommandParameter="Screenshots"/>
+                            <Button Classes="segment" Classes.active="{Binding IsBuildWorlds}"
+                                    Content="{Binding WorldsTabLabel}"
+                                    Command="{Binding SelectBuildTabCommand}" CommandParameter="Worlds"/>
                             <Button Classes="segment" Classes.active="{Binding IsBuildCatalog}"
                                     Command="{Binding SelectBuildTabCommand}" CommandParameter="Catalog">
                                 <StackPanel Orientation="Horizontal" Spacing="6">
@@ -963,6 +967,9 @@
                             </ItemsControl>
                         </ScrollViewer>
                     </Grid>
+
+                    <!-- ======== Worlds of the build: a view of its own ======== -->
+                    <pages:WorldsView IsVisible="{Binding IsBuildWorlds}" controls:Reveal.OnVisible="True"/>
 
                     <!-- ======== The catalog: large cards, details on the right ======== -->
                     <Grid IsVisible="{Binding IsBuildCatalog}" RowDefinitions="Auto,*" RowSpacing="10" controls:Reveal.OnVisible="True">

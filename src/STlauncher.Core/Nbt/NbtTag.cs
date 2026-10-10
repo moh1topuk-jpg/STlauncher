@@ -110,22 +110,65 @@ public sealed class NbtList : NbtTag
     public override NbtTagType Type => NbtTagType.List;
 }
 
+/// <summary>
+/// Named tags, kept in the order they were read or added. A file read and written back
+/// must come out byte for byte the same when nothing was changed, and a plain dictionary
+/// only keeps its order until the first removal.
+/// </summary>
 public sealed class NbtCompound : NbtTag
 {
-    public Dictionary<string, NbtTag> Items { get; } = new();
+    private readonly List<string> _names = new();
+    private readonly Dictionary<string, NbtTag> _tags = new(System.StringComparer.Ordinal);
+
+    /// <summary>The tags in file order.</summary>
+    public IEnumerable<KeyValuePair<string, NbtTag>> Items
+    {
+        get
+        {
+            foreach (var name in _names)
+            {
+                yield return new KeyValuePair<string, NbtTag>(name, _tags[name]);
+            }
+        }
+    }
+
+    public int Count => _names.Count;
 
     public override NbtTagType Type => NbtTagType.Compound;
 
-    public NbtTag? Get(string name) => Items.TryGetValue(name, out var tag) ? tag : null;
+    public NbtTag? Get(string name) => _tags.TryGetValue(name, out var tag) ? tag : null;
 
     public string? GetString(string name) => (Get(name) as NbtString)?.Value;
 
     public sbyte? GetByte(string name) => (Get(name) as NbtByte)?.Value;
 
+    public int? GetInt(string name) => (Get(name) as NbtInt)?.Value;
+
+    public long? GetLong(string name) => (Get(name) as NbtLong)?.Value;
+
+    public NbtCompound? GetCompound(string name) => Get(name) as NbtCompound;
+
+    /// <summary>Replaces a tag where it stands, or appends a new one.</summary>
     public NbtCompound Set(string name, NbtTag tag)
     {
-        Items[name] = tag;
+        if (!_tags.ContainsKey(name))
+        {
+            _names.Add(name);
+        }
+
+        _tags[name] = tag;
         return this;
+    }
+
+    public bool Remove(string name)
+    {
+        if (!_tags.Remove(name))
+        {
+            return false;
+        }
+
+        _names.Remove(name);
+        return true;
     }
 }
 
