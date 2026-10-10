@@ -122,6 +122,8 @@
     <x:String x:Key="Server_Name">Название</x:String>
     <x:String x:Key="Server_Address">Адрес</x:String>
     <x:String x:Key="Server_Join">Играть на сервере</x:String>
+    <x:String x:Key="Server_BuildCaption">Сборка для сервера</x:String>
+    <x:String x:Key="Server_BuildOpen">Моды и настройки</x:String>
     <x:String x:Key="Server_Hint">Сервер добавляется в игровой список серверов автоматически для каждой сборки. Автовход происходит только по кнопке «Играть на сервере».</x:String>
     <x:String x:Key="Server_GlobalHint">Адрес один для всего лаунчера: он попадает в список серверов всех сборок.</x:String>
 
@@ -1431,7 +1433,7 @@
     <x:String x:Key="Host_JoinNoBuild">Ни одна ваша сборка не подходит этому серверу (Minecraft {0} · {1}), а создать новую лаунчер сейчас не может. Создайте сборку этой версии на вкладке «Сборки».</x:String>
     <x:String x:Key="Friends_InviteBuildExisting">Играть будете своей сборкой «{0}»</x:String>
     <x:String x:Key="Friends_InviteBuildExistingDetail">Minecraft {0} · {1}: она подходит этому серверу. Ничего не создаётся и не скачивается, сборка не меняется.</x:String>
-    <x:String x:Key="Friends_BuildBack">У сервера «{0}» снова есть сборка: «{1}». Нажмите «Играть».</x:String>
+    <x:String x:Key="Friends_BuildBack">У сервера «{0}» снова есть сборка: «{1}». Нажмите «Зайти».</x:String>
     <x:String x:Key="Friends_AskingVersion">Спрашиваем у сервера, какая на нём версия…</x:String>
     <x:String x:Key="Friends_BuildGoneConfirm">Сборка для этого сервера удалена, и ни одна ваша ему не подходит. Выше показано, что будет создано взамен; без вашего согласия ничего не создаётся.</x:String>
     <x:String x:Key="Friends_VersionUnknown">Лаунчер не знает, какая версия на этом сервере, и угадывать сборку не станет. Попросите у друга новое приглашение.</x:String>
@@ -1445,12 +1447,12 @@
     <x:String x:Key="Host_Step1Done">Сервер запущен</x:String>
     <x:String x:Key="Host_Step1DoneNote">Работает, пока открыт лаунчер.</x:String>
     <x:String x:Key="Host_Step1Todo">Запустите сервер</x:String>
-    <x:String x:Key="Host_Step1TodoNote">Кнопка «Запустить» на карточке сервера выше.</x:String>
+    <x:String x:Key="Host_Step1TodoNote">Кнопка «Запустить» вверху страницы.</x:String>
     <x:String x:Key="Host_Step1WorkingNote">Сервер запускается или останавливается, это недолго.</x:String>
     <x:String x:Key="Host_Step2">Впишите ник друга</x:String>
     <x:String x:Key="Host_Step2Note">Сервер пускает только ники из списка. Ник пишется точно как в лаунчере друга.</x:String>
     <x:String x:Key="Host_Step3">Отправьте другу код</x:String>
-    <x:String x:Key="Host_Step3Note">Друг вставляет код в разделе «Друзья», на вкладке «Зайти к другу». Моды из вашей сборки поставятся у него сами. Код работает, пока сервер запущен.</x:String>
+    <x:String x:Key="Host_Step3Note">Друг вставляет код в разделе «Друзья», в поле «Зайти к другу». Моды из вашей сборки поставятся у него сами. Код работает, пока сервер запущен.</x:String>
     <x:String x:Key="Host_InviteCopy">Скопировать</x:String>
     <x:String x:Key="Host_InvitePlaceholder">Код появится здесь, когда сервер запущен и вы нажмёте «Скопировать».</x:String>
     <x:String x:Key="Host_InviteLongCopied">Скопирована длинная строка приглашения</x:String>
@@ -1544,12 +1546,12 @@
     <x:String x:Key="Host_InviteNeedsServer">Сначала запустите сервер: приглашение собирается, пока он работает.</x:String>
     <x:String x:Key="Host_InviteNeedsWay">Включите хотя бы один способ подключения и дождитесь, пока он заработает.</x:String>
     <x:String x:Key="Host_InviteBusy">Готовлю приглашение…</x:String>
-    <x:String x:Key="Host_InviteCopiedShort">Приглашение скопировано: {0}. Отправьте его другу: он вставляет код в разделе «Друзья», на вкладке «Зайти к другу». Код работает, пока ваш сервер запущен. Не забудьте добавить ник друга в список.</x:String>
+    <x:String x:Key="Host_InviteCopiedShort">Приглашение скопировано: {0}. Отправьте его другу: он вставляет код в разделе «Друзья», в поле «Зайти к другу». Код работает, пока ваш сервер запущен. Не забудьте добавить ник друга в список.</x:String>
     <x:String x:Key="Friends_ShortNoRelay">Это короткое приглашение, а лаунчер пока не знает сервер, который такие приглашения хранит. Попросите у друга длинное или попробуйте позже.</x:String>
     <x:String x:Key="Friends_ShortFetching">Запрашиваем приглашение {0}…</x:String>
     <x:String x:Key="Friends_ShortUnreachable">Сервер, который хранит приглашения, не отвечает. Проверьте интернет и попробуйте ещё раз.</x:String>
     <x:String x:Key="Friends_ShortOffline">На приглашение {0} никто не отвечает: сервер друга сейчас не запущен или в коде опечатка.</x:String>
-    <x:String x:Key="Host_InviteCopied">Приглашение скопировано. Отправьте его другу: он вставляет строку в разделе «Друзья», на вкладке «Зайти к другу». Не забудьте добавить ник друга в список.</x:String>
+    <x:String x:Key="Host_InviteCopied">Приглашение скопировано. Отправьте его другу: он вставляет строку в разделе «Друзья», в поле «Зайти к другу». Не забудьте добавить ник друга в список.</x:String>
     <x:String x:Key="Host_InviteCopiedMissing">Приглашение скопировано. Этих модов нет на Modrinth, их придётся передать другу отдельно: {0}</x:String>
     <x:String x:Key="Host_InviteCopiedNoBuild">Приглашение скопировано без сборки: Modrinth не ответил. Другу понадобится своя сборка для {0}.</x:String>
     <x:String x:Key="Host_InviteFailed">Не удалось собрать приглашение: {0}</x:String>
@@ -1566,6 +1568,21 @@
     <x:String x:Key="Host_CloseTextTunnel">Игра подключена к серверу друга через лаунчер. Если закрыть лаунчер, это соединение оборвётся.</x:String>
     <x:String x:Key="Host_CloseConfirmTunnel">Всё равно закрыть</x:String>
     <x:String x:Key="Host_CloseCancel">Не закрывать</x:String>
+    <x:String x:Key="Host_HubLead">Сервер живёт на вашем компьютере, пока открыт лаунчер. Порты открывать не нужно.</x:String>
+    <x:String x:Key="Host_HubInviteTitle">Позвать к себе</x:String>
+    <x:String x:Key="Host_HubInviteText">Лаунчер поднимет сервер из вашей сборки и даст короткий код. Друг вставит его у себя.</x:String>
+    <x:String x:Key="Host_HubFromBuild">из сборки «{0}»</x:String>
+    <x:String x:Key="Host_HubJoinTitle">Зайти к другу</x:String>
+    <x:String x:Key="Host_HubJoinText">Вставьте код из приглашения. Лаунчер покажет, что это за сервер и какая сборка нужна, и ничего не поставит без вашего согласия.</x:String>
+    <x:String x:Key="Host_HubJoin">Зайти</x:String>
+    <x:String x:Key="Host_HubRecent">Недавние</x:String>
+    <x:String x:Key="Host_HubServerLine">{0} {1} · {2}</x:String>
+    <x:String x:Key="Host_HubServerOff">выключен</x:String>
+    <x:String x:Key="Host_HubOpen">Открыть</x:String>
+    <x:String x:Key="Host_More">Ещё</x:String>
+    <x:String x:Key="Host_RemoveMenu">Убрать из списка…</x:String>
+    <x:String x:Key="Host_FolderTitle">Папка сервера</x:String>
+    <x:String x:Key="Host_WhitelistShort">Сервер пускает только ники из списка. Ник не пароль: давайте адрес только тем, кому доверяете.</x:String>
 
     <!-- My server: the server's mods and their settings -->
     <x:String x:Key="HostMods_Installed">Стоит на сервере · {0}</x:String>
@@ -1654,7 +1671,7 @@
     <x:String x:Key="Friends_BoxClipboardEmpty">Буфер обмена пуст. Скопируйте код, который прислал друг, и нажмите кнопку ещё раз.</x:String>
     <x:String x:Key="Friends_BoxBusy">Лаунчер сейчас занят сборкой. Дождитесь, пока он закончит, и нажмите кнопку ещё раз.</x:String>
     <x:String x:Key="Friends_BoxUnknown">Это не похоже на приглашение. Код выглядит так: ST-XXXXX-XXXXX; длинная строка начинается с STS1.</x:String>
-    <x:String x:Key="Friends_Empty">Здесь появятся серверы, на которые вас позвали. Вставьте код друга в поле выше и нажмите «Найти сервер».</x:String>
+    <x:String x:Key="Friends_Empty">Здесь появятся серверы, на которые вас позвали, и ваши собственные. Вставьте код друга в поле «Зайти к другу».</x:String>
     <x:String x:Key="Friends_ClipboardEmpty">В буфере обмена нет ни кода сборки, ни приглашения. Скопируйте приглашение (ST-XXXXX-XXXXX) или строку, которая начинается с STB1. или STS1., и попробуйте ещё раз.</x:String>
     <x:String x:Key="Friends_DefaultName">Сервер друга</x:String>
     <x:String x:Key="Friends_Subtitle">{0} · Minecraft {1} · {2}</x:String>
@@ -1680,10 +1697,10 @@
     <x:String x:Key="Friends_WayRelay">через посредника {0}</x:String>
     <x:String x:Key="Friends_WayPublic">по публичному адресу {0}</x:String>
     <x:String x:Key="Friends_InviteNothingStarts">Сейчас ничего не запустится</x:String>
-    <x:String x:Key="Friends_InviteNothingStartsDetail">Сервер появится в списке ниже. Игра начнётся, когда вы нажмёте «Играть».</x:String>
+    <x:String x:Key="Friends_InviteNothingStartsDetail">Сервер появится в списке ниже. Игра начнётся, когда вы нажмёте «Зайти».</x:String>
     <x:String x:Key="Friends_InviteAccept">Добавить</x:String>
     <x:String x:Key="Friends_InviteDecline">Не добавлять</x:String>
-    <x:String x:Key="Friends_Added">Сервер «{0}» добавлен. Нажмите «Играть», когда друг запустит сервер.</x:String>
+    <x:String x:Key="Friends_Added">Сервер «{0}» добавлен. Нажмите «Зайти», когда друг запустит сервер.</x:String>
     <x:String x:Key="Friends_Updated">Адреса сервера «{0}» обновлены</x:String>
     <x:String x:Key="Friends_AddFailed">Не удалось добавить сервер: {0}</x:String>
     <x:String x:Key="Friends_GameBusy">Игра уже запущена или запускается</x:String>
@@ -1691,7 +1708,7 @@
     <x:String x:Key="Friends_ConnectedDirect">Подключение напрямую. Если игра не зайдёт сама, адрес сервера: {0}</x:String>
     <x:String x:Key="Friends_ConnectedRelay">Подключение через посредника. Если игра не зайдёт сама, адрес сервера: {0}</x:String>
     <x:String x:Key="Friends_ConnectedPublic">Подключение по публичному адресу. Если игра не зайдёт сама, адрес сервера: {0}</x:String>
-    <x:String x:Key="Friends_Offline">Сервер не отвечает. Попросите друга запустить его и нажмите «Играть» ещё раз. Если у друга сменился адрес, попросите новое приглашение.</x:String>
+    <x:String x:Key="Friends_Offline">Сервер не отвечает. Попросите друга запустить его и нажмите «Зайти» ещё раз. Если у друга сменился адрес, попросите новое приглашение.</x:String>
     <x:String x:Key="Friends_OfflineRelayDown">Посредник не отвечает, а другого пути к серверу нет. Попробуйте позже.</x:String>
     <x:String x:Key="Friends_OfflineRelayBusy">Посредник сейчас перегружен. Попробуйте через минуту.</x:String>
     <x:String x:Key="Friends_OfflineHost">Лаунчер друга не на связи, или его сервер выключен. Попросите друга запустить сервер.</x:String>

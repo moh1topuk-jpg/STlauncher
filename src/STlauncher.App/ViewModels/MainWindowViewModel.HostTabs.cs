@@ -1,4 +1,5 @@
 using System;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -25,6 +26,38 @@ public enum HostTab
     Console
 }
 
+/// <summary>One of the player's own servers as a row of the hub: what it is and whether it runs.</summary>
+public sealed class HostServerRow
+{
+    public HostServerRow(HostedServer server, string subtitle, HostServerState state, string stateText)
+    {
+        Server = server;
+        Subtitle = subtitle;
+        State = state;
+        StateText = stateText;
+        Initial = HostModItem.InitialOf(server.Name);
+    }
+
+    public HostedServer Server { get; }
+
+    public string Name => Server.Name;
+
+    public string Initial { get; }
+
+    /// <summary>"Fabric 1.21.11 · 2 GB of memory".</summary>
+    public string Subtitle { get; }
+
+    public HostServerState State { get; }
+
+    public string StateText { get; }
+
+    public bool IsRunning => State == HostServerState.Running;
+
+    public bool IsWorking => State is HostServerState.Starting or HostServerState.Stopping;
+
+    public bool IsOff => !IsRunning && !IsWorking;
+}
+
 /// <summary>
 /// How the "Playing with friends" page is laid out: which half is open, which tab of the
 /// server, the three steps of inviting a friend and the box an invite is typed into.
@@ -38,11 +71,133 @@ public partial class MainWindowViewModel
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsFriendsMyServer))]
     [NotifyPropertyChangedFor(nameof(IsFriendsJoin))]
+    [NotifyPropertyChangedFor(nameof(ShowFriendsHub))]
+    [NotifyPropertyChangedFor(nameof(ShowFriendsServer))]
     private FriendsTab _friendsTab = FriendsTab.MyServer;
 
     public bool IsFriendsMyServer => FriendsTab == FriendsTab.MyServer;
 
     public bool IsFriendsJoin => FriendsTab == FriendsTab.Join;
+
+    // ===================== The hub and the server behind it =====================
+    // The page no longer wears a switch: it opens on a hub - call friends over, join a
+    // friend, the servers known so far - and a server of the player's own is a view
+    // opened from there. The two halves are still the same saved choice: "Join" is the
+    // hub, "MyServer" the server (or the hub again while there is no server to show).
+
+    public bool ShowFriendsHub => IsFriendsJoin || ShowHostEmpty;
+
+    public bool ShowFriendsServer => !ShowFriendsHub;
+
+    /// <summary>Nothing under "Recent" yet: no friend's server, none of the player's own.</summary>
+    public bool ShowHubEmpty => !HasFriendServers && !HasHostServers;
+
+    /// <summary>"from the build X" beside "Create a server": the build the creation form will open on.</summary>
+    public string HostHubBuildLine => SelectedInstance is { } instance
+        ? Localize("Host_HubFromBuild", "from the build “{0}”", instance.Name)
+        : string.Empty;
+
+    /// <summary>The player's own servers as rows of the hub.</summary>
+    public ObservableCollection<HostServerRow> HostServerRows { get; } = new();
+
+    /// <summary>Rebuilds the rows: a handful at most, so nothing is patched in place.</summary>
+    private void RefreshHostServerRows()
+    {
+        var running = _hostProcess is { HasExited: false } process ? process : null;
+
+        HostServerRows.Clear();
+
+        foreach (var server in HostServers.OrderByDescending(s => s.LastStartedAt ?? s.CreatedAt))
+        {
+            var state = running is not null && string.Equals(running.Server.Id, server.Id, StringComparison.OrdinalIgnoreCase)
+                ? MapHostState(running.State)
+                : HostServerState.Stopped;
+
+            HostServerRows.Add(new HostServerRow(
+                server,
+                Localize("Host_HubServerLine", "{0} {1} · {2}", server.Loader, server.GameVersion,
+                    Localize("Host_MemoryChip", "{0} of memory", FormatHostMemory(server.MemoryMb))),
+                state,
+                state switch
+                {
+                    HostServerState.Starting => Localize("Host_StateStarting", "starting"),
+                    HostServerState.Running => Localize("Host_StateRunning", "running"),
+                    HostServerState.Stopping => Localize("Host_StateStopping", "stopping"),
+                    _ => Localize("Host_HubServerOff", "switched off")
+                }));
+        }
+    }
+
+    /// <summary>"Create a server" on the hub: the form lives in the server's view.</summary>
+    [RelayCommand]
+    private void CreateHostFromHub()
+    {
+        FriendsTab = FriendsTab.MyServer;
+        OpenHostCreateCommand.Execute(null);
+    }
+
+    private void ShowHostServerRow(HostServerRow? row, HostTab tab)
+    {
+        if (row is null || !HostServers.Contains(row.Server))
+        {
+            return;
+        }
+
+        // A creation form left open would hide the server that was asked for.
+        if (IsHostCreateOpen)
+        {
+            CloseHostCreateCommand.Execute(null);
+
+            if (IsHostCreateOpen)
+            {
+                return;
+            }
+        }
+
+        SelectedHostServer = row.Server;
+        HostTab = tab;
+        FriendsTab = FriendsTab.MyServer;
+    }
+
+    [RelayCommand]
+    private void OpenHostServerRow(HostServerRow? row) => ShowHostServerRow(row, HostTab.Overview);
+
+    [RelayCommand]
+    private void ConfigureHostServerRow(HostServerRow? row) => ShowHostServerRow(row, HostTab.Settings);
+
+    /// <summary>"Start" on a row: the server's view opens, because that is where a start asks its questions.</summary>
+    [RelayCommand]
+    private void StartHostServerRow(HostServerRow? row)
+    {
+        ShowHostServerRow(row, HostTab.Overview);
+
+        if (row is not null && ReferenceEquals(SelectedHostServer, row.Server) && ShowFriendsServer && CanStartHost)
+        {
+            StartHostServerCommand.Execute(null);
+        }
+    }
+
+    [RelayCommand]
+    private void OpenHostServerRowFolder(HostServerRow? row)
+    {
+        if (row is null)
+        {
+            return;
+        }
+
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = _hosting.Store.ServerDirectory(row.Server),
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            Status = Localize("Error_OpenFolder", "Failed to open the folder: {0}", ex.Message);
+        }
+    }
 
     /// <summary>True while the saved choice is being put back: that is a load, not a change to save.</summary>
     private bool _restoringFriendsTab;
@@ -117,6 +272,7 @@ public partial class MainWindowViewModel
     private void AttachHostTabs()
     {
         HostWhitelist.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasHostFriendListed));
+        HostServers.CollectionChanged += (_, _) => RefreshHostServerRows();
 
         PropertyChanged += (_, e) =>
         {
@@ -128,6 +284,36 @@ public partial class MainWindowViewModel
 
                 case nameof(Username):
                     OnPropertyChanged(nameof(HasHostFriendListed));
+                    break;
+
+                // The hub is what is left when there is no server to show.
+                case nameof(ShowHostEmpty):
+                    OnPropertyChanged(nameof(ShowFriendsHub));
+                    OnPropertyChanged(nameof(ShowFriendsServer));
+                    break;
+
+                case nameof(HasHostServers):
+                case nameof(HasFriendServers):
+                    OnPropertyChanged(nameof(ShowHubEmpty));
+                    break;
+
+                case nameof(SelectedInstance):
+                    OnPropertyChanged(nameof(HostHubBuildLine));
+                    break;
+
+                // What a row of the hub says about a server: its state, its name, its memory.
+                case nameof(HostState):
+                case nameof(HostServerName):
+                case nameof(HostMemoryLabel):
+                case nameof(FriendsTab):
+                case nameof(Language):
+                    RefreshHostServerRows();
+
+                    if (e.PropertyName == nameof(Language))
+                    {
+                        OnPropertyChanged(nameof(HostHubBuildLine));
+                    }
+
                     break;
             }
         };

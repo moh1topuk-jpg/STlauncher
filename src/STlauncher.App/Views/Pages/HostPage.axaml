@@ -4,112 +4,105 @@
              xmlns:inst="using:STlauncher.Core.Instances"
              xmlns:hosting="using:STlauncher.Core.Hosting"
              xmlns:sys="using:System"
+             xmlns:conv="using:STlauncher.App.Converters"
              xmlns:controls="using:STlauncher.App.Controls"
              xmlns:pages="using:STlauncher.App.Views.Pages"
              x:Class="STlauncher.App.Views.Pages.HostPage"
-             x:DataType="vm:MainWindowViewModel">
+             x:DataType="vm:MainWindowViewModel"
+             x:Name="Root">
 
-    <!-- Playing with friends. Two halves behind one switch, because they are two different
-         errands: "My server" is a server the player runs for friends, "Join a friend" is
-         where a friend's invite goes. The server's half is its card and five tabs under it,
-         the first of which walks through inviting a friend step by step. -->
+    <!-- Playing with friends. The page opens on a hub: call friends over, join a friend,
+         and the servers known so far as rows. A server of the player's own is a view opened
+         from its row: a header, the tabs under it, and the creation form when a new one is
+         being made. Commands inside menus and flyouts are reached through #Root: a popup
+         is not a descendant of the page. -->
 
     <UserControl.DataTemplates>
-        <!-- One line of "what will happen": the creation card, a consent panel and an
+        <!-- One line of "what will happen": the creation form, a consent question and an
              invite all list their steps with it. A download carries an arrow, the rest a dot. -->
         <DataTemplate DataType="vm:HostPlanLine">
             <Grid ColumnDefinitions="14,*" ColumnSpacing="10" Margin="0,0,0,10">
                 <Panel Width="14" Height="16" VerticalAlignment="Top" Margin="0,1,0,0">
                     <PathIcon Data="{StaticResource IconDownload}" Width="12" Height="12"
-                              Foreground="{DynamicResource GoldBrush}" IsVisible="{Binding IsDownload}"/>
-                    <Border Width="5" Height="5" CornerRadius="3" Background="{DynamicResource TextMutedBrush}"
-                            IsVisible="{Binding IsNote}"/>
+                              Foreground="{DynamicResource TextPrimaryBrush}" IsVisible="{Binding IsDownload}"/>
+                    <Ellipse Width="4" Height="4" Fill="{DynamicResource TextMutedBrush}" IsVisible="{Binding IsNote}"/>
                 </Panel>
                 <StackPanel Grid.Column="1" Spacing="2">
-                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap"/>
-                    <TextBlock Text="{Binding Detail}" Classes="muted" TextWrapping="Wrap" LineHeight="17"/>
+                    <TextBlock Text="{Binding Title}" Classes="strong" TextWrapping="Wrap"/>
+                    <TextBlock Text="{Binding Detail}" Classes="sub" TextWrapping="Wrap" LineHeight="17"/>
                 </StackPanel>
             </Grid>
         </DataTemplate>
     </UserControl.DataTemplates>
 
     <UserControl.Styles>
-        <!-- A wide button on the server card: start, stop, join. On glass, like the small
-             square buttons of the home screen, so it reads over the card's glow. -->
-        <Style Selector="Button.glass-wide">
-            <Setter Property="Height" Value="46"/>
-            <Setter Property="Padding" Value="18,0"/>
-            <Setter Property="CornerRadius" Value="13"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-        </Style>
-        <Style Selector="Button.glass-wide /template/ Border#PART_Root">
-            <Setter Property="Background" Value="{DynamicResource PillBrush}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource GlassBorderBrush}"/>
-        </Style>
-        <Style Selector="Button.glass-wide:pointerover /template/ Border#PART_Root">
-            <Setter Property="Background" Value="{DynamicResource GlassChipBrush}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource GoldMutedBrush}"/>
+        <!-- The heading of one of the hub's two columns. -->
+        <Style Selector="TextBlock.duo">
+            <Setter Property="FontFamily" Value="{StaticResource DisplayFont}"/>
+            <Setter Property="FontSize" Value="19"/>
+            <Setter Property="FontWeight" Value="ExtraBold"/>
         </Style>
 
-        <!-- The switch between the two halves of the page: the same track of segments as
-             a build's tabs, larger, and the open half filled with the accent - it decides
-             what the whole page shows. -->
-        <Style Selector="Border.segments.halves Button.segment">
-            <Setter Property="Padding" Value="18,9"/>
-            <Setter Property="FontSize" Value="13.5"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-        </Style>
-        <Style Selector="Border.segments.halves Button.segment.active">
-            <Setter Property="Foreground" Value="{DynamicResource TextOnAccentBrush}"/>
-        </Style>
-        <Style Selector="Border.segments.halves Button.segment.active /template/ Border#PART_Root">
-            <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
-        </Style>
-        <Style Selector="Border.segments.halves Button.segment.active:pointerover /template/ Border#PART_Root">
-            <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}"/>
+        <!-- An invite code: typed, read out, retyped. Fixed width, a little air between letters. -->
+        <Style Selector="TextBox.code">
+            <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="LetterSpacing" Value="0.9"/>
         </Style>
 
-        <!-- A row inside a glass card: a way of connecting, a player, a friend's server. -->
-        <Style Selector="Border.row">
-            <Setter Property="CornerRadius" Value="14"/>
-            <Setter Property="Padding" Value="14,12"/>
-            <Setter Property="Background" Value="{DynamicResource GlassBrush}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource GlassBorderBrush}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <!-- Until this page moves to the shared "row": no hairline over these framed ones. -->
+        <!-- A line between two columns of one screen. -->
+        <Style Selector="Border.divider">
+            <Setter Property="Width" Value="1"/>
+            <Setter Property="Background" Value="{DynamicResource HairlineBrush}"/>
+        </Style>
+
+        <!-- "?" beside a heading: the paragraph that used to stand under it, on request. -->
+        <Style Selector="Border.help">
+            <Setter Property="Width" Value="16"/>
+            <Setter Property="Height" Value="16"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Background" Value="{DynamicResource FieldBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Border.help > TextBlock">
+            <Setter Property="FontSize" Value="10.5"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <!-- The first row of a list has no line above it; in an ItemsControl the row is
+             not the panel's own child, so the shared rule cannot see that it is first. -->
+        <Style Selector="ItemsControl.rows ContentPresenter:nth-child(1) > Border.row">
             <Setter Property="BoxShadow" Value="{DynamicResource NoShadow}"/>
-        </Style>
-        <Style Selector="Border.row:pointerover">
-            <Setter Property="Background" Value="{DynamicResource GlassBrush}"/>
         </Style>
 
         <!-- The round mark of a step: a number while it is still to do, a tick once done. -->
         <Style Selector="Border.step">
-            <Setter Property="Width" Value="28"/>
-            <Setter Property="Height" Value="28"/>
-            <Setter Property="CornerRadius" Value="14"/>
-            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Width" Value="24"/>
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="CornerRadius" Value="12"/>
             <Setter Property="VerticalAlignment" Value="Top"/>
-            <Setter Property="Background" Value="{DynamicResource GlassChipBrush}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource GoldBrush}"/>
-        </Style>
-        <Style Selector="Border.step.done">
-            <Setter Property="BorderBrush" Value="{DynamicResource SuccessBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource FieldBrush}"/>
         </Style>
         <Style Selector="Border.step > TextBlock">
-            <Setter Property="FontFamily" Value="{StaticResource DisplayFont}"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="FontWeight" Value="ExtraBold"/>
-            <Setter Property="Foreground" Value="{DynamicResource GoldBrush}"/>
+            <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
             <Setter Property="HorizontalAlignment" Value="Center"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
         <Style Selector="Border.step > PathIcon">
-            <Setter Property="Width" Value="13"/>
-            <Setter Property="Height" Value="13"/>
+            <Setter Property="Width" Value="11"/>
+            <Setter Property="Height" Value="11"/>
             <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}"/>
+        </Style>
+
+        <!-- A nickname on the list, as a pill with its own cross. -->
+        <Style Selector="Border.chip.name">
+            <Setter Property="Padding" Value="11,2,2,2"/>
         </Style>
     </UserControl.Styles>
 
@@ -119,165 +112,226 @@
         <Border IsHitTestVisible="False" Background="{DynamicResource HomeGlowBrush}"/>
 
         <ScrollViewer>
-            <StackPanel Margin="40,30,28,26" Spacing="16" MaxWidth="1240">
-
-                <!-- ======== Heading and the switch between the two halves ======== -->
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
-                    <StackPanel Spacing="4">
-                        <TextBlock Text="{DynamicResource Host_Title}" Classes="greeting"/>
-                        <TextBlock Text="{DynamicResource Host_Subtitle}" Classes="muted" FontSize="13" TextWrapping="Wrap"/>
-                    </StackPanel>
-                    <Border Grid.Column="1" Classes="segments halves" VerticalAlignment="Bottom">
-                        <StackPanel Orientation="Horizontal" Spacing="4">
-                            <Button Classes="segment" Classes.active="{Binding IsFriendsMyServer}"
-                                    Content="{DynamicResource Friends_TabMine}"
-                                    Command="{Binding SelectFriendsTabCommand}" CommandParameter="MyServer"/>
-                            <Button Classes="segment" Classes.active="{Binding IsFriendsJoin}"
-                                    Content="{DynamicResource Friends_TabJoin}"
-                                    Command="{Binding SelectFriendsTabCommand}" CommandParameter="Join"/>
-                        </StackPanel>
-                    </Border>
-                </Grid>
+            <Panel Margin="48,26,48,28" MaxWidth="1180">
 
                 <!-- ============================================================
-                     JOIN A FRIEND
+                     THE HUB
                      ============================================================ -->
-                <StackPanel Spacing="16" IsVisible="{Binding IsFriendsJoin}">
+                <StackPanel IsVisible="{Binding ShowFriendsHub}">
+                    <TextBlock Text="{DynamicResource Host_Title}" Classes="page-title large"/>
+                    <TextBlock Text="{DynamicResource Host_HubLead}" Classes="sub" FontSize="13.5" TextWrapping="Wrap" Margin="0,6,0,0"/>
 
-                    <!-- ======== The invite goes here: one box, at the top, in plain sight ======== -->
-                    <Border Classes="hero-card">
-                        <Panel>
-                            <Border IsHitTestVisible="False" CornerRadius="25" Background="{DynamicResource HeroGlowBrush}"/>
-                            <Border IsHitTestVisible="False" HorizontalAlignment="Right" Width="380" CornerRadius="0,25,25,0"
-                                    Background="{DynamicResource HeroGoldGlowBrush}"/>
+                    <Grid ColumnDefinitions="*,Auto,*" Margin="0,30,0,30">
 
-                            <StackPanel Margin="28,24,28,24" Spacing="6">
-                                <TextBlock Text="{DynamicResource Friends_EntryTitle}" Classes="h1" FontSize="24"/>
-                                <TextBlock Text="{DynamicResource Friends_EntryText}" Classes="muted" FontSize="13.5" LineHeight="20"
-                                           TextWrapping="Wrap" MaxWidth="760" HorizontalAlignment="Left"/>
-
-                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10" Margin="0,12,0,0">
-                                    <TextBox Text="{Binding FriendInviteEntry}" Watermark="ST-XXXXX-XXXXX"
-                                             Height="54" Padding="16,0" CornerRadius="13" VerticalContentAlignment="Center"
-                                             FontFamily="Cascadia Mono,Consolas,monospace" FontSize="19" FontWeight="Bold"
-                                             LetterSpacing="1" BorderBrush="{DynamicResource GoldMutedBrush}"
-                                             IsEnabled="{Binding !IsFriendInviteLooking}">
-                                        <TextBox.KeyBindings>
-                                            <KeyBinding Gesture="Enter" Command="{Binding FindFriendInviteCommand}"/>
-                                        </TextBox.KeyBindings>
-                                    </TextBox>
-                                    <Button Grid.Column="1" Classes="glass-wide" Height="54"
-                                            Command="{Binding PasteFriendInviteCommand}" IsEnabled="{Binding !IsFriendInviteLooking}">
-                                        <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <PathIcon Data="{StaticResource IconCopy}" Classes="small"/>
-                                            <TextBlock Text="{DynamicResource Friends_EntryPaste}" VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                    </Button>
-                                    <Button Grid.Column="2" Classes="primary" Height="54" Padding="26,0" CornerRadius="13" FontSize="15"
-                                            Command="{Binding FindFriendInviteCommand}" IsEnabled="{Binding !IsFriendInviteLooking}">
-                                        <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <PathIcon Data="{StaticResource IconSearch}" Classes="small"/>
-                                            <TextBlock Text="{DynamicResource Friends_EntryFind}" VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                    </Button>
-                                </Grid>
-
-                                <TextBlock Text="{DynamicResource Friends_EntryHint}" Classes="faint" TextWrapping="Wrap" Margin="0,4,0,0"/>
-
-                                <ProgressBar IsIndeterminate="True" Height="3" Margin="0,6,0,0"
-                                             IsVisible="{Binding IsFriendInviteLooking}"/>
-
-                                <!-- Why the code led nowhere, next to the box it was typed into. -->
-                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" Margin="0,8,0,0"
-                                      IsVisible="{Binding HasFriendInviteNote}">
-                                    <PathIcon Data="{StaticResource IconWarning}" Foreground="{DynamicResource GoldBrush}"
-                                              VerticalAlignment="Top" Margin="0,1,0,0"/>
-                                    <TextBlock Grid.Column="1" Text="{Binding FriendInviteNote}" TextWrapping="Wrap" LineHeight="19"/>
-                                </Grid>
+                        <!-- ======== Call friends over ======== -->
+                        <StackPanel Margin="0,4,40,4">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="{DynamicResource Host_HubInviteTitle}" Classes="duo"/>
+                                <Border Classes="help" ToolTip.Tip="{DynamicResource Host_EmptyText}">
+                                    <TextBlock Text="?"/>
+                                </Border>
                             </StackPanel>
-                        </Panel>
-                    </Border>
+                            <TextBlock Text="{DynamicResource Host_HubInviteText}" Classes="muted" FontSize="13.5" LineHeight="20"
+                                       TextWrapping="Wrap" MaxWidth="380" HorizontalAlignment="Left" Margin="0,6,0,18"/>
+                            <WrapPanel ItemSpacing="12" LineSpacing="8">
+                                <!-- The screen's one accent - unless an invite is waiting for its answer. -->
+                                <Button Classes.primary="{Binding !HasFriendInvite}" Height="44" Padding="18,0"
+                                        Content="{DynamicResource Host_Create}" Command="{Binding CreateHostFromHubCommand}"/>
+                                <TextBlock Text="{Binding HostHubBuildLine}" Classes="sub" VerticalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis" MaxWidth="240"/>
+                            </WrapPanel>
+                        </StackPanel>
 
-                    <!-- ======== An invite from a friend: shown, not yet acted on ======== -->
-                    <Border Classes="card glass" Padding="20" IsVisible="{Binding HasFriendInvite}" controls:Reveal.OnVisible="True">
-                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
-                            <Border Width="48" Height="48" CornerRadius="14" VerticalAlignment="Top"
-                                    Background="{DynamicResource IconBlueBrush}">
-                                <PathIcon Data="{StaticResource IconUsers}" Width="24" Height="24" Foreground="#06202F"/>
-                            </Border>
-                            <StackPanel Grid.Column="1" Spacing="12">
-                                <TextBlock Text="{Binding FriendInviteTitle}" Classes="h2" TextWrapping="Wrap"/>
-                                <ItemsControl ItemsSource="{Binding FriendInviteLines}"/>
-                                <WrapPanel ItemSpacing="8" LineSpacing="6">
-                                    <Button Classes="primary" Content="{DynamicResource Friends_InviteAccept}"
-                                            Command="{Binding AcceptFriendInviteCommand}" IsEnabled="{Binding !IsFriendInviteBusy}"/>
-                                    <Button Classes="ghost" Content="{DynamicResource Friends_InviteDecline}"
-                                            Command="{Binding DeclineFriendInviteCommand}" IsEnabled="{Binding !IsFriendInviteBusy}"/>
-                                    <ProgressBar IsIndeterminate="True" Width="80" Height="3" VerticalAlignment="Center"
-                                                 IsVisible="{Binding IsFriendInviteBusy}"/>
-                                </WrapPanel>
+                        <Border Grid.Column="1" Classes="divider"/>
+
+                        <!-- ======== Join a friend: the invite goes here ======== -->
+                        <StackPanel Grid.Column="2" Margin="40,4,0,4">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="{DynamicResource Host_HubJoinTitle}" Classes="duo"/>
+                                <Border Classes="help" ToolTip.Tip="{DynamicResource Friends_EntryHint}">
+                                    <TextBlock Text="?"/>
+                                </Border>
                             </StackPanel>
-                        </Grid>
-                    </Border>
+                            <TextBlock Text="{DynamicResource Host_HubJoinText}" Classes="muted" FontSize="13.5" LineHeight="20"
+                                       TextWrapping="Wrap" MaxWidth="380" HorizontalAlignment="Left" Margin="0,6,0,18"/>
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                <Border Classes="field" Height="44" Padding="14,0,6,0">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                        <TextBox Classes="bare code" Text="{Binding FriendInviteEntry}" Watermark="ST-XXXXX-XXXXX"
+                                                 IsEnabled="{Binding !IsFriendInviteLooking}">
+                                            <TextBox.KeyBindings>
+                                                <KeyBinding Gesture="Enter" Command="{Binding FindFriendInviteCommand}"/>
+                                            </TextBox.KeyBindings>
+                                        </TextBox>
+                                        <Button Grid.Column="1" Classes="icon" VerticalAlignment="Center"
+                                                ToolTip.Tip="{DynamicResource Friends_EntryPaste}"
+                                                Command="{Binding PasteFriendInviteCommand}" IsEnabled="{Binding !IsFriendInviteLooking}">
+                                            <PathIcon Data="{StaticResource IconCopy}"/>
+                                        </Button>
+                                    </Grid>
+                                </Border>
+                                <Button Grid.Column="1" Height="44" Padding="18,0" Content="{DynamicResource Host_HubJoin}"
+                                        Command="{Binding FindFriendInviteCommand}" IsEnabled="{Binding !IsFriendInviteLooking}"/>
+                            </Grid>
 
-                    <!-- ======== Friends' servers: where the player was invited ======== -->
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" Margin="0,4,0,0">
-                        <TextBlock Text="{DynamicResource Friends_Title}" Classes="h3" VerticalAlignment="Bottom"/>
-                        <TextBlock Grid.Column="1" Text="{DynamicResource Friends_TitleHint}" Classes="faint" FontSize="12.5"
-                                   VerticalAlignment="Bottom"/>
+                            <ProgressBar IsIndeterminate="True" Height="3" Margin="0,10,0,0"
+                                         IsVisible="{Binding IsFriendInviteLooking}"/>
+
+                            <!-- Why the code led nowhere, next to the box it was typed into. -->
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9" Margin="0,12,0,0"
+                                  IsVisible="{Binding HasFriendInviteNote}">
+                                <PathIcon Data="{StaticResource IconWarning}" Foreground="{DynamicResource WarningBrush}"
+                                          VerticalAlignment="Top" Margin="0,2,0,0"/>
+                                <TextBlock Grid.Column="1" Text="{Binding FriendInviteNote}" TextWrapping="Wrap" LineHeight="19"/>
+                            </Grid>
+                        </StackPanel>
                     </Grid>
 
-                    <Border Classes="row" Padding="18,16" IsVisible="{Binding !HasFriendServers}">
-                        <TextBlock Text="{DynamicResource Friends_Empty}" Classes="muted" FontSize="13" TextWrapping="Wrap" LineHeight="19"/>
+                    <!-- ======== An invite from a friend: shown, not yet acted on ======== -->
+                    <Border Classes="panel" Padding="20,18,20,16" Margin="0,0,0,28" IsVisible="{Binding HasFriendInvite}"
+                            controls:Reveal.OnVisible="True">
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="{Binding FriendInviteTitle}" Classes="h2" TextWrapping="Wrap"/>
+                            <ItemsControl ItemsSource="{Binding FriendInviteLines}"/>
+                            <WrapPanel ItemSpacing="8" LineSpacing="6">
+                                <Button Classes="primary" Content="{DynamicResource Friends_InviteAccept}"
+                                        Command="{Binding AcceptFriendInviteCommand}" IsEnabled="{Binding !IsFriendInviteBusy}"/>
+                                <Button Classes="ghost" Content="{DynamicResource Friends_InviteDecline}"
+                                        Command="{Binding DeclineFriendInviteCommand}" IsEnabled="{Binding !IsFriendInviteBusy}"/>
+                                <ProgressBar IsIndeterminate="True" Width="80" Height="3" VerticalAlignment="Center"
+                                             IsVisible="{Binding IsFriendInviteBusy}"/>
+                            </WrapPanel>
+                        </StackPanel>
                     </Border>
 
-                    <ItemsControl ItemsSource="{Binding FriendServers}" IsVisible="{Binding HasFriendServers}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Spacing="10"/>
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
+                    <!-- ======== Recent: friends' servers, then the player's own ======== -->
+                    <controls:Caption Text="{DynamicResource Host_HubRecent}" Margin="12,0,0,6"/>
+
+                    <TextBlock Text="{DynamicResource Friends_Empty}" Classes="sub" TextWrapping="Wrap" LineHeight="19"
+                               Margin="12,4,0,0" MaxWidth="620" HorizontalAlignment="Left"
+                               IsVisible="{Binding ShowHubEmpty}"/>
+
+                    <ItemsControl Classes="rows" ItemsSource="{Binding FriendServers}" IsVisible="{Binding HasFriendServers}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:FriendServerItem">
-                                <Border Classes="card glass" Padding="14,12" CornerRadius="16">
+                                <Border Classes="row">
+                                    <Border.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="{DynamicResource Host_HubJoin}" IsEnabled="{Binding HasBuild}"
+                                                      Command="{Binding #Root.((vm:MainWindowViewModel)DataContext).PlayFriendServerCommand}"
+                                                      CommandParameter="{Binding}"/>
+                                            <Separator/>
+                                            <MenuItem Classes="danger" Header="{DynamicResource Friends_Remove}"
+                                                      Command="{Binding #Root.((vm:MainWindowViewModel)DataContext).RemoveFriendServerCommand}"
+                                                      CommandParameter="{Binding}"/>
+                                        </ContextMenu>
+                                    </Border.ContextMenu>
                                     <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="14">
-                                        <Border Width="52" Height="52" CornerRadius="14" VerticalAlignment="Top"
-                                                Background="{DynamicResource IconBlueBrush}">
-                                            <PathIcon Data="{StaticResource IconUsers}" Width="22" Height="22" Foreground="#06202F"/>
+                                        <Border Classes="icon-tile"
+                                                Background="{Binding Name, Converter={x:Static conv:TintBrushConverter.Instance}}">
+                                            <PathIcon Data="{StaticResource IconUsers}"/>
                                         </Border>
-                                        <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="15.5" TextTrimming="CharacterEllipsis"/>
-                                            <TextBlock Text="{Binding Subtitle}" Classes="muted" TextTrimming="CharacterEllipsis"/>
-                                            <!-- Whether the build this server is played with is on the computer. -->
-                                            <Grid ColumnDefinitions="10,*" ColumnSpacing="8">
-                                                <Panel Width="10" Height="16" VerticalAlignment="Top" Margin="0,1,0,0">
-                                                    <Border Width="7" Height="7" CornerRadius="4" Background="{DynamicResource SuccessBrush}"
-                                                            IsVisible="{Binding HasBuild}"/>
-                                                    <Border Width="7" Height="7" CornerRadius="4" Background="{DynamicResource GoldBrush}"
-                                                            IsVisible="{Binding !HasBuild}"/>
-                                                </Panel>
-                                                <TextBlock Grid.Column="1" Text="{Binding BuildLine}" FontSize="12.5" TextWrapping="Wrap" LineHeight="17"/>
+                                        <!-- Which build it is played with is a tooltip while the build is there,
+                                             and a line of its own once the build is gone. -->
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Background="Transparent"
+                                                    ToolTip.Tip="{Binding BuildLine}">
+                                            <TextBlock Text="{Binding Name}" Classes="strong" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding Subtitle}" Classes="sub" TextTrimming="CharacterEllipsis"/>
+                                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="7" Margin="0,3,0,0" IsVisible="{Binding !HasBuild}">
+                                                <Ellipse Classes="dot warn" VerticalAlignment="Top" Margin="0,5,0,0"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding BuildLine}" Classes="sub" TextWrapping="Wrap"/>
                                             </Grid>
-                                            <TextBlock Text="{Binding Note}" Classes="muted" TextWrapping="Wrap" Margin="0,3,0,0"
+                                            <TextBlock Text="{Binding Note}" Classes="sub" TextWrapping="Wrap" Margin="0,3,0,0"
                                                        IsVisible="{Binding HasNote}"/>
                                         </StackPanel>
-                                        <ProgressBar Grid.Column="2" IsIndeterminate="True" Width="60" Height="3" VerticalAlignment="Center"
-                                                     IsVisible="{Binding IsBusy}"/>
-                                        <Button Grid.Column="2" Classes="primary" Height="40" Padding="20,0" CornerRadius="12" VerticalAlignment="Center"
-                                                IsVisible="{Binding !IsBusy}" IsEnabled="{Binding HasBuild}"
-                                                Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).PlayFriendServerCommand}"
-                                                CommandParameter="{Binding}">
-                                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <PathIcon Data="{StaticResource IconPlay}" Classes="small"/>
-                                                <TextBlock Text="{DynamicResource Friends_Play}" VerticalAlignment="Center"/>
-                                            </StackPanel>
-                                        </Button>
-                                        <Button Grid.Column="3" Classes="plain small icon-danger" VerticalAlignment="Center"
-                                                ToolTip.Tip="{DynamicResource Friends_Remove}"
-                                                Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).RemoveFriendServerCommand}"
-                                                CommandParameter="{Binding}">
-                                            <PathIcon Data="{StaticResource IconClose}" Classes="small"/>
-                                        </Button>
+                                        <StackPanel Grid.Column="2" Classes="reveal" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                            <Button Classes="icon more" ToolTip.Tip="{DynamicResource Host_More}">
+                                                <PathIcon Data="{StaticResource IconDots}"/>
+                                                <Button.Flyout>
+                                                    <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                                        <MenuItem Classes="danger" Header="{DynamicResource Friends_Remove}"
+                                                                  Command="{Binding #Root.((vm:MainWindowViewModel)DataContext).RemoveFriendServerCommand}"
+                                                                  CommandParameter="{Binding}"/>
+                                                    </MenuFlyout>
+                                                </Button.Flyout>
+                                            </Button>
+                                        </StackPanel>
+                                        <Panel Grid.Column="3" VerticalAlignment="Center" MinWidth="76">
+                                            <ProgressBar IsIndeterminate="True" Width="60" Height="3" VerticalAlignment="Center"
+                                                         IsVisible="{Binding IsBusy}"/>
+                                            <Button Content="{DynamicResource Host_HubJoin}" HorizontalAlignment="Right"
+                                                    IsVisible="{Binding !IsBusy}" IsEnabled="{Binding HasBuild}"
+                                                    Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).PlayFriendServerCommand}"
+                                                    CommandParameter="{Binding}"/>
+                                        </Panel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <ItemsControl ItemsSource="{Binding HostServerRows}" IsVisible="{Binding HasHostServers}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:HostServerRow">
+                                <Border Classes="row">
+                                    <Border.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="{DynamicResource Host_HubOpen}"
+                                                      Command="{Binding #Root.((vm:MainWindowViewModel)DataContext).OpenHostServerRowCommand}"
+                                                      CommandParameter="{Binding}"/>
+                                            <MenuItem Header="{DynamicResource Host_TabSettings}"
+                                                      Command="{Binding #Root.((vm:MainWindowViewModel)DataContext).ConfigureHostServerRowCommand}"
+                                                      CommandParameter="{Binding}"/>
+                                            <MenuItem Header="{DynamicResource Host_OpenFolder}"
+                                                      Command="{Binding #Root.((vm:MainWindowViewModel)DataContext).OpenHostServerRowFolderCommand}"
+                                                      CommandParameter="{Binding}"/>
+                                        </ContextMenu>
+                                    </Border.ContextMenu>
+                                    <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="14">
+                                        <Border Classes="icon-tile"
+                                                Background="{Binding Name, Converter={x:Static conv:TintBrushConverter.Instance}}">
+                                            <TextBlock Classes="tile-letter" Text="{Binding Initial}"/>
+                                        </Border>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" Classes="strong" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding Subtitle}" Classes="sub" TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2" Classes="reveal" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                            <Button Classes="icon" ToolTip.Tip="{DynamicResource Host_TabSettings}"
+                                                    Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).ConfigureHostServerRowCommand}"
+                                                    CommandParameter="{Binding}">
+                                                <PathIcon Data="{StaticResource IconSettings}"/>
+                                            </Button>
+                                            <Button Classes="icon more" ToolTip.Tip="{DynamicResource Host_More}">
+                                                <PathIcon Data="{StaticResource IconDots}"/>
+                                                <Button.Flyout>
+                                                    <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                                        <MenuItem Header="{DynamicResource Host_HubOpen}"
+                                                                  Command="{Binding #Root.((vm:MainWindowViewModel)DataContext).OpenHostServerRowCommand}"
+                                                                  CommandParameter="{Binding}"/>
+                                                        <MenuItem Header="{DynamicResource Host_TabSettings}"
+                                                                  Command="{Binding #Root.((vm:MainWindowViewModel)DataContext).ConfigureHostServerRowCommand}"
+                                                                  CommandParameter="{Binding}"/>
+                                                        <MenuItem Header="{DynamicResource Host_OpenFolder}"
+                                                                  Command="{Binding #Root.((vm:MainWindowViewModel)DataContext).OpenHostServerRowFolderCommand}"
+                                                                  CommandParameter="{Binding}"/>
+                                                    </MenuFlyout>
+                                                </Button.Flyout>
+                                            </Button>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                                            <Ellipse Classes="dot" IsVisible="{Binding IsRunning}"/>
+                                            <Ellipse Classes="dot warn" IsVisible="{Binding IsWorking}"/>
+                                            <TextBlock Text="{Binding StateText}" Classes="sub" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                        <Panel Grid.Column="4" VerticalAlignment="Center" MinWidth="104">
+                                            <Button Content="{DynamicResource Host_Start}" HorizontalAlignment="Right" IsVisible="{Binding IsOff}"
+                                                    Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).StartHostServerRowCommand}"
+                                                    CommandParameter="{Binding}"/>
+                                            <Button Content="{DynamicResource Host_HubOpen}" HorizontalAlignment="Right" IsVisible="{Binding !IsOff}"
+                                                    Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).OpenHostServerRowCommand}"
+                                                    CommandParameter="{Binding}"/>
+                                        </Panel>
                                     </Grid>
                                 </Border>
                             </DataTemplate>
@@ -286,365 +340,317 @@
                 </StackPanel>
 
                 <!-- ============================================================
-                     MY SERVER
+                     A SERVER OF THE PLAYER'S OWN
                      ============================================================ -->
-                <StackPanel Spacing="16" IsVisible="{Binding IsFriendsMyServer}">
+                <StackPanel IsVisible="{Binding ShowFriendsServer}">
 
-                    <!-- ======== Nothing made yet ======== -->
-                    <Border Classes="hero-card" IsVisible="{Binding ShowHostEmpty}">
-                        <Panel>
-                            <Border IsHitTestVisible="False" CornerRadius="25" Background="{DynamicResource HeroGlowBrush}"/>
-                            <Border IsHitTestVisible="False" HorizontalAlignment="Right" Width="380" CornerRadius="0,25,25,0"
-                                    Background="{DynamicResource HeroGoldGlowBrush}"/>
-
-                            <Grid Margin="28,26,28,28" ColumnDefinitions="Auto,*" ColumnSpacing="20">
-                                <Border Width="76" Height="76" CornerRadius="20" VerticalAlignment="Top"
-                                        Background="{DynamicResource HeroGradientBrush}">
-                                    <PathIcon Data="{StaticResource IconHost}" Width="36" Height="36"
-                                              Foreground="{DynamicResource TextOnAccentBrush}"/>
-                                </Border>
-                                <StackPanel Grid.Column="1" Spacing="14">
-                                    <TextBlock Text="{DynamicResource Host_EmptyTitle}" Classes="display hero" TextWrapping="Wrap"/>
-                                    <TextBlock Text="{DynamicResource Host_EmptyText}" Classes="muted" FontSize="14" LineHeight="21"
-                                               TextWrapping="Wrap" MaxWidth="680" HorizontalAlignment="Left"/>
-                                    <Button Classes="primary hero" HorizontalAlignment="Left" Margin="0,4,0,0"
-                                            Command="{Binding OpenHostCreateCommand}">
-                                        <StackPanel Orientation="Horizontal" Spacing="12">
-                                            <PathIcon Data="{StaticResource IconPlus}" Classes="large"/>
-                                            <TextBlock Text="{DynamicResource Host_Create}" VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                    </Button>
-                                </StackPanel>
-                            </Grid>
-                        </Panel>
-                    </Border>
+                    <!-- The way back to the hub. -->
+                    <Button Classes="ghost small" HorizontalAlignment="Left" Margin="-12,0,0,10"
+                            Command="{Binding SelectFriendsTabCommand}" CommandParameter="Join">
+                        <StackPanel Orientation="Horizontal" Spacing="7">
+                            <PathIcon Data="{StaticResource IconChevronLeft}" Width="11" Height="11" VerticalAlignment="Center"/>
+                            <TextBlock Text="{DynamicResource Host_Title}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
 
                     <!-- ======== Creating a server: the choices on the left, what they lead to on the right ======== -->
-                    <Border Classes="card glass" Padding="24" IsVisible="{Binding IsHostCreateOpen}" controls:Reveal.OnVisible="True">
-                        <StackPanel Spacing="18">
-                            <TextBlock Text="{DynamicResource Host_CreateTitle}" Classes="h1" FontSize="24"/>
+                    <StackPanel Spacing="20" IsVisible="{Binding IsHostCreateOpen}" controls:Reveal.OnVisible="True">
+                        <TextBlock Text="{DynamicResource Host_CreateTitle}" Classes="page-title"/>
 
-                            <Grid ColumnDefinitions="330,*" ColumnSpacing="26">
-                                <StackPanel Spacing="18">
-                                    <StackPanel Spacing="7">
+                        <Grid ColumnDefinitions="320,Auto,*">
+                            <StackPanel Spacing="18" Margin="0,0,32,0">
+                                <StackPanel Spacing="7">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
                                         <TextBlock Text="{DynamicResource Host_CreateBuild}" Classes="label"/>
-                                        <ComboBox ItemsSource="{Binding HostCreateBuilds}" SelectedItem="{Binding HostCreateInstance}"
-                                                  HorizontalAlignment="Stretch" IsEnabled="{Binding !IsHostBusy}">
-                                            <ComboBox.ItemTemplate>
-                                                <DataTemplate x:DataType="inst:Instance">
-                                                    <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis"/>
-                                                </DataTemplate>
-                                            </ComboBox.ItemTemplate>
-                                        </ComboBox>
-                                        <WrapPanel ItemSpacing="6" LineSpacing="6" IsVisible="{Binding HasHostCreateBuild}">
-                                            <Border Classes="chip">
-                                                <TextBlock Text="{Binding HostCreateVersionLabel}"/>
-                                            </Border>
-                                            <Border Classes="chip">
-                                                <TextBlock Text="{Binding HostCreateLoaderLabel}"/>
-                                            </Border>
-                                        </WrapPanel>
-                                        <TextBlock Text="{DynamicResource Host_CreateBuildHint}" Classes="faint" TextWrapping="Wrap"/>
+                                        <Border Classes="help" ToolTip.Tip="{DynamicResource Host_CreateBuildHint}">
+                                            <TextBlock Text="?"/>
+                                        </Border>
                                     </StackPanel>
-
-                                    <StackPanel Spacing="7">
-                                        <TextBlock Text="{DynamicResource Host_CreateName}" Classes="label"/>
-                                        <TextBox Text="{Binding HostCreateName}" Watermark="{DynamicResource Host_CreateNameHint}"
-                                                 MaxLength="48" IsEnabled="{Binding !IsHostBusy}"/>
-                                    </StackPanel>
-
-                                    <StackPanel Spacing="7">
-                                        <TextBlock Text="{DynamicResource Host_CreateWorld}" Classes="label"/>
-                                        <ComboBox ItemsSource="{Binding HostCreateWorlds}" SelectedItem="{Binding HostCreateWorld}"
-                                                  HorizontalAlignment="Stretch" IsEnabled="{Binding !IsHostBusy}">
-                                            <ComboBox.ItemTemplate>
-                                                <DataTemplate x:DataType="vm:HostWorldChoice">
-                                                    <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis"/>
-                                                </DataTemplate>
-                                            </ComboBox.ItemTemplate>
-                                        </ComboBox>
-                                    </StackPanel>
-
-                                    <StackPanel Spacing="7">
-                                        <Grid ColumnDefinitions="*,Auto">
-                                            <TextBlock Text="{DynamicResource Host_CreateMemory}" Classes="label"/>
-                                            <TextBlock Grid.Column="1" Text="{Binding HostCreateMemoryLabel}" FontWeight="SemiBold"/>
-                                        </Grid>
-                                        <Slider Minimum="1024" Maximum="{Binding MemorySliderMax}" TickFrequency="512"
-                                                IsSnapToTickEnabled="True" Value="{Binding HostCreateMemoryMb}"
-                                                IsEnabled="{Binding !IsHostBusy}"/>
-                                        <TextBlock Text="{DynamicResource Host_MemoryHint}" Classes="faint" TextWrapping="Wrap"/>
+                                    <ComboBox ItemsSource="{Binding HostCreateBuilds}" SelectedItem="{Binding HostCreateInstance}"
+                                              HorizontalAlignment="Stretch" IsEnabled="{Binding !IsHostBusy}">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate x:DataType="inst:Instance">
+                                                <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis"/>
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                    <!-- The version and the loader the server will have: taken from the build. -->
+                                    <StackPanel Classes="meta" IsVisible="{Binding HasHostCreateBuild}">
+                                        <TextBlock Classes="mono" Text="{Binding HostCreateLoaderLabel}"/>
+                                        <Ellipse/>
+                                        <TextBlock Classes="mono" Text="{Binding HostCreateVersionLabel}"/>
                                     </StackPanel>
                                 </StackPanel>
 
-                                <!-- As tall as the form beside it, so the licence and the button below stay
-                                     on screen; a long list scrolls inside, the downloads at its top. -->
-                                <Border Grid.Column="1" Classes="panel" CornerRadius="16" Padding="20,18,8,10" MaxHeight="400">
-                                    <Grid RowDefinitions="Auto,*" RowSpacing="12">
-                                        <StackPanel Spacing="12" Margin="0,0,12,0">
-                                            <TextBlock Text="{DynamicResource Host_PlanTitle}" Classes="h3"/>
+                                <StackPanel Spacing="7">
+                                    <TextBlock Text="{DynamicResource Host_CreateName}" Classes="label"/>
+                                    <TextBox Text="{Binding HostCreateName}" Watermark="{DynamicResource Host_CreateNameHint}"
+                                             MaxLength="48" IsEnabled="{Binding !IsHostBusy}"/>
+                                </StackPanel>
 
-                                            <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding IsHostPlanBusy}">
-                                                <ProgressBar IsIndeterminate="True" Width="60" Height="3" VerticalAlignment="Center"/>
-                                                <TextBlock Text="{DynamicResource Host_PlanBusy}" Classes="faint" VerticalAlignment="Center"/>
-                                            </StackPanel>
+                                <StackPanel Spacing="7">
+                                    <TextBlock Text="{DynamicResource Host_CreateWorld}" Classes="label"/>
+                                    <ComboBox ItemsSource="{Binding HostCreateWorlds}" SelectedItem="{Binding HostCreateWorld}"
+                                              HorizontalAlignment="Stretch" IsEnabled="{Binding !IsHostBusy}">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:HostWorldChoice">
+                                                <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis"/>
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                </StackPanel>
 
-                                            <!-- Why this build cannot become a server, said plainly. -->
-                                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" IsVisible="{Binding HasHostCreateProblem}">
-                                                <PathIcon Data="{StaticResource IconWarning}" Foreground="{DynamicResource GoldBrush}"
-                                                          VerticalAlignment="Top" Margin="0,1,0,0"/>
-                                                <TextBlock Grid.Column="1" Text="{Binding HostCreateProblem}" TextWrapping="Wrap" LineHeight="19"/>
-                                            </Grid>
-                                        </StackPanel>
-
-                                        <ScrollViewer Grid.Row="1">
-                                            <ItemsControl ItemsSource="{Binding HostPlanLines}" Margin="0,0,14,0"/>
-                                        </ScrollViewer>
+                                <StackPanel Spacing="5">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Text="{DynamicResource Host_CreateMemory}" Classes="label"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding HostCreateMemoryLabel}" Classes="mono"/>
                                     </Grid>
-                                </Border>
-                            </Grid>
-
-                            <!-- The licence: the player's own tick, with the text one click away. -->
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
-                                <WrapPanel ItemSpacing="4" VerticalAlignment="Center">
-                                    <CheckBox IsChecked="{Binding HostEulaAccepted}" Content="{DynamicResource Host_Eula}"
-                                              IsEnabled="{Binding !IsHostBusy}" VerticalAlignment="Center"/>
-                                    <Button Classes="plain small" VerticalAlignment="Center" Foreground="{DynamicResource GoldBrush}"
-                                            Content="{DynamicResource Host_EulaLink}" Command="{Binding OpenHostEulaCommand}"/>
-                                </WrapPanel>
-                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                    <Button Classes="ghost" Height="42" Padding="18,0" Content="{DynamicResource Common_Cancel}"
-                                            Command="{Binding CloseHostCreateCommand}" IsEnabled="{Binding !IsHostBusy}"/>
-                                    <Button Classes="primary" Height="42" Padding="22,0" CornerRadius="12"
-                                            Content="{DynamicResource Host_CreateConfirm}"
-                                            Command="{Binding CreateHostServerCommand}" IsEnabled="{Binding CanCreateHostServer}"/>
+                                    <Slider Minimum="1024" Maximum="{Binding MemorySliderMax}" TickFrequency="512"
+                                            IsSnapToTickEnabled="True" Value="{Binding HostCreateMemoryMb}"
+                                            IsEnabled="{Binding !IsHostBusy}"/>
+                                    <TextBlock Text="{DynamicResource Host_MemoryHint}" Classes="sub" TextWrapping="Wrap"/>
                                 </StackPanel>
-                            </Grid>
-
-                            <StackPanel Spacing="7" IsVisible="{Binding IsHostBusy}">
-                                <TextBlock Text="{Binding HostBusyText}" Classes="muted" FontSize="13"/>
-                                <ProgressBar Value="{Binding HostProgress}" Minimum="0" Maximum="100" Height="6"
-                                             IsIndeterminate="{Binding IsHostProgressUnknown}"/>
                             </StackPanel>
+
+                            <Border Grid.Column="1" Classes="divider"/>
+
+                            <!-- As tall as the form beside it, so the licence and the button below stay
+                                 on screen; a long list scrolls inside, the downloads at its top. -->
+                            <Grid Grid.Column="2" RowDefinitions="Auto,*" RowSpacing="12" Margin="32,0,0,0" MaxHeight="380">
+                                <StackPanel Spacing="12">
+                                    <controls:Caption Text="{DynamicResource Host_PlanTitle}"/>
+
+                                    <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding IsHostPlanBusy}">
+                                        <ProgressBar IsIndeterminate="True" Width="60" Height="3" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{DynamicResource Host_PlanBusy}" Classes="sub" VerticalAlignment="Center"/>
+                                    </StackPanel>
+
+                                    <!-- Why this build cannot become a server, said plainly. -->
+                                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9" IsVisible="{Binding HasHostCreateProblem}">
+                                        <PathIcon Data="{StaticResource IconWarning}" Foreground="{DynamicResource WarningBrush}"
+                                                  VerticalAlignment="Top" Margin="0,2,0,0"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding HostCreateProblem}" TextWrapping="Wrap" LineHeight="19"/>
+                                    </Grid>
+                                </StackPanel>
+
+                                <ScrollViewer Grid.Row="1">
+                                    <ItemsControl ItemsSource="{Binding HostPlanLines}" Margin="0,0,14,0"/>
+                                </ScrollViewer>
+                            </Grid>
+                        </Grid>
+
+                        <Border Classes="hairline"/>
+
+                        <!-- The licence: the player's own tick, with the text one click away. -->
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                            <WrapPanel ItemSpacing="12" LineSpacing="4" VerticalAlignment="Center">
+                                <CheckBox IsChecked="{Binding HostEulaAccepted}" Content="{DynamicResource Host_Eula}"
+                                          IsEnabled="{Binding !IsHostBusy}" VerticalAlignment="Center"/>
+                                <Button Classes="link" VerticalAlignment="Center"
+                                        Content="{DynamicResource Host_EulaLink}" Command="{Binding OpenHostEulaCommand}"/>
+                            </WrapPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <Button Classes="ghost" Height="40" Padding="16,0" Content="{DynamicResource Common_Cancel}"
+                                        Command="{Binding CloseHostCreateCommand}" IsEnabled="{Binding !IsHostBusy}"/>
+                                <Button Classes="primary" Height="40" Padding="20,0"
+                                        Content="{DynamicResource Host_CreateConfirm}"
+                                        Command="{Binding CreateHostServerCommand}" IsEnabled="{Binding CanCreateHostServer}"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <StackPanel Spacing="7" IsVisible="{Binding IsHostBusy}">
+                            <TextBlock Text="{Binding HostBusyText}" Classes="muted" FontSize="13"/>
+                            <ProgressBar Value="{Binding HostProgress}" Minimum="0" Maximum="100" Height="4"
+                                         IsIndeterminate="{Binding IsHostProgressUnknown}"/>
                         </StackPanel>
-                    </Border>
+                    </StackPanel>
 
                     <!-- ======== The server: what it is, whether it runs, the buttons that run it ======== -->
-                    <Border Classes="hero-card" IsVisible="{Binding ShowHostServer}">
-                        <Panel>
-                            <Border IsHitTestVisible="False" CornerRadius="25" Background="{DynamicResource HeroGlowBrush}"/>
-                            <Border IsHitTestVisible="False" HorizontalAlignment="Right" Width="380" CornerRadius="0,25,25,0"
-                                    Background="{DynamicResource HeroGoldGlowBrush}"/>
+                    <StackPanel IsVisible="{Binding ShowHostServer}">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                            <TextBlock Text="{Binding HostServerName}" Classes="page-title" VerticalAlignment="Center"/>
 
-                            <StackPanel Margin="24,22,24,22" Spacing="16">
-                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="18">
-                                    <Border Width="64" Height="64" CornerRadius="18" Background="{DynamicResource HeroGradientBrush}"
-                                            VerticalAlignment="Center">
-                                        <PathIcon Data="{StaticResource IconHost}" Width="30" Height="30"
-                                                  Foreground="{DynamicResource TextOnAccentBrush}"/>
-                                    </Border>
-
-                                    <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
-                                        <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="12">
-                                            <TextBlock Text="{Binding HostServerName}" Classes="display hero" FontSize="26"
-                                                       TextTrimming="CharacterEllipsis" MaxWidth="360"/>
-                                            <Border Grid.Column="1" Classes="pill small" VerticalAlignment="Center">
-                                                <StackPanel Orientation="Horizontal" Spacing="7">
-                                                    <Border Width="7" Height="7" CornerRadius="4" VerticalAlignment="Center"
-                                                            Background="{DynamicResource SuccessBrush}" IsVisible="{Binding IsHostOnline}"/>
-                                                    <Border Width="7" Height="7" CornerRadius="4" VerticalAlignment="Center"
-                                                            Background="{DynamicResource GoldBrush}" IsVisible="{Binding IsHostWorking}"/>
-                                                    <Border Width="7" Height="7" CornerRadius="4" VerticalAlignment="Center"
-                                                            Background="{DynamicResource TextMutedBrush}" IsVisible="{Binding IsHostOff}"/>
-                                                    <TextBlock Text="{Binding HostStateLabel}" VerticalAlignment="Center"/>
-                                                </StackPanel>
-                                            </Border>
-                                        </Grid>
-                                        <WrapPanel ItemSpacing="6" LineSpacing="6">
-                                            <Border Classes="chip">
-                                                <TextBlock Text="{Binding HostVersionLabel}"/>
-                                            </Border>
-                                            <Border Classes="chip">
-                                                <TextBlock Text="{Binding HostLoaderLabel}"/>
-                                            </Border>
-                                            <Border Classes="chip">
-                                                <TextBlock Text="{Binding HostMemoryLabel}"/>
-                                            </Border>
-                                            <Border Classes="chip">
-                                                <TextBlock Text="{Binding HostPortLabel}"/>
-                                            </Border>
-                                            <TextBlock Text="{Binding HostBuildLabel}" Classes="faint" FontSize="12.5"
-                                                       VerticalAlignment="Center" Margin="4,0,0,0"/>
-                                        </WrapPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <Button Height="40" Padding="16,0"
+                                        Command="{Binding PlayOnHostServerCommand}" ToolTip.Tip="{DynamicResource Host_PlaySelfHint}"
+                                        IsVisible="{Binding CanPlayOnHost}" IsEnabled="{Binding !IsBusy}">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <PathIcon Data="{StaticResource IconPlay}" Classes="small" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{DynamicResource Host_PlaySelf}" VerticalAlignment="Center"/>
                                     </StackPanel>
-
-                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                        <Button Classes="glass-wide"
-                                                Command="{Binding PlayOnHostServerCommand}" ToolTip.Tip="{DynamicResource Host_PlaySelfHint}"
-                                                IsVisible="{Binding CanPlayOnHost}" IsEnabled="{Binding !IsBusy}">
-                                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <PathIcon Data="{StaticResource IconPlay}" Classes="small"/>
-                                                <TextBlock Text="{DynamicResource Host_PlaySelf}" VerticalAlignment="Center"/>
-                                            </StackPanel>
-                                        </Button>
-                                        <Button Classes="primary" Height="46" Padding="22,0" CornerRadius="13" FontSize="15"
-                                                Command="{Binding StartHostServerCommand}"
-                                                IsVisible="{Binding IsHostOff}" IsEnabled="{Binding CanStartHost}">
-                                            <StackPanel Orientation="Horizontal" Spacing="9">
-                                                <PathIcon Data="{StaticResource IconPlay}" Classes="small"/>
-                                                <TextBlock Text="{DynamicResource Host_Start}" VerticalAlignment="Center"/>
-                                            </StackPanel>
-                                        </Button>
-                                        <Button Classes="glass-wide"
-                                                Command="{Binding StopHostServerCommand}"
-                                                IsVisible="{Binding !IsHostOff}" IsEnabled="{Binding CanStopHost}">
-                                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <PathIcon Data="{StaticResource IconStop}" Classes="small"/>
-                                                <TextBlock Text="{DynamicResource Host_Stop}" VerticalAlignment="Center"/>
-                                            </StackPanel>
-                                        </Button>
-
-                                        <!-- The server's settings have a tab of their own; the gear leads there. -->
-                                        <Button Classes="glass-icon" Width="46" Height="46" ToolTip.Tip="{DynamicResource Host_TabSettings}"
-                                                Command="{Binding SelectHostTabCommand}" CommandParameter="Settings">
-                                            <PathIcon Data="{StaticResource IconSettings}" Classes="small"/>
-                                        </Button>
-                                        <Button Classes="glass-icon" Width="46" Height="46" ToolTip.Tip="{DynamicResource Host_OpenFolder}"
-                                                Command="{Binding OpenHostFolderCommand}">
-                                            <PathIcon Data="{StaticResource IconFolder}" Classes="small"/>
-                                        </Button>
-                                        <Button Classes="glass-icon" Width="46" Height="46" ToolTip.Tip="{DynamicResource Host_Remove}">
-                                            <PathIcon Data="{StaticResource IconClose}" Classes="small"/>
-                                            <Button.Flyout>
-                                                <controls:RevealFlyout Placement="BottomEdgeAlignedRight">
-                                                    <StackPanel Spacing="10" Width="300">
-                                                        <TextBlock Text="{DynamicResource Host_RemoveHint}" Classes="muted" TextWrapping="Wrap"/>
-                                                        <Button Classes="danger small" HorizontalAlignment="Left"
-                                                                Content="{DynamicResource Host_Remove}"
-                                                                Command="{Binding RemoveHostServerCommand}" IsEnabled="{Binding CanEditHost}"/>
-                                                    </StackPanel>
-                                                </controls:RevealFlyout>
-                                            </Button.Flyout>
-                                        </Button>
+                                </Button>
+                                <!-- The accent of a stopped server. While a question about the start is
+                                     open below, the answer to it is the main thing and this steps aside. -->
+                                <Button Classes="primary" Height="40" Padding="20,0"
+                                        Command="{Binding StartHostServerCommand}" IsEnabled="{Binding CanStartHost}">
+                                    <Button.IsVisible>
+                                        <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                            <Binding Path="IsHostOff"/>
+                                            <Binding Path="!IsHostConsentOpen"/>
+                                        </MultiBinding>
+                                    </Button.IsVisible>
+                                    <StackPanel Orientation="Horizontal" Spacing="9">
+                                        <PathIcon Data="{StaticResource IconPlay}" Classes="small" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{DynamicResource Host_Start}" VerticalAlignment="Center"/>
                                     </StackPanel>
-                                </Grid>
-
-                                <!-- A lookup, a download or a copy in progress. -->
-                                <StackPanel Spacing="7" IsVisible="{Binding IsHostBusy}">
-                                    <TextBlock Text="{Binding HostBusyText}" Classes="muted" FontSize="13"/>
-                                    <ProgressBar Value="{Binding HostProgress}" Minimum="0" Maximum="100" Height="6"
-                                                 IsIndeterminate="{Binding IsHostProgressUnknown}"/>
-                                </StackPanel>
-
-                                <!-- Why the server is not running although it was asked to. -->
-                                <Border Classes="panel" CornerRadius="14" Padding="14,12" IsVisible="{Binding HasHostNotice}">
-                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                                        <PathIcon Data="{StaticResource IconWarning}" Foreground="{DynamicResource GoldBrush}"
-                                                  VerticalAlignment="Top" Margin="0,2,0,0"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding HostNotice}" TextWrapping="Wrap" LineHeight="19"
-                                                   VerticalAlignment="Center"/>
-                                        <Button Grid.Column="2" Classes="ghost small" VerticalAlignment="Center"
-                                                Content="{DynamicResource Host_UseFreePort}"
-                                                Command="{Binding UseFreeHostPortCommand}" IsVisible="{Binding HostNoticeOffersPort}"/>
-                                    </Grid>
-                                </Border>
-
-                                <!-- Something has to be downloaded or agreed to first: what, from where, how big. -->
-                                <Border Classes="panel" CornerRadius="14" Padding="18,16,18,14" IsVisible="{Binding IsHostConsentOpen}"
-                                        controls:Reveal.OnVisible="True">
-                                    <StackPanel Spacing="12">
-                                        <TextBlock Text="{Binding HostConsentTitle}" Classes="h3"/>
-                                        <ItemsControl ItemsSource="{Binding HostConsentLines}"/>
-                                        <WrapPanel ItemSpacing="8" LineSpacing="6">
-                                            <Button Classes="primary small" Content="{Binding HostConsentAction}"
-                                                    Command="{Binding ConfirmHostConsentCommand}"/>
-                                            <Button Classes="ghost small" Content="{DynamicResource Common_Cancel}"
-                                                    Command="{Binding CancelHostConsentCommand}"/>
-                                            <Button Classes="plain small" Foreground="{DynamicResource GoldBrush}"
-                                                    Content="{DynamicResource Host_EulaLink}"
-                                                    Command="{Binding OpenHostEulaCommand}" IsVisible="{Binding HostConsentHasEula}"/>
-                                        </WrapPanel>
+                                </Button>
+                                <Button Classes="danger" Height="40" Padding="16,0"
+                                        Command="{Binding StopHostServerCommand}"
+                                        IsVisible="{Binding !IsHostOff}" IsEnabled="{Binding CanStopHost}">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <PathIcon Data="{StaticResource IconStop}" Classes="small" VerticalAlignment="Center"
+                                                  Foreground="{DynamicResource DangerBrush}"/>
+                                        <TextBlock Text="{DynamicResource Host_Stop}" VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource DangerBrush}"/>
                                     </StackPanel>
-                                </Border>
+                                </Button>
+
+                                <!-- The rest of what can be done with a server. -->
+                                <Button Classes="icon more" Width="40" Height="40" ToolTip.Tip="{DynamicResource Host_More}">
+                                    <PathIcon Data="{StaticResource IconDots}"/>
+                                    <Button.Flyout>
+                                        <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                            <MenuItem Header="{DynamicResource Host_TabSettings}"
+                                                      Command="{Binding #Root.((vm:MainWindowViewModel)DataContext).SelectHostTabCommand}"
+                                                      CommandParameter="Settings"/>
+                                            <MenuItem Header="{DynamicResource Host_OpenFolder}"
+                                                      Command="{Binding #Root.((vm:MainWindowViewModel)DataContext).OpenHostFolderCommand}"/>
+                                            <MenuItem Header="{DynamicResource Host_Another}"
+                                                      Command="{Binding #Root.((vm:MainWindowViewModel)DataContext).OpenHostCreateCommand}"/>
+                                            <Separator/>
+                                            <!-- Leads to the question on the settings tab; nothing is removed from a menu. -->
+                                            <MenuItem Classes="danger" Header="{DynamicResource Host_RemoveMenu}"
+                                                      Command="{Binding #Root.((vm:MainWindowViewModel)DataContext).SelectHostTabCommand}"
+                                                      CommandParameter="Settings"/>
+                                        </MenuFlyout>
+                                    </Button.Flyout>
+                                </Button>
                             </StackPanel>
-                        </Panel>
-                    </Border>
+                        </Grid>
 
-                    <!-- ======== The server's tabs; beside them, the other servers and a new one ======== -->
-                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" IsVisible="{Binding ShowHostServer}">
-                        <Border Classes="segments">
-                            <StackPanel Orientation="Horizontal" Spacing="2">
-                                <Button Classes="segment" Classes.active="{Binding IsHostOverview}"
-                                        Content="{DynamicResource Host_TabOverview}"
-                                        Command="{Binding SelectHostTabCommand}" CommandParameter="Overview"/>
-                                <Button Classes="segment" Classes.active="{Binding IsHostPlayersTab}"
-                                        Content="{DynamicResource Host_TabPlayers}"
-                                        Command="{Binding SelectHostTabCommand}" CommandParameter="Players"/>
-                                <Button Classes="segment" Classes.active="{Binding IsHostModsTab}"
-                                        Content="{DynamicResource Host_TabMods}"
-                                        Command="{Binding SelectHostTabCommand}" CommandParameter="Mods"/>
-                                <Button Classes="segment" Classes.active="{Binding IsHostSettingsTab}"
-                                        Content="{DynamicResource Host_TabSettings}"
-                                        Command="{Binding SelectHostTabCommand}" CommandParameter="Settings"/>
-                                <Button Classes="segment" Classes.active="{Binding IsHostConsoleTab}"
-                                        Content="{DynamicResource Host_TabConsole}"
-                                        Command="{Binding SelectHostTabCommand}" CommandParameter="Console"/>
+                        <!-- The facts under the name. -->
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" Margin="0,8,0,0">
+                            <StackPanel Classes="meta">
+                                <StackPanel Orientation="Horizontal" Spacing="7">
+                                    <Ellipse Classes="dot" IsVisible="{Binding IsHostOnline}"/>
+                                    <Ellipse Classes="dot warn" IsVisible="{Binding IsHostWorking}"/>
+                                    <Ellipse Classes="dot off" IsVisible="{Binding IsHostOff}"/>
+                                    <TextBlock Text="{Binding HostStateLabel}" Foreground="{DynamicResource TextSecondaryBrush}"
+                                               VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <Ellipse/>
+                                <TextBlock Classes="mono" Text="{Binding HostLoaderLabel}"/>
+                                <TextBlock Classes="mono" Text="{Binding HostVersionLabel}" Margin="-4,0,0,0"/>
+                                <Ellipse/>
+                                <TextBlock Text="{Binding HostMemoryLabel}"/>
+                                <Ellipse/>
+                                <TextBlock Text="{Binding HostPortLabel}"/>
+                                <Ellipse/>
+                            </StackPanel>
+                            <TextBlock Grid.Column="1" Text="{Binding HostBuildLabel}" Foreground="{DynamicResource TextSecondaryBrush}"
+                                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                        </Grid>
+
+                        <!-- A lookup, a download or a copy in progress. -->
+                        <StackPanel Spacing="7" Margin="0,16,0,0" IsVisible="{Binding IsHostBusy}">
+                            <TextBlock Text="{Binding HostBusyText}" Classes="muted" FontSize="13"/>
+                            <ProgressBar Value="{Binding HostProgress}" Minimum="0" Maximum="100" Height="4"
+                                         IsIndeterminate="{Binding IsHostProgressUnknown}"/>
+                        </StackPanel>
+
+                        <!-- Why the server is not running although it was asked to. -->
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Margin="0,16,0,0" IsVisible="{Binding HasHostNotice}">
+                            <PathIcon Data="{StaticResource IconWarning}" Foreground="{DynamicResource WarningBrush}"
+                                      VerticalAlignment="Top" Margin="0,2,0,0"/>
+                            <TextBlock Grid.Column="1" Text="{Binding HostNotice}" TextWrapping="Wrap" LineHeight="19"
+                                       VerticalAlignment="Center"/>
+                            <Button Grid.Column="2" Classes="small" VerticalAlignment="Center"
+                                    Content="{DynamicResource Host_UseFreePort}"
+                                    Command="{Binding UseFreeHostPortCommand}" IsVisible="{Binding HostNoticeOffersPort}"/>
+                        </Grid>
+
+                        <!-- Something has to be downloaded or agreed to first: what, from where, how big. -->
+                        <Border Classes="panel" Padding="20,18,20,16" Margin="0,18,0,0" IsVisible="{Binding IsHostConsentOpen}"
+                                controls:Reveal.OnVisible="True">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="{Binding HostConsentTitle}" Classes="h2" TextWrapping="Wrap"/>
+                                <ItemsControl ItemsSource="{Binding HostConsentLines}"/>
+                                <WrapPanel ItemSpacing="10" LineSpacing="6">
+                                    <Button Classes="primary" Content="{Binding HostConsentAction}"
+                                            Command="{Binding ConfirmHostConsentCommand}"/>
+                                    <Button Classes="ghost" Content="{DynamicResource Common_Cancel}"
+                                            Command="{Binding CancelHostConsentCommand}"/>
+                                    <Button Classes="link" VerticalAlignment="Center"
+                                            Content="{DynamicResource Host_EulaLink}"
+                                            Command="{Binding OpenHostEulaCommand}" IsVisible="{Binding HostConsentHasEula}"/>
+                                </WrapPanel>
                             </StackPanel>
                         </Border>
 
-                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <ComboBox ItemsSource="{Binding HostServers}" SelectedItem="{Binding SelectedHostServer}"
-                                      MinWidth="180" MaxWidth="240" IsVisible="{Binding HasManyHostServers}"
-                                      ToolTip.Tip="{DynamicResource Host_PickServer}">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate x:DataType="hosting:HostedServer">
-                                        <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis"/>
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
-                            <Button Classes="ghost small" Height="36" Command="{Binding OpenHostCreateCommand}"
-                                    IsVisible="{Binding HasHostServers}">
-                                <StackPanel Orientation="Horizontal" Spacing="6">
-                                    <PathIcon Data="{StaticResource IconPlus}" Classes="small"/>
-                                    <TextBlock Text="{DynamicResource Host_Another}"/>
+                        <!-- ======== The server's tabs; at their right, the other servers ======== -->
+                        <Border Classes="tabs" Margin="0,22,0,0">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <StackPanel Orientation="Horizontal" Spacing="22" VerticalAlignment="Bottom">
+                                    <Button Classes="tab" Classes.active="{Binding IsHostOverview}"
+                                            Content="{DynamicResource Host_TabOverview}"
+                                            Command="{Binding SelectHostTabCommand}" CommandParameter="Overview"/>
+                                    <Button Classes="tab" Classes.active="{Binding IsHostPlayersTab}"
+                                            Content="{DynamicResource Host_TabPlayers}"
+                                            Command="{Binding SelectHostTabCommand}" CommandParameter="Players"/>
+                                    <Button Classes="tab" Classes.active="{Binding IsHostModsTab}"
+                                            Content="{DynamicResource Host_TabMods}"
+                                            Command="{Binding SelectHostTabCommand}" CommandParameter="Mods"/>
+                                    <Button Classes="tab" Classes.active="{Binding IsHostSettingsTab}"
+                                            Content="{DynamicResource Host_TabSettings}"
+                                            Command="{Binding SelectHostTabCommand}" CommandParameter="Settings"/>
+                                    <Button Classes="tab" Classes.active="{Binding IsHostConsoleTab}"
+                                            Content="{DynamicResource Host_TabConsole}"
+                                            Command="{Binding SelectHostTabCommand}" CommandParameter="Console"/>
                                 </StackPanel>
-                            </Button>
-                        </StackPanel>
-                    </Grid>
+                                <ComboBox Grid.Column="1" ItemsSource="{Binding HostServers}" SelectedItem="{Binding SelectedHostServer}"
+                                          MinWidth="170" MaxWidth="230" Margin="0,0,0,8" IsVisible="{Binding HasManyHostServers}"
+                                          ToolTip.Tip="{DynamicResource Host_PickServer}">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate x:DataType="hosting:HostedServer">
+                                            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis"/>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </Grid>
+                        </Border>
 
-                    <Panel IsVisible="{Binding ShowHostServer}">
+                        <Panel Margin="0,20,0,0">
 
-                        <!-- ================= Overview ================= -->
-                        <Grid ColumnDefinitions="1.15*,*" ColumnSpacing="16" IsVisible="{Binding IsHostOverview}">
+                            <!-- ================= Overview ================= -->
+                            <Grid ColumnDefinitions="1.1*,Auto,*" IsVisible="{Binding IsHostOverview}">
 
-                            <!-- How to invite a friend: three steps, each showing where it stands. -->
-                            <Border Classes="card glass" Padding="20" VerticalAlignment="Top">
-                                <StackPanel Spacing="18">
-                                    <TextBlock Text="{DynamicResource Host_InviteTitle}" Classes="label"/>
+                                <!-- How to invite a friend: three steps, each showing where it stands. -->
+                                <StackPanel Spacing="20" Margin="0,0,32,0">
+                                    <TextBlock Text="{DynamicResource Host_InviteTitle}" Classes="caption"/>
 
                                     <!-- 1. The server runs -->
                                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                                         <Panel>
-                                            <Border Classes="step done" IsVisible="{Binding IsHostOnline}">
+                                            <Border Classes="step" IsVisible="{Binding IsHostOnline}">
                                                 <PathIcon Data="{StaticResource IconCheck}"/>
                                             </Border>
                                             <Border Classes="step" IsVisible="{Binding !IsHostOnline}">
                                                 <TextBlock Text="1"/>
                                             </Border>
                                         </Panel>
-                                        <StackPanel Grid.Column="1" Spacing="3">
+                                        <StackPanel Grid.Column="1" Spacing="2">
                                             <Panel>
-                                                <TextBlock Text="{DynamicResource Host_Step1Done}" FontWeight="SemiBold" FontSize="14"
+                                                <TextBlock Text="{DynamicResource Host_Step1Done}" Classes="strong" FontSize="14"
                                                            IsVisible="{Binding IsHostOnline}"/>
-                                                <TextBlock Text="{DynamicResource Host_Step1Todo}" FontWeight="SemiBold" FontSize="14"
+                                                <TextBlock Text="{DynamicResource Host_Step1Todo}" Classes="strong" FontSize="14"
                                                            IsVisible="{Binding !IsHostOnline}"/>
                                             </Panel>
                                             <Panel>
-                                                <TextBlock Text="{DynamicResource Host_Step1DoneNote}" Classes="faint" TextWrapping="Wrap" LineHeight="17"
+                                                <TextBlock Text="{DynamicResource Host_Step1DoneNote}" Classes="sub" TextWrapping="Wrap"
                                                            IsVisible="{Binding IsHostOnline}"/>
-                                                <TextBlock Text="{DynamicResource Host_Step1TodoNote}" Classes="faint" TextWrapping="Wrap" LineHeight="17"
+                                                <TextBlock Text="{DynamicResource Host_Step1TodoNote}" Classes="sub" TextWrapping="Wrap"
                                                            IsVisible="{Binding IsHostOff}"/>
-                                                <TextBlock Text="{DynamicResource Host_Step1WorkingNote}" Classes="faint" TextWrapping="Wrap" LineHeight="17"
+                                                <TextBlock Text="{DynamicResource Host_Step1WorkingNote}" Classes="sub" TextWrapping="Wrap"
                                                            IsVisible="{Binding IsHostWorking}"/>
                                             </Panel>
                                         </StackPanel>
@@ -653,26 +659,26 @@
                                     <!-- 2. The friend's nickname is on the list -->
                                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                                         <Panel>
-                                            <Border Classes="step done" IsVisible="{Binding HasHostFriendListed}">
+                                            <Border Classes="step" IsVisible="{Binding HasHostFriendListed}">
                                                 <PathIcon Data="{StaticResource IconCheck}"/>
                                             </Border>
                                             <Border Classes="step" IsVisible="{Binding !HasHostFriendListed}">
                                                 <TextBlock Text="2"/>
                                             </Border>
                                         </Panel>
-                                        <StackPanel Grid.Column="1" Spacing="8">
-                                            <StackPanel Spacing="3">
-                                                <TextBlock Text="{DynamicResource Host_Step2}" FontWeight="SemiBold" FontSize="14"/>
-                                                <TextBlock Text="{DynamicResource Host_Step2Note}" Classes="faint" TextWrapping="Wrap" LineHeight="17"/>
+                                        <StackPanel Grid.Column="1" Spacing="9">
+                                            <StackPanel Spacing="2">
+                                                <TextBlock Text="{DynamicResource Host_Step2}" Classes="strong" FontSize="14"/>
+                                                <TextBlock Text="{DynamicResource Host_Step2Note}" Classes="sub" TextWrapping="Wrap"/>
                                             </StackPanel>
                                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                                                 <TextBox Text="{Binding HostWhitelistEntry}" Watermark="{DynamicResource Host_WhitelistAdd}"
-                                                         MaxLength="16" Height="38">
+                                                         MaxLength="16">
                                                     <TextBox.KeyBindings>
                                                         <KeyBinding Gesture="Enter" Command="{Binding AddHostWhitelistCommand}"/>
                                                     </TextBox.KeyBindings>
                                                 </TextBox>
-                                                <Button Grid.Column="1" Classes="ghost small" Height="38" Padding="14,0"
+                                                <Button Grid.Column="1" Height="36" Padding="14,0"
                                                         Content="{DynamicResource Host_WhitelistAddButton}"
                                                         Command="{Binding AddHostWhitelistCommand}"/>
                                             </Grid>
@@ -684,14 +690,14 @@
                                                 </ItemsControl.ItemsPanel>
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate x:DataType="sys:String">
-                                                        <Border Classes="chip" Padding="10,2,2,2">
+                                                        <Border Classes="chip name">
                                                             <StackPanel Orientation="Horizontal" Spacing="2">
                                                                 <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
                                                                 <Button Classes="plain small icon-danger" Padding="5,4" MinWidth="0"
                                                                         ToolTip.Tip="{DynamicResource Host_WhitelistRemoveTip}"
                                                                         Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).RemoveHostWhitelistCommand}"
                                                                         CommandParameter="{Binding}">
-                                                                    <PathIcon Data="{StaticResource IconClose}" Width="10" Height="10"/>
+                                                                    <PathIcon Data="{StaticResource IconClose}" Width="9" Height="9"/>
                                                                 </Button>
                                                             </StackPanel>
                                                         </Border>
@@ -704,41 +710,45 @@
                                     <!-- 3. The code goes to the friend -->
                                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                                         <Panel>
-                                            <Border Classes="step done" IsVisible="{Binding HasHostInviteCode}">
+                                            <Border Classes="step" IsVisible="{Binding HasHostInviteCode}">
                                                 <PathIcon Data="{StaticResource IconCheck}"/>
                                             </Border>
                                             <Border Classes="step" IsVisible="{Binding !HasHostInviteCode}">
                                                 <TextBlock Text="3"/>
                                             </Border>
                                         </Panel>
-                                        <StackPanel Grid.Column="1" Spacing="8">
-                                            <TextBlock Text="{DynamicResource Host_Step3}" FontWeight="SemiBold" FontSize="14"/>
+                                        <StackPanel Grid.Column="1" Spacing="9">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="{DynamicResource Host_Step3}" Classes="strong" FontSize="14"/>
+                                                <Border Classes="help" ToolTip.Tip="{DynamicResource Host_Step3Note}">
+                                                    <TextBlock Text="?"/>
+                                                </Border>
+                                            </StackPanel>
 
-                                            <Border CornerRadius="14" Padding="16,12,12,12" Background="{DynamicResource PillBrush}"
-                                                    BorderBrush="{DynamicResource GoldMutedBrush}" BorderThickness="1">
-                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
+                                            <Border CornerRadius="10" Padding="14,8,8,8" MinHeight="56" Background="{DynamicResource FieldBrush}">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                                     <Panel VerticalAlignment="Center">
                                                         <!-- The short code: large, to be read out or retyped. -->
                                                         <SelectableTextBlock Text="{Binding HostInviteCode}" IsVisible="{Binding IsHostInviteShort}"
-                                                                             FontFamily="Cascadia Mono,Consolas,monospace" FontSize="26" FontWeight="ExtraBold"
-                                                                             LetterSpacing="1.5" Foreground="{DynamicResource GoldBrush}"/>
+                                                                             FontFamily="{StaticResource MonoFont}" FontSize="22" FontWeight="Medium"
+                                                                             LetterSpacing="1.2" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                                         <!-- The long line cannot be read out; it is only said that it was copied. -->
                                                         <StackPanel Spacing="2" IsVisible="{Binding IsHostInviteLong}">
-                                                            <TextBlock Text="{DynamicResource Host_InviteLongCopied}" FontWeight="SemiBold"/>
-                                                            <TextBlock Text="{Binding HostInviteCode}" Classes="mono" FontSize="12"
+                                                            <TextBlock Text="{DynamicResource Host_InviteLongCopied}" Classes="strong"/>
+                                                            <TextBlock Text="{Binding HostInviteCode}" Classes="mono"
                                                                        TextTrimming="CharacterEllipsis" MaxLines="1"/>
                                                         </StackPanel>
-                                                        <TextBlock Text="{DynamicResource Host_InvitePlaceholder}" Classes="muted" FontSize="13"
+                                                        <TextBlock Text="{DynamicResource Host_InvitePlaceholder}" Classes="sub"
                                                                    TextWrapping="Wrap" LineHeight="18"
                                                                    IsVisible="{Binding !HasHostInviteCode}"/>
                                                     </Panel>
-                                                    <!-- The main thing to do once the server is up; a quiet outline until then. -->
-                                                    <Button Grid.Column="1" Classes.primary="{Binding IsHostOnline}" Classes.ghost="{Binding !IsHostOnline}"
-                                                            Height="40" Padding="16,0" CornerRadius="12" VerticalAlignment="Center"
+                                                    <!-- The main thing to do once the server is up; a quiet button until then. -->
+                                                    <Button Grid.Column="1" Classes.primary="{Binding IsHostOnline}"
+                                                            Height="40" Padding="16,0" VerticalAlignment="Center"
                                                             ToolTip.Tip="{DynamicResource Host_CopyInvite}"
                                                             Command="{Binding CopyHostInviteCommand}" IsEnabled="{Binding !IsHostInviteBusy}">
                                                         <StackPanel Orientation="Horizontal" Spacing="8">
-                                                            <PathIcon Data="{StaticResource IconCopy}" Classes="small"/>
+                                                            <PathIcon Data="{StaticResource IconCopy}" Classes="small" VerticalAlignment="Center"/>
                                                             <TextBlock Text="{DynamicResource Host_InviteCopy}" VerticalAlignment="Center"/>
                                                         </StackPanel>
                                                     </Button>
@@ -746,158 +756,148 @@
                                             </Border>
 
                                             <ProgressBar IsIndeterminate="True" Height="3" IsVisible="{Binding IsHostInviteBusy}"/>
-                                            <TextBlock Text="{DynamicResource Host_Step3Note}" Classes="faint" TextWrapping="Wrap" LineHeight="17"/>
                                         </StackPanel>
                                     </Grid>
                                 </StackPanel>
-                            </Border>
 
-                            <StackPanel Grid.Column="1" Spacing="12">
+                                <Border Grid.Column="1" Classes="divider"/>
 
-                                <!-- How friends connect: the two ways, each with its own switch. -->
-                                <Border Classes="card glass" Padding="16">
-                                    <StackPanel Spacing="10">
-                                        <StackPanel Spacing="4">
-                                            <TextBlock Text="{DynamicResource Host_WaysTitle}" Classes="label"/>
-                                            <TextBlock Text="{DynamicResource Host_WaysHint}" Classes="faint" TextWrapping="Wrap" LineHeight="17"/>
-                                        </StackPanel>
+                                <StackPanel Grid.Column="2" Margin="32,0,0,0">
 
-                                        <ItemsControl ItemsSource="{Binding HostWays}">
-                                            <ItemsControl.ItemsPanel>
-                                                <ItemsPanelTemplate>
-                                                    <StackPanel Spacing="8"/>
-                                                </ItemsPanelTemplate>
-                                            </ItemsControl.ItemsPanel>
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate x:DataType="vm:HostWayItem">
-                                                    <Border Classes="row">
-                                                        <StackPanel Spacing="8">
-                                                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                                                                <Panel VerticalAlignment="Center">
-                                                                    <PathIcon Data="{StaticResource IconUsers}" Classes="small gold" IsVisible="{Binding IsRelay}"/>
-                                                                    <PathIcon Data="{StaticResource IconDirect}" Classes="small gold" IsVisible="{Binding IsDirect}"/>
-                                                                </Panel>
-                                                                <TextBlock Grid.Column="1" Text="{Binding Title}" FontWeight="SemiBold" FontSize="14"
-                                                                           VerticalAlignment="Center" TextWrapping="Wrap"/>
-                                                                <!-- The switch shows the state and changes it; the view model decides what flipping it does. -->
-                                                                <ToggleSwitch Grid.Column="2" IsChecked="{Binding IsOn, Mode=OneWay}"
-                                                                              OnContent="" OffContent="" MinWidth="0" VerticalAlignment="Center"
-                                                                              IsEnabled="{Binding CanSwitch}"
-                                                                              Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).ToggleHostWayCommand}"
-                                                                              CommandParameter="{Binding}"/>
-                                                            </Grid>
-
-                                                            <Grid ColumnDefinitions="10,*" ColumnSpacing="8">
-                                                                <Panel Width="10" Height="16" VerticalAlignment="Top" Margin="0,1,0,0">
-                                                                    <Border Width="7" Height="7" CornerRadius="4" Background="{DynamicResource TextMutedBrush}"
-                                                                            IsVisible="{Binding IsOff}"/>
-                                                                    <Border Width="7" Height="7" CornerRadius="4" Background="{DynamicResource GoldBrush}"
-                                                                            IsVisible="{Binding IsWorking}"/>
-                                                                    <Border Width="7" Height="7" CornerRadius="4" Background="{DynamicResource SuccessBrush}"
-                                                                            IsVisible="{Binding IsReady}"/>
-                                                                    <Border Width="7" Height="7" CornerRadius="4" Background="{DynamicResource DangerBrush}"
-                                                                            IsVisible="{Binding IsFailed}"/>
-                                                                </Panel>
-                                                                <TextBlock Grid.Column="1" Text="{Binding StatusText}" TextWrapping="Wrap" FontSize="12.5" LineHeight="17"/>
-                                                            </Grid>
-
-                                                            <!-- Voice chat, when the server has it: carried, or whether the router opened its port. -->
-                                                            <TextBlock Text="{Binding VoiceText}" IsVisible="{Binding HasVoiceText}" Classes="muted"
-                                                                       TextWrapping="Wrap" FontSize="12.5" LineHeight="17" Margin="18,0,0,0"/>
-
-                                                            <TextBlock Text="{Binding Description}" Classes="faint" TextWrapping="Wrap" LineHeight="17"/>
-
-                                                            <Border CornerRadius="10" Padding="10,8" Background="{DynamicResource TileGoldBrush}"
-                                                                    BorderBrush="{DynamicResource GoldBrush}" BorderThickness="1" IsVisible="{Binding HasWarning}">
-                                                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-                                                                    <PathIcon Data="{StaticResource IconWarning}" Classes="small gold" VerticalAlignment="Top" Margin="0,2,0,0"/>
-                                                                    <TextBlock Grid.Column="1" Text="{Binding Warning}" TextWrapping="Wrap" FontSize="12.5" LineHeight="17"/>
-                                                                </Grid>
-                                                            </Border>
-
-                                                            <!-- The address friends type in, when the way has one of its own. -->
-                                                            <Border Classes="panel" Padding="10,4,4,4" IsVisible="{Binding HasAddress}">
-                                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
-                                                                    <TextBlock Text="{Binding Address}" Classes="mono" FontSize="13" VerticalAlignment="Center"
-                                                                               TextTrimming="CharacterEllipsis"/>
-                                                                    <Button Grid.Column="1" Classes="plain small" ToolTip.Tip="{DynamicResource Server_CopyAddress}"
-                                                                            Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).CopyHostWayAddressCommand}"
-                                                                            CommandParameter="{Binding}">
-                                                                        <PathIcon Data="{StaticResource IconCopy}" Classes="small"/>
-                                                                    </Button>
-                                                                </Grid>
-                                                            </Border>
-                                                        </StackPanel>
-                                                    </Border>
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
+                                    <!-- How friends connect: the two ways, each with its own switch. -->
+                                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="12,0,0,6">
+                                        <TextBlock Text="{DynamicResource Host_WaysTitle}" Classes="caption"/>
+                                        <Border Classes="help" ToolTip.Tip="{DynamicResource Host_WaysHint}">
+                                            <TextBlock Text="?"/>
+                                        </Border>
                                     </StackPanel>
-                                </Border>
 
-                                <!-- Who is on the server right now. -->
-                                <Border Classes="card glass" Padding="16">
-                                    <StackPanel Spacing="10">
-                                        <TextBlock Text="{DynamicResource Host_OnlineLabel}" Classes="label"/>
-                                        <TextBlock Text="{Binding HostPlayersLabel}" Classes="muted" FontSize="13" TextWrapping="Wrap"/>
-                                        <ItemsControl ItemsSource="{Binding HostPlayers}" IsVisible="{Binding HasHostPlayers}">
-                                            <ItemsControl.ItemsPanel>
-                                                <ItemsPanelTemplate>
-                                                    <StackPanel Spacing="8"/>
-                                                </ItemsPanelTemplate>
-                                            </ItemsControl.ItemsPanel>
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate x:DataType="sys:String">
-                                                    <Border Classes="row" Padding="12,9">
-                                                        <StackPanel Orientation="Horizontal" Spacing="10">
-                                                            <Border Width="7" Height="7" CornerRadius="4" VerticalAlignment="Center"
-                                                                    Background="{DynamicResource SuccessBrush}"/>
-                                                            <TextBlock Text="{Binding}" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                                        </StackPanel>
-                                                    </Border>
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
+                                    <ItemsControl Classes="rows" ItemsSource="{Binding HostWays}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:HostWayItem">
+                                                <Border Classes="row">
+                                                    <StackPanel Spacing="8">
+                                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                                            <Panel VerticalAlignment="Center" Width="16">
+                                                                <PathIcon Data="{StaticResource IconUsers}" Classes="muted" IsVisible="{Binding IsRelay}"/>
+                                                                <PathIcon Data="{StaticResource IconDirect}" Classes="muted" IsVisible="{Binding IsDirect}"/>
+                                                            </Panel>
+                                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                                                    <TextBlock Text="{Binding Title}" Classes="strong"/>
+                                                                    <!-- What the way is and what it asks of the router, on request. -->
+                                                                    <Border Classes="help" ToolTip.Tip="{Binding Description}">
+                                                                        <TextBlock Text="?"/>
+                                                                    </Border>
+                                                                </StackPanel>
+                                                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="7" Margin="0,2,0,0">
+                                                                    <Panel VerticalAlignment="Top" Margin="0,5,0,0">
+                                                                        <Ellipse Classes="dot off" IsVisible="{Binding IsOff}"/>
+                                                                        <Ellipse Classes="dot warn" IsVisible="{Binding IsWorking}"/>
+                                                                        <Ellipse Classes="dot" IsVisible="{Binding IsReady}"/>
+                                                                        <Ellipse Classes="dot" Fill="{DynamicResource DangerBrush}" IsVisible="{Binding IsFailed}"/>
+                                                                    </Panel>
+                                                                    <TextBlock Grid.Column="1" Text="{Binding StatusText}" Classes="sub" TextWrapping="Wrap"/>
+                                                                </Grid>
+                                                            </StackPanel>
+                                                            <!-- The switch shows the state and changes it; the view model decides what flipping it does. -->
+                                                            <ToggleSwitch Grid.Column="2" IsChecked="{Binding IsOn, Mode=OneWay}"
+                                                                          VerticalAlignment="Center" IsEnabled="{Binding CanSwitch}"
+                                                                          Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).ToggleHostWayCommand}"
+                                                                          CommandParameter="{Binding}"/>
+                                                        </Grid>
+
+                                                        <!-- Voice chat, when the server has it: carried, or whether the router opened its port. -->
+                                                        <TextBlock Text="{Binding VoiceText}" IsVisible="{Binding HasVoiceText}" Classes="sub"
+                                                                   TextWrapping="Wrap" Margin="28,0,0,0"/>
+
+                                                        <!-- What the way needs from the player's network: always in sight. -->
+                                                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" IsVisible="{Binding HasWarning}">
+                                                            <PathIcon Data="{StaticResource IconWarning}" Foreground="{DynamicResource WarningBrush}"
+                                                                      VerticalAlignment="Top" Margin="0,2,0,0"/>
+                                                            <TextBlock Grid.Column="1" Text="{Binding Warning}" TextWrapping="Wrap" FontSize="12.5" LineHeight="18"/>
+                                                        </Grid>
+
+                                                        <!-- The address friends type in, when the way has one of its own. -->
+                                                        <Border CornerRadius="8" Padding="12,3,3,3" Margin="28,0,0,0" Background="{DynamicResource FieldBrush}"
+                                                                IsVisible="{Binding HasAddress}">
+                                                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                                                <TextBlock Text="{Binding Address}" Classes="mono" FontSize="13" VerticalAlignment="Center"
+                                                                           TextTrimming="CharacterEllipsis"/>
+                                                                <Button Grid.Column="1" Classes="icon" ToolTip.Tip="{DynamicResource Server_CopyAddress}"
+                                                                        Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).CopyHostWayAddressCommand}"
+                                                                        CommandParameter="{Binding}">
+                                                                    <PathIcon Data="{StaticResource IconCopy}"/>
+                                                                </Button>
+                                                            </Grid>
+                                                        </Border>
+                                                    </StackPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                    <!-- Who is on the server right now. -->
+                                    <TextBlock Text="{DynamicResource Host_OnlineLabel}" Classes="caption" Margin="12,26,0,6"/>
+                                    <TextBlock Text="{Binding HostPlayersLabel}" Classes="sub" TextWrapping="Wrap" Margin="12,0,0,4"/>
+                                    <ItemsControl Classes="rows" ItemsSource="{Binding HostPlayers}" IsVisible="{Binding HasHostPlayers}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="sys:String">
+                                                <Border Classes="row" Padding="12,9">
+                                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                                        <Ellipse Classes="dot"/>
+                                                        <TextBlock Text="{Binding}" Classes="strong" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- ================= Players: who may join, who is there ================= -->
+                            <Grid ColumnDefinitions="1.1*,Auto,*" IsVisible="{Binding IsHostPlayersTab}">
+                                <StackPanel Margin="0,0,32,0">
+                                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,4">
+                                        <TextBlock Text="{DynamicResource Host_Whitelist}" Classes="group"/>
+                                        <Border Classes="help" ToolTip.Tip="{DynamicResource Host_WhitelistHint}">
+                                            <TextBlock Text="?"/>
+                                        </Border>
                                     </StackPanel>
-                                </Border>
-                            </StackPanel>
-                        </Grid>
+                                    <!-- A nickname is not a password: said where the list is filled in. -->
+                                    <TextBlock Text="{DynamicResource Host_WhitelistShort}" Classes="sub" TextWrapping="Wrap" Margin="0,0,0,14"/>
 
-                        <!-- ================= Players: who may join, who is there ================= -->
-                        <Grid ColumnDefinitions="1.15*,*" ColumnSpacing="16" IsVisible="{Binding IsHostPlayersTab}">
-                            <Border Classes="card glass" Padding="20" VerticalAlignment="Top">
-                                <StackPanel Spacing="12">
-                                    <TextBlock Text="{DynamicResource Host_Whitelist}" Classes="h3"/>
-                                    <TextBlock Text="{DynamicResource Host_WhitelistHint}" Classes="faint" TextWrapping="Wrap" LineHeight="17"/>
-
-                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0,0,0,10">
                                         <TextBox Text="{Binding HostWhitelistEntry}" Watermark="{DynamicResource Host_WhitelistAdd}" MaxLength="16">
                                             <TextBox.KeyBindings>
                                                 <KeyBinding Gesture="Enter" Command="{Binding AddHostWhitelistCommand}"/>
                                             </TextBox.KeyBindings>
                                         </TextBox>
-                                        <Button Grid.Column="1" Classes="primary small" Height="36" Padding="14,0"
+                                        <Button Grid.Column="1" Height="36" Padding="14,0"
                                                 Content="{DynamicResource Host_WhitelistAddButton}"
                                                 Command="{Binding AddHostWhitelistCommand}"/>
                                     </Grid>
 
-                                    <ItemsControl ItemsSource="{Binding HostWhitelist}">
-                                        <ItemsControl.ItemsPanel>
-                                            <ItemsPanelTemplate>
-                                                <StackPanel Spacing="6"/>
-                                            </ItemsPanelTemplate>
-                                        </ItemsControl.ItemsPanel>
+                                    <ItemsControl Classes="rows" ItemsSource="{Binding HostWhitelist}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate x:DataType="sys:String">
-                                                <Border Classes="row" Padding="14,6,6,6">
+                                                <Border Classes="row" Padding="12,6,6,6">
+                                                    <Border.ContextMenu>
+                                                        <ContextMenu>
+                                                            <MenuItem Classes="danger" Header="{DynamicResource Host_WhitelistRemoveTip}"
+                                                                      Command="{Binding #Root.((vm:MainWindowViewModel)DataContext).RemoveHostWhitelistCommand}"
+                                                                      CommandParameter="{Binding}"/>
+                                                        </ContextMenu>
+                                                    </Border.ContextMenu>
                                                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                                                        <TextBlock Text="{Binding}" FontWeight="SemiBold" VerticalAlignment="Center"
+                                                        <TextBlock Text="{Binding}" Classes="strong" VerticalAlignment="Center"
                                                                    TextTrimming="CharacterEllipsis"/>
-                                                        <Button Grid.Column="1" Classes="plain small icon-danger"
+                                                        <!-- One name, one action: the cross stays in sight. -->
+                                                        <Button Grid.Column="1" Classes="icon icon-danger"
                                                                 ToolTip.Tip="{DynamicResource Host_WhitelistRemoveTip}"
                                                                 Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).RemoveHostWhitelistCommand}"
                                                                 CommandParameter="{Binding}">
-                                                            <PathIcon Data="{StaticResource IconClose}" Classes="small"/>
+                                                            <PathIcon Data="{StaticResource IconClose}" Width="11" Height="11"/>
                                                         </Button>
                                                     </Grid>
                                                 </Border>
@@ -905,94 +905,104 @@
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
                                 </StackPanel>
-                            </Border>
 
-                            <Border Grid.Column="1" Classes="card glass" Padding="20" VerticalAlignment="Top">
-                                <StackPanel Spacing="12">
-                                    <TextBlock Text="{DynamicResource Host_OnlineTitle}" Classes="h3"/>
-                                    <TextBlock Text="{Binding HostPlayersLabel}" Classes="muted" FontSize="13" TextWrapping="Wrap"/>
-                                    <ItemsControl ItemsSource="{Binding HostPlayers}" IsVisible="{Binding HasHostPlayers}">
-                                        <ItemsControl.ItemsPanel>
-                                            <ItemsPanelTemplate>
-                                                <StackPanel Spacing="6"/>
-                                            </ItemsPanelTemplate>
-                                        </ItemsControl.ItemsPanel>
+                                <Border Grid.Column="1" Classes="divider"/>
+
+                                <StackPanel Grid.Column="2" Margin="32,0,0,0">
+                                    <TextBlock Text="{DynamicResource Host_OnlineTitle}" Classes="group" Margin="0,0,0,4"/>
+                                    <TextBlock Text="{Binding HostPlayersLabel}" Classes="sub" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                                    <ItemsControl Classes="rows" ItemsSource="{Binding HostPlayers}" IsVisible="{Binding HasHostPlayers}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate x:DataType="sys:String">
-                                                <Border Classes="row" Padding="14,10">
+                                                <Border Classes="row">
                                                     <StackPanel Orientation="Horizontal" Spacing="10">
-                                                        <Border Width="7" Height="7" CornerRadius="4" VerticalAlignment="Center"
-                                                                Background="{DynamicResource SuccessBrush}"/>
-                                                        <TextBlock Text="{Binding}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                                        <Ellipse Classes="dot"/>
+                                                        <TextBlock Text="{Binding}" Classes="strong" VerticalAlignment="Center"/>
                                                     </StackPanel>
                                                 </Border>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
                                 </StackPanel>
-                            </Border>
-                        </Grid>
+                            </Grid>
 
-                        <!-- ================= Mods: a view of its own, so it can grow a catalog ================= -->
-                        <pages:HostModsView IsVisible="{Binding IsHostModsTab}"/>
+                            <!-- ================= Mods: a view of its own, so it can grow a catalog ================= -->
+                            <pages:HostModsView IsVisible="{Binding IsHostModsTab}"/>
 
-                        <!-- ================= The server's settings ================= -->
-                        <Grid ColumnDefinitions="1.15*,*" ColumnSpacing="16" IsVisible="{Binding IsHostSettingsTab}">
-                            <Border Classes="card glass" Padding="20" VerticalAlignment="Top">
-                                <StackPanel Spacing="18">
-                                    <StackPanel Spacing="4">
-                                        <TextBlock Text="{DynamicResource Host_TabSettings}" Classes="h3"/>
-                                        <TextBlock Text="{DynamicResource Host_SettingsHint}" Classes="faint" TextWrapping="Wrap"/>
-                                    </StackPanel>
+                            <!-- ================= The server's settings ================= -->
+                            <StackPanel MaxWidth="760" HorizontalAlignment="Left" IsVisible="{Binding IsHostSettingsTab}">
+                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                                    <TextBlock Text="{DynamicResource Host_TabSettings}" Classes="group"/>
+                                    <TextBlock Grid.Column="1" Text="{DynamicResource Host_SettingsHint}" Classes="sub" VerticalAlignment="Bottom"
+                                               TextWrapping="Wrap" Margin="0,0,0,2"/>
+                                </Grid>
 
-                                    <StackPanel Spacing="7">
-                                        <TextBlock Text="{DynamicResource Host_CreateName}" Classes="label"/>
-                                        <TextBox Text="{Binding HostNameEntry}" Watermark="{DynamicResource Host_CreateNameHint}"
+                                <Border Classes="setting">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                                        <TextBlock Text="{DynamicResource Host_CreateName}" Classes="strong" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" Width="260" Text="{Binding HostNameEntry}"
+                                                 Watermark="{DynamicResource Host_CreateNameHint}"
                                                  MaxLength="48" IsEnabled="{Binding CanEditHost}"/>
-                                    </StackPanel>
+                                    </Grid>
+                                </Border>
 
-                                    <StackPanel Spacing="7">
-                                        <Grid ColumnDefinitions="*,Auto">
-                                            <TextBlock Text="{DynamicResource Host_CreateMemory}" Classes="label"/>
-                                            <TextBlock Grid.Column="1" Text="{Binding HostMemoryLabel}" FontWeight="SemiBold"/>
-                                        </Grid>
-                                        <Slider Minimum="1024" Maximum="{Binding MemorySliderMax}" TickFrequency="512"
-                                                IsSnapToTickEnabled="True" Value="{Binding HostMemoryMb}"
-                                                IsEnabled="{Binding CanEditHost}"/>
-                                        <TextBlock Text="{DynamicResource Host_MemoryHint}" Classes="faint" TextWrapping="Wrap"/>
-                                    </StackPanel>
+                                <Border Classes="setting">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="{DynamicResource Host_CreateMemory}" Classes="strong"/>
+                                            <TextBlock Text="{DynamicResource Host_MemoryHint}" Classes="sub"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding HostMemoryLabel}" Classes="mono" VerticalAlignment="Center"/>
+                                            <Slider Width="200" Minimum="1024" Maximum="{Binding MemorySliderMax}" TickFrequency="512"
+                                                    IsSnapToTickEnabled="True" Value="{Binding HostMemoryMb}"
+                                                    IsEnabled="{Binding CanEditHost}"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
 
-                                    <StackPanel Spacing="7">
-                                        <TextBlock Text="{DynamicResource Host_SettingsPort}" Classes="label"/>
-                                        <NumericUpDown Value="{Binding HostPortValue}" Minimum="1024" Maximum="65535"
-                                                       Increment="1" FormatString="0" Width="160" HorizontalAlignment="Left"
+                                <Border Classes="setting">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="{DynamicResource Host_SettingsPort}" Classes="strong"/>
+                                            <TextBlock Text="{DynamicResource Host_SettingsPortHint}" Classes="sub"/>
+                                        </StackPanel>
+                                        <NumericUpDown Grid.Column="1" Value="{Binding HostPortValue}" Minimum="1024" Maximum="65535"
+                                                       Increment="1" FormatString="0" Width="150" VerticalAlignment="Center"
                                                        IsEnabled="{Binding CanEditHost}"/>
-                                        <TextBlock Text="{DynamicResource Host_SettingsPortHint}" Classes="faint" TextWrapping="Wrap"/>
-                                    </StackPanel>
-                                </StackPanel>
-                            </Border>
+                                    </Grid>
+                                </Border>
 
-                            <Border Grid.Column="1" Classes="card glass" Padding="20" VerticalAlignment="Top">
-                                <StackPanel Spacing="16">
-                                    <TextBlock Text="{DynamicResource Host_FilesTitle}" Classes="h3"/>
+                                <TextBlock Text="{DynamicResource Host_FilesTitle}" Classes="group" Margin="0,26,0,0"/>
 
-                                    <StackPanel Spacing="7">
-                                        <TextBlock Text="{DynamicResource Host_FolderHint}" Classes="faint" TextWrapping="Wrap" LineHeight="17"/>
-                                        <Button Classes="ghost" HorizontalAlignment="Left" Command="{Binding OpenHostFolderCommand}">
+                                <Border Classes="setting">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="{DynamicResource Host_FolderTitle}" Classes="strong"/>
+                                            <TextBlock Text="{DynamicResource Host_FolderHint}" Classes="sub"/>
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Classes="small" VerticalAlignment="Center"
+                                                Command="{Binding OpenHostFolderCommand}">
                                             <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <PathIcon Data="{StaticResource IconFolder}" Classes="small"/>
+                                                <PathIcon Data="{StaticResource IconFolder}" Classes="small" VerticalAlignment="Center"/>
                                                 <TextBlock Text="{DynamicResource Host_OpenFolder}" VerticalAlignment="Center"/>
                                             </StackPanel>
                                         </Button>
-                                    </StackPanel>
+                                    </Grid>
+                                </Border>
 
-                                    <StackPanel Spacing="7">
-                                        <TextBlock Text="{DynamicResource Host_RemoveHint}" Classes="faint" TextWrapping="Wrap" LineHeight="17"/>
+                                <!-- What removing does to the files stays written out: it is the player's world. -->
+                                <Border Classes="setting">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="{DynamicResource Host_Remove}" Classes="strong"/>
+                                            <TextBlock Text="{DynamicResource Host_RemoveHint}" Classes="sub"/>
+                                        </StackPanel>
                                         <!-- Still two clicks: the button opens the question, the question removes. -->
-                                        <Button Classes="ghost" HorizontalAlignment="Left" IsEnabled="{Binding CanEditHost}"
-                                                Content="{DynamicResource Host_Remove}">
+                                        <Button Grid.Column="1" Classes="danger small" VerticalAlignment="Center"
+                                                IsEnabled="{Binding CanEditHost}" Content="{DynamicResource Host_Remove}">
                                             <Button.Flyout>
-                                                <controls:RevealFlyout Placement="BottomEdgeAlignedLeft">
+                                                <controls:RevealFlyout Placement="BottomEdgeAlignedRight">
                                                     <StackPanel Spacing="10" Width="280">
                                                         <TextBlock Text="{DynamicResource Host_RemoveAsk}" Classes="muted" TextWrapping="Wrap"/>
                                                         <Button Classes="danger small" HorizontalAlignment="Left"
@@ -1002,21 +1012,19 @@
                                                 </controls:RevealFlyout>
                                             </Button.Flyout>
                                         </Button>
-                                    </StackPanel>
-                                </StackPanel>
-                            </Border>
-                        </Grid>
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
 
-                        <!-- ================= Console ================= -->
-                        <Border Classes="card glass" Padding="20" IsVisible="{Binding IsHostConsoleTab}">
-                            <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
-                                <TextBlock Text="{DynamicResource Host_Console}" Classes="h3"/>
+                            <!-- ================= Console ================= -->
+                            <Grid RowDefinitions="Auto,Auto" RowSpacing="10" IsVisible="{Binding IsHostConsoleTab}">
 
-                                <!-- Sized so the command line under it is on screen in a window of the
-                                     launcher's usual size, without scrolling the page. -->
-                                <Border Grid.Row="1" Classes="panel" Height="286" Padding="0">
+                                <!-- A terminal is a thing of its own, so it keeps a ground of its own. Sized so
+                                     the command line under it is on screen in a window of the launcher's
+                                     usual size, without scrolling the page. -->
+                                <Border CornerRadius="10" Height="300" Background="{DynamicResource FieldBrush}">
                                     <Panel>
-                                        <TextBlock Text="{DynamicResource Host_ConsoleEmpty}" Classes="faint"
+                                        <TextBlock Text="{DynamicResource Host_ConsoleEmpty}" Classes="sub"
                                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                                    IsVisible="{Binding !HasHostConsole}"/>
                                         <!-- Plain lines in a scroller rather than a list box: log lines are not
@@ -1025,7 +1033,7 @@
                                         <ScrollViewer Name="ConsoleScroll">
                                             <!-- The gap is the content's margin, not the scroller's padding:
                                                  padding is left out of the scroll range and hides the last line. -->
-                                            <ItemsControl ItemsSource="{Binding HostConsole}" Margin="12,8">
+                                            <ItemsControl ItemsSource="{Binding HostConsole}" Margin="14,10">
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate x:DataType="sys:String">
                                                         <TextBlock Text="{Binding}" Classes="mono" TextWrapping="Wrap" Margin="0,1"/>
@@ -1036,24 +1044,24 @@
                                     </Panel>
                                 </Border>
 
-                                <Grid Grid.Row="2" ColumnDefinitions="*,Auto" ColumnSpacing="6">
-                                    <TextBox Text="{Binding HostCommand}" Watermark="{DynamicResource Host_CommandHint}"
+                                <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                    <TextBox Classes="mono" Text="{Binding HostCommand}" Watermark="{DynamicResource Host_CommandHint}"
                                              IsEnabled="{Binding CanStopHost}">
                                         <TextBox.KeyBindings>
                                             <KeyBinding Gesture="Enter" Command="{Binding SendHostCommandCommand}"/>
                                         </TextBox.KeyBindings>
                                     </TextBox>
-                                    <Button Grid.Column="1" Classes="ghost small" Height="36" Padding="14,0"
+                                    <Button Grid.Column="1" Width="44" Height="36" Padding="0"
                                             Command="{Binding SendHostCommandCommand}" IsEnabled="{Binding CanStopHost}"
                                             ToolTip.Tip="{DynamicResource Host_Send}">
                                         <PathIcon Data="{StaticResource IconSend}" Classes="small"/>
                                     </Button>
                                 </Grid>
                             </Grid>
-                        </Border>
-                    </Panel>
+                        </Panel>
+                    </StackPanel>
                 </StackPanel>
-            </StackPanel>
+            </Panel>
         </ScrollViewer>
     </Panel>
 </UserControl>
