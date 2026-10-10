@@ -177,6 +177,7 @@ public partial class MainWindowViewModel
 
             var gameVersion = SelectedVersion!.Id;
             var loader = SelectedLoader;
+            var instance = SelectedInstance!;
 
             // Hashing a folder of jars is disk work; keep it off the UI thread.
             var hashes = await Task.Run(() => candidates
@@ -232,6 +233,10 @@ public partial class MainWindowViewModel
             {
                 AppendConsole($"[mods] {unknown} file(s) are not on Modrinth and were not checked");
             }
+
+            // The same answers say what the jars dropped in by hand are. Not waited for:
+            // the check is done, and this only fills in the launcher's own records.
+            _ = IdentifyDroppedModsAsync(instance, hashes, current);
         }
         catch (Exception ex)
         {

@@ -340,7 +340,7 @@ public partial class MainWindowViewModel
         {
             IsProjectBusy = true;
             _installBatch.Clear();
-            await InstallProjectWithDependenciesAsync(version, project.Slug, project.Title, project.IconUrl, target: target);
+            await InstallOpenedPlanAsync(version, project, target);
             RefreshBrowserInstallState();
             RefreshHiddenItems();
 

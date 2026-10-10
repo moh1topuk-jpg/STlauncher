@@ -23,7 +23,17 @@ public sealed class BuildIssueItem
             BuildIssueKind.MissingDependency => MainWindowViewModel.Localize("Check_Missing", "“{0}” needs “{1}”, which is not in the build", issue.Subject, issue.Detail),
             BuildIssueKind.DuplicateMod => MainWindowViewModel.Localize("Check_Duplicate", "“{0}” is in the build twice: {1} and {2}", issue.Subject, issue.FileName, issue.Detail),
             BuildIssueKind.WrongLoader => MainWindowViewModel.Localize("Check_WrongLoader", "“{0}” is a {1} mod and will not load here", issue.Subject, issue.Detail),
-            _ => MainWindowViewModel.Localize("Check_WrongVersion", "“{0}” was made for {1}, not this game version", issue.Subject, issue.Detail)
+
+            // "Breaks fabric-api <0.144.3" is a request for a newer Fabric API, so the line
+            // names the version in the build and the versions that do not work.
+            BuildIssueKind.Incompatible or BuildIssueKind.Discouraged when issue.Range is not null && issue.OtherVersion is not null
+                => MainWindowViewModel.Localize(
+                    issue.Kind == BuildIssueKind.Incompatible ? "Check_IncompatibleRange" : "Check_DiscouragedRange",
+                    "“{0}” does not work with “{1}” {2} (versions {3})",
+                    issue.Subject, issue.Detail, issue.OtherVersion, issue.Range),
+            BuildIssueKind.Incompatible => MainWindowViewModel.Localize("Check_Incompatible", "“{0}” does not work together with “{1}”", issue.Subject, issue.Detail),
+            BuildIssueKind.Discouraged => MainWindowViewModel.Localize("Check_Discouraged", "“{0}” may misbehave together with “{1}”", issue.Subject, issue.Detail),
+            _ =>MainWindowViewModel.Localize("Check_WrongVersion", "“{0}” was made for {1}, not this game version", issue.Subject, issue.Detail)
         };
 
         FixLabel = issue.Kind switch
@@ -49,7 +59,7 @@ public sealed class BuildIssueItem
     public bool IsBlocking => Issue.IsBlocking;
 
     /// <summary>True when the fix is a switch on a file, not a trip to the catalog.</summary>
-    public bool CanFixBySwitch => Issue.Kind != BuildIssueKind.MissingDependency || Issue.DisabledFileName is not null;
+    public bool CanFixBySwitch => Issue.FixableBySwitch;
 }
 
 /// <summary>
@@ -100,6 +110,8 @@ public partial class MainWindowViewModel
         var directory = InstanceDirectory;
         var loader = SelectedInstance?.Loader ?? LoaderKind.Vanilla;
         var version = SelectedInstance?.VersionId;
+        var loaderVersion = SelectedInstance?.LoaderVersion;
+        var cache = MetadataCacheFor(SelectedInstance);
 
         IsCheckingBuild = true;
 
@@ -109,7 +121,7 @@ public partial class MainWindowViewModel
 
             try
             {
-                issues = BuildChecker.Check(directory, loader, version);
+                issues = BuildChecker.Check(directory, loader, version, loaderVersion, cache);
             }
             catch (Exception ex)
             {
@@ -187,6 +199,10 @@ public partial class MainWindowViewModel
                 case BuildIssueKind.DuplicateMod:
                 case BuildIssueKind.WrongLoader:
                 case BuildIssueKind.WrongGameVersion:
+                case BuildIssueKind.Incompatible:
+                case BuildIssueKind.Discouraged:
+                    // For a conflict this is the mod that declared it, and only on the
+                    // row's own button: "fix everything" leaves that choice to the player.
                     ToggleModByFileName(issue.FileName);
                     break;
             }

@@ -841,6 +841,13 @@
     <x:String x:Key="Check_FixDisableNew">Выключить новый</x:String>
     <x:String x:Key="Check_KeepOld">Оставить старые версии</x:String>
     <x:String x:Key="Check_FixedAll">Исправлено: {0} из {1}</x:String>
+    <x:String x:Key="Check_IncompatibleRange">«{0}» не работает с «{1}» версии {2}: несовместимы версии {3}</x:String>
+    <x:String x:Key="Check_DiscouragedRange">«{0}» может работать с ошибками рядом с «{1}» версии {2} (версии {3})</x:String>
+    <x:String x:Key="Check_Incompatible">«{0}» и «{1}» не работают вместе</x:String>
+    <x:String x:Key="Check_Discouraged">«{0}» может работать с ошибками рядом с «{1}»</x:String>
+    <x:String x:Key="Mods_DepUnavailable">нет версии для этой сборки</x:String>
+    <x:String x:Key="Mods_PlanConflict">Отмечены как несовместимые: {0}. В сборке окажутся оба; возможно, один придётся выключить.</x:String>
+    <x:String x:Key="Mods_ReviewConflict">{0} может не заработать с модом, который уже в сборке: подробности справа</x:String>
     <x:String x:Key="Game_PlaySafe">Безопасный запуск</x:String>
     <x:String x:Key="Game_PlaySafeHint">Запустит игру только с модами сервера; свои моды временно выключатся и вернутся после выхода.</x:String>
     <x:String x:Key="Safe_Starting">Запуск только с модами сервера: выключено ваших модов — {0}</x:String>

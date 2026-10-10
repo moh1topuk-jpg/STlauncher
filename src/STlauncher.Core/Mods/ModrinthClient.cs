@@ -150,7 +150,7 @@ public sealed record ModVersion(
         => ModrinthClient.SelectFile(this, gameVersion, loader);
 }
 
-public sealed class ModrinthClient : IModSource
+public sealed class ModrinthClient : IModSource, IModHashLookup
 {
     private const string BaseUrl = "https://api.modrinth.com/v2";
 

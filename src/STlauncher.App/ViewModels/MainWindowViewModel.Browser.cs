@@ -182,8 +182,13 @@ public sealed record ModDependencyItem(string Title, bool Installed, bool Requir
     /// <summary>The state under the name is a link: the mod is missing and only its page has it.</summary>
     public bool OffersPage => !Installed && Blocked && !string.IsNullOrEmpty(PageUrl);
 
+    /// <summary>A required mod with no file for this game version and loader: the install cannot bring it.</summary>
+    public bool Unavailable { get; init; }
+
     public string StateLabel => Installed
         ? MainWindowViewModel.Localize("Mods_DepInstalled", "in the build")
+        : Unavailable
+            ? MainWindowViewModel.Localize("Mods_DepUnavailable", "no version for this build")
         : Blocked
             ? MainWindowViewModel.Localize("Mods_DepBlocked", "only from its page")
             : Required
@@ -626,6 +631,7 @@ public partial class MainWindowViewModel
         }
 
         var review = false;
+        var conflictOnly = false;
 
         try
         {
@@ -649,20 +655,24 @@ public partial class MainWindowViewModel
 
             // One press adds the mod that was pressed. Anything more than that - other mods
             // it needs, or a file only its page gives out - is shown on the mod's panel
-            // first, and the install waits for the button there.
-            review = await IsBlockedAsync(preferred) || await BringsOtherModsAsync(preferred, target.Instance);
+            // first, and the install waits for the button there. The plan drawn here is
+            // the one carried out: nothing is resolved a second time on the way.
+            var plan = await ResolveInstallPlanAsync(preferred, item.Result.Slug, item.Result.Title, item.Result.IconUrl, BrowserKind, target);
+
+            if (plan.Root.State == ModPlanState.Unavailable)
+            {
+                Status = Localize("Status_NoCompatibleFile", "No compatible file for this version and loader");
+                return;
+            }
+
+            review = !plan.IsComplete || plan.Root.State != ModPlanState.Install || plan.BringsOthers || plan.Conflicts.Count > 0;
+            conflictOnly = plan.IsComplete && plan.Root.State == ModPlanState.Install && !plan.BringsOthers && plan.Conflicts.Count > 0;
 
             if (!review)
             {
                 _installBatch.Clear();
 
-                await InstallProjectWithDependenciesAsync(
-                    preferred,
-                    item.Result.Slug,
-                    item.Result.Title,
-                    item.Result.IconUrl,
-                    projectType: BrowserKind,
-                    target: target);
+                await InstallPlanAsync(plan, target);
 
                 // The card and the list on screen belong to the open build: with another
                 // one opened meanwhile, they have nothing to show for this install.
@@ -695,159 +705,9 @@ public partial class MainWindowViewModel
 
             Status = IsOpenedProjectBlocked
                 ? Localize("Mods_ReviewBlocked", "{0} is only given out on its page: the button on the right opens it", item.Result.Title)
+                : conflictOnly
+                    ? Localize("Mods_ReviewConflict", "{0} may not work with a mod already in the build: the details are on the right", item.Result.Title)
                 : Localize("Mods_ReviewFirst", "{0} needs other mods: the list is on the right, \"Add to build\" installs them all", item.Result.Title);
-        }
-    }
-
-    /// <summary>
-    /// Installs a version and everything it requires. A mod that needs Fabric API and is
-    /// installed without it crashes the game on the next start with a message the player
-    /// cannot act on - so the required dependencies come along, one level down each.
-    /// The build is settled once, at the start: the player may open another build while
-    /// the files are coming, and the rest of them still go where the first one went.
-    /// </summary>
-    private async Task InstallProjectWithDependenciesAsync(
-        ModVersion version,
-        string slug,
-        string title,
-        string? iconUrl,
-        int depth = 0,
-        string? projectType = null,
-        InstallTarget? target = null)
-    {
-        projectType ??= BrowserKind;
-        target ??= CurrentInstallTarget();
-        var fromCurseForge = version.Source == ModSource.CurseForge;
-        var source = SourceFor(version.Source);
-        var file = ModrinthClient.SelectFile(version, target.GameVersion, LoaderFor(projectType, target.Loader));
-
-        // A CurseForge file may come without an address and still be downloadable; that
-        // is settled below. For Modrinth no address means no file.
-        if (file is null || (!fromCurseForge && string.IsNullOrEmpty(file.Url)))
-        {
-            Status = Localize("Status_NoCompatibleFile", "No compatible file for this version and loader");
-            return;
-        }
-
-        // Asked before anything is written: a mod whose own file cannot be fetched must
-        // not leave its dependencies behind in the build.
-        var blocked = fromCurseForge && await IsBlockedAsync(version);
-
-        if (blocked && depth == 0)
-        {
-            throw new InvalidOperationException(
-                Localize("Mods_BlockedFile", "the author of {0} allows downloads only from the mod's page on CurseForge", title));
-        }
-
-        if (depth == 0)
-        {
-            _modsLeftToThePlayer.Clear();
-            await MaybeBackupAsync(BackupTrigger.BeforeModChange, target.Instance);
-        }
-
-        // Dependencies first, so a failure there leaves the build without the mod rather
-        // than with a mod that cannot start.
-        if (depth < 2)
-        {
-            foreach (var dependency in version.Dependencies.Where(d => d.IsRequired && !string.IsNullOrEmpty(d.ProjectId)))
-            {
-                var project = await source.GetProjectAsync(dependency.ProjectId!);
-
-                if (project is null || IsProjectInstalled(target.Instance, project.Slug))
-                {
-                    continue;
-                }
-
-                Status = Localize("Status_ResolvingDependency", "Adding {0}, which {1} needs…", project.Title, title);
-
-                // A shader's dependency is a mod (Iris); the folder follows the dependency.
-                var candidates = await source.GetVersionsAsync(project.Id, target.GameVersion, LoaderFor(project.ProjectType, target.Loader));
-                var pick = dependency.VersionId is { } wanted
-                    ? candidates.FirstOrDefault(v => v.Id == wanted) ?? ModrinthClient.SelectPreferred(candidates)
-                    : ModrinthClient.SelectPreferred(candidates);
-
-                if (pick is null)
-                {
-                    throw new InvalidOperationException(
-                        Localize("Error_DependencyMissing", "{0} needs {1}, which has no version for this build", title, project.Title));
-                }
-
-                await InstallProjectWithDependenciesAsync(pick, project.Slug, project.Title, project.IconUrl, depth + 1, project.ProjectType, target);
-            }
-        }
-
-        // A needed mod that only its page gives out. Failing here used to leave the build
-        // with half of what was asked for, and no way to finish: a file added by hand is
-        // not known by its project, so the next try stopped at the same place. What this
-        // mod needs has come; the mod that was asked for still comes; this one file is
-        // named for the player to fetch.
-        if (blocked)
-        {
-            _modsLeftToThePlayer.Add(title);
-            AppendConsole($"[mods] {slug}: only from its page, left for the player ({version.PageUrl})");
-            return;
-        }
-
-        var folder = ProjectTypes.FolderFor(projectType);
-
-        Status = Localize("Status_InstallingFile", "Installing {0}…", file.FileName);
-
-        if (fromCurseForge)
-        {
-            // The client fetches from CurseForge's own CDN only and checks the SHA-1 the API gave.
-            var outcome = await _curseForge.InstallAsync(version, target.Directory, folder);
-
-            if (outcome.State != CurseForgeFileState.Ready || outcome.File is null)
-            {
-                throw new InvalidOperationException(
-                    Localize("Mods_BlockedFile", "the author of {0} allows downloads only from the mod's page on CurseForge", title));
-            }
-
-            file = outcome.File;
-        }
-        else
-        {
-            await _mods.InstallAsync(target.Directory, folder, file.FileName, file.Url, file.Sha1, file.Size);
-        }
-
-        AppendConsole($"[mods] installed {folder}/{file.FileName} ({slug} {version.VersionNumber}, {SourceName(version.Source)})");
-
-        if (string.Equals(folder, ModManager.ModsFolderName, StringComparison.OrdinalIgnoreCase) && target.Instance is not null)
-        {
-            ReplaceOtherVersions(target.Instance, file.FileName);
-            _installBatch.Add(file.FileName);
-        }
-
-        var record = fromCurseForge
-            ? CurseForgeClient.RecordFor(version, file, slug, title, iconUrl, folder)
-            : new InstalledModRecord
-            {
-                FileName = file.FileName,
-                Source = ModSource.Modrinth,
-                Id = slug,
-                Name = title,
-                IconUrl = iconUrl,
-                Version = version.VersionNumber,
-                Folder = folder
-            };
-
-        if (target.Instance is not null)
-        {
-            RecordInstalledMod(target.Instance, record);
-        }
-
-        // The list on screen is the open build's: with another one opened meanwhile, the
-        // file that came is not its to show. It is found there when this build is reopened.
-        if (IsSelectedBuild(target))
-        {
-            RefreshMods();
-        }
-
-        Status = Localize("Status_InstalledFile", "Installed {0}", file.FileName);
-
-        if (depth == 0)
-        {
-            ReportModsLeftToThePlayer(title);
         }
     }
 

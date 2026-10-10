@@ -841,6 +841,13 @@
     <x:String x:Key="Check_FixDisableNew">Switch off the newer one</x:String>
     <x:String x:Key="Check_KeepOld">Keep the older versions</x:String>
     <x:String x:Key="Check_FixedAll">Fixed: {0} of {1}</x:String>
+    <x:String x:Key="Check_IncompatibleRange">“{0}” does not work with “{1}” {2}: versions {3} are incompatible</x:String>
+    <x:String x:Key="Check_DiscouragedRange">“{0}” may misbehave next to “{1}” {2} (versions {3})</x:String>
+    <x:String x:Key="Check_Incompatible">“{0}” and “{1}” do not work together</x:String>
+    <x:String x:Key="Check_Discouraged">“{0}” may misbehave next to “{1}”</x:String>
+    <x:String x:Key="Mods_DepUnavailable">no version for this build</x:String>
+    <x:String x:Key="Mods_PlanConflict">Marked as incompatible: {0}. Both will be in the build; one of them may have to be switched off.</x:String>
+    <x:String x:Key="Mods_ReviewConflict">{0} may not work with a mod already in the build: the details are on the right</x:String>
     <x:String x:Key="Game_PlaySafe">Safe launch</x:String>
     <x:String x:Key="Game_PlaySafeHint">Starts the game with the server's mods only; your own are switched off for this run and come back after it.</x:String>
     <x:String x:Key="Safe_Starting">Starting with the server's mods only: {0} of yours switched off</x:String>
