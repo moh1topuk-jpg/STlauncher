@@ -50,23 +50,26 @@ public partial class MainWindowViewModel
     public bool HasCrashReportFile => !string.IsNullOrEmpty(CrashReportPath) && File.Exists(CrashReportPath);
 
     /// <summary>Reads the log of the run that just ended and names the cause.</summary>
-    private void AnalyzeCrash(int exitCode, string gameDirectory)
+    private void AnalyzeCrash(LaunchResult result, string gameDirectory, string javaPath, bool javaPicked)
     {
+        var exitCode = result.ExitCode;
+
         _crashExitCode = exitCode;
         _crashLogLines = ReadLines(LastGameLogPath, 20000);
+        RememberLaunchFailure(result, javaPath, javaPicked);
 
         // The game's own crash report has the stack trace and the mod list in one place;
         // the launcher log only has what went to the console.
         CrashReportPath = CrashAnalyzer.FindCrashReportPath(_crashLogLines) ?? NewestCrashReport(gameDirectory, _gameLaunchedAtUtc);
         _crashReportLines = ReadLines(CrashReportPath, 400);
 
-        _crash = CrashAnalyzer.Analyze(_crashReportLines.Concat(_crashLogLines));
+        _crash = DiagnoseRun(result, CrashAnalyzer.Analyze(_crashReportLines.Concat(_crashLogLines)));
 
         CrashDiagnosisTitle = DiagnosisTitle(_crash);
         CrashDiagnosisAdvice = DiagnosisAdvice(_crash);
         CrashFixLabel = FixLabel(_crash);
 
-        AppendConsole($"[crash] {CrashReport.Describe(_crash)}");
+        AppendConsole($"[crash] {PathMask.Mask(CrashReport.Describe(_crash))}");
         ReportCrash(exitCode);
     }
 
@@ -132,7 +135,7 @@ public partial class MainWindowViewModel
         CrashCause.Graphics => Localize("Crash_Graphics", "The graphics driver could not open the game window"),
         CrashCause.BrokenInstallation => Localize("Crash_BrokenInstallation", "A game file is missing or damaged"),
         CrashCause.DiskFull => Localize("Crash_DiskFull", "The disk is full"),
-        _ => string.Empty
+        _ => LaunchFailureTitle(d)
     };
 
     private string DiagnosisAdvice(CrashDiagnosis d) => d.Cause switch
@@ -149,6 +152,7 @@ public partial class MainWindowViewModel
         CrashCause.Graphics => Localize("Crash_GraphicsAdvice", "Update the graphics driver. On a laptop, run the game on the discrete card."),
         CrashCause.BrokenInstallation => Localize("Crash_BrokenInstallationAdvice", "Re-download the game files: the launcher checks every file and replaces the bad ones."),
         CrashCause.DiskFull => Localize("Crash_DiskFullAdvice", "Free some space on the disk where the launcher keeps its files."),
+        _ when LaunchFailureAdvice(d) is { } advice => advice,
         _ => Localize("Crash_UnknownAdvice", "Copy the report and send it to the server's support - it has everything they need.")
     };
 
@@ -162,7 +166,7 @@ public partial class MainWindowViewModel
         CrashCause.LoaderTooOld when LoaderForCrash() is { } loader => Localize("Crash_FixLoader", "Switch to {0} {1}", SelectedLoader, loader.Version),
         CrashCause.ModForOtherVersion or CrashCause.MixinFailure or CrashCause.IncompatibleMods or CrashCause.LoaderTooOld
             when CrashMod() is { Enabled: true } mod => Localize("Crash_FixDisableMod", "Switch off \"{0}\"", mod.DisplayName),
-        _ => string.Empty
+        _ => LaunchFailureFixLabel(d)
     };
 
     /// <summary>
@@ -285,6 +289,10 @@ public partial class MainWindowViewModel
                 BuildTab = BuildTab.Catalog;
                 ModSearchQuery = _crash.Detail ?? string.Empty;
                 _ = SearchModsAsync();
+                break;
+
+            default:
+                ApplyLaunchFailureFix();
                 break;
         }
 

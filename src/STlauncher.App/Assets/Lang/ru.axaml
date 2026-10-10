@@ -553,6 +553,42 @@
     <x:String x:Key="Crash_ReportCopied">Отчёт скопирован — вставьте его в чат</x:String>
     <x:String x:Key="Crash_OpenReport">Отчёт игры</x:String>
 
+    <!-- A game that dies at once: Java that would not run, and a second game in one build -->
+    <x:String x:Key="Game_LaunchFailedNoCode">Minecraft не запустился: не удалось запустить Java.</x:String>
+    <x:String x:Key="Game_LaunchFailedNotice">Minecraft не запустился (код {0}). Причина — в логе.</x:String>
+    <x:String x:Key="Game_AlreadyRunning">Игра этой сборки уже запущена. Сначала закройте её: две игры в одной папке портят миры.</x:String>
+    <x:String x:Key="Crash_JavaMissing">Java не запустилась: её файла нет на месте</x:String>
+    <x:String x:Key="Crash_JavaBlocked">Windows не дала запустить Java</x:String>
+    <x:String x:Key="Crash_JavaBlockedAdvice">Чаще всего это антивирус проверяет java.exe. Подождите минуту и нажмите «Играть» снова; если повторится, добавьте папку лаунчера в исключения антивируса.</x:String>
+    <x:String x:Key="Crash_JavaBroken">Эта Java повреждена: {0}</x:String>
+    <x:String x:Key="Crash_JavaOption">Java не знает параметр {0}</x:String>
+    <x:String x:Key="Crash_JavaOptionAdvice">Скорее всего, он из дополнительных аргументов Java этой сборки. Очистите их или уберите этот параметр в настройках сборки.</x:String>
+    <x:String x:Key="Crash_JavaOptionForeignAdvice">Дополнительных аргументов Java у сборки нет, значит, эта Java слишком старая или слишком новая для игры. Пусть лаунчер выберет Java сам.</x:String>
+    <x:String x:Key="Crash_JavaMemoryPlain">Java не приняла объём памяти, который ей задан</x:String>
+    <x:String x:Key="Crash_JavaMemory">Java не приняла настройку памяти {0}</x:String>
+    <x:String x:Key="Crash_JavaMemoryAdvice">32-битная Java столько взять не может; то же даёт неверный размер в дополнительных аргументах Java сборки. Пусть лаунчер выберет Java сам, или выделите игре меньше памяти.</x:String>
+    <x:String x:Key="Crash_JavaNotStartedPlain">Java не смогла запуститься</x:String>
+    <x:String x:Key="Crash_JavaNotStarted">Java не смогла запуститься: {0}</x:String>
+    <x:String x:Key="Crash_JavaPickedAdvice">Эта Java выбрана в настройках, поэтому лаунчер её не трогает. Выберите другую или доверьте выбор лаунчеру.</x:String>
+    <x:String x:Key="Crash_JavaSystemAdvice">Эта Java установлена на компьютере, она не от лаунчера. Переустановите её или удалите: тогда лаунчер скачает свою.</x:String>
+    <x:String x:Key="Crash_JavaReinstalledAdvice">Лаунчер установил свою Java заново, но она всё равно не запускается. Возможно, её файлы удаляет антивирус: добавьте папку лаунчера в исключения.</x:String>
+    <x:String x:Key="Crash_JavaDownloadAdvice">Лаунчер не смог скачать свою Java заново. Проверьте соединение и нажмите «Играть».</x:String>
+    <x:String x:Key="Crash_FixClearJvmArgs">Очистить аргументы Java сборки</x:String>
+    <x:String x:Key="Crash_JvmArgsCleared">Дополнительные аргументы Java сборки «{0}» очищены — попробуйте снова</x:String>
+    <x:String x:Key="Nt_AccessViolation">Игра упала с ошибкой доступа к памяти ({0})</x:String>
+    <x:String x:Key="Nt_AccessViolationAdvice">Обычно виноват видеодрайвер или оверлей (Discord, MSI Afterburner, OBS). Обновите драйвер и выключите оверлеи.</x:String>
+    <x:String x:Key="Nt_MissingDll">Системной библиотеки, нужной игре, нет или она другой разрядности ({0})</x:String>
+    <x:String x:Key="Nt_MissingDllAdvice">Установите Microsoft Visual C++ Redistributable и доверьте выбор Java лаунчеру.</x:String>
+    <x:String x:Key="Nt_InitFailed">Библиотека, нужная игре, не смогла загрузиться ({0})</x:String>
+    <x:String x:Key="Nt_InitFailedAdvice">Перезагрузите компьютер. Если повторится, в игру вмешивается антивирус или оверлей.</x:String>
+    <x:String x:Key="Nt_StackOverflow">Игре не хватило стека ({0})</x:String>
+    <x:String x:Key="Nt_StackOverflowAdvice">Обычно это мод, который зациклился. Выключите моды, добавленные последними.</x:String>
+    <x:String x:Key="Nt_StackBufferOverrun">Windows остановила игру защитной проверкой ({0})</x:String>
+    <x:String x:Key="Nt_StackBufferOverrunAdvice">Обычно виноват видеодрайвер или программа, которая встраивается в игру. Обновите драйвер и выключите оверлеи.</x:String>
+    <x:String x:Key="Nt_OutOfMemory">У Windows не осталось памяти или файла подкачки для игры ({0})</x:String>
+    <x:String x:Key="Nt_OutOfMemoryAdvice">Закройте тяжёлые программы, выделите игре меньше памяти или увеличьте файл подкачки в Windows.</x:String>
+    <x:String x:Key="Nt_Unknown">Windows остановила игру с кодом {0}</x:String>
+
     <!-- Mod updates -->
     <x:String x:Key="Mods_CheckUpdates">Проверить обновления</x:String>
     <x:String x:Key="Mods_CheckUpdatesHint">Сверит моды с Modrinth и покажет, у каких есть новая версия. Само ничего не обновляет.</x:String>

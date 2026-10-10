@@ -553,6 +553,42 @@
     <x:String x:Key="Crash_ReportCopied">Report copied - paste it into the chat</x:String>
     <x:String x:Key="Crash_OpenReport">Game crash report</x:String>
 
+    <!-- A game that dies at once: Java that would not run, and a second game in one build -->
+    <x:String x:Key="Game_LaunchFailedNoCode">Minecraft did not start: Java could not be run.</x:String>
+    <x:String x:Key="Game_LaunchFailedNotice">Minecraft did not start (code {0}). The log says why.</x:String>
+    <x:String x:Key="Game_AlreadyRunning">This build's game is already running. Close it first: two games in one folder damage the worlds.</x:String>
+    <x:String x:Key="Crash_JavaMissing">Java could not be started: its file is not there</x:String>
+    <x:String x:Key="Crash_JavaBlocked">Windows did not let Java start</x:String>
+    <x:String x:Key="Crash_JavaBlockedAdvice">Most often an antivirus is checking java.exe. Wait a minute and press Play again; if it repeats, add the launcher's folder to the antivirus exclusions.</x:String>
+    <x:String x:Key="Crash_JavaBroken">This Java is damaged: {0}</x:String>
+    <x:String x:Key="Crash_JavaOption">Java does not know the option {0}</x:String>
+    <x:String x:Key="Crash_JavaOptionAdvice">It most likely comes from the build's extra Java arguments. Clear them, or remove this one in the build's settings.</x:String>
+    <x:String x:Key="Crash_JavaOptionForeignAdvice">The build has no extra Java arguments, so this Java is too old or too new for the game. Let the launcher pick Java itself.</x:String>
+    <x:String x:Key="Crash_JavaMemoryPlain">Java refused the memory it was told to take</x:String>
+    <x:String x:Key="Crash_JavaMemory">Java refused the memory setting {0}</x:String>
+    <x:String x:Key="Crash_JavaMemoryAdvice">A 32-bit Java cannot take this much, and a wrong size in the build's extra Java arguments gives the same. Let the launcher pick Java itself, or give the game less memory.</x:String>
+    <x:String x:Key="Crash_JavaNotStartedPlain">Java could not start</x:String>
+    <x:String x:Key="Crash_JavaNotStarted">Java could not start: {0}</x:String>
+    <x:String x:Key="Crash_JavaPickedAdvice">This Java was chosen in the settings, so the launcher does not touch it. Pick another one, or let the launcher choose.</x:String>
+    <x:String x:Key="Crash_JavaSystemAdvice">This Java is installed on the computer and is not the launcher's own. Reinstall it, or remove it: the launcher then downloads its own.</x:String>
+    <x:String x:Key="Crash_JavaReinstalledAdvice">The launcher installed its Java again and it still does not start. An antivirus may be removing its files: add the launcher's folder to the exclusions.</x:String>
+    <x:String x:Key="Crash_JavaDownloadAdvice">The launcher could not download its Java again. Check the connection and press Play.</x:String>
+    <x:String x:Key="Crash_FixClearJvmArgs">Clear the build's Java arguments</x:String>
+    <x:String x:Key="Crash_JvmArgsCleared">The extra Java arguments of "{0}" are cleared - try again</x:String>
+    <x:String x:Key="Nt_AccessViolation">The game crashed with an access violation ({0})</x:String>
+    <x:String x:Key="Nt_AccessViolationAdvice">Usually a graphics driver or an overlay (Discord, MSI Afterburner, OBS). Update the driver and switch overlays off.</x:String>
+    <x:String x:Key="Nt_MissingDll">A system library the game needs is missing or is for another architecture ({0})</x:String>
+    <x:String x:Key="Nt_MissingDllAdvice">Install the Microsoft Visual C++ runtime, and let the launcher pick Java itself.</x:String>
+    <x:String x:Key="Nt_InitFailed">A library the game needs failed to initialise ({0})</x:String>
+    <x:String x:Key="Nt_InitFailedAdvice">Restart the computer. If it repeats, an antivirus or an overlay is getting into the game.</x:String>
+    <x:String x:Key="Nt_StackOverflow">The game ran out of stack ({0})</x:String>
+    <x:String x:Key="Nt_StackOverflowAdvice">Usually a mod caught in a loop. Switch off the mods that were added last.</x:String>
+    <x:String x:Key="Nt_StackBufferOverrun">Windows stopped the game on a protection check ({0})</x:String>
+    <x:String x:Key="Nt_StackBufferOverrunAdvice">Usually a graphics driver or a program that gets into the game. Update the driver and switch overlays off.</x:String>
+    <x:String x:Key="Nt_OutOfMemory">Windows had no memory or page file left for the game ({0})</x:String>
+    <x:String x:Key="Nt_OutOfMemoryAdvice">Close heavy programs, give the game less memory, or enlarge the page file in Windows.</x:String>
+    <x:String x:Key="Nt_Unknown">Windows stopped the game with code {0}</x:String>
+
     <!-- Mod updates -->
     <x:String x:Key="Mods_CheckUpdates">Check for updates</x:String>
     <x:String x:Key="Mods_CheckUpdatesHint">Compares the mods with Modrinth and shows which have a newer version. Installs nothing by itself.</x:String>

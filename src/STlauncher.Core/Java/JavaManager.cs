@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -36,6 +37,42 @@ public sealed partial class JavaManager
     }
 
     public string RuntimeDirectory(int majorVersion) => Path.Combine(_paths.Runtime, $"java-{majorVersion}");
+
+    /// <summary>
+    /// The Java version of the launcher's own runtime this executable belongs to, or null
+    /// when it is somebody else's Java. Only the launcher's own may be installed again
+    /// without asking: a Java the player has on the computer is theirs.
+    /// </summary>
+    public int? ManagedRuntimeMajor(string? javaExecutable)
+    {
+        if (string.IsNullOrWhiteSpace(javaExecutable))
+        {
+            return null;
+        }
+
+        try
+        {
+            var root = Path.GetFullPath(_paths.Runtime).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                       + Path.DirectorySeparatorChar;
+            var full = Path.GetFullPath(javaExecutable);
+
+            if (!full.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            var folder = full[root.Length..].Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)[0];
+
+            return folder.StartsWith("java-", StringComparison.Ordinal) &&
+                   int.TryParse(folder["java-".Length..], NumberStyles.None, CultureInfo.InvariantCulture, out var major)
+                ? major
+                : null;
+        }
+        catch (Exception ex) when (ex is ArgumentException or IOException or NotSupportedException)
+        {
+            return null;
+        }
+    }
 
     [GeneratedRegex(@"version\s+""(?:1\.)?(\d+)")]
     private static partial Regex VersionRegex();

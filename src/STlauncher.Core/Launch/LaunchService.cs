@@ -242,6 +242,81 @@ public sealed class LaunchService
         CancellationToken cancellationToken = default)
         => _launcher.RunAsync(command, workingDirectory, _paths.Logs, cancellationToken: cancellationToken);
 
+    /// <summary>How long a Java that Windows would not run is left alone before the one retry.</summary>
+    public static readonly TimeSpan AccessDeniedPause = TimeSpan.FromSeconds(2);
+
+    /// <summary>
+    /// Runs the game and, when Java itself would not run, tries once more after doing the
+    /// one thing that can help: waiting out whatever holds java.exe, or installing the
+    /// launcher's own Java again.
+    /// </summary>
+    /// <param name="javaPickedByPlayer">
+    /// The Java was chosen in the settings. Such a Java is never installed again, even
+    /// when the choice points into the launcher's own folder: the player picked that file.
+    /// </param>
+    /// <param name="note">Told what is being done between the two tries, for the console.</param>
+    public async Task<LaunchResult> RunAsync(
+        LaunchCommand command,
+        string workingDirectory,
+        bool javaPickedByPlayer,
+        Action<string>? note = null,
+        CancellationToken cancellationToken = default)
+    {
+        var first = await _launcher.RunDetailedAsync(command, workingDirectory, _paths.Logs, cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+
+        if (!first.IsFailedLaunch)
+        {
+            return first;
+        }
+
+        if (first.StartError == JavaStartError.AccessDenied)
+        {
+            // An antivirus scanning a file lets go of it within moments.
+            note?.Invoke($"Windows did not let Java start ({first.StartErrorMessage}); trying once more.");
+            await Task.Delay(AccessDeniedPause, cancellationToken).ConfigureAwait(false);
+
+            var again = await _launcher.RunDetailedAsync(command, workingDirectory, _paths.Logs, cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
+
+            return again with { Retried = true };
+        }
+
+        var major = javaPickedByPlayer ? null : _java.ManagedRuntimeMajor(command.FileName);
+
+        if (major is null || !NeedsJavaAgain(first, command.FileName))
+        {
+            return first;
+        }
+
+        note?.Invoke($"The launcher's Java {major} is missing or damaged; installing it again.");
+        _logger?.LogWarning("Java {Major} at {Path} did not start; installing it again.", major, command.FileName);
+
+        string java;
+
+        try
+        {
+            java = await _java.DownloadRuntimeAsync(major.Value, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // No network, no room: the first result stands, and it names the cause.
+            note?.Invoke($"Java could not be installed again: {ex.Message}");
+            return first;
+        }
+
+        var second = await _launcher.RunDetailedAsync(command with { FileName = java }, workingDirectory, _paths.Logs, cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+
+        return second with { Retried = true, JavaReinstalled = true };
+    }
+
+    /// <summary>The executable is gone, the runtime is short of files, or the JVM said so itself.</summary>
+    private static bool NeedsJavaAgain(LaunchResult result, string javaPath)
+        => result.StartError == JavaStartError.NotFound ||
+           !JavaManager.IsRuntimeComplete(javaPath) ||
+           LaunchFailureAnalyzer.AnalyzeJvmOutput(result.EarlyOutput).Cause == CrashCause.JavaBroken;
+
     private static IReadOnlyDictionary<string, bool> BuildFeatures(LaunchSettings settings)
     {
         var features = new Dictionary<string, bool>
