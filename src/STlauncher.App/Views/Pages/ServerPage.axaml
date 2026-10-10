@@ -1,200 +1,276 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:STlauncher.App.ViewModels"
+             xmlns:sys="using:System"
+             xmlns:conv="using:STlauncher.App.Converters"
              xmlns:controls="using:STlauncher.App.Controls"
              x:Class="STlauncher.App.Views.Pages.ServerPage"
              x:DataType="vm:MainWindowViewModel">
 
-    <Grid RowDefinitions="Auto,*">
+    <!-- The Showtime server: its name and whether it answers, the one button that plays on
+         it, the build that button starts and how that build stands against the catalog,
+         then the figures of its online and the ways to its community - all as rows on the
+         ground, nothing in a card. -->
 
-        <!-- ======== Banner ======== -->
-        <Border Grid.Row="0" Padding="40,28" ClipToBounds="True" Background="{DynamicResource BannerBrush}">
+    <UserControl.Styles>
+        <!-- One figure of the online: a caption, the number, what the number counts. -->
+        <Style Selector="TextBlock.figure">
+            <Setter Property="FontFamily" Value="{StaticResource DisplayFont}"/>
+            <Setter Property="FontSize" Value="24"/>
+            <Setter Property="FontWeight" Value="ExtraBold"/>
+            <Setter Property="LetterSpacing" Value="-0.4"/>
+        </Style>
+    </UserControl.Styles>
 
-            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="20" MaxWidth="1000">
-                <Border Width="84" Height="84" CornerRadius="20" Background="{DynamicResource ElevatedBrush}"
-                        ClipToBounds="True" BorderBrush="{DynamicResource LightboxBorderBrush}" BorderThickness="2">
-                    <Image Source="{Binding ServerIcon}" Stretch="UniformToFill" Width="84" Height="84"/>
+    <ScrollViewer>
+        <StackPanel Margin="48,26,48,28" MaxWidth="1180">
+
+            <!-- ======== The server and the one thing to do with it ======== -->
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="18">
+                <Border Width="60" Height="60" CornerRadius="14" Background="{DynamicResource FieldBrush}"
+                        ClipToBounds="True" VerticalAlignment="Center">
+                    <Image Source="{Binding ServerIcon}" Stretch="UniformToFill" Width="60" Height="60"/>
                 </Border>
 
-                <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
-                    <StackPanel Orientation="Horizontal" Spacing="10">
-                        <TextBlock Text="{Binding ServerName}" Classes="h1" FontSize="32"/>
-                        <Border Classes="tag" Background="{DynamicResource InstalledTagBrush}" VerticalAlignment="Center" IsVisible="{Binding IsServerOnline}">
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <Border Width="6" Height="6" CornerRadius="3" Background="{DynamicResource SuccessBrush}" VerticalAlignment="Center"/>
-                                <TextBlock Text="{DynamicResource Server_Online}" Foreground="{DynamicResource InstalledTagTextBrush}"/>
-                            </StackPanel>
-                        </Border>
-                        <Border Classes="tag" VerticalAlignment="Center" IsVisible="{Binding !IsServerOnline}">
-                            <TextBlock Text="{DynamicResource Server_OfflineTag}"/>
-                        </Border>
-                        <TextBlock Text="{Binding ServerVersion}" Classes="faint" VerticalAlignment="Center"
-                                   IsVisible="{Binding IsServerOnline}"/>
-                    </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="5" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding ServerName}" Classes="page-title large"/>
 
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <TextBlock Text="{Binding ServerAddress}" Classes="mono" FontSize="14"
-                                   Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
-                        <Button Classes="plain small" Command="{Binding CopyServerAddressCommand}"
-                                ToolTip.Tip="{DynamicResource Server_CopyAddress}">
-                            <PathIcon Data="{StaticResource IconCopy}" Classes="small"/>
-                        </Button>
-                        <TextBlock Text="{Binding ServerMotd}" Classes="muted" FontSize="13" VerticalAlignment="Center"
-                                   TextTrimming="CharacterEllipsis" MaxWidth="420"/>
-                    </StackPanel>
+                    <!-- Alive or not, how many are on, what it runs. -->
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                        <StackPanel Classes="meta">
+                            <StackPanel Orientation="Horizontal" Spacing="7">
+                                <Ellipse Classes="dot" IsVisible="{Binding IsServerOnline}"/>
+                                <Ellipse Classes="dot off" IsVisible="{Binding !IsServerOnline}"/>
+                                <TextBlock Text="{DynamicResource Server_Online}" Foreground="{DynamicResource TextSecondaryBrush}"
+                                           VerticalAlignment="Center" IsVisible="{Binding IsServerOnline}"/>
+                                <TextBlock Text="{DynamicResource Server_OfflineTag}" Foreground="{DynamicResource TextSecondaryBrush}"
+                                           VerticalAlignment="Center" IsVisible="{Binding !IsServerOnline}"/>
+                            </StackPanel>
+                            <Ellipse IsVisible="{Binding IsServerOnline}"/>
+                            <StackPanel Orientation="Horizontal" Spacing="5" IsVisible="{Binding IsServerOnline}">
+                                <TextBlock Text="{Binding ServerOnlineValue}" Classes="strong" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding ServerOnlineCaption}" Foreground="{DynamicResource TextSecondaryBrush}"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <Ellipse IsVisible="{Binding IsServerOnline}"/>
+                        </StackPanel>
+                        <TextBlock Grid.Column="1" Text="{Binding ServerVersion}" Classes="mono" VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis" IsVisible="{Binding IsServerOnline}"/>
+                    </Grid>
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <Button Classes="plain" Command="{Binding RefreshServerStatusCommand}"
+                    <Button Classes="icon" Width="40" Height="40" Command="{Binding RefreshServerStatusCommand}"
                             IsEnabled="{Binding !IsServerStatusBusy}"
                             ToolTip.Tip="{DynamicResource Server_Refresh}">
                         <PathIcon Data="{StaticResource IconRefresh}"/>
                     </Button>
-                    <Button Classes="primary" Height="46" Padding="22,0" CornerRadius="12"
-                            Command="{Binding PlayOnServerCommand}" IsEnabled="{Binding !IsBusy}">
+                    <Button Classes="play" Command="{Binding PlayOnServerCommand}" IsEnabled="{Binding !IsBusy}"
+                            ToolTip.Tip="{Binding ServerJoinHint}">
                         <StackPanel Orientation="Horizontal" Spacing="10">
-                            <PathIcon Data="{StaticResource IconPlay}"/>
-                            <TextBlock Text="{DynamicResource Server_Join}" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                            <PathIcon Data="{StaticResource IconPlay}" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding PlayOnServerLabel}" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
                 </StackPanel>
             </Grid>
-        </Border>
 
-        <ScrollViewer Grid.Row="1">
-            <StackPanel Margin="40,20,40,28" Spacing="16" MaxWidth="1000">
+            <!-- The address, to hand to a friend or another launcher, and what the server says of itself. -->
+            <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="6" Margin="0,16,0,0">
+                <TextBlock Text="{Binding ServerAddress}" Classes="mono" FontSize="13" VerticalAlignment="Center"/>
+                <Button Grid.Column="1" Classes="icon" Command="{Binding CopyServerAddressCommand}"
+                        ToolTip.Tip="{DynamicResource Server_CopyAddress}">
+                    <PathIcon Data="{StaticResource IconCopy}"/>
+                </Button>
+                <TextBlock Grid.Column="2" Text="{Binding ServerMotd}" Classes="sub" VerticalAlignment="Center" Margin="8,0,0,0"
+                           TextTrimming="CharacterEllipsis" MaxLines="1" ToolTip.Tip="{Binding ServerMotd}"/>
+            </Grid>
 
-                <!-- ======== Metrics ======== -->
-                <UniformGrid Columns="5" ColumnSpacing="12">
-                    <Border Classes="tile" Background="{DynamicResource TileWarmBrush}">
-                        <StackPanel Spacing="6">
-                            <TextBlock Text="{DynamicResource Server_TileOnline}" Classes="label"/>
-                            <TextBlock Text="{Binding ServerOnlineValue}" Classes="value" Foreground="{DynamicResource GoldBrush}"/>
-                            <TextBlock Text="{Binding ServerOnlineCaption}" Classes="faint" TextTrimming="CharacterEllipsis"/>
-                        </StackPanel>
+            <!-- ======== The build the button starts, against the server's catalog ======== -->
+            <controls:Caption Text="{DynamicResource Server_BuildCaption}" Margin="12,28,0,6"/>
+
+            <Border Classes="row first"
+                    IsVisible="{Binding SelectedInstance, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                    <Border Classes="icon-tile"
+                            Background="{Binding SelectedInstance.Name, Converter={x:Static conv:TintBrushConverter.Instance}}">
+                        <PathIcon Data="{StaticResource IconBuilds}"/>
                     </Border>
-                    <Border Classes="tile">
-                        <StackPanel Spacing="6">
-                            <TextBlock Text="{DynamicResource Server_TileAverageWeek}" Classes="label"/>
-                            <TextBlock Text="{Binding ServerAverageWeekValue}" Classes="value"/>
-                            <TextBlock Text="{DynamicResource Server_TilePlayers}" Classes="faint"/>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding SelectedInstance.Name, FallbackValue=''}" Classes="strong" TextTrimming="CharacterEllipsis"/>
+                        <StackPanel Orientation="Horizontal" Spacing="7">
+                            <Ellipse Classes="dot" IsVisible="{Binding !IsBuildSyncBusy}"/>
+                            <Ellipse Classes="dot warn" IsVisible="{Binding IsBuildSyncBusy}"/>
+                            <TextBlock Text="{Binding BuildStateLabel}" Classes="sub" VerticalAlignment="Center"/>
                         </StackPanel>
+                    </StackPanel>
+                    <Button Grid.Column="2" VerticalAlignment="Center" Content="{DynamicResource Server_BuildOpen}"
+                            Command="{Binding SelectSectionCommand}" CommandParameter="Builds"/>
+                </Grid>
+            </Border>
+
+            <!-- The catalog changed the build, or offers to: what is different, and the answer. -->
+            <Border Classes="row" IsVisible="{Binding HasBuildChangeNotice}">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                    <Border Classes="icon-tile" Background="{DynamicResource FieldBrush}" VerticalAlignment="Top">
+                        <PathIcon Data="{StaticResource IconUpdate}" Foreground="{DynamicResource WarningBrush}"/>
                     </Border>
-                    <Border Classes="tile">
-                        <StackPanel Spacing="6">
-                            <TextBlock Text="{DynamicResource Server_TileRecord}" Classes="label"/>
-                            <TextBlock Text="{Binding ServerRecordValue}" Classes="value"/>
-                            <TextBlock Text="{Binding ServerRecordCaption}" Classes="faint"/>
+                    <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding BuildChangeTitle}" Classes="strong" TextWrapping="Wrap"/>
+                        <ItemsControl ItemsSource="{Binding BuildChangeLines}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="sys:String">
+                                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" Margin="0,0,0,3">
+                                        <Ellipse Width="4" Height="4" Margin="1,7,0,0" VerticalAlignment="Top"
+                                                 Fill="{DynamicResource TextMutedBrush}"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding}" Classes="muted" TextWrapping="Wrap" LineHeight="17"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Text="{DynamicResource BuildChange_Hint}" Classes="sub" TextWrapping="Wrap"
+                                   IsVisible="{Binding !HasPendingBuildSync}"/>
+                        <!-- Nothing has happened yet: the player decides. -->
+                        <TextBlock Text="{DynamicResource BuildChange_PendingHint}" Classes="sub" TextWrapping="Wrap"
+                                   IsVisible="{Binding HasPendingBuildSync}"/>
+                    </StackPanel>
+                    <Panel Grid.Column="2" VerticalAlignment="Top">
+                        <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding HasPendingBuildSync}">
+                            <Button Content="{DynamicResource BuildChange_Apply}"
+                                    Command="{Binding ApplyPendingBuildSyncCommand}" IsEnabled="{Binding !IsBuildSyncBusy}"/>
+                            <Button Classes="ghost" Content="{DynamicResource BuildChange_Later}"
+                                    Command="{Binding DeclinePendingBuildSyncCommand}"/>
                         </StackPanel>
-                    </Border>
-                    <Border Classes="tile">
-                        <StackPanel Spacing="6">
-                            <TextBlock Text="{DynamicResource Server_TileUptime}" Classes="label"/>
-                            <TextBlock Text="{Binding ServerUptimeValue}" Classes="value"/>
-                            <TextBlock Text="{DynamicResource Server_TileUptimeCaption}" Classes="faint"/>
-                        </StackPanel>
-                    </Border>
-                    <Border Classes="tile">
-                        <StackPanel Spacing="6">
-                            <TextBlock Text="{DynamicResource Server_TileRank}" Classes="label"/>
-                            <TextBlock Text="{Binding ServerRankValue}" Classes="value"/>
-                            <TextBlock Text="Top-Minecrafter" Classes="faint"/>
-                        </StackPanel>
-                    </Border>
-                </UniformGrid>
+                        <Button Classes="icon" IsVisible="{Binding !HasPendingBuildSync}"
+                                Command="{Binding DismissBuildChangeNoticeCommand}"
+                                ToolTip.Tip="{DynamicResource WhatsNew_Close}">
+                            <PathIcon Data="{StaticResource IconClose}" Width="11" Height="11"/>
+                        </Button>
+                    </Panel>
+                </Grid>
+            </Border>
 
-                <!-- ======== Chart ======== -->
-                <Border Classes="card" Padding="20,18">
-                    <StackPanel Spacing="12">
-                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
-                            <StackPanel Spacing="2">
-                                <TextBlock Text="{Binding ChartTitle}" Classes="h3"/>
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <TextBlock Text="{Binding ServerAverage}" Classes="faint"/>
-                                    <TextBlock Text="·" Classes="faint" IsVisible="{Binding ServerPeak, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                                    <TextBlock Text="{Binding ServerPeak}" Classes="faint"/>
-                                    <TextBlock Text="·" Classes="faint" IsVisible="{Binding ServerStatsSource, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                                    <TextBlock Text="{Binding ServerStatsSource}" Classes="faint"/>
-                                </StackPanel>
-                            </StackPanel>
+            <!-- ======== The online, in figures ======== -->
+            <controls:Caption Text="{DynamicResource Server_Monitoring}" Margin="12,28,0,10"/>
 
-                            <Border Grid.Column="1" Classes="panel" Padding="3" VerticalAlignment="Top">
-                                <StackPanel Orientation="Horizontal" Spacing="2">
-                                    <Button Classes="segment small" Classes.active="{Binding IsDayRange}"
-                                            Content="{DynamicResource Server_RangeDay}"
-                                            Command="{Binding SelectMonitoringRangeCommand}" CommandParameter="Day"/>
-                                    <Button Classes="segment small" Classes.active="{Binding IsWeekRange}"
-                                            Content="{DynamicResource Server_RangeWeek}"
-                                            Command="{Binding SelectMonitoringRangeCommand}" CommandParameter="Week"/>
-                                </StackPanel>
-                            </Border>
-                        </Grid>
+            <UniformGrid Columns="5" Margin="12,0,0,0">
+                <StackPanel Spacing="3">
+                    <TextBlock Text="{DynamicResource Server_TileOnline}" Classes="sub"/>
+                    <TextBlock Text="{Binding ServerOnlineValue}" Classes="figure"/>
+                    <TextBlock Text="{Binding ServerOnlineCaption}" Classes="sub" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+                <StackPanel Spacing="3">
+                    <TextBlock Text="{DynamicResource Server_TileAverageWeek}" Classes="sub"/>
+                    <TextBlock Text="{Binding ServerAverageWeekValue}" Classes="figure"/>
+                    <TextBlock Text="{DynamicResource Server_TilePlayers}" Classes="sub" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+                <StackPanel Spacing="3">
+                    <TextBlock Text="{DynamicResource Server_TileRecord}" Classes="sub"/>
+                    <TextBlock Text="{Binding ServerRecordValue}" Classes="figure"/>
+                    <TextBlock Text="{Binding ServerRecordCaption}" Classes="sub" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+                <StackPanel Spacing="3">
+                    <TextBlock Text="{DynamicResource Server_TileUptime}" Classes="sub"/>
+                    <TextBlock Text="{Binding ServerUptimeValue}" Classes="figure"/>
+                    <TextBlock Text="{DynamicResource Server_TileUptimeCaption}" Classes="sub" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+                <StackPanel Spacing="3">
+                    <TextBlock Text="{DynamicResource Server_TileRank}" Classes="sub"/>
+                    <TextBlock Text="{Binding ServerRankValue}" Classes="figure"/>
+                    <TextBlock Text="Top-Minecrafter" Classes="sub" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+            </UniformGrid>
 
-                        <Grid RowDefinitions="170,Auto" ColumnDefinitions="Auto,*" ColumnSpacing="10" RowSpacing="6"
-                              IsVisible="{Binding HasServerHistory}">
-                            <Grid Grid.Row="0" Grid.Column="0" RowDefinitions="Auto,*,Auto" MinWidth="28">
-                                <TextBlock Grid.Row="0" Text="{Binding ChartTopLabel}" Classes="faint" HorizontalAlignment="Right"/>
-                                <TextBlock Grid.Row="2" Text="0" Classes="faint" HorizontalAlignment="Right"/>
-                            </Grid>
+            <!-- ======== The chart ======== -->
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14" Margin="12,26,0,12">
+                <StackPanel Spacing="2" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding ChartTitle}" Classes="strong" FontSize="15"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="{Binding ServerAverage}" Classes="sub"/>
+                        <TextBlock Text="·" Classes="sub" IsVisible="{Binding ServerPeak, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                        <TextBlock Text="{Binding ServerPeak}" Classes="sub"/>
+                        <TextBlock Text="·" Classes="sub" IsVisible="{Binding ServerStatsSource, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                        <TextBlock Text="{Binding ServerStatsSource}" Classes="sub"/>
+                    </StackPanel>
+                </StackPanel>
 
-                            <controls:OnlineChart Grid.Row="0" Grid.Column="1" Bars="{Binding ServerChartBars}"/>
-
-                            <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="Auto,*,Auto">
-                                <TextBlock Text="{Binding ChartStartLabel}" Classes="faint"/>
-                                <TextBlock Grid.Column="2" Text="{Binding ChartEndLabel}" Classes="faint"/>
-                            </Grid>
-                        </Grid>
-
-                        <Border Classes="panel" Padding="24" IsVisible="{Binding !HasServerHistory}">
-                            <TextBlock Text="{DynamicResource Server_ChartEmpty}" Classes="muted"
-                                       TextWrapping="Wrap" HorizontalAlignment="Center"/>
-                        </Border>
-
-                        <TextBlock Text="{Binding ServerMonitoringNote}" Classes="gold" TextWrapping="Wrap"
-                                   IsVisible="{Binding ServerMonitoringNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                <Border Grid.Column="1" Classes="segments" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <Button Classes="segment" Classes.active="{Binding IsDayRange}"
+                                Content="{DynamicResource Server_RangeDay}"
+                                Command="{Binding SelectMonitoringRangeCommand}" CommandParameter="Day"/>
+                        <Button Classes="segment" Classes.active="{Binding IsWeekRange}"
+                                Content="{DynamicResource Server_RangeWeek}"
+                                Command="{Binding SelectMonitoringRangeCommand}" CommandParameter="Week"/>
                     </StackPanel>
                 </Border>
+            </Grid>
 
-                <!-- ======== Community ======== -->
-                <UniformGrid Columns="3" ColumnSpacing="12">
-                    <Button Classes="link-tile" Command="{Binding OpenWebsiteCommand}">
-                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                            <Border Width="38" Height="38" CornerRadius="11" Background="{DynamicResource ElevatedBrush}">
-                                <PathIcon Data="{StaticResource IconGlobe}" Classes="gold"/>
-                            </Border>
-                            <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
-                                <TextBlock Text="{DynamicResource Server_Site}" FontWeight="SemiBold"/>
-                                <TextBlock Text="showtime.su" Classes="faint"/>
-                            </StackPanel>
-                            <PathIcon Grid.Column="2" Data="{StaticResource IconOpenExternal}" Classes="small muted" VerticalAlignment="Center"/>
-                        </Grid>
-                    </Button>
-                    <Button Classes="link-tile" Command="{Binding OpenUrlCommand}" CommandParameter="https://t.me/ShowTimeMc">
-                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                            <Border Width="38" Height="38" CornerRadius="11" Background="{DynamicResource ElevatedBrush}">
-                                <PathIcon Data="{StaticResource IconSend}" Classes="gold"/>
-                            </Border>
-                            <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
-                                <TextBlock Text="Telegram" FontWeight="SemiBold"/>
-                                <TextBlock Text="t.me/ShowTimeMc" Classes="faint"/>
-                            </StackPanel>
-                            <PathIcon Grid.Column="2" Data="{StaticResource IconOpenExternal}" Classes="small muted" VerticalAlignment="Center"/>
-                        </Grid>
-                    </Button>
-                    <Button Classes="link-tile" Command="{Binding OpenUrlCommand}" CommandParameter="https://discord.gg/showtimes">
-                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                            <Border Width="38" Height="38" CornerRadius="11" Background="{DynamicResource ElevatedBrush}">
-                                <PathIcon Data="{StaticResource IconChat}" Classes="gold"/>
-                            </Border>
-                            <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
-                                <TextBlock Text="Discord" FontWeight="SemiBold"/>
-                                <TextBlock Text="discord.gg/showtimes" Classes="faint"/>
-                            </StackPanel>
-                            <PathIcon Grid.Column="2" Data="{StaticResource IconOpenExternal}" Classes="small muted" VerticalAlignment="Center"/>
-                        </Grid>
-                    </Button>
-                </UniformGrid>
+            <Grid RowDefinitions="160,Auto" ColumnDefinitions="Auto,*" ColumnSpacing="10" RowSpacing="6" Margin="12,0,0,0"
+                  IsVisible="{Binding HasServerHistory}">
+                <Grid Grid.Row="0" Grid.Column="0" RowDefinitions="Auto,*,Auto" MinWidth="28">
+                    <TextBlock Grid.Row="0" Text="{Binding ChartTopLabel}" Classes="sub" HorizontalAlignment="Right"/>
+                    <TextBlock Grid.Row="2" Text="0" Classes="sub" HorizontalAlignment="Right"/>
+                </Grid>
+
+                <controls:OnlineChart Grid.Row="0" Grid.Column="1" Bars="{Binding ServerChartBars}"/>
+
+                <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="Auto,*,Auto">
+                    <TextBlock Text="{Binding ChartStartLabel}" Classes="sub"/>
+                    <TextBlock Grid.Column="2" Text="{Binding ChartEndLabel}" Classes="sub"/>
+                </Grid>
+            </Grid>
+
+            <TextBlock Text="{DynamicResource Server_ChartEmpty}" Classes="sub" Margin="12,0,0,0" TextWrapping="Wrap"
+                       IsVisible="{Binding !HasServerHistory}"/>
+
+            <TextBlock Text="{Binding ServerMonitoringNote}" Classes="sub" TextWrapping="Wrap" Margin="12,6,0,0"
+                       IsVisible="{Binding ServerMonitoringNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+            <!-- ======== Community ======== -->
+            <controls:Caption Text="{DynamicResource Server_Community}" Margin="12,28,0,6"/>
+
+            <StackPanel>
+                <Border Classes="row">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                        <Border Classes="icon-tile" Background="{DynamicResource FieldBrush}">
+                            <PathIcon Data="{StaticResource IconGlobe}" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        </Border>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="{DynamicResource Server_Site}" Classes="strong"/>
+                            <TextBlock Text="showtime.su" Classes="sub"/>
+                        </StackPanel>
+                        <Button Grid.Column="2" VerticalAlignment="Center" Content="{DynamicResource Server_Open}"
+                                Command="{Binding OpenWebsiteCommand}"/>
+                    </Grid>
+                </Border>
+                <Border Classes="row">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                        <Border Classes="icon-tile" Background="{DynamicResource FieldBrush}">
+                            <PathIcon Data="{StaticResource IconSend}" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        </Border>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="Telegram" Classes="strong"/>
+                            <TextBlock Text="t.me/ShowTimeMc" Classes="sub"/>
+                        </StackPanel>
+                        <Button Grid.Column="2" VerticalAlignment="Center" Content="{DynamicResource Server_Open}"
+                                Command="{Binding OpenUrlCommand}" CommandParameter="https://t.me/ShowTimeMc"/>
+                    </Grid>
+                </Border>
+                <Border Classes="row">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                        <Border Classes="icon-tile" Background="{DynamicResource FieldBrush}">
+                            <PathIcon Data="{StaticResource IconChat}" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        </Border>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="Discord" Classes="strong"/>
+                            <TextBlock Text="discord.gg/showtimes" Classes="sub"/>
+                        </StackPanel>
+                        <Button Grid.Column="2" VerticalAlignment="Center" Content="{DynamicResource Server_Open}"
+                                Command="{Binding OpenUrlCommand}" CommandParameter="https://discord.gg/showtimes"/>
+                    </Grid>
+                </Border>
             </StackPanel>
-        </ScrollViewer>
-    </Grid>
+        </StackPanel>
+    </ScrollViewer>
 </UserControl>
