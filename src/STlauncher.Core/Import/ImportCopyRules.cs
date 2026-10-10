@@ -27,7 +27,11 @@ public static class ImportCopyRules
     public static readonly IReadOnlyList<string> SharedRootFolders = new[]
     {
         "mods", "config", "defaultconfigs", "saves", "resourcepacks", "shaderpacks",
-        "datapacks", "kubejs", "scripts"
+        "datapacks", "kubejs", "scripts",
+
+        // Maps and waypoints the player drew over months, and their building plans: content
+        // too, and nothing in them signs anyone in.
+        "xaero", "XaeroWaypoints", "XaeroWorldMap", "journeymap", "schematics"
     };
 
     /// <summary>The loose files of a shared .minecraft that are the game's settings.</summary>

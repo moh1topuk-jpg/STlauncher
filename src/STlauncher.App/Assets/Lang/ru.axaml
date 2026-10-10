@@ -501,7 +501,7 @@
     <x:String x:Key="Import_CarriedDropped">Не перенесём параметры Java: {0}. Они могут запускать посторонний код или указывают на файлы.</x:String>
     <x:String x:Key="Import_CarriedDroppedMore">{0} и ещё {1}</x:String>
     <x:String x:Key="Import_LinksSkipped">Ссылки на другие папки внутри сборок не скопированы: {0}</x:String>
-    <x:String x:Key="Import_SharedCopyHint">Из общей папки .minecraft берутся только моды, их настройки, миры, ресурспаки, шейдеры и настройки игры. Файлы входа в аккаунт не копируются; скриншоты остаются на месте.</x:String>
+    <x:String x:Key="Import_SharedCopyHint">Из общей папки .minecraft берутся только моды, их настройки, миры, ресурспаки, шейдеры, карты и метки миникарты, схемы и настройки игры. Файлы входа в аккаунт не копируются; скриншоты остаются на месте.</x:String>
     <x:String x:Key="Settings_JvmArgs">Параметры Java</x:String>
     <x:String x:Key="Settings_JvmArgsHint">Принимаются только безопасные: размеры памяти, флаги -XX, --add-opens. Параметры, которые подключают посторонний код или указывают на файлы, лаунчер не берёт.</x:String>
     <x:String x:Key="Settings_JvmArgsDropped">Не принято: {0}. Разрешены только размеры памяти, флаги -XX и --add-opens.</x:String>

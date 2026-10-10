@@ -501,7 +501,7 @@
     <x:String x:Key="Import_CarriedDropped">Java options left behind: {0}. They can run foreign code or point at files.</x:String>
     <x:String x:Key="Import_CarriedDroppedMore">{0} and {1} more</x:String>
     <x:String x:Key="Import_LinksSkipped">Links to other folders inside the builds were not copied: {0}</x:String>
-    <x:String x:Key="Import_SharedCopyHint">From a shared .minecraft only mods, their configs, worlds, resource packs, shaders and game settings are taken. Sign-in files are not copied; screenshots stay where they are.</x:String>
+    <x:String x:Key="Import_SharedCopyHint">From a shared .minecraft only mods, their configs, worlds, resource packs, shaders, minimap maps and waypoints, schematics and game settings are taken. Sign-in files are not copied; screenshots stay where they are.</x:String>
     <x:String x:Key="Settings_JvmArgs">Java options</x:String>
     <x:String x:Key="Settings_JvmArgsHint">Only safe ones are accepted: memory sizes, -XX switches, --add-opens. Options that load foreign code or point at files are not taken.</x:String>
     <x:String x:Key="Settings_JvmArgsDropped">Not accepted: {0}. Only memory sizes, -XX switches and --add-opens are allowed.</x:String>
