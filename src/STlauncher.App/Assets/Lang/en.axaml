@@ -1717,6 +1717,10 @@
     <!-- Skins: the library, the editor, publishing -->
     <x:String x:Key="Nav_Skins">Skins</x:String>
     <x:String x:Key="Skins_Title">Skins</x:String>
+    <x:String x:Key="Skins_TabLibrary">My skins</x:String>
+    <x:String x:Key="Skins_TabRandom">Random</x:String>
+    <x:String x:Key="Skins_OnFigure">On your figure now</x:String>
+    <x:String x:Key="Skins_PickHint">Pick a skin on the left to wear it, change it or put it into the game</x:String>
     <x:String x:Key="Skins_Subtitle">Your skin library: keep skins, draw them, and put them on your figure in the launcher. Other players see a skin only through the skin system their server uses - that is what publishing is for.</x:String>
     <x:String x:Key="Skins_New">New skin</x:String>
     <x:String x:Key="Skins_NewFrom">START FROM</x:String>

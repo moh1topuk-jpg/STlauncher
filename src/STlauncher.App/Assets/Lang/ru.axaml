@@ -1717,6 +1717,10 @@
     <!-- Skins: the library, the editor, publishing -->
     <x:String x:Key="Nav_Skins">Скины</x:String>
     <x:String x:Key="Skins_Title">Скины</x:String>
+    <x:String x:Key="Skins_TabLibrary">Мои скины</x:String>
+    <x:String x:Key="Skins_TabRandom">Случайные</x:String>
+    <x:String x:Key="Skins_OnFigure">Сейчас на фигурке</x:String>
+    <x:String x:Key="Skins_PickHint">Выберите скин слева, чтобы надеть его, изменить или установить в игру</x:String>
     <x:String x:Key="Skins_Subtitle">Ваша библиотека скинов: храните, рисуйте и надевайте их на фигурку в лаунчере. Другие игроки видят скин только через систему скинов, которой пользуется сервер, — для этого скин публикуют.</x:String>
     <x:String x:Key="Skins_New">Новый скин</x:String>
     <x:String x:Key="Skins_NewFrom">С ЧЕГО НАЧАТЬ</x:String>

@@ -146,6 +146,76 @@ public partial class SkinsPage : UserControl
         }
     }
 
+    // ===================== Sources, and the menu on a picture =====================
+
+    /// <summary>
+    /// "My skins" or the public feed. Which one is looked at is the page's own business,
+    /// so it lives here and not in the view model.
+    /// </summary>
+    private void OnTabClick(object? sender, RoutedEventArgs e)
+    {
+        var random = (sender as Control)?.Tag as string == "random";
+
+        LibraryTab.IsVisible = !random;
+        RandomTab.IsVisible = random;
+        LibraryTabButton.Classes.Set("active", !random);
+        RandomTabButton.Classes.Set("active", random);
+    }
+
+    /// <summary>
+    /// The "..." on a library picture. A menu lives in its own popup, out of reach of a
+    /// binding to the page, so its items come here with the action in Tag. Rename and
+    /// delete are asked on the stage, about the chosen skin: the skin is chosen first.
+    /// </summary>
+    private void OnSkinMenuClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem { Tag: string action, DataContext: SkinItem item } || _viewModel is not { } viewModel)
+        {
+            return;
+        }
+
+        switch (action)
+        {
+            case "wear":
+                viewModel.WearSkinCommand.Execute(item);
+                break;
+            case "takeoff":
+                viewModel.TakeOffSkinCommand.Execute(null);
+                break;
+            case "edit":
+                viewModel.EditSkinCommand.Execute(item);
+                break;
+            case "duplicate":
+                viewModel.DuplicateSkinCommand.Execute(item);
+                break;
+            case "rename":
+                viewModel.SelectLibrarySkinCommand.Execute(item);
+                viewModel.BeginRenameSkinCommand.Execute(null);
+                break;
+            case "delete":
+                viewModel.SelectLibrarySkinCommand.Execute(item);
+                viewModel.AskDeleteSkinCommand.Execute(null);
+                break;
+        }
+    }
+
+    private void OnRandomMenuClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem { Tag: string action, DataContext: RandomSkinItem item } || _viewModel is not { } viewModel)
+        {
+            return;
+        }
+
+        if (action == "save")
+        {
+            viewModel.SaveRandomSkinCommand.Execute(item);
+        }
+        else
+        {
+            viewModel.PreviewRandomSkinCommand.Execute(item);
+        }
+    }
+
     // ===================== New skin, and files brought in =====================
 
     private void OnNewSkinClick(object? sender, RoutedEventArgs e)
