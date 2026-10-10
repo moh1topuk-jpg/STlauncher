@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.Input;
 using STlauncher.Core.Instances;
 
@@ -41,6 +42,33 @@ public partial class MainWindowViewModel
         }
 
         SelectedInstance = instance;
+    }
+
+    /// <summary>
+    /// "Play" on a row of the home screen's list: that build becomes the one on screen and
+    /// starts, as if it had been picked and the big button pressed.
+    /// </summary>
+    [RelayCommand]
+    private async Task PlayBuildAsync(Instance? instance)
+    {
+        if (instance is null || IsBusy || IsGameRunning)
+        {
+            return;
+        }
+
+        SelectedInstance = instance;
+
+        // The build's own loader version is read right after it is selected. Starting
+        // before it has arrived would install whichever version the picker falls back to.
+        for (var waited = 0; IsLoaderBusy && waited < 100; waited++)
+        {
+            await Task.Delay(50);
+        }
+
+        if (ReferenceEquals(SelectedInstance, instance))
+        {
+            await PlayAsync();
+        }
     }
 
     /// <summary>The wizard lives on the builds page; the home screen's "new build" goes there and opens it.</summary>

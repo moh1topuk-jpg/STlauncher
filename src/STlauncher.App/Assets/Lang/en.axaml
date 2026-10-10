@@ -417,6 +417,18 @@
     <x:String x:Key="Game_NicknameReroll">Another name</x:String>
     <x:String x:Key="Game_NicknameOwn">Your nickname</x:String>
     <x:String x:Key="Game_NicknameRule">3-16 characters: letters, digits and "_"</x:String>
+    <x:String x:Key="Home_Elsewhere">Where else</x:String>
+    <x:String x:Key="Home_ServerEnter">Join</x:String>
+    <x:String x:Key="Home_Friends">Play with friends</x:String>
+    <x:String x:Key="Home_FriendsHint">Your own server for friends, or an invite code</x:String>
+    <x:String x:Key="Home_FriendsOpen">Open</x:String>
+    <x:String x:Key="Home_PasteCode">Code from clipboard</x:String>
+    <x:String x:Key="Home_OtherBuild">Another build</x:String>
+    <x:String x:Key="Home_ModsAndSettings">Mods and settings</x:String>
+    <x:String x:Key="Home_ChangeSkin">Change skin</x:String>
+    <x:String x:Key="Home_WhatChanged">What changed</x:String>
+    <x:String x:Key="Home_NoBuilds">No builds yet</x:String>
+    <x:String x:Key="Home_NoBuildsHint">Make your own or take a ready one: with a friend's code, or from another launcher.</x:String>
 
     <x:String x:Key="Server_AverageWeek">Average for the week: {0:F0}</x:String>
     <x:String x:Key="Server_Record">Record: {0}</x:String>

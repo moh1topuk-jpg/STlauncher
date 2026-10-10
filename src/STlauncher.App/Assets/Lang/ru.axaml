@@ -417,6 +417,18 @@
     <x:String x:Key="Game_NicknameReroll">Другой ник</x:String>
     <x:String x:Key="Game_NicknameOwn">Ваш ник</x:String>
     <x:String x:Key="Game_NicknameRule">3–16 символов: латиница, цифры и «_»</x:String>
+    <x:String x:Key="Home_Elsewhere">Куда ещё</x:String>
+    <x:String x:Key="Home_ServerEnter">Зайти</x:String>
+    <x:String x:Key="Home_Friends">Игра с друзьями</x:String>
+    <x:String x:Key="Home_FriendsHint">Свой сервер для друзей или код приглашения</x:String>
+    <x:String x:Key="Home_FriendsOpen">Открыть</x:String>
+    <x:String x:Key="Home_PasteCode">Код из буфера</x:String>
+    <x:String x:Key="Home_OtherBuild">Другая сборка</x:String>
+    <x:String x:Key="Home_ModsAndSettings">Моды и настройки</x:String>
+    <x:String x:Key="Home_ChangeSkin">Сменить скин</x:String>
+    <x:String x:Key="Home_WhatChanged">Что изменилось</x:String>
+    <x:String x:Key="Home_NoBuilds">Сборок пока нет</x:String>
+    <x:String x:Key="Home_NoBuildsHint">Соберите свою или возьмите готовую: по коду от друга или из другого лаунчера.</x:String>
 
     <x:String x:Key="Server_AverageWeek">Средний онлайн за неделю: {0:F0}</x:String>
     <x:String x:Key="Server_Record">Рекорд: {0}</x:String>
