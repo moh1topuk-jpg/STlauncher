@@ -314,6 +314,29 @@ public sealed class ModrinthClient : IModSource, IModHashLookup
     }
 
     /// <summary>
+    /// One version by its id, with the files and the hashes Modrinth publishes for them.
+    /// Null when Modrinth has no such version; a network failure is thrown as it is.
+    /// </summary>
+    public async Task<ModVersion?> GetVersionAsync(string versionId, CancellationToken cancellationToken = default)
+    {
+        using var response = await _http
+            .GetAsync($"{BaseUrl}/version/{Uri.EscapeDataString(versionId)}", cancellationToken)
+            .ConfigureAwait(false);
+
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        response.EnsureSuccessStatusCode();
+
+        var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+        var dto = JsonSerializer.Deserialize<VersionDto>(json, Json.Options);
+
+        return dto is null ? null : ToModVersion(dto);
+    }
+
+    /// <summary>
     /// The versions that installed files are, looked up by their SHA-1. One request for
     /// the whole folder; files Modrinth does not know are simply absent from the result.
     /// </summary>

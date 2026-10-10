@@ -18,6 +18,16 @@
              the lines on screen, so the card lives here and the line template places it. -->
         <DataTemplate x:Key="InstalledModCard" x:DataType="vm:InstalledModItem">
             <Border Classes="mod-line" Classes.off="{Binding !Enabled}" Classes.new="{Binding IsNew}">
+                <!-- The row's menu. It opens in a popup, where a binding to the page does
+                     not reach, so the row carries the command itself. -->
+                <Border.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="{Binding PreviousLabel}"
+                                  IsEnabled="{Binding HasPrevious}"
+                                  Command="{Binding RestorePreviousCommand}"
+                                  CommandParameter="{Binding}"/>
+                    </ContextMenu>
+                </Border.ContextMenu>
                 <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto" ColumnSpacing="10">
                     <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center" MinWidth="0" Padding="0"
                               IsVisible="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).IsModSelectMode}"/>

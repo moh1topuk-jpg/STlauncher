@@ -21,7 +21,14 @@ public sealed class ModManager
     public ModManager(DownloadClient downloader)
     {
         _downloader = downloader ?? throw new ArgumentNullException(nameof(downloader));
+        Replacer = new ModFileReplacer(_downloader);
     }
+
+    /// <summary>
+    /// Replaces a file of a build with a newer one without ever leaving the build without
+    /// it, and keeps the old one for going back. Every update goes through here.
+    /// </summary>
+    public ModFileReplacer Replacer { get; }
 
     /// <summary>The store the downloads go through, for the clean-up in Settings; null when there is none.</summary>
     public Storage.SharedFileStore? SharedFiles => _downloader.SharedFiles;

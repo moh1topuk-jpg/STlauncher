@@ -567,7 +567,32 @@
     <x:String x:Key="Mods_UpdatesFailed">Could not check for updates: {0}</x:String>
     <x:String x:Key="Mods_Updating">Updating {0} to {1}…</x:String>
     <x:String x:Key="Mods_Updated">{0} updated to {1}</x:String>
-    <x:String x:Key="Mods_UpdatedKeptOld">{0} updated to {1}. The old version is switched off and stays in the list, so you can go back.</x:String>
+    <!-- Updates that never leave a build without the mod, and downloads that say why they failed -->
+    <x:String x:Key="Mods_UpdatedKeptPrevious">{0} updated to {1}. The previous version is kept: right-click the mod and pick "Bring back the previous version".</x:String>
+    <x:String x:Key="Mods_UpdateFailedKept">{0} was not updated and stays as it was. {1}</x:String>
+    <x:String x:Key="Mods_UpdateAllDone">Mods updated: {0}</x:String>
+    <x:String x:Key="Mods_UpdateAllPartly">Updated {0} of {1}. Left as they were: {2}</x:String>
+    <x:String x:Key="Mods_RestorePrevious">Bring back the previous version ({0})</x:String>
+    <x:String x:Key="Mods_RestoredPrevious">{0}: the previous version is back. The newer file is kept, so this can be undone the same way.</x:String>
+    <x:String x:Key="Mods_RestoreFailed">{0} stays as it was. {1}</x:String>
+    <x:String x:Key="Mods_ReplaceGameRunning">The game is running: close it and try again.</x:String>
+    <x:String x:Key="Mods_ReplaceRestore">The kept file could not be put back: {0}</x:String>
+    <x:String x:Key="Mods_ReplaceFiles">The file could not be put in place, everything was returned as it was: {0}</x:String>
+    <x:String x:Key="Mods_NoPrevious">No previous version: this mod has not been updated yet</x:String>
+    <x:String x:Key="Status_ModpackInstalledPartly">Modpack "{0}" installed without {1} file(s): {2}. The reasons are in the log.</x:String>
+    <x:String x:Key="Net_CauseWithUrl">{0} Address: {1}</x:String>
+    <x:String x:Key="Net_AfterFailureCause">Could not download {0}. {1}</x:String>
+    <x:String x:Key="Net_AfterFailureCauseHosts">Could not download {0}. {1} Not answering: {2}.</x:String>
+    <x:String x:Key="Net_CauseDns">The site's address was not found (DNS). Check the connection; if a VPN or a proxy is on, switch it over.</x:String>
+    <x:String x:Key="Net_CauseRefused">The connection was refused. If a proxy or a VPN is set in Windows, check that it is running.</x:String>
+    <x:String x:Key="Net_CauseReset">The connection was cut on the way. A provider's block or security software does this.</x:String>
+    <x:String x:Key="Net_CauseUnreachable">There is no route to the site. Check the internet connection.</x:String>
+    <x:String x:Key="Net_CauseCertificate">Windows does not trust the certificate the site showed. Usually an antivirus or a proxy is inspecting HTTPS: switch that inspection off there or add the launcher to its exceptions.</x:String>
+    <x:String x:Key="Net_CauseTls">A secure connection could not be set up. An antivirus, a proxy or the provider may be in the way.</x:String>
+    <x:String x:Key="Net_CauseTimeout">The site did not answer in time.</x:String>
+    <x:String x:Key="Net_CauseHttp">The site answered with an error: {0}.</x:String>
+    <x:String x:Key="Net_CauseHash">The file that came is not the one that was promised: the checksum does not match.</x:String>
+    <x:String x:Key="Net_CauseRedirect">The site sent the download to an address the launcher does not follow: {0}.</x:String>
     <x:String x:Key="Mods_CatalogPinnedHint">The server catalog sets this mod's version - updates arrive with the build.</x:String>
 
     <!-- Backup restore -->

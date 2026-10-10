@@ -304,6 +304,16 @@ public partial class MainWindowViewModel
                 $"--- Modpack '{result.Plan.Name}' installed: " +
                 $"{result.InstalledFiles} files, {result.FailedFiles} failed, {result.SkippedFiles} skipped ---");
 
+            foreach (var path in result.AcceptedByModrinthHash)
+            {
+                AppendConsole($"[modpack] {path}: the hash in the pack is wrong, accepted by the hash Modrinth publishes for this file");
+            }
+
+            foreach (var (path, reason) in result.Failures)
+            {
+                AppendConsole($"[modpack] {path} did not come: {reason}");
+            }
+
             if (result.Plan.GameVersion is not null)
             {
                 var version = _allVersions.FirstOrDefault(v => v.Id == result.Plan.GameVersion);
@@ -324,7 +334,14 @@ public partial class MainWindowViewModel
             }
 
             RefreshMods();
-            Status = Localize("Status_ModpackInstalled", "Modpack \"{0}\" installed", result.Plan.Name);
+            Status = result.FailedFiles == 0
+                ? Localize("Status_ModpackInstalled", "Modpack \"{0}\" installed", result.Plan.Name)
+                : Localize(
+                    "Status_ModpackInstalledPartly",
+                    "Modpack \"{0}\" installed without {1} file(s): {2}. The reasons are in the log.",
+                    result.Plan.Name,
+                    result.FailedFiles,
+                    string.Join(", ", result.Failures.Take(3).Select(f => System.IO.Path.GetFileName(f.Path))));
 
             // Only label files that have no provenance yet; re-labelling would wipe the
             // Modrinth and catalog sources recorded earlier.

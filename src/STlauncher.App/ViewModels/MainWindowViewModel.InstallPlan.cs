@@ -313,12 +313,33 @@ public partial class MainWindowViewModel
             await _mods.InstallAsync(target.Directory, folder, file.FileName, file.Url, file.Sha1, file.Size);
         }
 
-        AppendConsole($"[mods] installed {folder}/{file.FileName} ({item.Slug} {version.VersionNumber}, {SourceName(version.Source)})");
+        RecordPlanItem(item, file, target);
+    }
+
+    /// <summary>
+    /// After a plan item's file is in the build: the log line, older copies of the same
+    /// mod switched off, and the record of where the file came from.
+    /// </summary>
+    /// <param name="onDiskName">The name the file has in the folder when it is not the source's: a mod updated while switched off keeps ".disabled".</param>
+    private void RecordPlanItem(ModPlanItem item, ModFile file, InstallTarget target, string? onDiskName = null, bool disabledByUser = false)
+    {
+        var version = item.Version!;
+        var fromCurseForge = version.Source == ModSource.CurseForge;
+        var folder = ProjectTypes.FolderFor(item.ProjectType);
+        var fileName = onDiskName ?? file.FileName;
+        var switchedOff = fileName.EndsWith(".disabled", StringComparison.OrdinalIgnoreCase);
+
+        AppendConsole($"[mods] installed {folder}/{fileName} ({item.Slug} {version.VersionNumber}, {SourceName(version.Source)})");
 
         if (string.Equals(folder, ModManager.ModsFolderName, StringComparison.OrdinalIgnoreCase) && target.Instance is not null)
         {
-            ReplaceOtherVersions(target.Instance, file.FileName);
-            _installBatch.Add(file.FileName);
+            // A file that is switched off takes nothing over.
+            if (!switchedOff)
+            {
+                ReplaceOtherVersions(target.Instance, fileName);
+            }
+
+            _installBatch.Add(fileName);
         }
 
         var record = fromCurseForge
@@ -333,6 +354,9 @@ public partial class MainWindowViewModel
                 Version = version.VersionNumber,
                 Folder = folder
             };
+
+        record.FileName = fileName;
+        record.DisabledByUser = disabledByUser;
 
         if (target.Instance is not null)
         {

@@ -100,17 +100,76 @@ public partial class MainWindowViewModel
             return;
         }
 
+        var failure = KnownDownloadFailure(ex);
+
+        // A wrong file, a refused redirect or an error page say nothing about which
+        // sites answer: the status line already names the cause, and it stays.
+        if (failure?.Cause is Core.Http.NetworkFailureCause.HashMismatch
+            or Core.Http.NetworkFailureCause.HttpStatus
+            or Core.Http.NetworkFailureCause.RedirectRefused)
+        {
+            return;
+        }
+
         AppendConsole($"[net] could not download {what} ({ex.GetType().Name}); running the network check");
         await RunNetworkCheckAsync();
 
         var failed = NetworkChecks.Where(i => i.IsFailed).Select(i => i.Display).ToList();
 
-        Status = failed.Count == 0
-            ? Localize("Net_AfterFailureAllOk", "Could not download {0}, yet every address answers. Try again in a minute.", what)
-            : Localize("Net_AfterFailure", "Could not download {0}. Not answering: {1}. Details: Settings → Network check.", what, string.Join(", ", failed));
+        // The cause leads when it is known: "which sites" is the second question.
+        Status = failure is { Cause: not Core.Http.NetworkFailureCause.Unknown }
+            ? failed.Count == 0
+                ? Localize("Net_AfterFailureCause", "Could not download {0}. {1}", what, DownloadCauseText(failure))
+                : Localize("Net_AfterFailureCauseHosts", "Could not download {0}. {1} Not answering: {2}.", what, DownloadCauseText(failure), string.Join(", ", failed))
+            : failed.Count == 0
+                ? Localize("Net_AfterFailureAllOk", "Could not download {0}, yet every address answers. Try again in a minute.", what)
+                : Localize("Net_AfterFailure", "Could not download {0}. Not answering: {1}. Details: Settings → Network check.", what, string.Join(", ", failed));
 
         AppendConsole("[net] " + string.Join("; ", NetworkChecks.Select(i => i.Result?.ToString() ?? i.Display)));
     }
+
+    private static Core.Http.NetworkFailure? KnownDownloadFailure(Exception ex)
+    {
+        for (var e = (Exception?)ex; e is not null; e = e.InnerException)
+        {
+            if (e is Core.Http.DownloadFailedException download)
+            {
+                return download.Failure;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Why a download failed, as a sentence a player can act on. The exception's own
+    /// text ("The SSL connection could not be established, see inner exception") is
+    /// neither a cause nor an instruction.
+    /// </summary>
+    private static string DownloadCauseText(Core.Http.NetworkFailure failure) => failure.Cause switch
+    {
+        Core.Http.NetworkFailureCause.NameNotResolved => Localize(
+            "Net_CauseDns", "The site's address was not found (DNS). Check the connection; if a VPN or a proxy is on, switch it over."),
+        Core.Http.NetworkFailureCause.ConnectionRefused => Localize(
+            "Net_CauseRefused", "The connection was refused. If a proxy or a VPN is set in Windows, check that it is running."),
+        Core.Http.NetworkFailureCause.ConnectionReset => Localize(
+            "Net_CauseReset", "The connection was cut on the way. A provider's block or security software does this."),
+        Core.Http.NetworkFailureCause.Unreachable => Localize(
+            "Net_CauseUnreachable", "There is no route to the site. Check the internet connection."),
+        Core.Http.NetworkFailureCause.CertificateNotTrusted => Localize(
+            "Net_CauseCertificate", "Windows does not trust the certificate the site showed. Usually an antivirus or a proxy is inspecting HTTPS: switch that inspection off there or add the launcher to its exceptions."),
+        Core.Http.NetworkFailureCause.SecureChannelFailed => Localize(
+            "Net_CauseTls", "A secure connection could not be set up. An antivirus, a proxy or the provider may be in the way."),
+        Core.Http.NetworkFailureCause.TimedOut => Localize(
+            "Net_CauseTimeout", "The site did not answer in time."),
+        Core.Http.NetworkFailureCause.HttpStatus => Localize(
+            "Net_CauseHttp", "The site answered with an error: {0}.", failure.Detail),
+        Core.Http.NetworkFailureCause.HashMismatch => Localize(
+            "Net_CauseHash", "The file that came is not the one that was promised: the checksum does not match."),
+        Core.Http.NetworkFailureCause.RedirectRefused => Localize(
+            "Net_CauseRedirect", "The site sent the download to an address the launcher does not follow: {0}.", failure.Detail),
+        _ => failure.Detail
+    };
 
     private static bool LooksLikeNetworkTrouble(Exception ex)
     {

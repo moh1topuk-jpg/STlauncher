@@ -213,6 +213,44 @@ public sealed class SharedFileStore
     }
 
     /// <summary>
+    /// The same for a file that is not to appear in the build yet: the link is made under
+    /// <paramref name="stagingPath"/>, a name of the caller's choosing in the same folder,
+    /// and the caller renames it to <paramref name="destination"/> when everything else
+    /// about the replacement is settled. Nothing existing is touched here.
+    /// </summary>
+    public bool TryLinkStaged(string? sha1, string stagingPath, string destination, Func<string, bool>? verify = null)
+    {
+        if (!Enabled || ObjectPath(sha1) is not { } objectPath || !IsShareable(destination))
+        {
+            return false;
+        }
+
+        try
+        {
+            if (!File.Exists(objectPath) || File.Exists(stagingPath))
+            {
+                return false;
+            }
+
+            var good = verify is not null
+                ? verify(objectPath)
+                : string.Equals(ComputeSha1(objectPath, CancellationToken.None), Path.GetFileName(objectPath), StringComparison.Ordinal);
+
+            if (!good)
+            {
+                TryDelete(objectPath);
+                return false;
+            }
+
+            return _link(objectPath, stagingPath);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
     /// After a verified download: the file becomes the store's object, so the next build
     /// that needs it links instead of downloading. Never throws - a download that
     /// succeeded must not fail because sharing did not work out.

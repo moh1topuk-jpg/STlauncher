@@ -688,7 +688,7 @@ public partial class MainWindowViewModel
         }
         catch (Exception ex)
         {
-            Status = Localize("Error_InstallMod", "Mod install failed: {0}", ex.Message);
+            Status = Localize("Error_InstallMod", "Mod install failed: {0}", DescribeFailure(ex));
             _ = ExplainDownloadFailureAsync(Localize("Net_WhatMod", "the mod"), ex);
             AppendConsole(ex.ToString());
         }
