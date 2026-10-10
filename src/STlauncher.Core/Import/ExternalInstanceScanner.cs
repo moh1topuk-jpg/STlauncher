@@ -225,6 +225,18 @@ public static class ExternalInstanceScanner
 
             var instances = Path.Combine(directory, "instances");
 
+            // A launcher whose instance folder is a link to another drive: it goes on the
+            // list so the scan can say why it was not opened, instead of looking empty.
+            if (Directory.Exists(instances) && LinkGuard.IsLink(instances))
+            {
+                if (kind != ExternalLauncherKind.Unknown || SafeFiles(directory, "*.cfg").Any())
+                {
+                    result.Add((instances, kind == ExternalLauncherKind.Unknown ? ExternalLauncherKind.Prism : kind));
+                }
+
+                continue;
+            }
+
             if (!Directory.Exists(instances) || !LooksLikeMultiMcInstances(instances))
             {
                 continue;
@@ -245,7 +257,7 @@ public static class ExternalInstanceScanner
 
     private static bool LooksLikeMultiMcInstances(string instances)
         => SafeDirectories(instances).Any(d =>
-            File.Exists(Path.Combine(d, "mmc-pack.json")) || File.Exists(Path.Combine(d, "instance.cfg")));
+            LinkGuard.IsRealFile(Path.Combine(d, "mmc-pack.json")) || LinkGuard.IsRealFile(Path.Combine(d, "instance.cfg")));
 
     /// <summary>
     /// Game folders named in any properties file under a launcher's settings folder, as
@@ -305,16 +317,16 @@ public static class ExternalInstanceScanner
 
         try
         {
-            if (!Directory.Exists(directory))
+            if (!LinkGuard.IsRealDirectory(directory))
             {
                 return result;
             }
 
-            result.AddRange(Directory.EnumerateFiles(directory, pattern, SearchOption.TopDirectoryOnly));
+            result.AddRange(LinkGuard.RealFiles(directory, pattern));
 
             if (depth > 1)
             {
-                foreach (var child in Directory.EnumerateDirectories(directory))
+                foreach (var child in LinkGuard.RealDirectories(directory))
                 {
                     result.AddRange(SafeFiles(child, pattern, depth - 1));
                 }
@@ -404,7 +416,7 @@ public static class ExternalInstanceScanner
                 continue;
             }
 
-            scannedRoots?.Add($"{path} ({kind})");
+            scannedRoots?.Add(LinkGuard.IsLink(path) ? $"{path} ({kind}, a link - not opened)" : $"{path} ({kind})");
             result.AddRange(Scan(path, kind));
         }
 
@@ -423,6 +435,11 @@ public static class ExternalInstanceScanner
             return Array.Empty<ExternalInstance>();
         }
 
+        if (LinkGuard.IsLink(root))
+        {
+            return new[] { RefusedLink(root, kind) };
+        }
+
         return kind == ExternalLauncherKind.DotMinecraft
             ? ScanDotMinecraft(root)
             : ScanInstanceFolders(root, kind);
@@ -437,6 +454,11 @@ public static class ExternalInstanceScanner
         if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
         {
             return Array.Empty<ExternalInstance>();
+        }
+
+        if (LinkGuard.IsLink(path))
+        {
+            return new[] { RefusedLink(path, ExternalLauncherKind.Unknown) };
         }
 
         if (Directory.Exists(Path.Combine(path, "versions")) || Directory.Exists(Path.Combine(path, LegacyHomeFolder)))
@@ -497,23 +519,50 @@ public static class ExternalInstanceScanner
         return single is null ? Array.Empty<ExternalInstance>() : new[] { single };
     }
 
+    /// <summary>
+    /// A folder that is a symbolic link or a junction, listed so the player sees why it
+    /// was left alone and where it leads. Following it is their call: the real folder
+    /// can be pointed at by hand.
+    /// </summary>
+    private static ExternalInstance RefusedLink(string path, ExternalLauncherKind kind, string? name = null)
+    {
+        var trimmed = path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+        return new ExternalInstance(
+            string.IsNullOrWhiteSpace(name) ? Path.GetFileName(trimmed) is { Length: > 0 } folder ? folder : trimmed : name!,
+            path,
+            string.Empty,
+            LoaderKind.Vanilla,
+            kind,
+            VersionJsonPath: null,
+            ModCount: 0,
+            ExternalInstanceProblem.SourceIsLink)
+        {
+            LinkTarget = LinkGuard.TargetOf(path)
+        };
+    }
+
     private static IReadOnlyList<ExternalInstance> ScanDotMinecraft(string dotMinecraft)
     {
         var versions = Path.Combine(dotMinecraft, "versions");
         var result = new List<ExternalInstance>();
 
-        if (Directory.Exists(versions))
+        if (LinkGuard.IsRealDirectory(versions))
         {
             var modCount = CountMods(Path.Combine(dotMinecraft, ModsFolder));
 
-            foreach (var directory in SafeDirectories(versions))
+            foreach (var directory in AllDirectories(versions))
             {
                 var id = Path.GetFileName(directory);
 
-                if (!string.IsNullOrEmpty(id))
+                if (string.IsNullOrEmpty(id))
                 {
-                    result.Add(InspectVersionFolder(directory, id, dotMinecraft, ExternalLauncherKind.DotMinecraft, modCount));
+                    continue;
                 }
+
+                result.Add(LinkGuard.IsLink(directory)
+                    ? RefusedLink(directory, ExternalLauncherKind.DotMinecraft)
+                    : InspectVersionFolder(directory, id, dotMinecraft, ExternalLauncherKind.DotMinecraft, modCount));
             }
         }
 
@@ -534,7 +583,7 @@ public static class ExternalInstanceScanner
         var home = Path.Combine(dotMinecraft, LegacyHomeFolder);
         var result = new List<ExternalInstance>();
 
-        if (!Directory.Exists(home))
+        if (!LinkGuard.IsRealDirectory(home))
         {
             return result;
         }
@@ -564,17 +613,20 @@ public static class ExternalInstanceScanner
 
             if (versionId is not null)
             {
-                instance = InspectVersionFolder(Path.Combine(versions, versionId), versionId, directory, ExternalLauncherKind.DotMinecraft, modCount);
+                instance = InspectVersionFolder(Path.Combine(versions, versionId), versionId, directory, ExternalLauncherKind.DotMinecraft, modCount, gameDirectoryIsOwn: true);
             }
             else
             {
+                // No profile to ask: the mods say what they are for, then the game's own
+                // log, and the folder's name only when it is nothing but a version.
                 var verdict = modCount > 0 ? ModFolderInspector.Inspect(Path.Combine(directory, ModsFolder)) : null;
-                var guessed = verdict?.GameVersion ?? Regex.Match(name, @"(?<![\d.])(1\.\d{1,2}(\.\d{1,2})?|2\d\.\d{1,2}(\.\d{1,2})?)(?![\d.])").Value;
+                var log = verdict?.GameVersion is null ? GameVersionDetector.FromLog(directory) : null;
+                var guessed = verdict?.GameVersion ?? log?.GameVersion ?? GameVersionDetector.FromName(name);
 
-                instance = new ExternalInstance(name, directory, string.Empty, verdict?.Loader ?? LoaderFromName(name), ExternalLauncherKind.DotMinecraft, null, modCount)
+                instance = new ExternalInstance(name, directory, string.Empty, verdict?.Loader ?? log?.Loader ?? LoaderFromName(name), ExternalLauncherKind.DotMinecraft, null, modCount)
                 {
                     GameVersion = string.IsNullOrEmpty(guessed) ? null : guessed,
-                    VersionInferred = verdict is not null
+                    VersionInferred = verdict is not null || log is not null
                 };
             }
 
@@ -598,7 +650,7 @@ public static class ExternalInstanceScanner
         {
             var path = Path.Combine(dotMinecraft, file);
 
-            if (!File.Exists(path))
+            if (!LinkGuard.IsRealFile(path))
             {
                 continue;
             }
@@ -636,6 +688,12 @@ public static class ExternalInstanceScanner
                         name = Path.GetFileName(fullGameDirectory);
                     }
 
+                    if (LinkGuard.IsLink(fullGameDirectory))
+                    {
+                        result.Add(RefusedLink(fullGameDirectory, ExternalLauncherKind.DotMinecraft, name) with { HasOwnFolder = true });
+                        continue;
+                    }
+
                     var versionId = StringOf(profile, "lastVersionId") ?? string.Empty;
                     var modCount = CountMods(Path.Combine(fullGameDirectory, ModsFolder));
 
@@ -644,8 +702,9 @@ public static class ExternalInstanceScanner
 
                     var instance = versionId.Length > 0 &&
                                    !versionId.StartsWith("latest-", StringComparison.OrdinalIgnoreCase) &&
-                                   Directory.Exists(versionDirectory)
-                        ? InspectVersionFolder(versionDirectory, versionId, fullGameDirectory, ExternalLauncherKind.DotMinecraft, modCount)
+                                   versionId.IndexOfAny(new[] { '/', '\\', ':' }) < 0 &&
+                                   LinkGuard.IsRealDirectory(versionDirectory)
+                        ? InspectVersionFolder(versionDirectory, versionId, fullGameDirectory, ExternalLauncherKind.DotMinecraft, modCount, gameDirectoryIsOwn: true)
                         : new ExternalInstance(name!, fullGameDirectory, string.Empty, LoaderKind.Vanilla, ExternalLauncherKind.DotMinecraft, null, modCount);
 
                     result.Add(instance with { Name = name!, GameDirectory = fullGameDirectory, ModCount = modCount, HasOwnFolder = true });
@@ -665,8 +724,21 @@ public static class ExternalInstanceScanner
         var result = new List<ExternalInstance>();
         var launcherName = ForkName(root, kind);
 
-        foreach (var directory in SafeDirectories(root))
+        foreach (var directory in AllDirectories(root))
         {
+            if (LinkGuard.IsLink(directory))
+            {
+                // In a launcher's own instance folder a link is a build kept elsewhere,
+                // and it is said so. In a folder nobody described it is just a link.
+                if (kind != ExternalLauncherKind.Unknown)
+                {
+                    var refused = RefusedLink(directory, kind);
+                    result.Add(launcherName is null ? refused : refused with { LauncherName = launcherName });
+                }
+
+                continue;
+            }
+
             var found = InspectInstanceFolder(directory, kind);
 
             if (found is not null)
@@ -704,7 +776,7 @@ public static class ExternalInstanceScanner
 
             // An instance folder moved elsewhere sits in a folder that is not the launcher;
             // the launcher's own folder is the one with its .cfg in it.
-            if (string.IsNullOrWhiteSpace(name) || parent is null || !Directory.EnumerateFiles(parent, "*.cfg").Any())
+            if (string.IsNullOrWhiteSpace(name) || parent is null || !SafeFiles(parent, "*.cfg").Any())
             {
                 return null;
             }
@@ -743,7 +815,17 @@ public static class ExternalInstanceScanner
                                 .FirstOrDefault(Directory.Exists)
                             ?? directory;
 
+        var instanceName = ReadPropertiesValue(Path.Combine(directory, "instance.cfg"), "name");
+
+        // The build's files are behind a link: the description may be right here, but
+        // what would be copied or played is somewhere else entirely.
+        if (LinkGuard.IsLink(gameDirectory))
+        {
+            return RefusedLink(gameDirectory, kind, instanceName ?? folderName);
+        }
+
         var modCount = CountMods(Path.Combine(gameDirectory, ModsFolder));
+        var settings = SourceInstanceSettings.Read(directory);
 
         // Each launcher keeps its own description file. Whatever is there is read; the
         // kind only decides the label, never what is trusted.
@@ -754,7 +836,7 @@ public static class ExternalInstanceScanner
                         ?? ReadInstanceJson(directory)
                         ?? ReadTechnicPack(directory);
 
-        var name = ReadPropertiesValue(Path.Combine(directory, "instance.cfg"), "name") ?? described?.Name ?? folderName;
+        var name = instanceName ?? described?.Name ?? folderName;
 
         if (described is not null)
         {
@@ -767,7 +849,8 @@ public static class ExternalInstanceScanner
                 VersionJsonPath: null,
                 modCount)
             {
-                LoaderVersion = described.LoaderVersion
+                LoaderVersion = described.LoaderVersion,
+                Settings = settings
             };
         }
 
@@ -783,16 +866,22 @@ public static class ExternalInstanceScanner
         // hand-made folder leave behind.
         var verdict = modCount > 0 ? ModFolderInspector.Inspect(Path.Combine(gameDirectory, ModsFolder)) : null;
 
+        // And when the mods do not agree on a version - or there are none - the game's
+        // own log of its last start in this folder does. The folder's name is never
+        // asked here: a pack is called whatever its author liked.
+        var log = verdict?.GameVersion is null ? GameVersionDetector.FromLog(gameDirectory) : null;
+
         return new ExternalInstance(
             name,
             gameDirectory,
-            verdict?.GameVersion ?? string.Empty,
-            verdict?.Loader ?? LoaderKind.Vanilla,
+            verdict?.GameVersion ?? log?.GameVersion ?? string.Empty,
+            verdict?.Loader ?? log?.Loader ?? LoaderKind.Vanilla,
             kind,
             VersionJsonPath: null,
             modCount)
         {
-            VersionInferred = verdict is not null
+            VersionInferred = verdict is not null || log is not null,
+            Settings = settings
         };
     }
 
@@ -805,7 +894,8 @@ public static class ExternalInstanceScanner
         string id,
         string gameDirectory,
         ExternalLauncherKind kind,
-        int modCount)
+        int modCount,
+        bool gameDirectoryIsOwn = false)
     {
         var jsonPath = Path.Combine(directory, id + ".json");
         var ownFolder = false;
@@ -825,6 +915,12 @@ public static class ExternalInstanceScanner
         {
             return new ExternalInstance(id, gameDirectory, id, LoaderKind.Vanilla, kind, null, modCount,
                 ExternalInstanceProblem.MissingVersionJson) { HasOwnFolder = ownFolder };
+        }
+
+        if (LinkGuard.IsLink(jsonPath))
+        {
+            return new ExternalInstance(id, gameDirectory, id, LoaderKind.Vanilla, kind, null, modCount,
+                ExternalInstanceProblem.SourceIsLink) { HasOwnFolder = ownFolder, LinkTarget = LinkGuard.TargetOf(jsonPath) };
         }
 
         VersionJson? json;
@@ -851,9 +947,16 @@ public static class ExternalInstanceScanner
                 ExternalInstanceProblem.IncompleteProfile) { HasOwnFolder = ownFolder };
         }
 
+        // What the profile is built on, then - in a folder only this build plays in -
+        // what the game logged, and the name last, under a strict reading.
+        var gameVersion = GameVersionDetector.FromProfile(json, Path.GetDirectoryName(directory))
+                          ?? OwnIdAsVersion(json, id)
+                          ?? (ownFolder || gameDirectoryIsOwn ? GameVersionDetector.FromLog(gameDirectory)?.GameVersion : null)
+                          ?? GameVersionDetector.FromName(id);
+
         return new ExternalInstance(id, gameDirectory, id, DetectLoader(json), kind, jsonPath, modCount)
         {
-            GameVersion = DetectGameVersion(json, id),
+            GameVersion = gameVersion,
             LoaderVersion = DetectLoaderVersion(json),
             HasOwnFolder = ownFolder
         };
@@ -871,50 +974,20 @@ public static class ExternalInstanceScanner
     /// the version is read from what the profile is built on, most reliable first.
     /// </summary>
     public static string? DetectGameVersion(VersionJson json, string id)
-    {
-        if (!string.IsNullOrWhiteSpace(json.InheritsFrom))
-        {
-            return json.InheritsFrom;
-        }
+        => GameVersionDetector.FromProfile(json)
+           ?? OwnIdAsVersion(json, id)
+           ?? GameVersionDetector.FromName(id);
 
-        foreach (var library in json.Libraries.Select(l => l.Name ?? string.Empty))
-        {
-            var parts = library.Split(':');
-
-            if (parts.Length < 3)
-            {
-                continue;
-            }
-
-            // Fabric and Quilt both map the game through intermediary, named by version.
-            if (parts[0] == "net.fabricmc" && parts[1] == "intermediary")
-            {
-                return parts[2];
-            }
-
-            // Forge: "1.20.1-47.2.0".
-            if (parts[0] == "net.minecraftforge" && parts[1] == "forge")
-            {
-                return parts[2].Split('-')[0];
-            }
-        }
-
-        // A profile that carries the client download is the game itself, and its id is
-        // the version - whatever shape Mojang gives it ("1.21.1", "26.2", "26.3-snapshot-1").
-        // Unless someone named it: TLauncher's "OptiFine 1.16.5" carries the download too,
-        // and the version is inside the name, not the name.
-        if (json.Downloads?.Client is not null && DetectLoader(json) == LoaderKind.Vanilla &&
-            Regex.IsMatch(id, @"^(1\.\d{1,2}(\.\d{1,2})?|2\d\.\d{1,2}(\.\d{1,2})?)(-[\w.-]+)?$"))
-        {
-            return id;
-        }
-
-        // Otherwise the version is somewhere in the name - unless someone renamed it
-        // completely. Both the old "1.x" and the year-based "26.x" numbering count.
-        var match = Regex.Match(id, @"(?<![\d.])(1\.\d{1,2}(\.\d{1,2})?|2\d\.\d{1,2}(\.\d{1,2})?)(?![\d.])");
-
-        return match.Success ? match.Value : null;
-    }
+    /// <summary>
+    /// A profile that carries the client download is the game itself, and its id is the
+    /// version - whatever shape Mojang gives it ("1.21.1", "26.2", "26.3-snapshot-1").
+    /// Unless someone named it: TLauncher's "OptiFine 1.16.5" carries the download too,
+    /// and there the version is inside the name, not the name.
+    /// </summary>
+    private static string? OwnIdAsVersion(VersionJson json, string id)
+        => json.Downloads?.Client is not null && DetectLoader(json) == LoaderKind.Vanilla && GameVersionDetector.IsGameId(id)
+            ? id
+            : null;
 
     public static string? DetectLoaderVersion(VersionJson json)
     {
@@ -987,7 +1060,7 @@ public static class ExternalInstanceScanner
     {
         var path = Path.Combine(instanceDirectory, "mmc-pack.json");
 
-        if (!File.Exists(path))
+        if (!LinkGuard.IsRealFile(path))
         {
             return null;
         }
@@ -1008,7 +1081,9 @@ public static class ExternalInstanceScanner
             foreach (var component in components.EnumerateArray())
             {
                 var uid = StringOf(component, "uid") ?? string.Empty;
-                var componentVersion = StringOf(component, "version");
+                // "version" is what the player pinned; without a pin the launcher still
+                // records the one it resolved, which is the build that was actually played.
+                var componentVersion = StringOf(component, "version") ?? StringOf(component, "cachedVersion");
 
                 switch (uid)
                 {
@@ -1047,7 +1122,7 @@ public static class ExternalInstanceScanner
     {
         var path = Path.Combine(instanceDirectory, "minecraftinstance.json");
 
-        if (!File.Exists(path))
+        if (!LinkGuard.IsRealFile(path))
         {
             return null;
         }
@@ -1090,7 +1165,7 @@ public static class ExternalInstanceScanner
     {
         var path = Path.Combine(instanceDirectory, "profile.json");
 
-        if (!File.Exists(path))
+        if (!LinkGuard.IsRealFile(path))
         {
             return null;
         }
@@ -1122,7 +1197,7 @@ public static class ExternalInstanceScanner
     {
         var path = Path.Combine(instanceDirectory, "config.json");
 
-        if (!File.Exists(path))
+        if (!LinkGuard.IsRealFile(path))
         {
             return null;
         }
@@ -1156,7 +1231,7 @@ public static class ExternalInstanceScanner
     {
         var path = Path.Combine(instanceDirectory, "instance.json");
 
-        if (!File.Exists(path))
+        if (!LinkGuard.IsRealFile(path))
         {
             return null;
         }
@@ -1258,7 +1333,7 @@ public static class ExternalInstanceScanner
     {
         var path = Path.Combine(instanceDirectory, "bin", "version.json");
 
-        if (!File.Exists(path))
+        if (!LinkGuard.IsRealDirectory(Path.Combine(instanceDirectory, "bin")) || !LinkGuard.IsRealFile(path))
         {
             return null;
         }
@@ -1304,7 +1379,7 @@ public static class ExternalInstanceScanner
     {
         try
         {
-            return Directory.Exists(modsDirectory)
+            return LinkGuard.IsRealDirectory(modsDirectory)
                 ? Directory.EnumerateFiles(modsDirectory, "*.jar", SearchOption.TopDirectoryOnly).Count()
                 : 0;
         }
@@ -1314,11 +1389,16 @@ public static class ExternalInstanceScanner
         }
     }
 
+    /// <summary>Real subfolders of a real folder: links are neither entered nor returned.</summary>
     private static IEnumerable<string> SafeDirectories(string root)
+        => LinkGuard.IsRealDirectory(root) ? LinkGuard.RealDirectories(root) : Array.Empty<string>();
+
+    /// <summary>Subfolders of a real folder, links included, for places where a link is worth reporting.</summary>
+    private static IEnumerable<string> AllDirectories(string root)
     {
         try
         {
-            return Directory.EnumerateDirectories(root).ToList();
+            return LinkGuard.IsRealDirectory(root) ? Directory.EnumerateDirectories(root).ToList() : Array.Empty<string>();
         }
         catch (Exception)
         {

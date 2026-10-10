@@ -2,9 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using STlauncher.Core.Instances;
+using STlauncher.Core.Launch;
+using STlauncher.Core.Loaders;
 
 namespace STlauncher.Core.Import;
 
@@ -25,22 +28,45 @@ public enum ImportMode
     Copy
 }
 
-public sealed record ImportResult(Instance Instance, ImportMode Mode, long CopiedBytes, int CopiedFiles);
+public sealed record ImportResult(Instance Instance, ImportMode Mode, long CopiedBytes, int CopiedFiles)
+{
+    /// <summary>
+    /// Links found inside the build and left behind, as paths relative to its folder. A
+    /// build whose saves folder is a link to another drive imports without its worlds,
+    /// and the player has to hear that rather than find it out.
+    /// </summary>
+    public IReadOnlyList<string> SkippedLinks { get; init; } = Array.Empty<string>();
+
+    /// <summary>The settings taken over from the old launcher, when there were any.</summary>
+    public CarriedSettings? CarriedSettings { get; init; }
+}
+
+/// <summary>
+/// The build's folder, or its profile, is a symbolic link or a junction. Nothing is
+/// imported through one: what is behind it was never looked at.
+/// </summary>
+public sealed class LinkedSourceException : InvalidOperationException
+{
+    public LinkedSourceException(string path, string? target)
+        : base(target is null
+            ? $"'{path}' is a link to another place and is not imported through."
+            : $"'{path}' is a link to '{target}' and is not imported through.")
+    {
+        LinkPath = path;
+        Target = target;
+    }
+
+    public string LinkPath { get; }
+
+    public string? Target { get; }
+}
 
 /// <summary>
 /// Brings a build found by <see cref="ExternalInstanceScanner"/> into the launcher.
 /// </summary>
 public sealed class InstanceImporter
 {
-    /// <summary>
-    /// Folders that are caches rather than content: they are large, shared, and the
-    /// launcher rebuilds them from the network anyway. Copying them would turn a two
-    /// hundred megabyte import into several gigabytes for no benefit.
-    /// </summary>
-    private static readonly string[] SkippedFolders =
-    {
-        "versions", "assets", "libraries", "runtime", "bin", "cache", "logs", "crash-reports", "natives"
-    };
+    private static readonly Regex LoaderVersionShape = new(@"^[0-9A-Za-z][0-9A-Za-z.+_-]{0,47}$", RegexOptions.CultureInvariant);
 
     private readonly LauncherPaths _paths;
     private readonly InstanceManager _instances;
@@ -62,17 +88,11 @@ public sealed class InstanceImporter
             throw new ArgumentNullException(nameof(source));
         }
 
-        if (!Directory.Exists(source.GameDirectory))
-        {
-            return 0;
-        }
-
-        var profileJar = source.VersionJsonPath is null
-            ? null
-            : Path.ChangeExtension(source.VersionJsonPath, ".jar");
-
-        return MeasureDirectory(source.GameDirectory, profileJar);
+        return PlanFiles(source, skippedLinks: null, tolerant: true).Sum(f => SafeLength(f.File));
     }
+
+    /// <inheritdoc cref="ImportCopyRules.IsLauncherFile"/>
+    public static bool IsLauncherFile(string fileName) => ImportCopyRules.IsLauncherFile(fileName);
 
     public async Task<ImportResult> ImportAsync(
         ExternalInstance source,
@@ -86,10 +106,25 @@ public sealed class InstanceImporter
             throw new ArgumentNullException(nameof(source));
         }
 
+        if (source.Problem == ExternalInstanceProblem.SourceIsLink)
+        {
+            throw new LinkedSourceException(source.GameDirectory, source.LinkTarget);
+        }
+
         if (!source.IsUsable)
         {
             throw new InvalidOperationException(
                 $"'{source.Name}' cannot be imported: {source.Problem}.");
+        }
+
+        // Looked at again now, before anything is created: the scan may be minutes old,
+        // and a folder swapped for a link in between must not be walked into.
+        RefuseLink(source.GameDirectory);
+
+        if (!string.IsNullOrWhiteSpace(source.VersionJsonPath))
+        {
+            RefuseLink(source.VersionJsonPath!);
+            RefuseLink(Path.GetDirectoryName(source.VersionJsonPath!)!);
         }
 
         var instance = _instances.Create(string.IsNullOrWhiteSpace(name) ? source.Name : name!);
@@ -107,7 +142,14 @@ public sealed class InstanceImporter
         else
         {
             instance.VersionId = string.IsNullOrWhiteSpace(source.VersionId) ? null : source.VersionId;
+
+            // The exact loader build the old launcher pinned, so the build starts on what
+            // it was played with rather than on today's newest. A version the loader list
+            // does not have is simply not selected, and the newest is taken as before.
+            instance.LoaderVersion = PinnedLoaderVersion(source);
         }
+
+        var carried = ApplyCarriedSettings(instance, source.Settings);
 
         // The profile has to live where the launcher looks for versions, in both modes:
         // it is what describes how the game starts, and it is small.
@@ -116,6 +158,7 @@ public sealed class InstanceImporter
 
         var copiedBytes = 0L;
         var copiedFiles = 0;
+        var skippedLinks = new List<string>();
 
         if (mode == ImportMode.Link)
         {
@@ -126,13 +169,103 @@ public sealed class InstanceImporter
             var destination = _paths.InstanceDirectory(instance.Id);
 
             (copiedBytes, copiedFiles) = await Task.Run(
-                () => CopyGameFiles(source, destination, progress, cancellationToken),
+                () => CopyGameFiles(source, destination, skippedLinks, progress, cancellationToken),
                 cancellationToken).ConfigureAwait(false);
         }
 
         _instances.Save(instance);
 
-        return new ImportResult(instance, mode, copiedBytes, copiedFiles);
+        return new ImportResult(instance, mode, copiedBytes, copiedFiles)
+        {
+            SkippedLinks = skippedLinks,
+            CarriedSettings = carried
+        };
+    }
+
+    private static void RefuseLink(string path)
+    {
+        if (LinkGuard.IsLink(path))
+        {
+            throw new LinkedSourceException(path, LinkGuard.TargetOf(path));
+        }
+    }
+
+    /// <summary>
+    /// Writes the old launcher's per-build settings into the new build. Checked again
+    /// here although the reader already did: the record may have been put together by
+    /// anything, and this is the last point before the values reach a command line.
+    /// </summary>
+    public static CarriedSettings? ApplyCarriedSettings(Instance instance, CarriedSettings? settings)
+    {
+        if (settings is null)
+        {
+            return null;
+        }
+
+        int? maxMemory = null;
+        int? minMemory = null;
+
+        if (settings.MaxMemoryMb is { } max &&
+            max is >= SourceInstanceSettings.MinAllowedMemoryMb and <= SourceInstanceSettings.MaxAllowedMemoryMb)
+        {
+            maxMemory = max;
+            instance.MaxMemoryMb = max;
+
+            if (settings.MinMemoryMb is { } min && min >= 128 && min <= max)
+            {
+                minMemory = min;
+                instance.MinMemoryMb = min;
+            }
+            else if (instance.MinMemoryMb > max)
+            {
+                instance.MinMemoryMb = max;
+            }
+        }
+
+        int? width = null;
+        int? height = null;
+
+        if (settings is { Width: >= 320 and <= 7680, Height: >= 240 and <= 4320 })
+        {
+            (width, height) = (settings.Width, settings.Height);
+            (instance.Width, instance.Height) = (width, height);
+        }
+
+        var arguments = JvmArgumentAllowlist.Filter(settings.JvmArguments);
+
+        if (arguments.Kept.Count > 0)
+        {
+            instance.ExtraJvmArgs = arguments.KeptText;
+        }
+
+        var applied = new CarriedSettings(
+            maxMemory,
+            minMemory,
+            width,
+            height,
+            arguments.Kept,
+            settings.DroppedJvmArguments.Concat(arguments.Dropped).ToList());
+
+        return applied.HasAnything ? applied : null;
+    }
+
+    private static string? PinnedLoaderVersion(ExternalInstance source)
+    {
+        var version = source.LoaderVersion?.Trim();
+
+        if (source.Loader == LoaderKind.Vanilla || string.IsNullOrEmpty(version) || !LoaderVersionShape.IsMatch(version))
+        {
+            return null;
+        }
+
+        // NeoForge for 1.20.1 is published as "1.20.1-47.1.3"; launchers record just "47.1.3".
+        if (source.Loader == LoaderKind.NeoForge && source.VersionId == "1.20.1" &&
+            !version.StartsWith("1.20.1-", StringComparison.Ordinal))
+        {
+            return "1.20.1-" + version;
+        }
+
+        return version;
     }
 
     /// <summary>
@@ -160,48 +293,75 @@ public sealed class InstanceImporter
         var sourceJar = Path.ChangeExtension(source.VersionJsonPath!, ".jar");
         var targetJar = _paths.VersionJarPath(id);
 
-        if (File.Exists(sourceJar) && !File.Exists(targetJar))
+        // A jar that is a link is left where it is: the launcher fetches the game itself.
+        if (LinkGuard.IsRealFile(sourceJar) && !File.Exists(targetJar))
         {
             File.Copy(sourceJar, targetJar);
         }
     }
 
-    /// <summary>
-    /// Loose files in a game folder that belong to the other launcher, not to the game:
-    /// its executables, its own settings and - above all - its account files. Copying
-    /// those would duplicate someone's sign-in into a folder nobody expects to hold it.
-    /// </summary>
-    public static bool IsLauncherFile(string fileName)
-    {
-        var name = fileName.ToLowerInvariant();
-
-        return name.StartsWith("launcher_", StringComparison.Ordinal) ||
-               name.StartsWith("tlauncher", StringComparison.Ordinal) ||
-               name.StartsWith("clientid", StringComparison.Ordinal) ||
-               name.EndsWith(".exe", StringComparison.Ordinal) ||
-               name.Contains(".exe.", StringComparison.Ordinal) ||
-               name.EndsWith(".bin", StringComparison.Ordinal) ||
-               name.EndsWith(".log", StringComparison.Ordinal) ||
-               name is "treatment_tags.json" or "usercache.json" or "usernamecache.json";
-    }
-
-    /// <summary>Folders a launcher keeps for itself: its web views, updaters and backups.</summary>
-    private static readonly string[] LauncherFolders =
-    {
-        "webcache", "webcache2", "tlloader", "backup", "downloads", "staging", ".cache"
-    };
-
-    private static bool IsSkippedFolder(string name)
-        => SkippedFolders.Contains(name, StringComparer.OrdinalIgnoreCase) ||
-           LauncherFolders.Contains(name, StringComparer.OrdinalIgnoreCase);
-
     private static (long Bytes, int Files) CopyGameFiles(
         ExternalInstance source,
         string destinationDirectory,
+        List<string> skippedLinks,
         IProgress<string>? progress,
         CancellationToken cancellationToken)
     {
-        var sourceDirectory = source.GameDirectory;
+        if (!Directory.Exists(source.GameDirectory))
+        {
+            return (0, 0);
+        }
+
+        Directory.CreateDirectory(destinationDirectory);
+
+        var bytes = 0L;
+        var files = 0;
+        string? reported = null;
+
+        foreach (var (file, relative) in PlanFiles(source, skippedLinks, tolerant: false))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var top = relative.Split(Path.DirectorySeparatorChar, 2)[0];
+
+            if (!string.Equals(top, reported, StringComparison.Ordinal) && relative.Length > top.Length)
+            {
+                reported = top;
+                progress?.Report(top);
+            }
+
+            var target = Path.Combine(destinationDirectory, relative);
+
+            if (File.Exists(target))
+            {
+                continue;
+            }
+
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            File.Copy(file, target);
+            bytes += SafeLength(file);
+            files++;
+        }
+
+        return (bytes, files);
+    }
+
+    /// <summary>
+    /// Every file that copying this build would take, with its path relative to the
+    /// build's folder. One list for both the estimate and the copy, so the number on the
+    /// screen is the number of bytes that then move.
+    /// </summary>
+    private static IEnumerable<(string File, string Relative)> PlanFiles(
+        ExternalInstance source,
+        List<string>? skippedLinks,
+        bool tolerant)
+    {
+        var root = source.GameDirectory;
+
+        if (!Directory.Exists(root) || LinkGuard.IsLink(root))
+        {
+            yield break;
+        }
 
         // When the build's folder is its version folder, the profile and the game jar
         // sit in it too. They are already copied to versions/, where they belong.
@@ -213,148 +373,81 @@ public sealed class InstanceImporter
                 Path.GetFileName(Path.ChangeExtension(source.VersionJsonPath, ".jar"))
             };
 
-        if (!Directory.Exists(sourceDirectory))
+        foreach (var entry in Entries(root, tolerant))
         {
-            return (0, 0);
-        }
-
-        Directory.CreateDirectory(destinationDirectory);
-
-        var bytes = 0L;
-        var files = 0;
-
-        foreach (var entry in Directory.EnumerateFileSystemEntries(sourceDirectory))
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
             var name = Path.GetFileName(entry);
+            var isDirectory = Directory.Exists(entry);
+
+            if (!ImportCopyRules.IsCopiedFromRoot(source, name, isDirectory))
+            {
+                continue;
+            }
+
+            if (LinkGuard.IsLink(entry))
+            {
+                skippedLinks?.Add(name);
+                continue;
+            }
+
+            if (!isDirectory)
+            {
+                if (!profileFiles.Contains(name, StringComparer.OrdinalIgnoreCase))
+                {
+                    yield return (entry, name);
+                }
+
+                continue;
+            }
+
+            foreach (var file in Walk(entry, name, skippedLinks, tolerant))
+            {
+                yield return file;
+            }
+        }
+    }
+
+    private static IEnumerable<(string File, string Relative)> Walk(
+        string directory,
+        string relative,
+        List<string>? skippedLinks,
+        bool tolerant)
+    {
+        foreach (var entry in Entries(directory, tolerant))
+        {
+            var name = Path.GetFileName(entry);
+            var entryRelative = Path.Combine(relative, name);
+
+            if (LinkGuard.IsLink(entry))
+            {
+                skippedLinks?.Add(entryRelative);
+                continue;
+            }
 
             if (Directory.Exists(entry))
             {
-                if (IsSkippedFolder(name))
+                foreach (var file in Walk(entry, entryRelative, skippedLinks, tolerant))
                 {
-                    continue;
+                    yield return file;
                 }
-
-                progress?.Report(name);
-                var (subBytes, subFiles) = CopyDirectory(entry, Path.Combine(destinationDirectory, name), cancellationToken);
-                bytes += subBytes;
-                files += subFiles;
-                continue;
             }
-
-            // Loose files in the root: options.txt, servers.dat and the like. The
-            // launcher's own definition must never be overwritten by one.
-            if (string.Equals(name, InstanceManager.DefinitionFileName, StringComparison.OrdinalIgnoreCase) ||
-                IsLauncherFile(name) ||
-                profileFiles.Contains(name, StringComparer.OrdinalIgnoreCase))
+            else if (!ImportCopyRules.IsAccountFile(name))
             {
-                continue;
+                yield return (entry, entryRelative);
             }
-
-            var target = Path.Combine(destinationDirectory, name);
-
-            if (!File.Exists(target))
-            {
-                File.Copy(entry, target);
-                bytes += new FileInfo(entry).Length;
-                files++;
-            }
-        }
-
-        return (bytes, files);
-    }
-
-    private static (long Bytes, int Files) CopyDirectory(
-        string source,
-        string destination,
-        CancellationToken cancellationToken)
-    {
-        Directory.CreateDirectory(destination);
-
-        var bytes = 0L;
-        var files = 0;
-
-        foreach (var directory in Directory.EnumerateDirectories(source))
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            var (subBytes, subFiles) = CopyDirectory(
-                directory,
-                Path.Combine(destination, Path.GetFileName(directory)),
-                cancellationToken);
-
-            bytes += subBytes;
-            files += subFiles;
-        }
-
-        foreach (var file in Directory.EnumerateFiles(source))
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            var target = Path.Combine(destination, Path.GetFileName(file));
-
-            if (File.Exists(target))
-            {
-                continue;
-            }
-
-            File.Copy(file, target);
-            bytes += new FileInfo(file).Length;
-            files++;
-        }
-
-        return (bytes, files);
-    }
-
-    private static long MeasureDirectory(string directory, string? profileJar)
-    {
-        var total = 0L;
-
-        foreach (var entry in SafeEntries(directory))
-        {
-            var name = Path.GetFileName(entry);
-
-            if (Directory.Exists(entry))
-            {
-                if (IsSkippedFolder(name))
-                {
-                    continue;
-                }
-
-                total += MeasureTree(entry);
-            }
-            else if (!IsLauncherFile(name) &&
-                     !string.Equals(entry, profileJar, StringComparison.OrdinalIgnoreCase))
-            {
-                total += SafeLength(entry);
-            }
-        }
-
-        return total;
-    }
-
-    private static long MeasureTree(string directory)
-    {
-        try
-        {
-            return Directory
-                .EnumerateFiles(directory, "*", SearchOption.AllDirectories)
-                .Sum(SafeLength);
-        }
-        catch (Exception)
-        {
-            return 0;
         }
     }
 
-    private static IEnumerable<string> SafeEntries(string directory)
+    /// <summary>
+    /// The entries of one folder. The estimate shrugs at a folder it cannot read; the
+    /// copy does not, because a build that silently lost a folder is worse than an error.
+    /// </summary>
+    private static IReadOnlyList<string> Entries(string directory, bool tolerant)
     {
         try
         {
             return Directory.EnumerateFileSystemEntries(directory).ToList();
         }
-        catch (Exception)
+        catch (Exception) when (tolerant)
         {
             return Array.Empty<string>();
         }

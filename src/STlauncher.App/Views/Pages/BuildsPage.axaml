@@ -1384,7 +1384,7 @@
 
         <!-- ============ Import from other launchers ============ -->
         <Border Background="{DynamicResource OverlayScrimBrush}" IsVisible="{Binding IsImportOpen}" controls:Reveal.OnVisible="True">
-            <Border Classes="card" Width="620" MaxHeight="560" HorizontalAlignment="Center"
+            <Border Classes="card" Width="620" MaxHeight="640" HorizontalAlignment="Center"
                     VerticalAlignment="Center" Padding="22">
                 <Grid RowDefinitions="Auto,Auto,*,Auto,Auto" RowSpacing="14">
 
@@ -1393,20 +1393,61 @@
                         <TextBlock Text="{Binding ImportStatus}" Classes="faint" TextWrapping="Wrap"/>
                     </StackPanel>
 
-                    <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
-                        <TextBox Text="{Binding ImportFolder}"
-                                 Watermark="{DynamicResource Import_FolderHint}"/>
-                        <Button Grid.Column="1" Classes="ghost small"
-                                Content="{DynamicResource Import_Folder}"
-                                Command="{Binding ScanFolderCommand}"
-                                IsEnabled="{Binding !IsImportBusy}"/>
-                        <Button Grid.Column="2" Classes="ghost small"
-                                Content="{DynamicResource Import_Rescan}"
-                                Command="{Binding ScanForInstancesCommand}"
-                                IsEnabled="{Binding !IsImportBusy}"/>
-                    </Grid>
+                    <StackPanel Grid.Row="1" Spacing="8">
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                            <TextBox Text="{Binding ImportFolder}"
+                                     Watermark="{DynamicResource Import_FolderHint}"/>
+                            <Button Grid.Column="1" Classes="ghost small"
+                                    Content="{DynamicResource Import_Folder}"
+                                    Command="{Binding ScanFolderCommand}"
+                                    IsEnabled="{Binding !IsImportBusy}"/>
+                            <Button Grid.Column="2" Classes="ghost small"
+                                    Content="{DynamicResource Import_Rescan}"
+                                    Command="{Binding ScanForInstancesCommand}"
+                                    IsEnabled="{Binding !IsImportBusy}"/>
+                        </Grid>
+
+                        <!-- Walking whole drives is slow and nobody asked for it, so it
+                             happens only on this button; the same button stops it. -->
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                            <Button Classes="ghost small"
+                                    Content="{Binding SweepButtonLabel}"
+                                    Command="{Binding SweepDrivesCommand}"
+                                    IsEnabled="{Binding CanSweep}"/>
+                            <TextBlock Grid.Column="1" Text="{DynamicResource Import_SweepHint}"
+                                       Classes="faint" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                        </Grid>
+                    </StackPanel>
 
                     <ScrollViewer Grid.Row="2">
+                        <StackPanel Spacing="6">
+                        <StackPanel Spacing="6" IsVisible="{Binding HasSweepFolders}" Margin="0,0,0,6">
+                            <TextBlock Text="{DynamicResource Import_SweepFoldersTitle}" Classes="label"/>
+                            <ItemsControl ItemsSource="{Binding SweepFolders}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:SweepFolder">
+                                        <Border Classes="panel" Padding="10" Margin="0,0,0,6">
+                                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                <StackPanel Spacing="2">
+                                                    <TextBlock Text="{Binding Path}" FontWeight="SemiBold"
+                                                               TextTrimming="CharacterEllipsis"
+                                                               ToolTip.Tip="{Binding Path}"/>
+                                                    <TextBlock Text="{Binding KindLabel}" Classes="faint"/>
+                                                </StackPanel>
+                                                <Button Grid.Column="1" Classes="ghost small" VerticalAlignment="Center"
+                                                        Content="{DynamicResource Import_SweepShow}"
+                                                        IsVisible="{Binding !IsShown}"
+                                                        Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).ShowSweepFolderCommand}"
+                                                        CommandParameter="{Binding}"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding Result}" Classes="faint"
+                                                           VerticalAlignment="Center" IsVisible="{Binding IsShown}"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
                         <ItemsControl ItemsSource="{Binding ImportCandidates}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:ImportCandidate">
@@ -1430,6 +1471,15 @@
                                                 <TextBlock Text="{Binding Note}" Classes="gold"
                                                            TextWrapping="Wrap"
                                                            IsVisible="{Binding HasNote}"/>
+
+                                                <!-- What comes along from the old launcher's settings
+                                                     of this build, and what is left behind. -->
+                                                <TextBlock Text="{Binding CarriedLabel}" Classes="faint"
+                                                           TextWrapping="Wrap"
+                                                           IsVisible="{Binding HasCarried}"/>
+                                                <TextBlock Text="{Binding DroppedLabel}" Classes="gold"
+                                                           TextWrapping="Wrap"
+                                                           IsVisible="{Binding HasDropped}"/>
                                             </StackPanel>
 
                                             <TextBlock Grid.Column="2" Text="{Binding SourceLabel}"
@@ -1439,6 +1489,7 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
+                        </StackPanel>
                     </ScrollViewer>
 
                     <StackPanel Grid.Row="3" Spacing="8">
@@ -1453,6 +1504,9 @@
                                      Content="{DynamicResource Import_ModeCopy}"/>
                         <TextBlock Text="{DynamicResource Import_ModeCopyHint}" Classes="faint"
                                    TextWrapping="Wrap" Margin="26,0,0,0"/>
+                        <TextBlock Text="{DynamicResource Import_SharedCopyHint}" Classes="faint"
+                                   TextWrapping="Wrap" Margin="26,0,0,0"
+                                   IsVisible="{Binding ImportCopiesFromShared}"/>
 
                         <TextBlock Text="{Binding ImportSummary}" Classes="gold" TextWrapping="Wrap"
                                    IsVisible="{Binding ImportSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
@@ -1602,6 +1656,15 @@
                                     <TextBlock Text="{DynamicResource Settings_ExtraArgs}" Classes="faint"/>
                                     <TextBox Text="{Binding ExtraGameArgs}"
                                              Watermark="--fullscreen --width 1920"/>
+                                </StackPanel>
+
+                                <!-- Checked when focus leaves the field, not on every key: half
+                                     an option is not an option yet. -->
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="{DynamicResource Settings_JvmArgs}" Classes="faint"/>
+                                    <TextBox Text="{Binding BuildJvmArgs, UpdateSourceTrigger=LostFocus}"
+                                             Watermark="-XX:+UseG1GC -XX:MaxGCPauseMillis=50"/>
+                                    <TextBlock Text="{DynamicResource Settings_JvmArgsHint}" Classes="faint" TextWrapping="Wrap"/>
                                 </StackPanel>
                             </StackPanel>
 

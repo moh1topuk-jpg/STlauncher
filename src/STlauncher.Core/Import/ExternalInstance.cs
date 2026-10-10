@@ -38,7 +38,13 @@ public enum ExternalInstanceProblem
     IncompleteProfile,
 
     /// <summary>Already imported: an instance already points at this folder and version.</summary>
-    AlreadyImported
+    AlreadyImported,
+
+    /// <summary>
+    /// The folder is a symbolic link or a junction. The import never walks through one,
+    /// so the build is listed with where the link points and left alone.
+    /// </summary>
+    SourceIsLink
 }
 
 /// <summary>
@@ -97,6 +103,15 @@ public sealed record ExternalInstance(
     /// launcher's "game directory" profile setting.
     /// </summary>
     public bool HasOwnFolder { get; init; }
+
+    /// <summary>
+    /// What the build had set for itself in the old launcher - memory, window size, JVM
+    /// arguments that passed the allowlist. Null when it overrode nothing.
+    /// </summary>
+    public CarriedSettings? Settings { get; init; }
+
+    /// <summary>Where the link points, when the problem is <see cref="ExternalInstanceProblem.SourceIsLink"/>.</summary>
+    public string? LinkTarget { get; init; }
 
     /// <summary>
     /// True when the build is started by its own profile JSON rather than assembled by

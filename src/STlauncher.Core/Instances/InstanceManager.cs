@@ -203,6 +203,7 @@ public sealed class InstanceManager
         copy.ServerName = source.ServerName;
         copy.ServerAddress = source.ServerAddress;
         copy.ExtraGameArgs = source.ExtraGameArgs;
+        copy.ExtraJvmArgs = source.ExtraJvmArgs;
 
         // Deliberately not copied: two builds sharing one external folder would fight
         // over the same mods and worlds without either of them saying so.

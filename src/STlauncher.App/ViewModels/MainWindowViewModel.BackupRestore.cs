@@ -247,6 +247,8 @@ public partial class MainWindowViewModel
                 instance.Width = definition.Width;
                 instance.Height = definition.Height;
                 instance.ExtraGameArgs = definition.ExtraGameArgs;
+                // A backup is a file that travels; the launch filters these again anyway.
+                instance.ExtraJvmArgs = Core.Launch.JvmArgumentAllowlist.Filter(definition.ExtraJvmArgs) is { Kept.Count: > 0 } jvm ? jvm.KeptText : null;
                 instance.ProfileVersionId = definition.ProfileVersionId;
                 instance.ServerName = definition.ServerName;
                 instance.ServerAddress = definition.ServerAddress;

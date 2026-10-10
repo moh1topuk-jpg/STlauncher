@@ -15,6 +15,10 @@ public sealed class VersionJson
     [JsonPropertyName("type")]
     public string? Type { get; set; }
 
+    /// <summary>The game jar a custom profile runs on, as TLauncher and old Forge profiles name it.</summary>
+    [JsonPropertyName("jar")]
+    public string? Jar { get; set; }
+
     [JsonPropertyName("mainClass")]
     public string? MainClass { get; set; }
 
