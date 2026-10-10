@@ -78,6 +78,64 @@
                             </Grid>
                         </StackPanel>
 
+                        <!-- "Ускорение": the same wish as the presets, but a switch - what it adds
+                             and changes is listed before anything happens, written down, and
+                             taken back when it is switched off. -->
+                        <StackPanel Spacing="8">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <TextBlock Text="{DynamicResource Boost_Title}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding BoostSwitch}"
+                                              OnContent="" OffContent="" MinWidth="0" VerticalAlignment="Center"
+                                              IsEnabled="{Binding CanToggleBoost}"/>
+                            </Grid>
+                            <TextBlock Text="{DynamicResource Boost_Hint}" Classes="faint" TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding BoostNote}" TextWrapping="Wrap" FontSize="12.5"
+                                       IsVisible="{Binding HasBoostNote}"/>
+
+                            <Border Classes="panel" Padding="16,14" IsVisible="{Binding IsBoostReviewOpen}">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="{DynamicResource Boost_ReviewTitle}" FontWeight="SemiBold"/>
+
+                                    <TextBlock Text="{Binding BoostModsHeader}" Classes="label" TextWrapping="Wrap"/>
+                                    <ItemsControl ItemsSource="{Binding BoostModLines}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:BoostLine">
+                                                <Grid ColumnDefinitions="230,*" ColumnSpacing="12" Margin="0,2" Opacity="{Binding Opacity}">
+                                                    <TextBlock Text="{Binding Title}" Margin="{Binding Margin}" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding Detail}" Classes="faint" TextWrapping="Wrap"/>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                    <TextBlock Text="{Binding BoostOptionsHeader}" Classes="label" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                    <ItemsControl ItemsSource="{Binding BoostOptionLines}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:BoostLine">
+                                                <Grid ColumnDefinitions="230,*" ColumnSpacing="12" Margin="0,2">
+                                                    <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding Detail}" Classes="faint" TextWrapping="Wrap"/>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                    <TextBlock Text="{DynamicResource Boost_ReviewUndo}" Classes="faint" TextWrapping="Wrap"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Button Classes="primary" Content="{DynamicResource Boost_Confirm}"
+                                                Command="{Binding ConfirmBoostCommand}"/>
+                                        <Button Classes="ghost" Content="{DynamicResource Boost_Cancel}"
+                                                Command="{Binding CancelBoostCommand}"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" IsVisible="{Binding HasBoostStatus}">
+                                <ProgressBar IsIndeterminate="True" Width="60" Height="3" VerticalAlignment="Center" IsVisible="{Binding IsBoostBusy}"/>
+                                <TextBlock Grid.Column="1" Text="{Binding BoostStatus}" Classes="gold" TextWrapping="Wrap"/>
+                            </Grid>
+                        </StackPanel>
+
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="28">
                             <!-- Memory: a slider with the recommendation marked, instead of two
                                  number boxes with no hint of what is sensible. -->

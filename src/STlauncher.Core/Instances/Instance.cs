@@ -100,6 +100,14 @@ public sealed class Instance
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public STlauncher.Core.Skins.InGameSkinSettings? SkinInGame { get; set; }
 
+    /// <summary>
+    /// What the "Ускорение" switch did to this build, so that switching it off undoes
+    /// exactly that. Null until the switch is first used.
+    /// </summary>
+    [JsonPropertyName("boost")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public STlauncher.Core.Boost.BoostRecord? Boost { get; set; }
+
     /// <summary>Last time this build was launched, for sorting and display.</summary>
     [JsonPropertyName("lastPlayedAt")]
     public DateTimeOffset? LastPlayedAt { get; set; }
