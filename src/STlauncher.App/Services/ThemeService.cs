@@ -114,9 +114,13 @@ public sealed class ThemeService
     /// </summary>
     private static ResourceDictionary BuildAccent(string hex, bool light)
     {
-        var accent = Color.Parse(hex);
-        var hover = Shift(accent, light ? -0.06 : 0.08);
-        var pressed = Shift(accent, -0.14);
+        // A preset names the colour as it stands on ivory. On the dark ground the same
+        // colour reads dull, so it is taken a step brighter there (crimson #A3243F becomes
+        // #B5294A); the hover tone is the brighter one in both themes, because it doubles
+        // as the accent for icons and marks drawn straight on the ground.
+        var accent = light ? Color.Parse(hex) : Brighten(Color.Parse(hex), 1.11);
+        var hover = Shift(Brighten(accent, 1.13), light ? 0.0 : 0.02);
+        var pressed = Shift(accent, -0.16);
         var lighter = Shift(accent, 0.18);
         var lightest = Shift(accent, 0.30);
         var darker = Shift(accent, -0.22);
@@ -144,7 +148,16 @@ public sealed class ThemeService
             {
                 StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
                 EndPoint = new RelativePoint(0, 1, RelativeUnit.Relative),
-                GradientStops = { new GradientStop(hover, 0), new GradientStop(accent, 1) }
+                // One flat fill since the quiet look; still a gradient brush, the key is shared.
+                GradientStops = { new GradientStop(accent, 0), new GradientStop(accent, 1) }
+            },
+            ["GroundGlowBrush"] = new RadialGradientBrush
+            {
+                Center = new RelativePoint(0.78, 0.34, RelativeUnit.Relative),
+                GradientOrigin = new RelativePoint(0.78, 0.34, RelativeUnit.Relative),
+                RadiusX = new RelativeScalar(0.52, RelativeUnit.Relative),
+                RadiusY = new RelativeScalar(0.62, RelativeUnit.Relative),
+                GradientStops = { new GradientStop(WithAlpha(accent, light ? 0.09 : 0.12), 0), new GradientStop(WithAlpha(accent, 0), 1) }
             },
             ["HeroGlowBrush"] = new RadialGradientBrush
             {
@@ -164,8 +177,14 @@ public sealed class ThemeService
                 }
             },
             ["PedestalRimBrush"] = new SolidColorBrush(WithAlpha(lighter, light ? 0.5 : 0.4)),
-            ["HeroShadow"] = BoxShadows.Parse($"0 6 22 0 {ToHex(WithAlpha(accent, 0.28))}"),
-            ["HeroShadowHover"] = BoxShadows.Parse($"0 10 34 0 {ToHex(WithAlpha(accent, 0.45))}"),
+            ["HeroShadow"] = BoxShadows.Parse($"0 6 22 0 {ToHex(WithAlpha(accent, 0.2))}"),
+            ["HeroShadowHover"] = BoxShadows.Parse($"0 10 30 0 {ToHex(WithAlpha(accent, 0.35))}"),
+            ["SliderTrackValueFill"] = new SolidColorBrush(accent),
+            ["SliderTrackValueFillPointerOver"] = new SolidColorBrush(accent),
+            ["SliderTrackValueFillPressed"] = new SolidColorBrush(accent),
+            ["SliderThumbBackground"] = new SolidColorBrush(hover),
+            ["SliderThumbBackgroundPointerOver"] = new SolidColorBrush(hover),
+            ["SliderThumbBackgroundPressed"] = new SolidColorBrush(accent),
 
             ["SystemAccentColor"] = accent,
             ["SystemAccentColorDark1"] = pressed,
@@ -192,6 +211,14 @@ public sealed class ThemeService
         byte Channel(byte c) => amount >= 0
             ? (byte)Math.Round(c + (255 - c) * amount)
             : (byte)Math.Round(c * (1 + amount));
+
+        return Color.FromArgb(color.A, Channel(color.R), Channel(color.G), Channel(color.B));
+    }
+
+    /// <summary>Scales the channels, so a colour gets brighter without washing out towards white.</summary>
+    private static Color Brighten(Color color, double factor)
+    {
+        byte Channel(byte c) => (byte)Math.Clamp(Math.Round(c * factor), 0, 255);
 
         return Color.FromArgb(color.A, Channel(color.R), Channel(color.G), Channel(color.B));
     }

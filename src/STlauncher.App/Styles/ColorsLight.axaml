@@ -4,31 +4,37 @@
     <!-- The light palette: warm ivory grounds, the same crimson accent, ink for text.
          Every key mirrors Colors.axaml; ThemeService swaps the two dictionaries. -->
 
-    <Color x:Key="AppBgColor">#F3EEF0</Color>
+    <!-- Ground, field, raised, hover: see Colors.axaml. On ivory the field is white, and a
+         panel inside a white card needs a tone of its own, so SurfaceAlt is not white here;
+         the mockup's white "raised" lives in RaisedBrush. The muted text is a shade darker
+         than the mockup's #8E8288: that one falls under 3.5:1 on this ground at 12 px. -->
+    <Color x:Key="AppBgColor">#F6F3F4</Color>
     <Color x:Key="SurfaceColor">#FFFFFF</Color>
-    <Color x:Key="SurfaceAltColor">#EFE7EB</Color>
-    <Color x:Key="ElevatedColor">#E4D9DF</Color>
-    <Color x:Key="HoverColor">#D8C8D0</Color>
+    <Color x:Key="SurfaceAltColor">#F1ECEE</Color>
+    <Color x:Key="ElevatedColor">#EAE3E7</Color>
+    <Color x:Key="HoverColor">#DFD6DB</Color>
 
-    <Color x:Key="DividerColor">#D3C3CB</Color>
-    <Color x:Key="BorderColor">#CDBBC4</Color>
+    <Color x:Key="DividerColor">#E4DCE0</Color>
+    <Color x:Key="BorderColor">#D3C8CE</Color>
 
-    <Color x:Key="TextPrimaryColor">#1E141A</Color>
-    <Color x:Key="TextSecondaryColor">#463840</Color>
-    <Color x:Key="TextMutedColor">#6B5C65</Color>
+    <Color x:Key="TextPrimaryColor">#1B1418</Color>
+    <Color x:Key="TextSecondaryColor">#5F5359</Color>
+    <Color x:Key="TextMutedColor">#7F7379</Color>
     <Color x:Key="TextOnAccentColor">#FFF6F8</Color>
 
     <Color x:Key="AccentColor">#A3243F</Color>
-    <Color x:Key="AccentHoverColor">#8E1F37</Color>
-    <Color x:Key="AccentPressedColor">#7E1B31</Color>
-    <Color x:Key="GoldColor">#7A5E0E</Color>
+    <Color x:Key="AccentHoverColor">#B92D4B</Color>
+    <Color x:Key="AccentPressedColor">#8A1E35</Color>
+    <Color x:Key="GoldColor">#8A6A10</Color>
     <Color x:Key="GoldMutedColor">#B08F2E</Color>
 
-    <Color x:Key="SuccessColor">#2E7D4F</Color>
-    <Color x:Key="WarningColor">#A86A12</Color>
+    <Color x:Key="SuccessColor">#2F7F52</Color>
+    <Color x:Key="WarningColor">#9A6A12</Color>
     <Color x:Key="DangerColor">#B8322A</Color>
 
     <FontFamily x:Key="DisplayFont">avares://STlauncher.App/Assets/Fonts#Manrope</FontFamily>
+    <FontFamily x:Key="BodyFont">fonts:Inter#Inter</FontFamily>
+    <FontFamily x:Key="MonoFont">Consolas, Menlo, monospace</FontFamily>
 
     <SolidColorBrush x:Key="AppBgBrush" Color="{StaticResource AppBgColor}"/>
     <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}"/>
@@ -54,6 +60,25 @@
     <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}"/>
     <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource DangerColor}"/>
 
+    <!-- ===================== The quiet look: brushes by what they are for ===================== -->
+    <SolidColorBrush x:Key="GroundBrush" Color="{StaticResource AppBgColor}"/>
+    <SolidColorBrush x:Key="FieldBrush" Color="{StaticResource SurfaceColor}"/>
+    <SolidColorBrush x:Key="RaisedBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="RowHoverBrush" Color="#EEE8EB"/>
+    <SolidColorBrush x:Key="HairlineBrush" Color="{StaticResource DividerColor}"/>
+    <!-- A quiet button is grey here, not the mockup's white: half the pages still stand on
+         white cards, where a white button is only its text. -->
+    <SolidColorBrush x:Key="ControlBrush" Color="#ECE6E9"/>
+    <SolidColorBrush x:Key="ControlHoverBrush" Color="#E2DADE"/>
+    <SolidColorBrush x:Key="ControlPressedBrush" Color="#D9CFD5"/>
+    <BoxShadows x:Key="RowLineShadow">0 -1 0 0 #E4DCE0</BoxShadows>
+    <BoxShadows x:Key="NoShadow">0 0 0 0 #00000000</BoxShadows>
+    <BoxShadows x:Key="DialogShadow">0 18 48 0 #2E2A1C24</BoxShadows>
+    <RadialGradientBrush x:Key="GroundGlowBrush" Center="78%,34%" GradientOrigin="78%,34%" RadiusX="52%" RadiusY="62%">
+        <GradientStop Offset="0" Color="#17A3243F"/>
+        <GradientStop Offset="1" Color="#00A3243F"/>
+    </RadialGradientBrush>
+
     <LinearGradientBrush x:Key="AccentHairlineBrush" StartPoint="0%,50%" EndPoint="100%,50%">
         <GradientStop Offset="0" Color="#00A3243F"/>
         <GradientStop Offset="0.5" Color="#C9A3243F"/>
@@ -61,14 +86,14 @@
     </LinearGradientBrush>
 
     <LinearGradientBrush x:Key="SidebarBrush" StartPoint="0%,0%" EndPoint="0%,100%">
-        <GradientStop Offset="0" Color="#F1E9ED"/>
-        <GradientStop Offset="1" Color="#EADFE5"/>
+        <GradientStop Offset="0" Color="#F6F3F4"/>
+        <GradientStop Offset="1" Color="#F1ECEE"/>
     </LinearGradientBrush>
 
-    <SolidColorBrush x:Key="GhostBrush" Color="#00F3EEF0"/>
-    <SolidColorBrush x:Key="RailBrush" Color="#ECE3E8"/>
-    <SolidColorBrush x:Key="UpdateBannerBrush" Color="#F3E2E8"/>
-    <SolidColorBrush x:Key="IndexBorderBrush" Color="#E3D7DD"/>
+    <SolidColorBrush x:Key="GhostBrush" Color="#00F6F3F4"/>
+    <SolidColorBrush x:Key="RailBrush" Color="#F6F3F4"/>
+    <SolidColorBrush x:Key="UpdateBannerBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="IndexBorderBrush" Color="#E4DCE0"/>
 
     <SolidColorBrush x:Key="CardGlassBrush" Color="#D9FFFFFF"/>
     <SolidColorBrush x:Key="CardGlassWarmBrush" Color="#D9F8ECF1"/>
@@ -105,11 +130,11 @@
     </LinearGradientBrush>
 
     <LinearGradientBrush x:Key="HeroGradientBrush" StartPoint="0%,0%" EndPoint="0%,100%">
-        <GradientStop Offset="0" Color="#B72A48"/>
+        <GradientStop Offset="0" Color="#A3243F"/>
         <GradientStop Offset="1" Color="#A3243F"/>
     </LinearGradientBrush>
-    <BoxShadows x:Key="HeroShadow">0 6 22 0 #47A3243F</BoxShadows>
-    <BoxShadows x:Key="HeroShadowHover">0 10 34 0 #73A3243F</BoxShadows>
+    <BoxShadows x:Key="HeroShadow">0 6 22 0 #33A3243F</BoxShadows>
+    <BoxShadows x:Key="HeroShadowHover">0 10 30 0 #59A3243F</BoxShadows>
 
 
     <!-- ===================== Home: the lit stage and the glass over it ===================== -->

@@ -1,37 +1,46 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- Surfaces: deep, warm-tinted darks -->
+    <!-- The palette of the quiet look. Five tones carry every surface:
+           ground  AppBg      the window itself
+           field   Surface    inputs, chips, the track of a picker; also what is left of cards
+           raised  SurfaceAlt a quiet button, a menu, a dialog
+           hover   Elevated   a row under the pointer, the selected item
+           (Hover is one step further, for hovering something already raised)
+         and one hairline (Divider) separates rows. The older key names stay: pages use them. -->
     <Color x:Key="AppBgColor">#0C0A0D</Color>
-    <Color x:Key="SurfaceColor">#141014</Color>
-    <Color x:Key="SurfaceAltColor">#1A1519</Color>
-    <Color x:Key="ElevatedColor">#221A20</Color>
-    <Color x:Key="HoverColor">#2A2028</Color>
+    <Color x:Key="SurfaceColor">#131015</Color>
+    <Color x:Key="SurfaceAltColor">#1B161A</Color>
+    <Color x:Key="ElevatedColor">#221B21</Color>
+    <Color x:Key="HoverColor">#2B232A</Color>
 
-    <!-- Lines -->
-    <Color x:Key="DividerColor">#2E252C</Color>
-    <Color x:Key="BorderColor">#382C34</Color>
+    <!-- Lines: the hairline between rows, and a stronger one for the rare real frame -->
+    <Color x:Key="DividerColor">#261F25</Color>
+    <Color x:Key="BorderColor">#342B32</Color>
 
-    <!-- Text -->
-    <Color x:Key="TextPrimaryColor">#EFE9EC</Color>
+    <!-- Text: three levels -->
+    <Color x:Key="TextPrimaryColor">#F1ECEE</Color>
     <Color x:Key="TextSecondaryColor">#A99BA3</Color>
-    <Color x:Key="TextMutedColor">#7A6E75</Color>
+    <Color x:Key="TextMutedColor">#72676E</Color>
     <Color x:Key="TextOnAccentColor">#FFF6F8</Color>
 
-    <!-- Accents -->
-    <Color x:Key="AccentColor">#A3243F</Color>
-    <Color x:Key="AccentHoverColor">#C02E4C</Color>
-    <Color x:Key="AccentPressedColor">#7E1B31</Color>
+    <!-- Accents. ThemeService replaces the three accent tones for the colour the player chose. -->
+    <Color x:Key="AccentColor">#B5294A</Color>
+    <Color x:Key="AccentHoverColor">#CF3558</Color>
+    <Color x:Key="AccentPressedColor">#96203C</Color>
     <Color x:Key="GoldColor">#C9A227</Color>
     <Color x:Key="GoldMutedColor">#8A6F1B</Color>
 
     <!-- Status -->
-    <Color x:Key="SuccessColor">#4C9A6A</Color>
-    <Color x:Key="WarningColor">#C98A27</Color>
-    <Color x:Key="DangerColor">#C0392B</Color>
+    <Color x:Key="SuccessColor">#56A877</Color>
+    <Color x:Key="WarningColor">#D19A3A</Color>
+    <Color x:Key="DangerColor">#D4513F</Color>
 
-    <!-- Type: Manrope (OFL) for headings and figures, Inter for everything else -->
+    <!-- Type: Manrope (OFL) for everything with weight - headings, buttons, row titles;
+         Inter, which ships with Avalonia, for running text; Consolas for versions and captions. -->
     <FontFamily x:Key="DisplayFont">avares://STlauncher.App/Assets/Fonts#Manrope</FontFamily>
+    <FontFamily x:Key="BodyFont">fonts:Inter#Inter</FontFamily>
+    <FontFamily x:Key="MonoFont">Consolas, Menlo, monospace</FontFamily>
 
     <!-- Brushes -->
     <SolidColorBrush x:Key="AppBgBrush" Color="{StaticResource AppBgColor}"/>
@@ -58,29 +67,52 @@
     <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}"/>
     <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource DangerColor}"/>
 
-    <!-- A restrained "theatre" hint: thin warm hairline, used sparingly -->
+    <!-- ===================== The quiet look: brushes by what they are for =====================
+         New code names a brush by its job; the keys above stay for the pages that use them. -->
+    <SolidColorBrush x:Key="GroundBrush" Color="{StaticResource AppBgColor}"/>
+    <SolidColorBrush x:Key="FieldBrush" Color="{StaticResource SurfaceColor}"/>
+    <SolidColorBrush x:Key="RaisedBrush" Color="{StaticResource SurfaceAltColor}"/>
+    <SolidColorBrush x:Key="RowHoverBrush" Color="{StaticResource ElevatedColor}"/>
+    <SolidColorBrush x:Key="HairlineBrush" Color="{StaticResource DividerColor}"/>
+    <!-- A quiet button and its states. -->
+    <SolidColorBrush x:Key="ControlBrush" Color="#1B161A"/>
+    <SolidColorBrush x:Key="ControlHoverBrush" Color="#262026"/>
+    <SolidColorBrush x:Key="ControlPressedBrush" Color="#171216"/>
+    <!-- The hairline above a row: a shadow, so it follows the row's rounded corners and
+         costs no extra element in a list of hundreds. No blur. -->
+    <BoxShadows x:Key="RowLineShadow">0 -1 0 0 #261F25</BoxShadows>
+    <BoxShadows x:Key="NoShadow">0 0 0 0 #00000000</BoxShadows>
+    <!-- Under a dialog: the one soft shadow the look allows itself. -->
+    <BoxShadows x:Key="DialogShadow">0 18 48 0 #80000000</BoxShadows>
+    <!-- The soft light on the window's ground. ThemeService repaints it for the chosen accent. -->
+    <RadialGradientBrush x:Key="GroundGlowBrush" Center="78%,34%" GradientOrigin="78%,34%" RadiusX="52%" RadiusY="62%">
+        <GradientStop Offset="0" Color="#1FB5294A"/>
+        <GradientStop Offset="1" Color="#00B5294A"/>
+    </RadialGradientBrush>
+
+    <!-- Once the accent's "theatre" hairline; now simply the hairline, kept under its old key. -->
     <LinearGradientBrush x:Key="AccentHairlineBrush" StartPoint="0%,50%" EndPoint="100%,50%">
-        <GradientStop Offset="0" Color="#00A3243F"/>
-        <GradientStop Offset="0.5" Color="#C9A3243F"/>
-        <GradientStop Offset="1" Color="#00A3243F"/>
+        <GradientStop Offset="0" Color="#00B5294A"/>
+        <GradientStop Offset="0.5" Color="#C9B5294A"/>
+        <GradientStop Offset="1" Color="#00B5294A"/>
     </LinearGradientBrush>
 
     <LinearGradientBrush x:Key="SidebarBrush" StartPoint="0%,0%" EndPoint="0%,100%">
-        <GradientStop Offset="0" Color="#141014"/>
-        <GradientStop Offset="1" Color="#0F0C11"/>
+        <GradientStop Offset="0" Color="#131015"/>
+        <GradientStop Offset="1" Color="#0C0A0D"/>
     </LinearGradientBrush>
 
-    <!-- Chrome: the rail, the title bar and the status bar share one deeper tone -->
+    <!-- Chrome: the rail and the strips sit on the ground itself now -->
     <SolidColorBrush x:Key="GhostBrush" Color="#000C0A0D"/>
-    <SolidColorBrush x:Key="RailBrush" Color="#0F0C11"/>
-    <SolidColorBrush x:Key="UpdateBannerBrush" Color="#1C1420"/>
+    <SolidColorBrush x:Key="RailBrush" Color="#0C0A0D"/>
+    <SolidColorBrush x:Key="UpdateBannerBrush" Color="#131015"/>
     <SolidColorBrush x:Key="IndexBorderBrush" Color="#1B161A"/>
 
     <!-- Glass cards on the main screen let the glow show through -->
-    <SolidColorBrush x:Key="CardGlassBrush" Color="#CC141014"/>
+    <SolidColorBrush x:Key="CardGlassBrush" Color="#CC131015"/>
     <SolidColorBrush x:Key="CardGlassWarmBrush" Color="#CC1F1218"/>
     <SolidColorBrush x:Key="TileWarmBrush" Color="#1F1218"/>
-    <SolidColorBrush x:Key="HeroSideBrush" Color="#66141014"/>
+    <SolidColorBrush x:Key="HeroSideBrush" Color="#661B161A"/>
 
     <!-- Scrims behind dialogs and the screenshot viewer -->
     <SolidColorBrush x:Key="OverlayScrimBrush" Color="#B0000000"/>
@@ -117,11 +149,11 @@
 
     <!-- Accent-derived defaults; ThemeService replaces them for the chosen accent -->
     <LinearGradientBrush x:Key="HeroGradientBrush" StartPoint="0%,0%" EndPoint="0%,100%">
-        <GradientStop Offset="0" Color="#C02E4C"/>
-        <GradientStop Offset="1" Color="#A3243F"/>
+        <GradientStop Offset="0" Color="#B5294A"/>
+        <GradientStop Offset="1" Color="#B5294A"/>
     </LinearGradientBrush>
-    <BoxShadows x:Key="HeroShadow">0 6 22 0 #47A3243F</BoxShadows>
-    <BoxShadows x:Key="HeroShadowHover">0 10 34 0 #73A3243F</BoxShadows>
+    <BoxShadows x:Key="HeroShadow">0 6 22 0 #33B5294A</BoxShadows>
+    <BoxShadows x:Key="HeroShadowHover">0 10 30 0 #59B5294A</BoxShadows>
 
 
     <!-- ===================== Home: the lit stage and the glass over it ===================== -->
