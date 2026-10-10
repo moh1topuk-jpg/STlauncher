@@ -881,6 +881,7 @@ public partial class MainWindowViewModel : ViewModelBase
             GameCrashNotice = string.Empty;
             ApplyDiscordPresence(playing: true, joinServer);
             var playedFrom = DateTimeOffset.Now;
+            BeginLocationTracking(playedFrom);
             var result = await LaunchAndReactAsync(command, settings);
             ApplyDiscordPresence(playing: false, joinServer: false);
 
@@ -889,6 +890,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 // Java never ran, or died before the game began: nobody played. The build
                 // keeps the "last played" it had and gains no session.
                 ForgetFailedLaunch(playedInstance, playedBefore);
+                EndLocationTracking();
             }
             else
             {

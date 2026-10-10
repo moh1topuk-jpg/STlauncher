@@ -1,0 +1,205 @@
+using System;
+using System.Collections.Generic;
+using STlauncher.Core.Instances;
+using STlauncher.Core.Launch;
+using Xunit;
+
+namespace STlauncher.Core.Tests;
+
+/// <summary>
+/// The line shapes are taken from game logs. Those marked "captured" were copied from
+/// real logs on a player's machine, with third-party addresses swapped for documentation
+/// ones; the rest are the same message under the prefix their version is known to print.
+/// </summary>
+public class GameLocationTests
+{
+    [Theory]
+    // Captured: Fabric 1.21.11.
+    [InlineData("[20:43:22] [Render thread/INFO]: Connecting to mc.showtime.su, 25565", "mc.showtime.su")]
+    // Captured: a trailing dot typed into the address, and a port of its own.
+    [InlineData("[01:08:21] [Render thread/INFO]: Connecting to mc.showtime.su., 25592", "mc.showtime.su:25592")]
+    // Captured: Forge 1.20.1, which prints the date its own way and the logger's name.
+    [InlineData("[09июн.2026 22:01:33.908] [Render thread/INFO] [net.minecraft.client.gui.screens.ConnectScreen/]: Connecting to 203.0.113.28, 25124", "203.0.113.28:25124")]
+    // Captured: Forge 1.16.5, other class name.
+    [InlineData("[09июн.2026 22:22:45.168] [Render thread/INFO] [net.minecraft.client.gui.screen.ConnectingScreen/]: Connecting to 203.0.113.28, 25117", "203.0.113.28:25117")]
+    // 1.7 - 1.12.
+    [InlineData("[12:01:07] [Client thread/INFO]: Connecting to Play.Example.ORG, 25565", "play.example.org")]
+    // 1.6 and older.
+    [InlineData("2013-09-21 14:02:11 [CLIENT] [INFO] Connecting to play.example.org, 25565", "play.example.org")]
+    // What the launcher's own log4j filter rebuilds, without a time.
+    [InlineData("[Render thread/INFO]: Connecting to 2001:db8::7, 25566", "[2001:db8::7]:25566")]
+    public void Connecting_lines_give_a_canonical_address(string line, string expected)
+    {
+        var seen = GameLocation.Recognise(line);
+
+        Assert.Equal(GameLocationSignal.Connecting, seen.Signal);
+        Assert.Equal(expected, seen.Address);
+    }
+
+    [Theory]
+    [InlineData("[12:00:01] [Server thread/INFO]: Starting integrated minecraft server version 1.21.11", GameLocationSignal.SinglePlayerStarted)]
+    [InlineData("[12:00:01] [Server thread/INFO] [net.minecraft.client.server.IntegratedServer/]: Starting integrated minecraft server version 1.20.1", GameLocationSignal.SinglePlayerStarted)]
+    [InlineData("[12:30:00] [Server thread/INFO]: Stopping server", GameLocationSignal.SinglePlayerStopped)]
+    [InlineData("[12:30:00] [Server thread/INFO]: Stopping singleplayer server as player logged out", GameLocationSignal.SinglePlayerStopped)]
+    [InlineData("[12:30:00] [Render thread/ERROR]: Couldn't connect to server", GameLocationSignal.Disconnected)]
+    // Captured: Fabric 1.21.11, kicked by the proxy.
+    [InlineData("[05:10:11] [Render thread/WARN]: Client disconnected with reason: Вы были кикнуты с сервера hub-1: Режим отключился", GameLocationSignal.Disconnected)]
+    // Captured: Simple Voice Chat.
+    [InlineData("[21:50:04] [Render thread/INFO]: [voicechat] Disconnecting voicechat", GameLocationSignal.MaybeLeft)]
+    [InlineData("[20:43:35] [Render thread/INFO]: [voicechat] Connecting to voice chat server: '203.0.113.175:25592'", GameLocationSignal.StillThere)]
+    public void Other_lines_are_told_apart(string line, GameLocationSignal expected)
+        => Assert.Equal(expected, GameLocation.Recognise(line).Signal);
+
+    [Theory]
+    // Captured neighbours of the lines above: none of them says where the player is.
+    [InlineData("[10:23:09] [IO-Worker-1/ERROR]: Couldn't connect to realms")]
+    [InlineData("[10:23:34] [Render thread/INFO]: Stopping!")]
+    [InlineData("[20:43:33] [Render thread/INFO]: [voicechat] Disconnecting from previous connection due to server change")]
+    [InlineData("[09июн.2026 22:01:33.807] [Render thread/INFO] [EMI/]: [EMI] Disconnecting from server, EMI data cleared")]
+    // Anyone can type this into the chat.
+    [InlineData("[20:50:00] [Render thread/INFO]: [System] [CHAT] <Griefer> Connecting to evil.example, 25565")]
+    [InlineData("[20:50:00] [Render thread/INFO]: [CHAT] Connecting to evil.example, 25565")]
+    [InlineData("2013-09-21 14:02:11 [CLIENT] [INFO] [CHAT] Connecting to evil.example, 25565")]
+    [InlineData("[20:50:00] [Render thread/INFO]: Connecting to , 25565")]
+    [InlineData("")]
+    [InlineData(null)]
+    public void Lookalikes_are_ignored(string? line)
+        => Assert.Equal(GameLocationSignal.None, GameLocation.Recognise(line).Signal);
+
+    [Theory]
+    [InlineData("MC.Showtime.su", "mc.showtime.su")]
+    [InlineData("mc.showtime.su:25565", "mc.showtime.su")]
+    [InlineData("mc.showtime.su.:25565", "mc.showtime.su")]
+    [InlineData(" mc.showtime.su:25592 ", "mc.showtime.su:25592")]
+    [InlineData("[2001:DB8::7]:25565", "[2001:db8::7]")]
+    [InlineData("2001:db8::7", "[2001:db8::7]")]
+    [InlineData("192.168.1.5:25566", "192.168.1.5:25566")]
+    public void Addresses_have_one_spelling(string written, string expected)
+        => Assert.Equal(expected, GameLocation.CanonicalAddress(written));
+
+    [Fact]
+    public void Same_server_ignores_case_and_the_default_port()
+    {
+        Assert.True(GameLocation.SameServer("mc.showtime.su", "MC.SHOWTIME.SU:25565"));
+        Assert.False(GameLocation.SameServer("mc.showtime.su", "mc.showtime.su:25592"));
+        Assert.False(GameLocation.SameServer(null, null));
+    }
+
+    private static readonly DateTimeOffset Start = new(2026, 10, 10, 12, 0, 0, TimeSpan.Zero);
+
+    [Fact]
+    public void Time_is_split_between_the_menu_a_server_and_a_world()
+    {
+        var tracker = new GameLocationTracker(Start);
+
+        Assert.False(tracker.Feed("[12:00:30] [Render thread/INFO]: Sound engine started", Start.AddSeconds(30)));
+        Assert.True(tracker.Feed("[12:01:00] [Render thread/INFO]: Connecting to mc.showtime.su, 25565", Start.AddMinutes(1)));
+        Assert.Equal(GamePlace.Server("mc.showtime.su"), tracker.Place);
+
+        // Kicked: the ten minutes after it on the "disconnected" screen are nobody's.
+        Assert.True(tracker.Feed("[12:31:00] [Render thread/WARN]: Client disconnected with reason: Timed out", Start.AddMinutes(31)));
+        Assert.True(tracker.Feed("[12:41:00] [Server thread/INFO]: Starting integrated minecraft server version 1.21.11", Start.AddMinutes(41)));
+        Assert.True(tracker.Feed("[12:51:00] [Server thread/INFO]: Stopping singleplayer server as player logged out", Start.AddMinutes(51)));
+
+        var spent = tracker.Finish(Start.AddMinutes(60));
+
+        Assert.Equal(TimeSpan.FromMinutes(30), spent[GamePlace.Server("mc.showtime.su")]);
+        Assert.Equal(TimeSpan.FromMinutes(10), spent[GamePlace.SinglePlayer]);
+        Assert.Equal(2, spent.Count);
+    }
+
+    [Fact]
+    public void A_mod_letting_go_counts_as_leaving_only_when_it_does_not_reconnect()
+    {
+        var tracker = new GameLocationTracker(Start);
+        tracker.Feed("[Render thread/INFO]: Connecting to mc.showtime.su, 25565", Start);
+
+        // The proxy moves the player to another of its servers: four seconds, then back.
+        tracker.Feed("[Render thread/INFO]: [voicechat] Disconnecting voicechat", Start.AddMinutes(10));
+        tracker.Feed("[Render thread/INFO]: [voicechat] Connecting to voice chat server: '203.0.113.175:25592'", Start.AddMinutes(10).AddSeconds(4));
+        tracker.Feed("[Render thread/INFO]: anything", Start.AddMinutes(15));
+        Assert.Equal(GamePlaceKind.Server, tracker.Place.Kind);
+
+        // "Disconnect" pressed: the mod lets go and nothing follows. Three hours in the menu.
+        tracker.Feed("[Render thread/INFO]: [voicechat] Disconnecting voicechat", Start.AddMinutes(20));
+        Assert.True(tracker.Feed("[Render thread/INFO]: Reloading ResourceManager: vanilla", Start.AddMinutes(21)));
+        Assert.Equal(GamePlace.Menu, tracker.Place);
+
+        var spent = tracker.Finish(Start.AddHours(3));
+
+        Assert.Equal(TimeSpan.FromMinutes(20), spent[GamePlace.Server("mc.showtime.su")]);
+    }
+
+    [Fact]
+    public void Quitting_the_game_from_a_server_ends_the_stay_at_the_last_word()
+    {
+        var tracker = new GameLocationTracker(Start);
+        tracker.Feed("[Render thread/INFO]: Connecting to friend.example, 25565", Start);
+        tracker.Feed("[Render thread/INFO]: [voicechat] Disconnecting voicechat", Start.AddMinutes(5));
+
+        var spent = tracker.Finish(Start.AddMinutes(5).AddSeconds(3));
+
+        Assert.Equal(TimeSpan.FromMinutes(5), spent[GamePlace.Server("friend.example")]);
+    }
+
+    [Fact]
+    public void A_dedicated_server_stopping_elsewhere_does_not_end_a_multiplayer_stay()
+    {
+        var tracker = new GameLocationTracker(Start);
+        tracker.Feed("[Render thread/INFO]: Connecting to mc.showtime.su, 25565", Start);
+
+        Assert.False(tracker.Feed("[Server thread/INFO]: Stopping server", Start.AddMinutes(1)));
+        Assert.Equal(GamePlaceKind.Server, tracker.Place.Kind);
+    }
+
+    [Fact]
+    public void Places_add_up_in_the_build_and_the_list_is_capped()
+    {
+        var instance = new Instance();
+        var showtime = GamePlace.Server("mc.showtime.su");
+
+        Assert.True(Playtime.RecordPlaces(instance, new Dictionary<GamePlace, TimeSpan>
+        {
+            [showtime] = TimeSpan.FromHours(2),
+            [GamePlace.SinglePlayer] = TimeSpan.FromMinutes(30),
+            [GamePlace.Server("joined.and.left")] = TimeSpan.FromMilliseconds(300)
+        }, Start));
+
+        Playtime.RecordPlaces(instance, new Dictionary<GamePlace, TimeSpan> { [showtime] = TimeSpan.FromHours(1) }, Start.AddDays(1));
+
+        var top = Playtime.TopPlaces(instance, 4);
+
+        Assert.Equal(2, top.Count);
+        Assert.Equal("mc.showtime.su", top[0].Address);
+        Assert.Equal(3 * 3600, top[0].Seconds);
+        Assert.Null(top[1].Address);
+
+        for (var i = 0; i < Playtime.MaxPlaces + 10; i++)
+        {
+            Playtime.RecordPlaces(
+                instance,
+                new Dictionary<GamePlace, TimeSpan> { [GamePlace.Server($"s{i}.example")] = TimeSpan.FromMinutes(1) },
+                Start.AddDays(2).AddMinutes(i));
+        }
+
+        Assert.Equal(Playtime.MaxPlaces, instance.PlayPlaces.Count);
+        Assert.DoesNotContain(instance.PlayPlaces, p => p.Address == "s0.example");
+    }
+
+    [Fact]
+    public void Places_survive_the_build_file()
+    {
+        var instance = new Instance();
+        Playtime.RecordPlaces(instance, new Dictionary<GamePlace, TimeSpan> { [GamePlace.SinglePlayer] = TimeSpan.FromMinutes(5) }, Start);
+
+        var json = System.Text.Json.JsonSerializer.Serialize(instance);
+        var back = System.Text.Json.JsonSerializer.Deserialize<Instance>(json)!;
+
+        Assert.Single(back.PlayPlaces);
+        Assert.Null(back.PlayPlaces[0].Address);
+        Assert.Equal(300, back.PlayPlaces[0].Seconds);
+
+        // A file written before this field existed.
+        Assert.Empty(System.Text.Json.JsonSerializer.Deserialize<Instance>("{\"id\":\"x\"}")!.PlayPlaces);
+    }
+}

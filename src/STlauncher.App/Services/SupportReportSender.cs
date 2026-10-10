@@ -76,6 +76,31 @@ public sealed class SupportReportSender
     }
 
     /// <summary>
+    /// Publishes a text at mclo.gs and returns the link. Whoever calls this has already
+    /// redacted the text and has the player's click: the paste is readable by anyone.
+    /// </summary>
+    public async Task<SupportReportOutcome> ShareLogAsync(string text, CancellationToken cancellationToken = default)
+    {
+        using var form = new FormUrlEncodedContent(new[]
+        {
+            new System.Collections.Generic.KeyValuePair<string, string>("content", STlauncher.Core.Diagnostics.LogShare.Fit(text))
+        });
+
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(TimeSpan.FromSeconds(60));
+
+        using var response = await _http.PostAsync(STlauncher.Core.Diagnostics.LogShare.Endpoint, form, timeout.Token).ConfigureAwait(false);
+        var body = await response.Content.ReadAsStringAsync(timeout.Token).ConfigureAwait(false);
+
+        if (STlauncher.Core.Diagnostics.LogShare.TryReadLink(body, out var link, out var error))
+        {
+            return new SupportReportOutcome(true, link);
+        }
+
+        return new SupportReportOutcome(false, response.IsSuccessStatusCode ? error : $"{(int)response.StatusCode}: {error}");
+    }
+
+    /// <summary>
     /// True when the endpoint is there to take reports: it answers a GET with 200. An
     /// older mirror answers 405, and the button stays hidden rather than failing.
     /// </summary>

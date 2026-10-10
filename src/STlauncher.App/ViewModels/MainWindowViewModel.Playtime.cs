@@ -60,6 +60,10 @@ public partial class MainWindowViewModel
         OnPropertyChanged(nameof(PlaytimeLabel));
         OnPropertyChanged(nameof(PlaytimeAllLabel));
         OnPropertyChanged(nameof(HasPlaytime));
+        OnPropertyChanged(nameof(PlaytimePlaces));
+        OnPropertyChanged(nameof(HasPlaytimePlaces));
+        OnPropertyChanged(nameof(HasPlaytimeAllLabel));
+        OnPropertyChanged(nameof(HasPlaytimeDetails));
     }
 
     /// <summary>Whole hours and minutes; under an hour, minutes alone. Never seconds.</summary>
@@ -83,17 +87,22 @@ public partial class MainWindowViewModel
     {
         if (instance is null)
         {
+            EndLocationTracking();
             return;
         }
 
-        var duration = DateTimeOffset.Now - startedAt;
+        var now = DateTimeOffset.Now;
+        var duration = now - startedAt;
 
         try
         {
             if (!Playtime.Record(instance, startedAt, duration))
             {
+                EndLocationTracking();
                 return;
             }
+
+            RecordPlayPlaces(instance, now);
 
             _instances.Save(instance);
             AppendConsole($"[play] {instance.Name}: {FormatPlaytime(duration)} this session, {FormatPlaytime(Playtime.Total(instance))} in all");

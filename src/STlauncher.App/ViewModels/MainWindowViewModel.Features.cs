@@ -283,6 +283,10 @@ public partial class MainWindowViewModel
 
         if (playing)
         {
+            // Where the game says the player is, not where it was sent at start: until it
+            // prints a place, the status names the build and nothing else.
+            var place = _location?.Place ?? Core.Launch.GamePlace.Menu;
+
             _discord.SetPlaying(
                 SelectedInstance?.Name ?? string.Empty,
                 SelectedInstance?.VersionId,
@@ -290,7 +294,8 @@ public partial class MainWindowViewModel
                 ServerName,
                 ServerDefaults.Website,
                 image,
-                joinServer);
+                place,
+                place.Kind == Core.Launch.GamePlaceKind.Server && IsPublicServer(place.Address));
         }
         else
         {

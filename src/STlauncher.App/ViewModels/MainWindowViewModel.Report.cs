@@ -174,7 +174,7 @@ public partial class MainWindowViewModel
 
                 if (SelectedInstance is not null)
                 {
-                    AddTail(zip, _instances.DefinitionPath(SelectedInstance.Id), "instance.json");
+                    AddInstanceDefinition(zip, _instances.DefinitionPath(SelectedInstance.Id));
                 }
             }
 
@@ -267,6 +267,29 @@ public partial class MainWindowViewModel
         var entry = zip.CreateEntry(entryName, CompressionLevel.Optimal);
         using var writer = new StreamWriter(entry.Open(), new UTF8Encoding(false));
         writer.Write(text);
+    }
+
+    /// <summary>
+    /// The build's definition without "where you played": that list holds the addresses
+    /// of servers the player joined, a friend's home among them, and the admin of one
+    /// server has no business knowing the others.
+    /// </summary>
+    private static void AddInstanceDefinition(ZipArchive zip, string path)
+    {
+        try
+        {
+            if (!File.Exists(path) || System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(path)) is not System.Text.Json.Nodes.JsonObject definition)
+            {
+                return;
+            }
+
+            definition.Remove("playPlaces");
+            AddText(zip, "instance.json", definition.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+        }
+        catch (Exception)
+        {
+            // Unreadable as JSON: left out rather than sent as it is.
+        }
     }
 
     /// <summary>The end of a file, up to the limit; a missing file is simply left out.</summary>
