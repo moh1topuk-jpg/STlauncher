@@ -82,6 +82,18 @@ public sealed class LaunchService
             items.Add(new DownloadItem(client.Url, clientJarPath, client.Sha1, client.Size));
         }
 
+        // Versions from before the Log4Shell fix are started with Mojang's patched logging
+        // configuration. Newer ones are not: they need nothing, and the configuration
+        // changes how the game prints its log.
+        string? loggingConfigPath = null;
+
+        if (NeedsPatchedLogging(resolved) && resolved.Logging?.Client?.File is { Url.Length: > 0 } logging)
+        {
+            var name = Path.GetFileName(resolved.Logging.Client.Id ?? logging.Path ?? "client.xml");
+            loggingConfigPath = Path.Combine(_paths.Assets, "log_configs", string.IsNullOrWhiteSpace(name) ? "client.xml" : name);
+            items.Add(new DownloadItem(logging.Url, loggingConfigPath, logging.Sha1, logging.Size));
+        }
+
         AssetIndex? assetIndex = null;
         if (resolved.AssetIndex is { Url.Length: > 0 } assetRef)
         {
@@ -158,11 +170,19 @@ public sealed class LaunchService
             ExtraJvmArgs = settings.ExtraJvmArgs,
             ExtraGameArgs = settings.ExtraGameArgs,
             Features = BuildFeatures(settings),
-            ServerAddress = settings.ServerAddress
+            ServerAddress = settings.ServerAddress,
+            LoggingConfigPath = loggingConfigPath is not null && File.Exists(loggingConfigPath) ? loggingConfigPath : null
         };
 
         return LaunchCommandBuilder.Build(options, context);
     }
+
+    /// <summary>1.18.1 came out on this day with a fixed log4j; everything older needs the patched configuration.</summary>
+    private static readonly DateTimeOffset Log4ShellFixed = new(2021, 12, 10, 0, 0, 0, TimeSpan.Zero);
+
+    /// <summary>A version with no date is treated as old: the safe side of not knowing.</summary>
+    public static bool NeedsPatchedLogging(ResolvedVersion version)
+        => version.ReleaseTime is not { } released || released < Log4ShellFixed;
 
     /// <summary>
     /// Removes the vanilla version JSON and client jar so they are fetched again.

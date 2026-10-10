@@ -163,18 +163,23 @@ public sealed class DownloadClient
             return false;
         }
 
-        if (item.Size > 0 && info.Length != item.Size)
-        {
-            _cache.Forget(item.DestinationPath);
-            return false;
-        }
-
         var expected = ExpectedHash(item);
 
         if (expected is null)
         {
+            // Nothing better to go by than the size.
+            if (item.Size > 0 && info.Length != item.Size)
+            {
+                _cache.Forget(item.DestinationPath);
+                return false;
+            }
+
             return true;
         }
+
+        // With a hash the stated size decides nothing. Catalogs do publish a wrong size
+        // beside a right hash, and trusting the size made such a file "invalid" on every
+        // launch: downloaded again, verified by its hash, and thrown out again next time.
 
         // Verified before, untouched since: the hash is known to match.
         if (_cache.IsVerified(item.DestinationPath, expected, info))

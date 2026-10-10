@@ -41,6 +41,16 @@ public sealed class LaunchOptions
     public IReadOnlyDictionary<string, bool> Features { get; init; } = new Dictionary<string, bool>();
 
     public string? ServerAddress { get; init; }
+
+    /// <summary>
+    /// Mojang's logging configuration for this version, already on disk. Set for versions
+    /// from before the Log4Shell fix, where this file is what closes the hole.
+    /// </summary>
+    public string? LoggingConfigPath { get; init; }
 }
 
-public sealed record LaunchCommand(string FileName, IReadOnlyList<string> Arguments);
+/// <param name="Environment">Variables to add to the game's environment, or null for none.</param>
+public sealed record LaunchCommand(
+    string FileName,
+    IReadOnlyList<string> Arguments,
+    IReadOnlyDictionary<string, string>? Environment = null);

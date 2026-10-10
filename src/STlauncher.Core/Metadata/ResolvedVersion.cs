@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace STlauncher.Core.Metadata;
@@ -23,6 +24,9 @@ public sealed class ResolvedVersion
     public JavaVersionRef? JavaVersion { get; set; }
 
     public LoggingConfig? Logging { get; set; }
+
+    /// <summary>When the game version came out; a loader profile takes it from the version it builds on.</summary>
+    public DateTimeOffset? ReleaseTime { get; set; }
 
     public int ComplianceLevel { get; set; }
 
@@ -56,6 +60,7 @@ public sealed class ResolvedVersion
             Downloads = child.Downloads?.Client is not null ? child.Downloads : parent?.Downloads ?? child.Downloads,
             JavaVersion = child.JavaVersion ?? parent?.JavaVersion,
             Logging = child.Logging ?? parent?.Logging,
+            ReleaseTime = parent?.ReleaseTime ?? (child.ReleaseTime == default ? null : child.ReleaseTime),
             ComplianceLevel = child.ComplianceLevel != 0 ? child.ComplianceLevel : parent?.ComplianceLevel ?? 0,
             MinecraftArguments = child.MinecraftArguments ?? parent?.MinecraftArguments
         };

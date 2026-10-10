@@ -68,10 +68,22 @@ public sealed class GameLauncher
                 startInfo.ArgumentList.Add(argument);
             }
 
+            if (command.Environment is not null)
+            {
+                foreach (var (name, value) in command.Environment)
+                {
+                    startInfo.Environment[name] = value;
+                }
+            }
+
+            // Each stream has its own reader thread, and an XML event spans lines.
+            var outputFilter = new Log4jXmlFilter();
+            var errorFilter = new Log4jXmlFilter();
+
             using var process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
 
-            process.OutputDataReceived += (_, e) => OnLine(e.Data, logWriter, startSignal, isError: false);
-            process.ErrorDataReceived += (_, e) => OnLine(e.Data, logWriter, startSignal, isError: true);
+            process.OutputDataReceived += (_, e) => OnRawLine(e.Data, outputFilter, logWriter, startSignal, isError: false);
+            process.ErrorDataReceived += (_, e) => OnRawLine(e.Data, errorFilter, logWriter, startSignal, isError: true);
 
             process.Start();
             process.BeginOutputReadLine();
@@ -95,6 +107,19 @@ public sealed class GameLauncher
             {
                 await logWriter.DisposeAsync().ConfigureAwait(false);
             }
+        }
+    }
+
+    private void OnRawLine(string? line, Log4jXmlFilter filter, StreamWriter? logWriter, StartSignal startSignal, bool isError)
+    {
+        if (line is null)
+        {
+            return;
+        }
+
+        foreach (var plain in filter.Feed(line))
+        {
+            OnLine(plain, logWriter, startSignal, isError);
         }
     }
 

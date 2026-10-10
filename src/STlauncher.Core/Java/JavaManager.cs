@@ -43,10 +43,18 @@ public sealed partial class JavaManager
     public async Task<string> EnsureJavaAsync(int majorVersion, CancellationToken cancellationToken = default)
     {
         var cached = FindJavaExecutable(RuntimeDirectory(majorVersion));
-        if (cached is not null)
+        if (cached is not null && IsRuntimeComplete(cached))
         {
             _logger?.LogInformation("Using bundled Java {Major} at {Path}", majorVersion, cached);
             return cached;
+        }
+
+        if (cached is not null)
+        {
+            // An unpacking that was cut short leaves java.exe with no JVM behind it. It
+            // looks installed and fails every launch, so it is fetched again.
+            _logger?.LogWarning("Bundled Java {Major} at {Path} is incomplete; installing it again.", majorVersion, cached);
+            return await DownloadRuntimeAsync(majorVersion, cancellationToken).ConfigureAwait(false);
         }
 
         var installed = DiscoverInstalled()
@@ -242,15 +250,48 @@ public sealed partial class JavaManager
             ?? throw new InvalidOperationException($"No Java {majorVersion} runtime available for {os}/{architecture}.");
 
         var directory = RuntimeDirectory(majorVersion);
-        Directory.CreateDirectory(directory);
+        Directory.CreateDirectory(_paths.Runtime);
 
-        var archive = Path.Combine(directory, package.Name ?? $"java-{majorVersion}.zip");
+        var archive = Path.Combine(_paths.Runtime, Path.GetFileName(package.Name ?? $"java-{majorVersion}.zip"));
         await _downloader.EnsureFileAsync(
                 new DownloadItem(package.Link!, archive, Size: package.Size, Sha256: package.Checksum),
                 cancellationToken)
             .ConfigureAwait(false);
 
-        ExtractArchive(archive, directory);
+        // Unpacked beside the real folder and moved in only when whole: a launcher closed
+        // half way through leaves the staging folder, never a broken runtime.
+        var staging = $"{directory}.new-{Guid.NewGuid():N}";
+
+        try
+        {
+            ExtractArchive(archive, staging);
+
+            if (FindJavaExecutable(staging) is not { } unpacked || !IsRuntimeComplete(unpacked))
+            {
+                throw new InvalidOperationException($"The Java {majorVersion} archive unpacked into an incomplete runtime.");
+            }
+
+            if (Directory.Exists(directory))
+            {
+                Directory.Delete(directory, recursive: true);
+            }
+
+            Directory.Move(staging, directory);
+        }
+        finally
+        {
+            try
+            {
+                if (Directory.Exists(staging))
+                {
+                    Directory.Delete(staging, recursive: true);
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // Left for the next install to step over; it holds nothing anyone uses.
+            }
+        }
 
         try
         {
@@ -479,6 +520,43 @@ public sealed partial class JavaManager
         // On macOS the JRE sits under Contents/Home, one level deeper than elsewhere.
         return SafeEnumerate(directory, new[] { JavaExecutableName }, 5)
             .FirstOrDefault(p => Path.GetFileName(Path.GetDirectoryName(p)) == "bin");
+    }
+
+    /// <summary>
+    /// True when the runtime behind this executable has everything a JVM needs to start:
+    /// its configuration, its class library and the JVM itself. The executable alone says
+    /// nothing; archives unpack bin before lib.
+    /// </summary>
+    public static bool IsRuntimeComplete(string javaExecutable)
+    {
+        try
+        {
+            if (!File.Exists(javaExecutable) || new FileInfo(javaExecutable).Length == 0)
+            {
+                return false;
+            }
+
+            if (Path.GetDirectoryName(Path.GetDirectoryName(javaExecutable)) is not { Length: > 0 } home)
+            {
+                return false;
+            }
+
+            // Java 9+ keeps these in lib; Java 8 in lib/<arch>, and a JDK one level down in jre.
+            var hasConfig = SafeEnumerate(home, "jvm.cfg", 4).Any();
+
+            var hasClasses = new[] { "modules", "rt.jar" }
+                .SelectMany(name => SafeEnumerate(home, name, 3))
+                .Any(path => new FileInfo(path).Length > 0);
+
+            var hasJvm = SafeEnumerate(home, new[] { "jvm.dll", "libjvm.so", "libjvm.dylib" }, 5)
+                .Any(path => new FileInfo(path).Length > 0);
+
+            return hasConfig && hasClasses && hasJvm;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
     }
 
     /// <summary>"java.exe" on Windows, "java" everywhere else.</summary>

@@ -27,6 +27,19 @@ public static class LaunchCommandBuilder
         arguments.Add($"-Xms{options.MinMemoryMb}M");
         arguments.AddRange(options.ExtraJvmArgs);
 
+        // Log4Shell (CVE-2021-44228): a chat message could make an unpatched game run code.
+        // This switch closes it for 1.17 to 1.18; the game ignores it elsewhere. It goes
+        // after the player's own arguments so nothing typed there can turn it back on.
+        arguments.Add(Log4ShellGuard);
+
+        // Older versions carry a log4j that does not know the switch. For them Mojang
+        // published a patched logging configuration; the version file names it.
+        if (options.LoggingConfigPath is { Length: > 0 } loggingPath &&
+            version.Logging?.Client?.Argument is { Length: > 0 } loggingArgument)
+        {
+            arguments.Add(loggingArgument.Replace("${path}", loggingPath, StringComparison.Ordinal));
+        }
+
         var jvmArguments = version.JvmArguments.Count > 0
             ? Expand(version.JvmArguments, context, values)
             : ExpandDefaults(DefaultJvmArguments, values);
@@ -64,7 +77,48 @@ public static class LaunchCommandBuilder
             }
         }
 
-        return new LaunchCommand(options.JavaPath, arguments);
+        return Shorten(new LaunchCommand(options.JavaPath, arguments));
+    }
+
+    public const string Log4ShellGuard = "-Dlog4j2.formatMsgNoLookups=true";
+
+    /// <summary>
+    /// Windows refuses to start a process whose command line is longer than 32 767
+    /// characters, and a big modded build with a long user folder gets there on the
+    /// classpath alone. Past this length the classpath travels in the CLASSPATH variable
+    /// instead: every Java reads it, and unlike an argument file it has no encoding of its
+    /// own to get a Cyrillic user name wrong.
+    /// </summary>
+    public const int MaxCommandLineChars = 30_000;
+
+    public static LaunchCommand Shorten(LaunchCommand command, int limit = MaxCommandLineChars)
+    {
+        // Quotes and the separating space, per argument.
+        var length = command.FileName.Length + 2 + command.Arguments.Sum(a => a.Length + 3);
+
+        if (length <= limit)
+        {
+            return command;
+        }
+
+        var arguments = new List<string>(command.Arguments);
+        var at = arguments.FindIndex(a => a is "-cp" or "-classpath" or "--class-path");
+
+        if (at < 0 || at + 1 >= arguments.Count)
+        {
+            return command;
+        }
+
+        var classpath = arguments[at + 1];
+        arguments.RemoveRange(at, 2);
+
+        var environment = command.Environment is null
+            ? new Dictionary<string, string>(StringComparer.Ordinal)
+            : new Dictionary<string, string>(command.Environment, StringComparer.Ordinal);
+
+        environment["CLASSPATH"] = classpath;
+
+        return new LaunchCommand(command.FileName, arguments, environment);
     }
 
     private static Dictionary<string, string> BuildValueMap(LaunchOptions options)
