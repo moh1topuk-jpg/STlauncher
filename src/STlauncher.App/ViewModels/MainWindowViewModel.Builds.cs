@@ -183,6 +183,7 @@ public partial class MainWindowViewModel
 
             instance.VersionId = NewBuildVersion.Id;
             instance.Loader = NewBuildLoader;
+            instance.MaxMemoryMb = MemoryForNewBuild(mods: 0);
             _instances.Save(instance);
             CopySettingsIntoNewBuild(instance);
 

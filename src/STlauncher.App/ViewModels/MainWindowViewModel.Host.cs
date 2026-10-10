@@ -350,8 +350,11 @@ public partial class MainWindowViewModel
             ? Localize("Host_BasedOn", "made from the build “{0}”", instance.Name)
             : Localize("Host_BasedOnGone", "the build it was made from is gone");
 
-    /// <summary>"Join it myself": the server is up and the build it was made from can be started.</summary>
-    public bool CanPlayOnHost => IsHostOnline && HostSourceInstance is not null;
+    /// <summary>
+    /// "Join it myself": the server is up. The build it was made from is started when it
+    /// is still there; otherwise the button works out which build fits, or asks.
+    /// </summary>
+    public bool CanPlayOnHost => IsHostOnline;
 
     public ObservableCollection<string> HostPlayers { get; } = new();
 
@@ -750,15 +753,108 @@ public partial class MainWindowViewModel
         }
     }
 
-    /// <summary>Starts the build the server was made from, straight into the server on this machine.</summary>
+    /// <summary>
+    /// Joins the server on this machine with the build it was made from. When that build
+    /// is gone, a build of the player's that fits is started instead; a new one is made
+    /// only after the player agrees, and when nothing can be decided nothing starts.
+    /// </summary>
     [RelayCommand]
     private async Task PlayOnHostServerAsync()
     {
-        if (SelectedHostProcess is not { } process || HostSourceInstance is not { } instance || IsBusy || IsGameRunning)
+        if (SelectedHostProcess is not { } process || IsBusy || IsGameRunning)
         {
             return;
         }
 
+        var server = process.Server;
+        var version = string.IsNullOrWhiteSpace(server.GameVersion) ? null : server.GameVersion;
+
+        // A clean build can only be started if the launcher knows such a version.
+        var plan = PlanJoin(
+            version,
+            server.Loader,
+            inviteBringsBuild: false,
+            HostSourceInstance,
+            canCreate: version is not null && _allVersions.Any(v => string.Equals(v.Id, version, StringComparison.OrdinalIgnoreCase)));
+
+        var loader = server.Loader.ToString();
+
+        switch (plan.Action)
+        {
+            case JoinAction.UseDedicated or JoinAction.UseExisting when InstanceById(plan.BuildId) is { } build:
+                await JoinHostServerWithAsync(process, build);
+                break;
+
+            case JoinAction.CreateClean:
+                var lines = new List<HostPlanLine>
+                {
+                    new(
+                        Localize("Host_JoinCreateLine", "The build “{0}” is made", server.Name),
+                        Localize("Friends_InviteBuildNoFiles", "Minecraft {0} · {1}, no mods. The game's files are downloaded on the first start.", plan.GameVersion, plan.Loader),
+                        IsDownload: true)
+                };
+
+                if (plan.Loader != LoaderKind.Vanilla)
+                {
+                    lines.Add(new HostPlanLine(
+                        Localize("Host_JoinCreateMods", "The server's mods are not put into it"),
+                        Localize("Host_JoinCreateModsDetail", "If the server turns the game away for missing mods, add them to the build on the Builds tab.")));
+                }
+
+                OpenHostConsent(
+                    Localize("Host_JoinCreateTitle", "No build of yours fits this server"),
+                    lines,
+                    Localize("Host_JoinCreateAction", "Make it and join"),
+                    async () =>
+                    {
+                        // The server may have been stopped while the question was on screen.
+                        if (SelectedHostProcess is not { } running || !ReferenceEquals(running, process) || IsBusy || IsGameRunning)
+                        {
+                            return;
+                        }
+
+                        try
+                        {
+                            var made = CreateCleanBuild(server.Name, plan.GameVersion!, plan.Loader, server.LoaderVersion);
+                            await JoinHostServerWithAsync(running, made);
+                        }
+                        catch (Exception ex)
+                        {
+                            Status = Localize("Error_CreateBuild", "Failed to create the build: {0}", ex.Message);
+                        }
+                    });
+                break;
+
+            case JoinAction.Ask when plan.Question == JoinQuestion.VersionUnknown && InstanceById(plan.BuildId) is { } offered:
+                OpenHostConsent(
+                    Localize("Host_JoinAskTitle", "The launcher does not know this server's version"),
+                    new[]
+                    {
+                        new HostPlanLine(
+                            Localize("Host_JoinAskLine", "Start the build “{0}”?", offered.Name),
+                            Localize("Host_JoinAskDetail", "Minecraft {0} · {1}. If that is not the server's version, the game will not get in. Nothing is changed in the build.", offered.VersionId, offered.Loader))
+                    },
+                    Localize("Host_JoinAskAction", "Start with it"),
+                    async () =>
+                    {
+                        if (SelectedHostProcess is { } running && ReferenceEquals(running, process) && !IsBusy && !IsGameRunning)
+                        {
+                            await JoinHostServerWithAsync(running, offered);
+                        }
+                    });
+                break;
+
+            default:
+                HostNotice = plan.Question == JoinQuestion.VersionUnknown
+                    ? Localize("Host_JoinVersionUnknown", "The launcher does not know this server's version, so it will not pick a build by itself. Select a build of the right version on the Builds tab and press the button again.")
+                    : Localize("Host_JoinNoBuild", "None of your builds fits this server (Minecraft {0} · {1}), and the launcher cannot make one right now. Make a build of this version on the Builds tab.", server.GameVersion, loader);
+                HostNoticeOffersPort = false;
+                break;
+        }
+    }
+
+    private async Task JoinHostServerWithAsync(ServerProcess process, Instance instance)
+    {
         // The owner may have changed their nickname since the server was made; the server
         // would turn its own owner away at the door.
         if (OfflineAuth.IsValidUsername(Username) && !HostWhitelist.Contains(Username))

@@ -165,11 +165,15 @@ public partial class MainWindowViewModel
         _ => string.Empty
     };
 
-    /// <summary>A step down: what the launcher recommends for this machine, or half of what was asked.</summary>
+    /// <summary>
+    /// A step down: what this build is advised with the memory that is free right now -
+    /// Java was refused its heap, so what other programs hold counts - or half of what was asked.
+    /// </summary>
     private int? LowerMemoryAfterCrash()
     {
         var current = (int)MaxMemoryMb;
-        var candidate = RecommendedMemoryMb < current ? RecommendedMemoryMb : current / 2;
+        var advised = Core.Launch.MemoryAdvice.Recommend(TotalMemoryMb, DetectFreeMemoryMb(), EnabledModCount, ShadersInUse).Mb;
+        var candidate = advised < current ? advised : current / 2;
         candidate = Math.Max(1024, candidate / 256 * 256);
 
         return candidate < current ? candidate : null;
@@ -214,12 +218,15 @@ public partial class MainWindowViewModel
         return matches.Count == 1 ? matches[0] : null;
     }
 
-    /// <summary>A step up from the current allocation, within what the machine has.</summary>
+    /// <summary>
+    /// A step up: what a build of this size is advised, or 2 GB more when it already had
+    /// that much - and never past what this machine should give the game.
+    /// </summary>
     private int? SuggestedMemoryAfterCrash()
     {
         var current = (int)MaxMemoryMb;
         var candidate = Math.Max(RecommendedMemoryMb, current + 2048);
-        candidate = Math.Min(candidate, MemorySliderMax);
+        candidate = Math.Min(candidate, Math.Min(MemorySliderMax, Core.Launch.MemoryAdvice.MachineLimitMb(TotalMemoryMb)));
 
         return candidate > current ? candidate : null;
     }

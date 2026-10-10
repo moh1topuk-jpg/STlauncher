@@ -218,6 +218,11 @@ public partial class MainWindowViewModel
             instance.VersionId = payload.GameVersion;
             instance.Loader = payload.Loader;
             instance.LoaderVersion = payload.LoaderVersion;
+
+            // The build is new and nobody has set its memory yet: start it with what its mods take.
+            instance.MaxMemoryMb = MemoryForNewBuild(payload.Files.Count(f =>
+                f.Path.StartsWith("mods/", StringComparison.OrdinalIgnoreCase) &&
+                f.Path.EndsWith(".jar", StringComparison.OrdinalIgnoreCase)));
             _instances.Save(instance);
 
             _allInstances.Add(instance);
