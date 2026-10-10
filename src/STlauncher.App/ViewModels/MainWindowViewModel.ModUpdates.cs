@@ -348,7 +348,7 @@ public partial class MainWindowViewModel
     {
         get
         {
-            _mods.Replacer.IsGameRunning ??= _ => IsGameRunning;
+            _mods.Replacer.IsGameRunning ??= dir => IsGameRunning || Core.Launch.RunningGames.IsRunning(dir);
             return _mods.Replacer;
         }
     }
