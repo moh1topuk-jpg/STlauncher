@@ -15,6 +15,7 @@
                 <ResourceInclude Source="avares://STlauncher.App/Styles/Fluent.axaml"/>
                 <ResourceInclude Source="avares://STlauncher.App/Styles/Icons.axaml"/>
                 <ResourceInclude Source="avares://STlauncher.App/Styles/ButtonTheme.axaml"/>
+                <ResourceInclude Source="avares://STlauncher.App/Styles/SwitchTheme.axaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

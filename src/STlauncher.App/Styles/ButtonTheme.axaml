@@ -12,13 +12,18 @@
       presenter, "/template/ ContentPresenter#PART_ContentPresenter".
     -->
     <ControlTheme x:Key="{x:Type Button}" TargetType="Button">
-        <Setter Property="Background" Value="{DynamicResource ElevatedBrush}"/>
+        <!-- A button with no class is the quiet one: a raised grey slab, bold Manrope.
+             The classes that change it (primary, ghost, icon, hero ...) are listed at the
+             top of Controls.axaml. -->
+        <Setter Property="Background" Value="{DynamicResource ControlBrush}"/>
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource GhostBrush}"/>
         <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="CornerRadius" Value="8"/>
-        <Setter Property="Padding" Value="14,8"/>
-        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="CornerRadius" Value="10"/>
+        <Setter Property="Padding" Value="16,10"/>
+        <Setter Property="FontFamily" Value="{DynamicResource DisplayFont}"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="FontSize" Value="13.5"/>
         <Setter Property="HorizontalAlignment" Value="Left"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
         <Setter Property="HorizontalContentAlignment" Value="Center"/>
@@ -58,7 +63,7 @@
 
         <!-- The press is a small dip of the whole button, not a colour change. -->
         <Style Selector="^:pressed">
-            <Setter Property="RenderTransform" Value="scale(0.96)"/>
+            <Setter Property="RenderTransform" Value="scale(0.97)"/>
         </Style>
 
         <Style Selector="^:disabled /template/ Border#PART_Root">

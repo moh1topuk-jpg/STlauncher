@@ -78,6 +78,11 @@
             <Setter Property="Background" Value="{DynamicResource GlassBrush}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource GlassBorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
+            <!-- Until this page moves to the shared "row": no hairline over these framed ones. -->
+            <Setter Property="BoxShadow" Value="{DynamicResource NoShadow}"/>
+        </Style>
+        <Style Selector="Border.row:pointerover">
+            <Setter Property="Background" Value="{DynamicResource GlassBrush}"/>
         </Style>
 
         <!-- The round mark of a step: a number while it is still to do, a tick once done. -->

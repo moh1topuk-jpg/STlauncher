@@ -1,0 +1,90 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+      The launcher's own ToggleSwitch template, replacing Fluent's: a 34x20 track with a
+      14 px knob and no "On"/"Off" beside it, because the row it sits in already says what
+      it switches. Fluent sizes its track and knob with local values, which no style can
+      reach, so the look needs a template of its own.
+
+      The control still drives the knob itself (a click, a drag, the slide between the two
+      ends), and for that it looks up two parts by name: the canvas PART_SwitchKnob, whose
+      WIDTH is how far the knob travels, and PART_MovingKnobs inside it, the thing moved.
+      Travel 14 + the knob's 20 px box = the 34 px track.
+
+      Colours are the Fluent keys from Fluent.axaml / FluentLight.axaml, so the accent the
+      player picked (ThemeService) reaches the switch as before.
+    -->
+    <ControlTheme x:Key="{x:Type ToggleSwitch}" TargetType="ToggleSwitch">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        <Setter Property="HorizontalAlignment" Value="Left"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="KnobTransitions">
+            <Transitions>
+                <DoubleTransition Property="Canvas.Left" Duration="0:0:0.14" Easing="CubicEaseOut"/>
+            </Transitions>
+        </Setter>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Grid ColumnDefinitions="Auto,Auto" Background="Transparent">
+                    <!-- A label, for the rare switch that stands alone. -->
+                    <ContentPresenter Name="PART_ContentPresenter"
+                                      Content="{TemplateBinding Content}"
+                                      ContentTemplate="{TemplateBinding ContentTemplate}"
+                                      IsVisible="{TemplateBinding Content, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                      Margin="0,0,10,0"
+                                      VerticalAlignment="Center"/>
+                    <Panel Grid.Column="1" Width="34" Height="20">
+                        <Border Name="Track" CornerRadius="10"
+                                Background="{DynamicResource ToggleSwitchFillOff}">
+                            <Border.Transitions>
+                                <Transitions>
+                                    <BrushTransition Property="Background" Duration="0:0:0.14"/>
+                                </Transitions>
+                            </Border.Transitions>
+                        </Border>
+                        <Canvas Name="PART_SwitchKnob" Width="14" Height="20" HorizontalAlignment="Left">
+                            <Grid Name="PART_MovingKnobs" Width="20" Height="20">
+                                <Ellipse Name="Knob" Width="14" Height="14"
+                                         Fill="{DynamicResource ToggleSwitchKnobFillOff}"/>
+                            </Grid>
+                        </Canvas>
+                    </Panel>
+                </Grid>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:pointerover /template/ Border#Track">
+            <Setter Property="Background" Value="{DynamicResource ToggleSwitchFillOffPointerOver}"/>
+        </Style>
+        <Style Selector="^:checked /template/ Border#Track">
+            <Setter Property="Background" Value="{DynamicResource ToggleSwitchFillOn}"/>
+        </Style>
+        <Style Selector="^:checked /template/ Ellipse#Knob">
+            <Setter Property="Fill" Value="{DynamicResource ToggleSwitchKnobFillOn}"/>
+        </Style>
+        <Style Selector="^:checked:pointerover /template/ Border#Track">
+            <Setter Property="Background" Value="{DynamicResource ToggleSwitchFillOnPointerOver}"/>
+        </Style>
+
+        <!-- A switch that cannot be flipped is still there to be seen, in either position. -->
+        <Style Selector="^:disabled">
+            <Setter Property="Cursor" Value="Arrow"/>
+        </Style>
+        <Style Selector="^:disabled /template/ Border#Track">
+            <Setter Property="Background" Value="{DynamicResource ToggleSwitchFillOffDisabled}"/>
+        </Style>
+        <Style Selector="^:disabled /template/ Ellipse#Knob">
+            <Setter Property="Fill" Value="{DynamicResource ToggleSwitchKnobFillOffDisabled}"/>
+        </Style>
+        <Style Selector="^:disabled:checked /template/ Border#Track">
+            <Setter Property="Background" Value="{DynamicResource ToggleSwitchFillOnDisabled}"/>
+        </Style>
+        <Style Selector="^:disabled:checked /template/ Ellipse#Knob">
+            <Setter Property="Fill" Value="{DynamicResource ToggleSwitchKnobFillOnDisabled}"/>
+        </Style>
+    </ControlTheme>
+
+</ResourceDictionary>

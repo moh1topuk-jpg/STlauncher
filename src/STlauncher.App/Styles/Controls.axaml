@@ -1,15 +1,137 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
+    <!-- =====================================================================================
+         THE VOCABULARY OF THE QUIET LOOK
+         Every page is built from the classes below. One loud thing per screen: the accent
+         fills only the screen's main action. Lists are rows with a hairline, not cards.
+         Rare actions hide until the row is aimed at, and live in the "..." menu as well.
+
+         BUTTONS (Button)
+           (no class) / quiet   a grey raised button: every ordinary action.
+                                  <Button Content="Open"/>
+           primary              THE crimson one. At most one per screen.
+                                  <Button Classes="primary" Content="Create server"/>
+           ghost                text only, a background on hover: "Other build", "Cancel".
+                                  <Button Classes="ghost" Content="Pose"/>
+           plain                a ghost with tight padding, for a bare icon or word in a line.
+           link                 muted text over a hairline: "Mods and settings", "What changed".
+                                  <Button Classes="link" Content="Open the trash"/>
+           icon                 30x30, one icon, a background on hover. Give it a ToolTip.Tip.
+                                  <Button Classes="icon" ToolTip.Tip="Show file"><PathIcon Data="{StaticResource IconFolder}"/></Button>
+           icon more            the "..." of a row or header; it carries a MenuFlyout.
+                                  <Button Classes="icon more" ToolTip.Tip="More">
+                                      <PathIcon Data="{StaticResource IconDots}"/>
+                                      <Button.Flyout><MenuFlyout Placement="BottomEdgeAlignedRight">
+                                          <MenuItem Header="Show file" Command="..."/>
+                                          <Separator/>
+                                          <MenuItem Classes="danger" Header="Delete" Command="..."/>
+                                      </MenuFlyout></Button.Flyout>
+                                  </Button>
+           hero                 the big play button of the home screen (56 high).
+                                  <Button Classes="primary hero"><StackPanel Orientation="Horizontal" Spacing="10"><PathIcon Data="{StaticResource IconPlay}"/><TextBlock Text="Play"/></StackPanel></Button>
+           play                 "Play" in a header (44 high), the accent as well.
+           small                modifier: 30 high. danger: modifier, red text on the quiet fill.
+           chip                 a filter chip that can be chosen: <Button Classes="chip" Classes.active="{Binding ...}"/>
+
+         ROWS
+           Border.row           one item of a list: padding 11,12, radius 10, a hairline above,
+                                a tone under the pointer. Put a Grid inside.
+               .reveal          any child (usually a StackPanel of icon buttons): hidden until the
+                                row is under the pointer, or until Tab moves focus into it.
+                                Hidden also means it cannot be clicked. Never the ONLY way to an
+                                action: mirror it in the "..." menu and the context menu.
+               .first           modifier: no hairline (the first row of a StackPanel loses its
+                                line by itself; say "first" when the row sits in an ItemsControl).
+               .selected        modifier: the chosen row keeps the hover tone.
+               .flat            modifier: no hairline at all (a sidebar list, padding 9,12).
+               .off             modifier: a switched-off item, dimmed.
+                                  <Border Classes="row">
+                                      <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="14">
+                                          <Border Classes="icon-tile" Background="{DynamicResource TintBrush2}"><TextBlock Classes="tile-letter" Text="S"/></Border>
+                                          <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                              <TextBlock Classes="strong" Text="Sodium" TextTrimming="CharacterEllipsis"/>
+                                              <TextBlock Classes="sub" Text="Renders the world faster" TextTrimming="CharacterEllipsis"/>
+                                          </StackPanel>
+                                          <StackPanel Grid.Column="2" Classes="reveal" Orientation="Horizontal" Spacing="4">
+                                              <Button Classes="icon" ...update.../> <Button Classes="icon" ...folder.../> <Button Classes="icon more" .../>
+                                          </StackPanel>
+                                          <TextBlock Grid.Column="3" Classes="mono" Text="0.8.12" VerticalAlignment="Center"/>
+                                          <ToggleSwitch Grid.Column="4" IsChecked="{Binding Enabled}"/>     (the always-visible trailing control)
+                                      </Grid>
+                                  </Border>
+           ListBox.rows         the same row when the list is a ListBox (stays virtualised): the
+                                item container is the row, "reveal" works inside it.
+           :is(Control).reveal-host   any other container whose .reveal children show on hover
+                                (a world's picture with actions over it).
+
+         TABS, PICKERS, SWITCHES
+           Border.tabs + Button.tab   underlined tabs; the active one: Classes.active.
+                                  <Border Classes="tabs"><StackPanel Orientation="Horizontal" Spacing="22">
+                                      <Button Classes="tab" Classes.active="{Binding IsModsTab}" Command="...">
+                                          <StackPanel Orientation="Horizontal" Spacing="6"><TextBlock Text="Mods"/><TextBlock Classes="count" Text="27"/></StackPanel>
+                                      </Button>
+                                  </StackPanel></Border>
+           Border.segments + Button.segment   the segmented picker (one of a few values).
+                                  <Border Classes="segments"><StackPanel Orientation="Horizontal">
+                                      <Button Classes="segment" Classes.active="{Binding IsDark}" Content="Dark"/> ...
+                                  </StackPanel></Border>
+           ToggleSwitch         the switch, 34x20, no words beside it. Nothing to add: <ToggleSwitch IsChecked="{Binding X}"/>
+
+         SMALL THINGS
+           Border.chip          a fact in a pill: <Border Classes="chip"><TextBlock Text="Boost is on"/></Border>
+           Border.chip.warn     the same in the warning colour ("3 updates"); put an icon in a StackPanel beside the text.
+           Border.field + TextBox.bare   the search field:
+                                  <Border Classes="field" Width="260"><Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                                      <PathIcon Data="{StaticResource IconSearch}" Classes="small muted"/>
+                                      <TextBox Grid.Column="1" Classes="bare" Watermark="Search" Text="{Binding Query}"/>
+                                  </Grid></Border>
+           controls:Caption     a section caption: mono, UPPERCASE (it uppercases the text itself), muted.
+                                  <controls:Caption Text="{DynamicResource Home_Continue}"/>    (xmlns:controls="using:STlauncher.App.Controls")
+           TextBlock.caption    the same look for text that is already uppercase; TextBlock.label is its older, lowercase sibling.
+           TextBlock.strong     a row's or a setting's title (bold). TextBlock.sub: the one muted line under it.
+           TextBlock.mono       a version or a loader: mono, secondary colour.
+           TextBlock.tag        "there is 0.8.13": mono, the warning colour.
+           Ellipse.dot          a 7 px status dot, green; .warn gold, .off grey.
+           Border.icon-tile     the 34x34 coloured square with a letter or an icon.
+           Border.hairline      a 1 px line across.
+
+         SETTINGS
+           Border.setting       one setting: the name and one muted line on the left, the control
+                                on the right, a hairline below.
+                                  <Border Classes="setting"><Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                                      <StackPanel VerticalAlignment="Center">
+                                          <TextBlock Classes="strong" Text="Memory for the game"/>
+                                          <TextBlock Classes="sub" Text="2048 MB, recommended for this build"/>
+                                      </StackPanel>
+                                      <Slider Grid.Column="1" Width="220"/>
+                                  </Grid></Border>
+           TextBlock.group      the heading of a group of settings (17, extra bold).
+
+         PAGE HEADER
+           TextBlock.page-title the title of a page or of the thing on it (26); add "large" (34)
+                                for a page that is only its title, "huge" (54) on the home screen.
+           StackPanel.meta      the line under it: facts with dot separators. An Ellipse between
+                                two facts is the dot.
+                                  <StackPanel Classes="meta"><TextBlock Classes="mono" Text="Fabric 0.17.2"/><Ellipse/><TextBlock Text="27 mods"/><Ellipse/><TextBlock Text="1.4 GB"/></StackPanel>
+           The 52 px strip above every page belongs to the shell (MainWindow.axaml): its left
+           holds the page's context label, one TextBlock per section; its right is the search.
+
+         OVER THE PAGE
+           Border.scrim + Border.dialog   an in-window dialog:
+                                  <Border Classes="scrim" IsVisible="{Binding IsOpen}"><Border Classes="dialog" Width="480">...</Border></Border>
+           ToolTip, ContextMenu, MenuFlyout, Flyout, scroll bars need no class: they are quiet
+           already. MenuItem.danger marks a destructive item.
+         ===================================================================================== -->
+
     <!-- ===================== Typography =====================
-         One scale, used everywhere: 26 / 18 / 15 for headings, 13 for text, 12 for the
-         quiet parts. Before this, almost every caption was 11px grey and nothing on a page
-         read as its title. -->
+         Manrope carries everything with weight; running text is Inter at 13.5 medium. -->
 
     <Style Selector="Window">
         <Setter Property="Background" Value="{DynamicResource AppBgBrush}"/>
-        <Setter Property="FontFamily" Value="Inter, Segoe UI, sans-serif"/>
-        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+        <Setter Property="FontSize" Value="13.5"/>
+        <Setter Property="FontWeight" Value="Medium"/>
     </Style>
 
     <Style Selector="TextBlock">
@@ -23,9 +145,70 @@
 
     <Style Selector="TextBlock.h1">
         <Setter Property="FontFamily" Value="{StaticResource DisplayFont}"/>
-        <Setter Property="FontSize" Value="28"/>
+        <Setter Property="FontSize" Value="26"/>
         <Setter Property="FontWeight" Value="ExtraBold"/>
         <Setter Property="LetterSpacing" Value="-0.5"/>
+    </Style>
+
+    <!-- The title of a page, or of the one thing the page is about. -->
+    <Style Selector="TextBlock.page-title">
+        <Setter Property="FontFamily" Value="{StaticResource DisplayFont}"/>
+        <Setter Property="FontSize" Value="26"/>
+        <Setter Property="FontWeight" Value="ExtraBold"/>
+        <Setter Property="LetterSpacing" Value="-0.5"/>
+        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+    </Style>
+    <Style Selector="TextBlock.page-title.large">
+        <Setter Property="FontSize" Value="34"/>
+        <Setter Property="LetterSpacing" Value="-0.7"/>
+    </Style>
+    <Style Selector="TextBlock.page-title.huge">
+        <Setter Property="FontSize" Value="54"/>
+        <Setter Property="LetterSpacing" Value="-1.6"/>
+        <Setter Property="LineHeight" Value="56"/>
+    </Style>
+
+    <!-- The heading of a group of settings. -->
+    <Style Selector="TextBlock.group">
+        <Setter Property="FontFamily" Value="{StaticResource DisplayFont}"/>
+        <Setter Property="FontSize" Value="17"/>
+        <Setter Property="FontWeight" Value="ExtraBold"/>
+    </Style>
+
+    <!-- The name of a row or of a setting; the one muted line under it is "sub". -->
+    <Style Selector="TextBlock.strong">
+        <Setter Property="FontFamily" Value="{StaticResource DisplayFont}"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+    </Style>
+    <Style Selector="TextBlock.sub">
+        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+        <Setter Property="FontSize" Value="12.5"/>
+    </Style>
+
+    <!-- A section caption: mono, spaced, muted. The text has to be uppercase already;
+         controls:Caption does that for a string from the language file. -->
+    <Style Selector="TextBlock.caption">
+        <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="LetterSpacing" Value="0.9"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+    </Style>
+
+    <!-- "there is 0.8.13" at the right of a row. -->
+    <Style Selector="TextBlock.tag">
+        <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
+        <Setter Property="FontSize" Value="11.5"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="Foreground" Value="{DynamicResource WarningBrush}"/>
+    </Style>
+
+    <!-- The number beside a tab's name. -->
+    <Style Selector="TextBlock.count">
+        <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
     </Style>
 
     <!-- The main screen's one big title. -->
@@ -44,8 +227,8 @@
 
     <Style Selector="TextBlock.h3">
         <Setter Property="FontFamily" Value="{StaticResource DisplayFont}"/>
-        <Setter Property="FontSize" Value="16"/>
-        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="FontSize" Value="15"/>
+        <Setter Property="FontWeight" Value="ExtraBold"/>
     </Style>
 
     <!-- The one large number of a metric tile. -->
@@ -58,29 +241,38 @@
 
     <!-- Small uppercase eyebrow above a block. Not a heading: it labels, it does not title. -->
     <Style Selector="TextBlock.label">
+        <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
         <Setter Property="FontSize" Value="11"/>
-        <Setter Property="LetterSpacing" Value="1.2"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="LetterSpacing" Value="0.6"/>
         <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
     </Style>
 
     <Style Selector="TextBlock.muted">
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
-        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="FontSize" Value="12.5"/>
     </Style>
 
     <Style Selector="TextBlock.faint">
         <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
-        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="FontSize" Value="12.5"/>
     </Style>
 
     <Style Selector="TextBlock.title">
+        <Setter Property="FontFamily" Value="{StaticResource DisplayFont}"/>
         <Setter Property="FontSize" Value="16"/>
-        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="FontWeight" Value="Bold"/>
     </Style>
 
     <Style Selector="TextBlock.mono">
-        <Setter Property="FontFamily" Value="Consolas, Menlo, monospace"/>
+        <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
         <Setter Property="FontSize" Value="12"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+    </Style>
+    <Style Selector="TextBox.mono">
+        <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
+        <Setter Property="FontWeight" Value="Normal"/>
     </Style>
 
     <Style Selector="TextBlock.accent">
@@ -121,21 +313,21 @@
     </Style>
 
     <!-- ===================== Surfaces =====================
-         Depth comes from tone, not from lines: a card is a lighter slab on the background,
-         a panel a lighter slab on the card. Borders were on everything and made the whole
-         window read as a grid of identical grey boxes. -->
+         Depth comes from tone, not from lines. A card and a panel are what is left of the
+         older look: a new page uses rows on the ground instead, and keeps a frame only for
+         a thing that really is a separate object. -->
 
     <Style Selector="Border.card">
         <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
         <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="CornerRadius" Value="12"/>
+        <Setter Property="CornerRadius" Value="14"/>
         <Setter Property="Padding" Value="20"/>
     </Style>
 
     <Style Selector="Border.panel">
         <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
         <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="CornerRadius" Value="10"/>
     </Style>
 
     <!-- One figure with its caption; several of them make a row of metrics. -->
@@ -148,8 +340,8 @@
     <!-- Small pill that says what something is: "From the catalog", "Installed". -->
     <Style Selector="Border.tag">
         <Setter Property="Background" Value="{DynamicResource ElevatedBrush}"/>
-        <Setter Property="CornerRadius" Value="4"/>
-        <Setter Property="Padding" Value="6,1"/>
+        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="Padding" Value="7,2"/>
         <Setter Property="HorizontalAlignment" Value="Left"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
     </Style>
@@ -194,30 +386,29 @@
         <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}"/>
     </Style>
 
-    <!-- Category chips. -->
+    <!-- A chip that can be chosen: a category, a filter. The chosen one is told apart by
+         tone and ink, not by the accent: that is kept for the screen's one main action. -->
     <Style Selector="Button.chip">
-        <Setter Property="Padding" Value="12,5"/>
-        <Setter Property="CornerRadius" Value="999"/>
-        <Setter Property="FontSize" Value="12"/>
-        <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
-        <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
+        <Setter Property="Padding" Value="12,6"/>
+        <Setter Property="CornerRadius" Value="15"/>
+        <Setter Property="FontSize" Value="12.5"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Background" Value="{DynamicResource FieldBrush}"/>
+        <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
     </Style>
     <Style Selector="Button.chip /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource FieldBrush}"/>
     </Style>
     <Style Selector="Button.chip:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
     </Style>
     <Style Selector="Button.chip.active">
-        <Setter Property="Foreground" Value="{DynamicResource TextOnAccentBrush}"/>
-        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        <Setter Property="FontWeight" Value="Bold"/>
     </Style>
     <Style Selector="Button.chip.active /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
     </Style>
 
     <!-- Full-window scrim behind a lightbox: dark, flat, and a button so a click closes. -->
@@ -249,54 +440,131 @@
 
     <Style Selector="Border.hairline">
         <Setter Property="Height" Value="1"/>
-        <Setter Property="Background" Value="{DynamicResource AccentHairlineBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource HairlineBrush}"/>
     </Style>
 
     <Style Selector="Separator">
-        <Setter Property="Background" Value="{DynamicResource DividerBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource HairlineBrush}"/>
         <Setter Property="Height" Value="1"/>
     </Style>
 
+    <!-- ===================== Over the page: menus, flyouts, tooltips, dialogs =====================
+         The raised tone, one hairline, round corners. No shadow on a popup: it is a window
+         of its own and a shadow would cost it a transparent margin. -->
+
     <Style Selector="MenuFlyoutPresenter">
-        <Setter Property="Background" Value="{DynamicResource ElevatedBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource RaisedBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushSubtle}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="12"/>
+        <Setter Property="Padding" Value="5"/>
+    </Style>
+
+    <Style Selector="ContextMenu">
+        <Setter Property="Background" Value="{DynamicResource RaisedBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushSubtle}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="12"/>
+        <Setter Property="Padding" Value="5"/>
+    </Style>
+
+    <Style Selector="MenuItem">
         <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="Padding" Value="11,8"/>
+        <Setter Property="FontSize" Value="13"/>
+    </Style>
+    <Style Selector="MenuItem /template/ Border#PART_LayoutRoot">
+        <Setter Property="CornerRadius" Value="8"/>
+    </Style>
+    <!-- A destructive item says so by colour, and keeps it under the pointer. -->
+    <Style Selector="MenuItem.danger">
+        <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
+    </Style>
+    <Style Selector="MenuItem.danger:selected /template/ ContentPresenter#PART_HeaderPresenter">
+        <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
+    </Style>
+    <Style Selector="MenuItem > Separator, MenuFlyoutPresenter Separator, ContextMenu Separator">
+        <Setter Property="Margin" Value="6,4"/>
     </Style>
 
     <Style Selector="FlyoutPresenter">
-        <Setter Property="Background" Value="{DynamicResource ElevatedBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
-        <Setter Property="CornerRadius" Value="10"/>
-        <Setter Property="Padding" Value="14"/>
+        <Setter Property="Background" Value="{DynamicResource RaisedBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushSubtle}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="14"/>
+        <Setter Property="Padding" Value="16"/>
     </Style>
 
-    <!-- ===================== Buttons ===================== -->
+    <Style Selector="ToolTip">
+        <Setter Property="Background" Value="{DynamicResource ToolTipBackground}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ToolTipBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="9"/>
+        <Setter Property="Padding" Value="11,8"/>
+        <Setter Property="FontSize" Value="12.5"/>
+        <Setter Property="MaxWidth" Value="340"/>
+    </Style>
+    <!-- An explanation moved into a tooltip is a sentence or two: it has to wrap. -->
+    <Style Selector="ToolTip TextBlock">
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+
+    <!-- A dialog inside the window: the scrim takes the whole window, the dialog sits in
+         its middle. The one place a soft shadow is allowed. -->
+    <Style Selector="Border.scrim">
+        <Setter Property="Background" Value="{DynamicResource OverlayScrimBrush}"/>
+    </Style>
+    <Style Selector="Border.dialog">
+        <Setter Property="Background" Value="{DynamicResource RaisedBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushSubtle}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="18"/>
+        <Setter Property="Padding" Value="26"/>
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="BoxShadow" Value="{DynamicResource DialogShadow}"/>
+    </Style>
+
+    <!-- ===================== Buttons =====================
+         A button with no class is the quiet grey one. The accent belongs to "primary",
+         and a screen has one of those. -->
 
     <Style Selector="Button">
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
         <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="CornerRadius" Value="8"/>
-        <Setter Property="Padding" Value="14,8"/>
-        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="CornerRadius" Value="10"/>
+        <Setter Property="Padding" Value="16,10"/>
+        <Setter Property="FontSize" Value="13.5"/>
         <Setter Property="HorizontalContentAlignment" Value="Center"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
         <Setter Property="Cursor" Value="Hand"/>
-        <Setter Property="Background" Value="{DynamicResource ElevatedBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource ControlBrush}"/>
     </Style>
 
     <Style Selector="Button:pointerover /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}"/>
     </Style>
 
     <Style Selector="Button:pressed /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource ControlPressedBrush}"/>
+    </Style>
+
+    <!-- A button that is really a container - a tile with a title and a description, a
+         card, a swatch - must not hand the button's bold Manrope down to all of it. -->
+    <Style Selector="Button.tile, Button.build-chip, Button.link-tile, Button.skin-card, Button.scrim, Button.glass-wide">
+        <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+        <Setter Property="FontWeight" Value="Medium"/>
+    </Style>
+
+    <!-- The quiet button, said aloud: the same as no class at all. -->
+    <Style Selector="Button.quiet">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
     </Style>
 
 
     <!-- Primary action -->
     <Style Selector="Button.primary">
         <Setter Property="Foreground" Value="{DynamicResource TextOnAccentBrush}"/>
-        <Setter Property="FontWeight" Value="SemiBold"/>
     </Style>
 
     <Style Selector="Button.primary /template/ Border#PART_Root">
@@ -312,13 +580,20 @@
     </Style>
 
     <!-- The one big button of the main screen. -->
+    <!-- The big play button of the home screen: with "primary" it is the accent, flat,
+         with a quiet glow that deepens under the pointer. -->
     <Style Selector="Button.hero">
-        <Setter Property="Height" Value="64"/>
-        <Setter Property="FontFamily" Value="{StaticResource DisplayFont}"/>
-        <Setter Property="FontSize" Value="19"/>
-        <Setter Property="FontWeight" Value="Bold"/>
-        <Setter Property="CornerRadius" Value="16"/>
-        <Setter Property="Padding" Value="44,0"/>
+        <Setter Property="Height" Value="56"/>
+        <Setter Property="FontSize" Value="17"/>
+        <Setter Property="CornerRadius" Value="14"/>
+        <Setter Property="Padding" Value="34,0"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextOnAccentBrush}"/>
+    </Style>
+    <Style Selector="Button.hero > StackPanel > TextBlock, Button.hero > TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource TextOnAccentBrush}"/>
+    </Style>
+    <Style Selector="Button.hero > StackPanel > PathIcon">
+        <Setter Property="Foreground" Value="{DynamicResource TextOnAccentBrush}"/>
     </Style>
 
     <Style Selector="Button.hero /template/ Border#PART_Root">
@@ -326,64 +601,52 @@
         <Setter Property="BoxShadow" Value="{DynamicResource HeroShadow}"/>
     </Style>
 
-    <!-- The glow deepens under the pointer; the press is a small dip, not a colour change. -->
     <Style Selector="Button.hero:pointerover /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource HeroGradientBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}"/>
         <Setter Property="BoxShadow" Value="{DynamicResource HeroShadowHover}"/>
     </Style>
 
     <Style Selector="Button.hero:pressed /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource HeroGradientBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource AccentPressedBrush}"/>
         <Setter Property="BoxShadow" Value="{DynamicResource HeroShadow}"/>
-    </Style>
-
-    <!-- The big button grows a touch under the pointer, on top of the glow. -->
-    <Style Selector="Button.hero:pointerover">
-        <Setter Property="RenderTransform" Value="scale(1.025)"/>
     </Style>
 
     <Style Selector="Button.hero:pressed">
         <Setter Property="RenderTransform" Value="scale(0.985)"/>
     </Style>
 
-    <!-- A square companion to the hero button: same height, one icon. -->
+    <!-- A square companion to the hero button: same height, one icon, quiet. -->
     <Style Selector="Button.hero-side">
-        <Setter Property="Height" Value="64"/>
-        <Setter Property="Width" Value="56"/>
-        <Setter Property="CornerRadius" Value="16"/>
+        <Setter Property="Height" Value="56"/>
+        <Setter Property="Width" Value="52"/>
+        <Setter Property="CornerRadius" Value="14"/>
         <Setter Property="Padding" Value="0"/>
-        <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
+        <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
     </Style>
 
     <Style Selector="Button.hero-side /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource HeroSideBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource ControlBrush}"/>
     </Style>
 
     <!-- A class style outranks the plain :pointerover rule, so the side button needs its own. -->
     <Style Selector="Button.hero-side:pointerover /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource GoldMutedBrush}"/>
-    </Style>
-
-    <Style Selector="Button.hero-side:pointerover">
-        <Setter Property="RenderTransform" Value="scale(1.04)"/>
+        <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}"/>
     </Style>
 
     <!-- ===================== Navigation rail =====================
-         Icon over label, so the rail stays 88px wide and the content gets the rest. -->
+         Icon over label in a 76 px rail. The active item is a pill of the hover tone with
+         its icon in the accent; nothing else in the rail has colour. -->
 
     <Style Selector="Button.rail">
-        <Setter Property="Width" Value="68"/>
-        <Setter Property="Height" Value="60"/>
-        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Width" Value="60"/>
+        <Setter Property="Padding" Value="0,9,0,7"/>
         <Setter Property="CornerRadius" Value="12"/>
         <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
         <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
-        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+        <Setter Property="FontSize" Value="10.5"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Cursor" Value="Hand"/>
     </Style>
 
@@ -391,34 +654,34 @@
         <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
     </Style>
 
+    <Style Selector="Button.rail TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+    </Style>
+
     <Style Selector="Button.rail PathIcon">
         <Setter Property="Width" Value="20"/>
         <Setter Property="Height" Value="20"/>
-        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
-        <Setter Property="RenderTransform" Value="translateY(0px) scale(1)"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
         <Setter Property="Transitions">
             <Transitions>
-                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.18" Easing="CubicEaseOut"/>
-                <BrushTransition Property="Foreground" Duration="0:0:0.18"/>
+                <BrushTransition Property="Foreground" Duration="0:0:0.16"/>
             </Transitions>
         </Setter>
     </Style>
 
-    <Style Selector="Button.rail:pointerover PathIcon">
-        <Setter Property="RenderTransform" Value="translateY(-1px) scale(1.1)"/>
+    <Style Selector="Button.rail:pointerover TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
     </Style>
-
-    <Style Selector="Button.rail.active PathIcon">
-        <Setter Property="RenderTransform" Value="translateY(0px) scale(1.12)"/>
+    <Style Selector="Button.rail:pointerover PathIcon">
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
     </Style>
 
     <Style Selector="Button.rail:pointerover /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
     </Style>
 
-    <Style Selector="Button.rail.active">
+    <Style Selector="Button.rail.active TextBlock">
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
-        <Setter Property="FontWeight" Value="SemiBold"/>
     </Style>
 
     <Style Selector="Button.rail.active PathIcon">
@@ -426,49 +689,53 @@
     </Style>
 
     <Style Selector="Button.rail.active /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource ElevatedBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource RowHoverBrush}"/>
     </Style>
 
-    <!-- Version pill at the foot of the rail: grey while current, accent when an update waits. -->
+    <!-- The version at the foot of the rail: muted while current; gold, with an arrow,
+         when an update waits. Gold is the colour of "there is something new", the accent
+         stays with the screen's main action. -->
     <Style Selector="Button.version-pill">
-        <Setter Property="Width" Value="68"/>
-        <Setter Property="Padding" Value="6,7"/>
+        <Setter Property="Width" Value="60"/>
+        <Setter Property="Padding" Value="4,6"/>
         <Setter Property="CornerRadius" Value="10"/>
-        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="FontSize" Value="10.5"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
         <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
-        <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+    <Style Selector="Button.version-pill TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
     </Style>
 
     <Style Selector="Button.version-pill /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
     </Style>
 
     <Style Selector="Button.version-pill:pointerover /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
     </Style>
 
-    <Style Selector="Button.version-pill.available">
-        <Setter Property="Foreground" Value="{DynamicResource TextOnAccentBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+    <Style Selector="Button.version-pill.available TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource GoldBrush}"/>
+    </Style>
+    <Style Selector="Button.version-pill.available PathIcon">
+        <Setter Property="Foreground" Value="{DynamicResource GoldBrush}"/>
     </Style>
 
     <Style Selector="Button.version-pill.available /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource ControlBrush}"/>
     </Style>
 
     <Style Selector="Button.version-pill.available:pointerover /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}"/>
     </Style>
 
     <!-- The avatar at the foot of the rail, and the one on the main screen. -->
     <Style Selector="Button.avatar">
         <Setter Property="Padding" Value="0"/>
-        <Setter Property="CornerRadius" Value="12"/>
+        <Setter Property="CornerRadius" Value="9"/>
         <Setter Property="Background" Value="{DynamicResource ElevatedBrush}"/>
         <Setter Property="BorderThickness" Value="0"/>
     </Style>
@@ -490,8 +757,9 @@
     <Style Selector="Button.index">
         <Setter Property="HorizontalAlignment" Value="Stretch"/>
         <Setter Property="HorizontalContentAlignment" Value="Left"/>
-        <Setter Property="Padding" Value="12,9"/>
+        <Setter Property="Padding" Value="12,8"/>
         <Setter Property="CornerRadius" Value="9"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
@@ -502,7 +770,15 @@
     </Style>
 
     <Style Selector="Button.index:pointerover /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+    </Style>
+
+    <!-- The section the page is on. -->
+    <Style Selector="Button.index.active">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+    </Style>
+    <Style Selector="Button.index.active /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource RowHoverBrush}"/>
     </Style>
 
     <!-- The selected build in the list carries an accent bar on its left edge. -->
@@ -518,27 +794,31 @@
         <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}"/>
     </Style>
 
-    <!-- Secondary: no fill, a quiet outline that warms on hover -->
+    <!-- Ghost: text only. No fill, no outline; a tone appears under the pointer. -->
     <Style Selector="Button.ghost">
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
-        <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
+        <Setter Property="BorderThickness" Value="0"/>
     </Style>
 
     <Style Selector="Button.ghost /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
     </Style>
 
     <Style Selector="Button.ghost:pointerover /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource GoldMutedBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource ControlBrush}"/>
+    </Style>
+    <Style Selector="Button.ghost:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+    </Style>
+    <Style Selector="Button.ghost:pressed /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}"/>
     </Style>
 
     <!-- Bare: only text or an icon, a background appears on hover. -->
     <Style Selector="Button.plain">
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
         <Setter Property="Padding" Value="8,6"/>
+        <Setter Property="CornerRadius" Value="8"/>
     </Style>
 
     <Style Selector="Button.plain /template/ Border#PART_Root">
@@ -546,23 +826,80 @@
     </Style>
 
     <Style Selector="Button.plain:pointerover /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource ControlBrush}"/>
     </Style>
 
+    <!-- A link: muted words over a hairline, for the way to something further. -->
+    <Style Selector="Button.link">
+        <Setter Property="Padding" Value="0,2"/>
+        <Setter Property="CornerRadius" Value="0"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushSubtle}"/>
+    </Style>
+    <Style Selector="Button.link /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushSubtle}"/>
+    </Style>
+    <Style Selector="Button.link:pointerover /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource TextSecondaryBrush}"/>
+    </Style>
+    <Style Selector="Button.link:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+    </Style>
+    <Style Selector="Button.link:pressed">
+        <Setter Property="RenderTransform" Value="scale(1)"/>
+    </Style>
+
+    <!-- A square button with one icon: the actions of a row or a header. -->
+    <Style Selector="Button.icon">
+        <Setter Property="Width" Value="30"/>
+        <Setter Property="Height" Value="30"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+    </Style>
+    <Style Selector="Button.icon > PathIcon">
+        <Setter Property="Width" Value="16"/>
+        <Setter Property="Height" Value="16"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+    </Style>
+    <Style Selector="Button.icon:pointerover > PathIcon">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+    </Style>
+    <Style Selector="Button.icon /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
+    </Style>
+    <Style Selector="Button.icon:pointerover /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}"/>
+    </Style>
+    <!-- A menu is open from it: it stays lit, so the menu has an owner. -->
+    <Style Selector="Button.icon:flyout-open /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}"/>
+    </Style>
+
+    <!-- Destructive, but not shouting: red words on the quiet fill, no outline. -->
     <Style Selector="Button.danger">
         <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
-        <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}"/>
+        <Setter Property="BorderThickness" Value="0"/>
     </Style>
 
     <Style Selector="Button.danger /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource ControlBrush}"/>
+    </Style>
+    <Style Selector="Button.danger:pointerover /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}"/>
     </Style>
 
     <Style Selector="Button.small">
-        <Setter Property="Padding" Value="10,5"/>
-        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Padding" Value="12,6"/>
+        <Setter Property="FontSize" Value="12.5"/>
+        <Setter Property="CornerRadius" Value="8"/>
+    </Style>
+    <Style Selector="Button.plain.small">
+        <Setter Property="Padding" Value="7,5"/>
     </Style>
 
     <!-- A quiet remove button that only turns red when aimed at. -->
@@ -570,6 +907,12 @@
         <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
         <Setter Property="MinWidth" Value="30"/>
         <Setter Property="Padding" Value="8,4"/>
+    </Style>
+    <Style Selector="Button.icon-danger /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
+    </Style>
+    <Style Selector="Button.icon-danger:pointerover /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource ControlBrush}"/>
     </Style>
     <Style Selector="Button.icon-danger:pointerover /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
@@ -662,9 +1005,10 @@
     <Style Selector="Button.segment">
         <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
         <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="CornerRadius" Value="6"/>
-        <Setter Property="Padding" Value="14,7"/>
-        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="CornerRadius" Value="7"/>
+        <Setter Property="Padding" Value="12,6"/>
+        <Setter Property="FontSize" Value="12.5"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
         <Setter Property="Cursor" Value="Hand"/>
     </Style>
@@ -680,11 +1024,13 @@
 
     <Style Selector="Button.segment.active">
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
-        <Setter Property="FontWeight" Value="SemiBold"/>
     </Style>
 
     <Style Selector="Button.segment.active /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource ElevatedBrush}"/>
+    </Style>
+    <Style Selector="Button.segment:pressed">
+        <Setter Property="RenderTransform" Value="scale(1)"/>
     </Style>
 
     <Style Selector="Button.segment.active:pointerover /template/ Border#PART_Root">
@@ -697,7 +1043,7 @@
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
         <Setter Property="FontSize" Value="12"/>
         <Setter Property="Padding" Value="10,7"/>
-        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/>
     </Style>
 
@@ -747,15 +1093,15 @@
     <!-- ===================== Inputs ===================== -->
 
     <Style Selector="TextBox">
-        <Setter Property="CornerRadius" Value="8"/>
-        <Setter Property="Padding" Value="10,7"/>
+        <Setter Property="CornerRadius" Value="10"/>
+        <Setter Property="Padding" Value="12,7"/>
         <Setter Property="MinHeight" Value="36"/>
     </Style>
 
     <Style Selector="ComboBox">
-        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="CornerRadius" Value="10"/>
         <Setter Property="MinHeight" Value="36"/>
-        <Setter Property="Padding" Value="10,5"/>
+        <Setter Property="Padding" Value="12,5"/>
     </Style>
 
     <Style Selector="CheckBox">
@@ -764,13 +1110,15 @@
     </Style>
 
     <Style Selector="NumericUpDown">
-        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="CornerRadius" Value="10"/>
         <Setter Property="MinHeight" Value="36"/>
     </Style>
 
     <Style Selector="Slider">
         <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
     </Style>
+
+    <!-- The switch of a row or a setting is the launcher's own template: SwitchTheme.axaml. -->
 
     <!-- ===================== Lists ===================== -->
 
@@ -783,22 +1131,22 @@
     <Style Selector="ListBoxItem">
         <Setter Property="Padding" Value="10,8"/>
         <Setter Property="Margin" Value="0,1"/>
-        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="CornerRadius" Value="10"/>
     </Style>
 
     <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
-        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+        <Setter Property="CornerRadius" Value="10"/>
     </Style>
 
     <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource ElevatedBrush}"/>
-        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="Background" Value="{DynamicResource RowHoverBrush}"/>
+        <Setter Property="CornerRadius" Value="10"/>
     </Style>
 
     <Style Selector="ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
-        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="Background" Value="{DynamicResource RowHoverBrush}"/>
+        <Setter Property="CornerRadius" Value="10"/>
     </Style>
 
     <!-- ===================== Progress ===================== -->
@@ -806,7 +1154,7 @@
     <Style Selector="ProgressBar">
         <Setter Property="Height" Value="4"/>
         <Setter Property="CornerRadius" Value="2"/>
-        <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource HairlineBrush}"/>
         <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
     </Style>
 
@@ -863,14 +1211,30 @@
         <Setter Property="BoxShadow" Value="{DynamicResource HeroCardShadow}"/>
     </Style>
 
-    <!-- A fact about the build, on glass. -->
+    <!-- A fact in a pill: "Boost is on". With "warn" it is something to look at: "3 updates". -->
     <Style Selector="Border.chip">
-        <Setter Property="Padding" Value="10,4"/>
-        <Setter Property="CornerRadius" Value="8"/>
-        <Setter Property="Background" Value="{DynamicResource GlassChipBrush}"/>
+        <Setter Property="Padding" Value="12,6"/>
+        <Setter Property="CornerRadius" Value="15"/>
+        <Setter Property="Background" Value="{DynamicResource FieldBrush}"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
     </Style>
-    <Style Selector="Border.chip > TextBlock">
+    <Style Selector="Border.chip > TextBlock, Border.chip > StackPanel > TextBlock">
         <Setter Property="FontSize" Value="12.5"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+    <Style Selector="Border.chip > StackPanel > PathIcon">
+        <Setter Property="Width" Value="13"/>
+        <Setter Property="Height" Value="13"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+    <Style Selector="Border.chip.warn > TextBlock, Border.chip.warn > StackPanel > TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource WarningBrush}"/>
+    </Style>
+    <Style Selector="Border.chip.warn > StackPanel > PathIcon">
+        <Setter Property="Foreground" Value="{DynamicResource WarningBrush}"/>
     </Style>
 
     <!-- A rounded note floating over the stage or beside a heading. -->
@@ -892,15 +1256,13 @@
     <!-- Cards and panels that let the stage's light through. -->
     <Style Selector="Border.card.glass">
         <Setter Property="Background" Value="{DynamicResource CardGlassBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource GlassBorderBrush}"/>
-        <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="CornerRadius" Value="18"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="CornerRadius" Value="16"/>
     </Style>
     <Style Selector="Border.panel.glass">
         <Setter Property="Background" Value="{DynamicResource CardGlassBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource GlassBorderBrush}"/>
-        <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="CornerRadius" Value="18"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="CornerRadius" Value="16"/>
     </Style>
 
     <!-- The plate under the figure: the name and what can be changed about it. -->
@@ -952,7 +1314,7 @@
     </Style>
     <Style Selector="Button.build-chip:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource GlassChipBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource GoldMutedBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushSubtle}"/>
     </Style>
     <Style Selector="Button.build-new">
         <Setter Property="Padding" Value="14,11"/>
@@ -967,7 +1329,7 @@
     </Style>
     <Style Selector="Button.build-new:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource GlassBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource GoldMutedBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushSubtle}"/>
     </Style>
 
     <!-- A small square button on glass: change the pose, edit the name. -->
@@ -985,7 +1347,7 @@
     </Style>
     <Style Selector="Button.glass-icon:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource GlassChipBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource GoldMutedBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushSubtle}"/>
     </Style>
 
     <!-- ===================== Emotes ===================== -->
@@ -1004,7 +1366,7 @@
     </Style>
     <Style Selector="Button.pill:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource PillBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource GoldMutedBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushSubtle}"/>
     </Style>
 
     <!-- ===================== Builds and the mod catalog =====================
@@ -1014,21 +1376,21 @@
     <!-- The track a row of segments sits in: the build's tabs, the catalog's source. -->
     <Style Selector="Border.segments">
         <Setter Property="Padding" Value="3"/>
-        <Setter Property="CornerRadius" Value="12"/>
-        <Setter Property="Background" Value="{DynamicResource GlassBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource GlassBorderBrush}"/>
-        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="10"/>
+        <Setter Property="Background" Value="{DynamicResource FieldBrush}"/>
+        <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="HorizontalAlignment" Value="Left"/>
     </Style>
-    <!-- A touch tighter than a segment elsewhere: five tabs and the three sources share one
-         line of the default window. -->
     <Style Selector="Border.segments Button.segment">
-        <Setter Property="CornerRadius" Value="9"/>
-        <Setter Property="Padding" Value="11,7"/>
+        <Setter Property="CornerRadius" Value="7"/>
+        <Setter Property="Padding" Value="12,6"/>
         <Setter Property="FontSize" Value="12.5"/>
     </Style>
+    <Style Selector="Border.segments Button.segment:pointerover /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
+    </Style>
     <Style Selector="Border.segments Button.segment.active /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource GlassChipBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
     </Style>
 
     <!-- A TextBlock or an icon written out inside a button takes the page's colours, not
@@ -1042,7 +1404,7 @@
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
     </Style>
     <Style Selector="Button.chip.active > StackPanel > TextBlock">
-        <Setter Property="Foreground" Value="{DynamicResource TextOnAccentBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
     </Style>
     <Style Selector="Button.primary > StackPanel > TextBlock">
         <Setter Property="Foreground" Value="{DynamicResource TextOnAccentBrush}"/>
@@ -1064,11 +1426,11 @@
 
     <!-- A search field: the icon and the words share one outlined box. -->
     <Style Selector="Border.field">
-        <Setter Property="Height" Value="40"/>
+        <Setter Property="Height" Value="36"/>
         <Setter Property="Padding" Value="12,0"/>
-        <Setter Property="CornerRadius" Value="11"/>
-        <Setter Property="Background" Value="{DynamicResource GlassBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource GlassBorderBrush}"/>
+        <Setter Property="CornerRadius" Value="10"/>
+        <Setter Property="Background" Value="{DynamicResource FieldBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
     </Style>
     <Style Selector="Border.field:focus-within">
@@ -1093,24 +1455,20 @@
         <Setter Property="BorderThickness" Value="0"/>
     </Style>
 
-    <!-- One thing the build holds - a mod, a pack, a shader - as a roomy row on glass. -->
+    <!-- One thing the build holds - a mod, a pack, a shader. The older name of "row":
+         it looks the same now, and a page being redone should say "row". -->
     <Style Selector="Border.mod-line">
-        <Setter Property="Padding" Value="12,10"/>
-        <Setter Property="CornerRadius" Value="14"/>
-        <Setter Property="Background" Value="{DynamicResource CardGlassBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource GlassBorderBrush}"/>
+        <Setter Property="Padding" Value="12,11"/>
+        <Setter Property="CornerRadius" Value="10"/>
+        <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource GhostBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="Transitions">
-            <Transitions>
-                <BrushTransition Property="BorderBrush" Duration="0:0:0.16"/>
-            </Transitions>
-        </Setter>
     </Style>
     <Style Selector="Border.mod-line:pointerover">
-        <Setter Property="BorderBrush" Value="{DynamicResource GoldMutedBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource RowHoverBrush}"/>
     </Style>
     <Style Selector="Border.mod-line.selected">
-        <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource RowHoverBrush}"/>
     </Style>
     <!-- Switched off: still in the list, visibly off. -->
     <Style Selector="Border.mod-line.off">
@@ -1124,9 +1482,9 @@
 
     <!-- A mod in the catalog: a large card under a strip of its own colour. -->
     <Style Selector="Border.mod-tile">
-        <Setter Property="CornerRadius" Value="18"/>
-        <Setter Property="Background" Value="{DynamicResource CardGlassBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource GlassBorderBrush}"/>
+        <Setter Property="CornerRadius" Value="14"/>
+        <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource GhostBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="Transitions">
             <Transitions>
@@ -1135,7 +1493,7 @@
         </Setter>
     </Style>
     <Style Selector="Border.mod-tile:pointerover">
-        <Setter Property="BorderBrush" Value="{DynamicResource GoldMutedBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushSubtle}"/>
     </Style>
     <Style Selector="Border.mod-tile.selected">
         <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}"/>
@@ -1191,11 +1549,9 @@
     <!-- "Play" in a build's header: the home screen's big button, at a size a header holds. -->
     <Style Selector="Button.play">
         <Setter Property="Height" Value="44"/>
-        <Setter Property="Padding" Value="20,0"/>
-        <Setter Property="CornerRadius" Value="14"/>
-        <Setter Property="FontFamily" Value="{StaticResource DisplayFont}"/>
-        <Setter Property="FontSize" Value="15"/>
-        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Padding" Value="24,0"/>
+        <Setter Property="CornerRadius" Value="12"/>
+        <Setter Property="FontSize" Value="14.5"/>
         <Setter Property="Foreground" Value="{DynamicResource TextOnAccentBrush}"/>
     </Style>
     <Style Selector="Button.play > StackPanel > TextBlock">
@@ -1205,16 +1561,13 @@
         <Setter Property="Foreground" Value="{DynamicResource TextOnAccentBrush}"/>
     </Style>
     <Style Selector="Button.play /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource HeroGradientBrush}"/>
-        <Setter Property="BoxShadow" Value="{DynamicResource HeroShadow}"/>
+        <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
     </Style>
     <Style Selector="Button.play:pointerover /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource HeroGradientBrush}"/>
-        <Setter Property="BoxShadow" Value="{DynamicResource HeroShadowHover}"/>
+        <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}"/>
     </Style>
     <Style Selector="Button.play:pressed /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource HeroGradientBrush}"/>
-        <Setter Property="BoxShadow" Value="{DynamicResource HeroShadow}"/>
+        <Setter Property="Background" Value="{DynamicResource AccentPressedBrush}"/>
     </Style>
 
     <!-- ===================== Skins ===================== -->
@@ -1233,7 +1586,7 @@
     </Style>
     <Style Selector="Button.skin-card:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource CardGlassBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource GoldMutedBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushSubtle}"/>
     </Style>
     <Style Selector="Button.skin-card.selected /template/ Border#PART_Root">
         <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}"/>
@@ -1255,7 +1608,7 @@
     </Style>
     <Style Selector="Button.tool:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource GlassChipBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource GoldMutedBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushSubtle}"/>
     </Style>
     <Style Selector="Button.tool.active">
         <Setter Property="Foreground" Value="{DynamicResource TextOnAccentBrush}"/>
@@ -1282,6 +1635,201 @@
     </Style>
     <Style Selector="Button.colour:pointerover">
         <Setter Property="RenderTransform" Value="scale(1.12)"/>
+    </Style>
+
+    <!-- =====================================================================================
+         The quiet look: rows, tabs, settings, headers. Usage is at the top of this file.
+         ===================================================================================== -->
+
+    <!-- ===================== Rows =====================
+         One item of a list. No frame, no fill: a hairline above, a tone under the pointer.
+         The hairline is a shadow without blur, so a list of hundreds costs no extra elements. -->
+    <Style Selector="Border.row">
+        <Setter Property="Padding" Value="12,11"/>
+        <Setter Property="CornerRadius" Value="10"/>
+        <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
+        <Setter Property="BoxShadow" Value="{DynamicResource RowLineShadow}"/>
+    </Style>
+    <Style Selector="Border.row:pointerover">
+        <Setter Property="Background" Value="{DynamicResource RowHoverBrush}"/>
+        <Setter Property="BoxShadow" Value="{DynamicResource NoShadow}"/>
+    </Style>
+    <Style Selector="Border.row.selected">
+        <Setter Property="Background" Value="{DynamicResource RowHoverBrush}"/>
+        <Setter Property="BoxShadow" Value="{DynamicResource NoShadow}"/>
+    </Style>
+    <!-- The first row has nothing above it to be divided from. -->
+    <Style Selector="StackPanel > Border.row:nth-child(1)">
+        <Setter Property="BoxShadow" Value="{DynamicResource NoShadow}"/>
+    </Style>
+    <Style Selector="Border.row.first">
+        <Setter Property="BoxShadow" Value="{DynamicResource NoShadow}"/>
+    </Style>
+    <Style Selector="Border.row.flat">
+        <Setter Property="Padding" Value="12,9"/>
+        <Setter Property="BoxShadow" Value="{DynamicResource NoShadow}"/>
+    </Style>
+    <Style Selector="Border.row.off">
+        <Setter Property="Opacity" Value="0.55"/>
+    </Style>
+
+    <!-- The same row when the list is a ListBox: the container is the row. -->
+    <Style Selector="ListBox.rows ListBoxItem">
+        <Setter Property="Padding" Value="12,11"/>
+        <Setter Property="Margin" Value="0"/>
+        <Setter Property="CornerRadius" Value="10"/>
+    </Style>
+    <Style Selector="ListBox.rows ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
+        <Setter Property="CornerRadius" Value="10"/>
+        <Setter Property="BoxShadow" Value="{DynamicResource RowLineShadow}"/>
+    </Style>
+    <Style Selector="ListBox.rows ListBoxItem:nth-child(1) /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="BoxShadow" Value="{DynamicResource NoShadow}"/>
+    </Style>
+    <Style Selector="ListBox.rows ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource RowHoverBrush}"/>
+        <Setter Property="BoxShadow" Value="{DynamicResource NoShadow}"/>
+    </Style>
+    <Style Selector="ListBox.rows ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource RowHoverBrush}"/>
+        <Setter Property="BoxShadow" Value="{DynamicResource NoShadow}"/>
+    </Style>
+
+    <!-- Revealed on hover: the rare actions of a row. Hidden means unseen AND out of the
+         pointer's reach, so a tap on a touch screen cannot hit a button nobody saw. The
+         keyboard still gets there: Tab into the hidden group and the group shows itself.
+         (Focus anywhere in the row would be the simpler rule, but a click on the row's
+         switch leaves focus there, and the row would stay lit after the pointer has gone.) -->
+    <Style Selector=":is(Control).reveal">
+        <Setter Property="Opacity" Value="0"/>
+        <Setter Property="IsHitTestVisible" Value="False"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <DoubleTransition Property="Opacity" Duration="0:0:0.1"/>
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Border.row:pointerover :is(Control).reveal, Border.mod-line:pointerover :is(Control).reveal, ListBoxItem:pointerover :is(Control).reveal, :is(Control).reveal-host:pointerover :is(Control).reveal">
+        <Setter Property="Opacity" Value="1"/>
+        <Setter Property="IsHitTestVisible" Value="True"/>
+    </Style>
+    <Style Selector=":is(Control).reveal:focus-within">
+        <Setter Property="Opacity" Value="1"/>
+        <Setter Property="IsHitTestVisible" Value="True"/>
+    </Style>
+
+    <!-- The coloured square at the start of a row: a letter or an icon on a build's tint. -->
+    <Style Selector="Border.icon-tile">
+        <Setter Property="Width" Value="34"/>
+        <Setter Property="Height" Value="34"/>
+        <Setter Property="CornerRadius" Value="9"/>
+        <Setter Property="ClipToBounds" Value="True"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+    <Style Selector="Border.icon-tile > TextBlock.tile-letter">
+        <Setter Property="FontSize" Value="13"/>
+    </Style>
+    <Style Selector="Border.icon-tile > PathIcon">
+        <Setter Property="Foreground" Value="{DynamicResource TextOnAccentBrush}"/>
+    </Style>
+
+    <!-- A status dot: green by default. -->
+    <Style Selector="Ellipse.dot">
+        <Setter Property="Width" Value="7"/>
+        <Setter Property="Height" Value="7"/>
+        <Setter Property="Fill" Value="{DynamicResource SuccessBrush}"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+    <Style Selector="Ellipse.dot.warn">
+        <Setter Property="Fill" Value="{DynamicResource WarningBrush}"/>
+    </Style>
+    <Style Selector="Ellipse.dot.off">
+        <Setter Property="Fill" Value="{DynamicResource TextMutedBrush}"/>
+    </Style>
+
+    <!-- ===================== Tabs =====================
+         Words on a hairline; the one the page is on is underlined in the accent. -->
+    <Style Selector="Border.tabs">
+        <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}"/>
+        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+    </Style>
+    <Style Selector="Button.tab">
+        <Setter Property="Padding" Value="0,0,0,9"/>
+        <Setter Property="Margin" Value="0,0,0,-1"/>
+        <Setter Property="CornerRadius" Value="0"/>
+        <Setter Property="BorderThickness" Value="0,0,0,2"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource GhostBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+    </Style>
+    <Style Selector="Button.tab /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource GhostBrush}"/>
+    </Style>
+    <Style Selector="Button.tab > StackPanel > TextBlock, Button.tab > TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+    </Style>
+    <Style Selector="Button.tab:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+    </Style>
+    <Style Selector="Button.tab:pointerover > StackPanel > TextBlock, Button.tab:pointerover > TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+    </Style>
+    <Style Selector="Button.tab.active">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+    </Style>
+    <Style Selector="Button.tab.active /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+    </Style>
+    <Style Selector="Button.tab.active > StackPanel > TextBlock, Button.tab.active > TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+    </Style>
+    <Style Selector="Button.tab.active /template/ Border#PART_Root">
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}"/>
+    </Style>
+    <Style Selector="Button.tab:pressed">
+        <Setter Property="RenderTransform" Value="scale(1)"/>
+    </Style>
+
+    <!-- ===================== Settings =====================
+         One setting: what it is on the left, the control on the right, a hairline below. -->
+    <Style Selector="Border.setting">
+        <Setter Property="Padding" Value="0,15"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}"/>
+        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+    </Style>
+    <Style Selector="Border.setting TextBlock.sub">
+        <Setter Property="TextWrapping" Value="Wrap"/>
+        <Setter Property="Margin" Value="0,2,0,0"/>
+    </Style>
+
+    <!-- ===================== Page header =====================
+         Facts under a title, a dot between two of them. -->
+    <Style Selector="StackPanel.meta">
+        <Setter Property="Orientation" Value="Horizontal"/>
+        <Setter Property="Spacing" Value="10"/>
+    </Style>
+    <Style Selector="StackPanel.meta > TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+    <Style Selector="StackPanel.meta > Ellipse">
+        <Setter Property="Width" Value="3"/>
+        <Setter Property="Height" Value="3"/>
+        <Setter Property="Fill" Value="{DynamicResource TextMutedBrush}"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <!-- The label in the strip above a page: where the player is. -->
+    <Style Selector="TextBlock.context">
+        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+        <Setter Property="FontSize" Value="12.5"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <!-- Red stays red under the pointer, whatever else the button is. -->
+    <Style Selector="Button.danger:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
     </Style>
 
 </Styles>

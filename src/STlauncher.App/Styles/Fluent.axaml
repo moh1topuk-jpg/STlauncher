@@ -4,82 +4,131 @@
     <!--
       Overrides for FluentTheme resource keys. Keys that do not exist in the current
       Avalonia version are simply ignored, so this list is safe to keep broad.
+      The colours are the palette of Colors.axaml: field #131015, raised #1B161A,
+      hover #221B21, hairline #261F25.
     -->
 
-    <Color x:Key="SystemAccentColor">#A3243F</Color>
-    <Color x:Key="SystemAccentColorDark1">#8E1F35</Color>
+    <Color x:Key="SystemAccentColor">#B5294A</Color>
+    <Color x:Key="SystemAccentColorDark1">#96203C</Color>
     <Color x:Key="SystemAccentColorDark2">#7E1B31</Color>
     <Color x:Key="SystemAccentColorDark3">#6A162A</Color>
-    <Color x:Key="SystemAccentColorLight1">#C02E4C</Color>
+    <Color x:Key="SystemAccentColorLight1">#CF3558</Color>
     <Color x:Key="SystemAccentColorLight2">#D2486A</Color>
     <Color x:Key="SystemAccentColorLight3">#E0708C</Color>
 
-    <!-- Text inputs: TextBox, ComboBox editable area -->
-    <SolidColorBrush x:Key="TextControlBackground" Color="#1A1519"/>
-    <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#221A20"/>
-    <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#1A1519"/>
-    <SolidColorBrush x:Key="TextControlBackgroundDisabled" Color="#141014"/>
+    <!-- Text inputs: TextBox, ComboBox editable area. A field is a tone, not a frame:
+         the border is the hairline until the field has focus. -->
+    <SolidColorBrush x:Key="TextControlBackground" Color="#131015"/>
+    <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#1B161A"/>
+    <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#131015"/>
+    <SolidColorBrush x:Key="TextControlBackgroundDisabled" Color="#100D11"/>
 
-    <SolidColorBrush x:Key="TextControlBorderBrush" Color="#382C34"/>
-    <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="#A3243F"/>
-    <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#B8304D"/>
-    <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#8A1E35"/>
-    <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#4A3A44"/>
-    <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#A3243F"/>
-    <SolidColorBrush x:Key="TextControlBorderBrushDisabled" Color="#2E252C"/>
+    <SolidColorBrush x:Key="TextControlBorderBrush" Color="#261F25"/>
+    <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#342B32"/>
+    <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#B5294A"/>
+    <SolidColorBrush x:Key="TextControlBorderBrushDisabled" Color="#1E181D"/>
 
-    <SolidColorBrush x:Key="TextControlForeground" Color="#EFE9EC"/>
-    <SolidColorBrush x:Key="TextControlForegroundPointerOver" Color="#EFE9EC"/>
-    <SolidColorBrush x:Key="TextControlForegroundFocused" Color="#EFE9EC"/>
-    <SolidColorBrush x:Key="TextControlForegroundDisabled" Color="#7A6E75"/>
-    <SolidColorBrush x:Key="TextControlPlaceholderForeground" Color="#7A6E75"/>
-    <SolidColorBrush x:Key="TextControlPlaceholderForegroundPointerOver" Color="#9A9096"/>
-    <SolidColorBrush x:Key="TextControlPlaceholderForegroundFocused" Color="#7A6E75"/>
+    <SolidColorBrush x:Key="TextControlForeground" Color="#F1ECEE"/>
+    <SolidColorBrush x:Key="TextControlForegroundPointerOver" Color="#F1ECEE"/>
+    <SolidColorBrush x:Key="TextControlForegroundFocused" Color="#F1ECEE"/>
+    <SolidColorBrush x:Key="TextControlForegroundDisabled" Color="#72676E"/>
+    <SolidColorBrush x:Key="TextControlPlaceholderForeground" Color="#72676E"/>
+    <SolidColorBrush x:Key="TextControlPlaceholderForegroundPointerOver" Color="#8A7E85"/>
+    <SolidColorBrush x:Key="TextControlPlaceholderForegroundFocused" Color="#72676E"/>
 
-    <SolidColorBrush x:Key="ComboBoxBackground" Color="#1A1519"/>
-    <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="#221A20"/>
-    <SolidColorBrush x:Key="ComboBoxBackgroundPressed" Color="#221A20"/>
-    <SolidColorBrush x:Key="ComboBoxBackgroundDisabled" Color="#141014"/>
+    <SolidColorBrush x:Key="ComboBoxBackground" Color="#131015"/>
+    <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="#1B161A"/>
+    <SolidColorBrush x:Key="ComboBoxBackgroundPressed" Color="#1B161A"/>
+    <SolidColorBrush x:Key="ComboBoxBackgroundDisabled" Color="#100D11"/>
 
-    <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="#382C34"/>
-    <SolidColorBrush x:Key="ComboBoxBorderBrushPointerOver" Color="#4A3A44"/>
-    <SolidColorBrush x:Key="ComboBoxBorderBrushPressed" Color="#A3243F"/>
-    <SolidColorBrush x:Key="ComboBoxBorderBrushDisabled" Color="#2E252C"/>
+    <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="#261F25"/>
+    <SolidColorBrush x:Key="ComboBoxBorderBrushPointerOver" Color="#342B32"/>
+    <SolidColorBrush x:Key="ComboBoxBorderBrushPressed" Color="#B5294A"/>
+    <SolidColorBrush x:Key="ComboBoxBorderBrushDisabled" Color="#1E181D"/>
 
-    <SolidColorBrush x:Key="ComboBoxForeground" Color="#EFE9EC"/>
-    <SolidColorBrush x:Key="ComboBoxForegroundPointerOver" Color="#EFE9EC"/>
-    <SolidColorBrush x:Key="ComboBoxForegroundPressed" Color="#EFE9EC"/>
-    <SolidColorBrush x:Key="ComboBoxForegroundDisabled" Color="#7A6E75"/>
+    <SolidColorBrush x:Key="ComboBoxForeground" Color="#F1ECEE"/>
+    <SolidColorBrush x:Key="ComboBoxForegroundPointerOver" Color="#F1ECEE"/>
+    <SolidColorBrush x:Key="ComboBoxForegroundPressed" Color="#F1ECEE"/>
+    <SolidColorBrush x:Key="ComboBoxForegroundDisabled" Color="#72676E"/>
 
-    <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="#1A1519"/>
-    <SolidColorBrush x:Key="ComboBoxDropDownBorderBrush" Color="#382C34"/>
-    <SolidColorBrush x:Key="ComboBoxDropDownForeground" Color="#EFE9EC"/>
+    <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="#1B161A"/>
+    <SolidColorBrush x:Key="ComboBoxDropDownBorderBrush" Color="#261F25"/>
+    <SolidColorBrush x:Key="ComboBoxDropDownForeground" Color="#F1ECEE"/>
 
-    <SolidColorBrush x:Key="ComboBoxItemBackgroundPointerOver" Color="#221A20"/>
-    <SolidColorBrush x:Key="ComboBoxItemBackgroundSelected" Color="#2A2028"/>
-    <SolidColorBrush x:Key="ComboBoxItemBackgroundSelectedPointerOver" Color="#2A2028"/>
-    <SolidColorBrush x:Key="ComboBoxItemForeground" Color="#EFE9EC"/>
-    <SolidColorBrush x:Key="ComboBoxItemForegroundSelected" Color="#EFE9EC"/>
+    <SolidColorBrush x:Key="ComboBoxItemBackgroundPointerOver" Color="#221B21"/>
+    <SolidColorBrush x:Key="ComboBoxItemBackgroundSelected" Color="#2B232A"/>
+    <SolidColorBrush x:Key="ComboBoxItemBackgroundSelectedPointerOver" Color="#2B232A"/>
+    <SolidColorBrush x:Key="ComboBoxItemForeground" Color="#F1ECEE"/>
+    <SolidColorBrush x:Key="ComboBoxItemForegroundSelected" Color="#F1ECEE"/>
 
     <!-- CheckBox glyph background follows the accent -->
-    <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeUnchecked" Color="#4A3A44"/>
-    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked" Color="#A3243F"/>
-    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="#C02E4C"/>
-    <SolidColorBrush x:Key="CheckBoxForegroundUnchecked" Color="#EFE9EC"/>
-    <SolidColorBrush x:Key="CheckBoxForegroundChecked" Color="#EFE9EC"/>
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeUnchecked" Color="#4A3F47"/>
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked" Color="#B5294A"/>
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="#CF3558"/>
+    <SolidColorBrush x:Key="CheckBoxForegroundUnchecked" Color="#F1ECEE"/>
+    <SolidColorBrush x:Key="CheckBoxForegroundChecked" Color="#F1ECEE"/>
 
-    <!-- Popups and flyouts -->
-    <SolidColorBrush x:Key="FlyoutPresenterBackground" Color="#141014"/>
-    <SolidColorBrush x:Key="FlyoutBorderThemeBrush" Color="#382C34"/>
-    <SolidColorBrush x:Key="PopupBackground" Color="#141014"/>
+    <!-- The switch: a filled track either way, no outline. Off is the hairline tone with
+         a muted knob, on is the accent with a white one. -->
+    <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="#B5294A"/>
+    <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#CF3558"/>
+    <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#96203C"/>
+    <SolidColorBrush x:Key="ToggleSwitchFillOnDisabled" Color="#3A2A30"/>
+    <SolidColorBrush x:Key="ToggleSwitchStrokeOn" Color="Transparent"/>
+    <SolidColorBrush x:Key="ToggleSwitchStrokeOnPointerOver" Color="Transparent"/>
+    <SolidColorBrush x:Key="ToggleSwitchStrokeOnPressed" Color="Transparent"/>
+    <SolidColorBrush x:Key="ToggleSwitchStrokeOnDisabled" Color="Transparent"/>
+    <SolidColorBrush x:Key="ToggleSwitchFillOff" Color="#2E262D"/>
+    <SolidColorBrush x:Key="ToggleSwitchFillOffPointerOver" Color="#3A3038"/>
+    <SolidColorBrush x:Key="ToggleSwitchFillOffPressed" Color="#3A3038"/>
+    <SolidColorBrush x:Key="ToggleSwitchFillOffDisabled" Color="#1E181D"/>
+    <SolidColorBrush x:Key="ToggleSwitchStrokeOff" Color="Transparent"/>
+    <SolidColorBrush x:Key="ToggleSwitchStrokeOffPointerOver" Color="Transparent"/>
+    <SolidColorBrush x:Key="ToggleSwitchStrokeOffPressed" Color="Transparent"/>
+    <SolidColorBrush x:Key="ToggleSwitchStrokeOffDisabled" Color="Transparent"/>
+    <SolidColorBrush x:Key="ToggleSwitchKnobFillOff" Color="#8A7E85"/>
+    <SolidColorBrush x:Key="ToggleSwitchKnobFillOffPointerOver" Color="#A99BA3"/>
+    <SolidColorBrush x:Key="ToggleSwitchKnobFillOffPressed" Color="#A99BA3"/>
+    <SolidColorBrush x:Key="ToggleSwitchKnobFillOffDisabled" Color="#4A3F47"/>
+    <SolidColorBrush x:Key="ToggleSwitchKnobFillOn" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPointerOver" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPressed" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="ToggleSwitchKnobFillOnDisabled" Color="#8A7E85"/>
+
+    <!-- The slider: a hairline track, the accent up to the thumb. ThemeService repaints
+         the accent parts for the chosen colour. -->
+    <SolidColorBrush x:Key="SliderTrackFill" Color="#2E262D"/>
+    <SolidColorBrush x:Key="SliderTrackFillPointerOver" Color="#3A3038"/>
+    <SolidColorBrush x:Key="SliderTrackFillPressed" Color="#3A3038"/>
+    <SolidColorBrush x:Key="SliderTrackValueFill" Color="#B5294A"/>
+    <SolidColorBrush x:Key="SliderTrackValueFillPointerOver" Color="#B5294A"/>
+    <SolidColorBrush x:Key="SliderTrackValueFillPressed" Color="#B5294A"/>
+    <SolidColorBrush x:Key="SliderThumbBackground" Color="#CF3558"/>
+    <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="#CF3558"/>
+    <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="#B5294A"/>
+
+    <!-- Popups, flyouts, menus: the raised tone with a hairline, nothing heavier -->
+    <SolidColorBrush x:Key="FlyoutPresenterBackground" Color="#1B161A"/>
+    <SolidColorBrush x:Key="FlyoutBorderThemeBrush" Color="#2E262D"/>
+    <SolidColorBrush x:Key="PopupBackground" Color="#1B161A"/>
+    <SolidColorBrush x:Key="MenuFlyoutPresenterBackground" Color="#1B161A"/>
+    <SolidColorBrush x:Key="MenuFlyoutPresenterBorderBrush" Color="#2E262D"/>
+    <SolidColorBrush x:Key="MenuFlyoutItemBackgroundPointerOver" Color="#2B232A"/>
+    <SolidColorBrush x:Key="MenuFlyoutItemBackgroundPressed" Color="#221B21"/>
+    <SolidColorBrush x:Key="MenuFlyoutItemForeground" Color="#F1ECEE"/>
+    <SolidColorBrush x:Key="MenuFlyoutItemForegroundPointerOver" Color="#F1ECEE"/>
+    <SolidColorBrush x:Key="MenuFlyoutItemForegroundPressed" Color="#F1ECEE"/>
+    <SolidColorBrush x:Key="MenuFlyoutItemForegroundDisabled" Color="#72676E"/>
+    <SolidColorBrush x:Key="MenuFlyoutSubItemChevron" Color="#A99BA3"/>
+    <SolidColorBrush x:Key="MenuFlyoutItemKeyboardAcceleratorTextForeground" Color="#72676E"/>
 
     <!-- Tooltips -->
-    <SolidColorBrush x:Key="ToolTipBackground" Color="#221A20"/>
-    <SolidColorBrush x:Key="ToolTipBorderBrush" Color="#382C34"/>
-    <SolidColorBrush x:Key="ToolTipForeground" Color="#EFE9EC"/>
+    <SolidColorBrush x:Key="ToolTipBackground" Color="#221B21"/>
+    <SolidColorBrush x:Key="ToolTipBorderBrush" Color="#2E262D"/>
+    <SolidColorBrush x:Key="ToolTipForeground" Color="#F1ECEE"/>
 
     <SolidColorBrush x:Key="ScrollBarBackground" Color="Transparent"/>
-    <SolidColorBrush x:Key="ScrollBarThumbFill" Color="#3A2E36"/>
-    <SolidColorBrush x:Key="ScrollBarThumbFillPointerOver" Color="#4A3A44"/>
+    <SolidColorBrush x:Key="ScrollBarThumbFill" Color="#342B32"/>
+    <SolidColorBrush x:Key="ScrollBarThumbFillPointerOver" Color="#4A3F47"/>
 
 </ResourceDictionary>
