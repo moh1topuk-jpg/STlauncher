@@ -39,7 +39,10 @@ public partial class WorldBackupItem : ObservableObject
     private Task RestoreAsync() => _owner.RestoreWorldBackupAsync(_world, this);
 }
 
-/// <summary>A deleted world in the launcher's trash: what it was, and until when it can come back.</summary>
+/// <summary>
+/// A deleted world in the launcher's trash: what it was, when it went there and what it
+/// takes on disk. It stays until the player brings it back or deletes it for good.
+/// </summary>
 public partial class TrashedWorldItem : ObservableObject
 {
     private readonly MainWindowViewModel _owner;
@@ -48,21 +51,51 @@ public partial class TrashedWorldItem : ObservableObject
     {
         _owner = owner;
         Info = info;
-        DetailLabel = MainWindowViewModel.Localize(
-            "Worlds_TrashDetail",
-            "Deleted {0:dd.MM.yyyy HH:mm} · kept until {1:dd.MM.yyyy}",
-            info.DeletedAt.ToLocalTime(),
-            info.ExpiresAt.ToLocalTime());
     }
 
     public TrashedWorld Info { get; }
 
     public string Name => Info.Name;
 
-    public string DetailLabel { get; }
+    /// <summary>Null until the folder has been measured.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SizeLabel))]
+    [NotifyPropertyChangedFor(nameof(DetailLabel))]
+    [NotifyPropertyChangedFor(nameof(DeleteAskLabel))]
+    [NotifyPropertyChangedFor(nameof(IsMeasured))]
+    private long? _sizeBytes;
+
+    public bool IsMeasured => SizeBytes is not null;
+
+    public string SizeLabel => SizeBytes is { } bytes ? MainWindowViewModel.WorldSizeLabel(bytes) : "…";
+
+    public string DetailLabel => MainWindowViewModel.Localize(
+        "Worlds_TrashDetail",
+        "Deleted {0:dd.MM.yyyy HH:mm} · {1}",
+        Info.DeletedAt.ToLocalTime(),
+        SizeLabel);
+
+    /// <summary>The question before the one thing here that cannot be undone: which world, and how much of it.</summary>
+    public string DeleteAskLabel => MainWindowViewModel.Localize(
+        "Worlds_TrashDeleteAsk",
+        "Delete \"{0}\" for good? That frees {1}. The world cannot be brought back afterwards.",
+        Name,
+        SizeLabel);
+
+    [ObservableProperty]
+    private bool _isConfirmingDelete;
 
     [RelayCommand]
     private Task RestoreAsync() => _owner.RestoreTrashedWorldAsync(this);
+
+    [RelayCommand]
+    private void AskDelete() => _owner.AskDeleteTrashedWorld(this);
+
+    [RelayCommand]
+    private void CancelDelete() => IsConfirmingDelete = false;
+
+    [RelayCommand]
+    private Task ConfirmDeleteAsync() => _owner.DeleteTrashedWorldAsync(this);
 }
 
 /// <summary>
@@ -244,7 +277,8 @@ public partial class WorldItem : ObservableObject
 /// <summary>
 /// The build's single-player worlds: cards with what level.dat says, and the things a
 /// player does to a world. Every action runs on the player's click and off the UI thread;
-/// none of them overwrites a world or deletes one for good.
+/// none of them overwrites a world, and the only two that delete one for good - a world
+/// already in the trash, or the whole trash - ask first, with the name and the size.
 /// </summary>
 public partial class MainWindowViewModel
 {
@@ -287,10 +321,31 @@ public partial class MainWindowViewModel
 
     public bool HasTrashedWorlds => TrashedWorldCount > 0;
 
-    public string TrashLabel => Localize("Worlds_Trash", "Deleted worlds: {0}", TrashedWorldCount);
+    /// <summary>What the trash takes on disk; null until every world in it has been measured.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TrashLabel))]
+    [NotifyPropertyChangedFor(nameof(TrashEmptyAskLabel))]
+    [NotifyPropertyChangedFor(nameof(IsTrashMeasured))]
+    private long? _trashBytes;
+
+    public bool IsTrashMeasured => TrashBytes is not null;
+
+    private string TrashSizeLabel => TrashBytes is { } bytes ? WorldSizeLabel(bytes) : "…";
+
+    /// <summary>"In the trash: 3 worlds · 1.2 GB": how much lies there is on screen without opening it.</summary>
+    public string TrashLabel => Localize("Worlds_Trash", "In the trash: {0} · {1}", TrashedWorldCount, TrashSizeLabel);
+
+    public string TrashEmptyAskLabel => Localize(
+        "Worlds_TrashEmptyAsk",
+        "Delete every world in the trash for good? There are {0}, taking {1}. They cannot be brought back afterwards.",
+        TrashedWorldCount,
+        TrashSizeLabel);
 
     [ObservableProperty]
     private bool _isWorldsTrashOpen;
+
+    [ObservableProperty]
+    private bool _isConfirmingEmptyTrash;
 
     /// <summary>What the last action did, or why it did not; shown above the cards.</summary>
     [ObservableProperty]
@@ -351,7 +406,9 @@ public partial class MainWindowViewModel
         Worlds.Clear();
         TrashedWorlds.Clear();
         TrashedWorldCount = 0;
+        TrashBytes = null;
         IsWorldsTrashOpen = false;
+        IsConfirmingEmptyTrash = false;
         WorldsStatus = string.Empty;
         RefreshWorldCount();
 
@@ -405,10 +462,8 @@ public partial class MainWindowViewModel
 
             try
             {
-                // A world deleted more than the retention ago goes for good here. The
-                // player was told the term when they deleted it.
-                service.PurgeExpiredTrash(directory, DateTimeOffset.Now);
-
+                // Only reading here. The trash is listed, never tidied: what lies in it
+                // goes when the player presses the button for it and at no other time.
                 list = service.List(directory);
                 trash = service.ListTrash(directory);
                 backups = backupsDirectory is null ? Array.Empty<WorldBackupInfo>() : service.ListBackups(backupsDirectory);
@@ -427,6 +482,7 @@ public partial class MainWindowViewModel
             }
 
             List<WorldItem> items = new();
+            List<TrashedWorldItem> trashItems = new();
 
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
@@ -461,15 +517,27 @@ public partial class MainWindowViewModel
                     Worlds.Add(item);
                 }
 
+                var previousTrash = TrashedWorlds.ToDictionary(t => t.Info.Directory, StringComparer.OrdinalIgnoreCase);
                 TrashedWorlds.Clear();
 
                 foreach (var trashed in trash)
                 {
-                    TrashedWorlds.Add(new TrashedWorldItem(this, trashed));
+                    var item = new TrashedWorldItem(this, trashed);
+
+                    // Nothing writes into a trashed world, so a size once counted holds.
+                    if (previousTrash.TryGetValue(trashed.Directory, out var old))
+                    {
+                        item.SizeBytes = old.SizeBytes;
+                    }
+
+                    TrashedWorlds.Add(item);
+                    trashItems.Add(item);
                 }
 
                 TrashedWorldCount = TrashedWorlds.Count;
+                RefreshTrashBytes();
                 IsWorldsTrashOpen = IsWorldsTrashOpen && TrashedWorldCount > 0;
+                IsConfirmingEmptyTrash = false;
                 WorldCount = items.Count;
                 IsWorldsLoading = false;
             });
@@ -500,6 +568,43 @@ public partial class MainWindowViewModel
                 }
             }
 
+            // The trash before the worlds: its total is on the strip whether or not it is
+            // open, and it is what the two "for good" questions quote.
+            foreach (var item in trashItems)
+            {
+                if (run != _worldsRun)
+                {
+                    return;
+                }
+
+                if (item.SizeBytes is not null)
+                {
+                    continue;
+                }
+
+                long size;
+
+                try
+                {
+                    size = WorldManager.MeasureSize(item.Info.Directory);
+                }
+                catch (Exception)
+                {
+                    // Gone or unreadable: nothing of it can be counted, and saying so beats waiting forever.
+                    size = 0;
+                }
+
+                Dispatcher.UIThread.Post(() =>
+                {
+                    item.SizeBytes = size;
+
+                    if (run == _worldsRun)
+                    {
+                        RefreshTrashBytes();
+                    }
+                });
+            }
+
             foreach (var item in items)
             {
                 if (run != _worldsRun)
@@ -519,6 +624,12 @@ public partial class MainWindowViewModel
             }
         });
     }
+
+    /// <summary>The sum over the trash, once every world in it has a size; unknown until then.</summary>
+    private void RefreshTrashBytes()
+        => TrashBytes = TrashedWorlds.Count > 0 && TrashedWorlds.All(t => t.SizeBytes is not null)
+            ? TrashedWorlds.Sum(t => t.SizeBytes!.Value)
+            : null;
 
     private void ApplyWorldBackups(WorldItem item, IReadOnlyList<WorldBackupInfo> all)
     {
@@ -728,7 +839,77 @@ public partial class MainWindowViewModel
             {
                 var trashed = WorldsService.MoveToTrash(directory, item.Info);
                 AppendConsole($"[worlds] moved {item.FolderName} to {trashed.Directory}");
-                return Localize("Worlds_Deleted", "\"{0}\" is in the launcher's trash until {1:dd.MM.yyyy}. It can be brought back below", item.Name, trashed.ExpiresAt.ToLocalTime());
+                return Localize("Worlds_Deleted", "\"{0}\" is in the launcher's trash. It stays there until you bring it back or delete it yourself, below", item.Name);
+            });
+    }
+
+    public void AskDeleteTrashedWorld(TrashedWorldItem item)
+    {
+        foreach (var other in TrashedWorlds)
+        {
+            other.IsConfirmingDelete = false;
+        }
+
+        IsConfirmingEmptyTrash = false;
+        item.IsConfirmingDelete = true;
+    }
+
+    /// <summary>The player read the question with the world's name and size in it, and said yes.</summary>
+    public Task DeleteTrashedWorldAsync(TrashedWorldItem item)
+    {
+        item.IsConfirmingDelete = false;
+        var size = item.SizeLabel;
+
+        return RunWorldActionAsync(
+            null,
+            Localize("Worlds_TrashDeleting", "Deleting \"{0}\"…", item.Name),
+            (directory, _) =>
+            {
+                WorldsService.DeleteFromTrash(directory, item.Info);
+                AppendConsole($"[worlds] deleted for good, on the player's word: {item.Info.Directory}");
+                return Localize("Worlds_TrashDeleted", "\"{0}\" is deleted for good, {1} freed", item.Name, size);
+            });
+    }
+
+    [RelayCommand]
+    private void AskEmptyWorldsTrash()
+    {
+        foreach (var item in TrashedWorlds)
+        {
+            item.IsConfirmingDelete = false;
+        }
+
+        IsConfirmingEmptyTrash = true;
+    }
+
+    [RelayCommand]
+    private void CancelEmptyWorldsTrash() => IsConfirmingEmptyTrash = false;
+
+    /// <summary>Deletes what the question listed, and nothing that reached the trash since.</summary>
+    [RelayCommand]
+    private Task ConfirmEmptyWorldsTrashAsync()
+    {
+        IsConfirmingEmptyTrash = false;
+
+        var worlds = TrashedWorlds.ToList();
+        var size = TrashSizeLabel;
+
+        return RunWorldActionAsync(
+            null,
+            Localize("Worlds_TrashEmptying", "Emptying the trash…"),
+            (directory, _) =>
+            {
+                var result = WorldsService.EmptyTrash(directory, worlds.Select(w => w.Info));
+                AppendConsole($"[worlds] trash emptied on the player's word: {result.Removed} of {worlds.Count} world(s){string.Concat(result.Failed.Select(f => $"; {f.World.Directory}: {f.Reason}"))}");
+
+                return result.Failed.Count == 0
+                    ? Localize("Worlds_TrashEmptied", "The trash is empty: {0} world(s) deleted for good, {1} freed", result.Removed, size)
+                    : Localize(
+                        "Worlds_TrashEmptiedPartly",
+                        "Deleted {0} of {1}. Still in the trash: {2}",
+                        result.Removed,
+                        worlds.Count,
+                        string.Join("; ", result.Failed.Take(3).Select(f => $"{f.World.Name} ({f.Reason})")));
             });
     }
 

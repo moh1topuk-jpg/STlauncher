@@ -66,6 +66,17 @@ public partial class ImportCandidate : ObservableObject
     public bool HasNote => Note.Length > 0;
 
     /// <summary>
+    /// For a build found behind a root that is a link (a .minecraft moved to another
+    /// drive, a junction left in its place): the real folder its files will be read
+    /// from. On the row itself, before the tick is acted on.
+    /// </summary>
+    public string ReadsFromLabel => Instance.IsUsable && !string.IsNullOrWhiteSpace(Instance.ReachedThrough)
+        ? MainWindowViewModel.Localize("Import_ReadsFrom", "The folder is a link. The files will be read from {0}", Instance.GameDirectory)
+        : string.Empty;
+
+    public bool HasReadsFrom => ReadsFromLabel.Length > 0;
+
+    /// <summary>
     /// What comes along from the old launcher's settings of this build: said before the
     /// import, so a memory limit or a Java option never appears in a build unannounced.
     /// </summary>
@@ -759,9 +770,30 @@ public partial class MainWindowViewModel
     /// without explanation looks like a build the launcher lost.
     /// </summary>
     private static string? ProblemLabel(ExternalInstance instance)
-        => instance.Problem == ExternalInstanceProblem.SourceIsLink
-            ? LinkExplanation(null, instance.LinkTarget)
-            : ProblemLabel(instance.Problem);
+        => instance.Problem != ExternalInstanceProblem.SourceIsLink
+            ? ProblemLabel(instance.Problem)
+            : LinkedRootExplanation(instance.LinkProblem, instance.LinkTarget) ?? LinkExplanation(null, instance.LinkTarget);
+
+    /// <summary>
+    /// Why a launcher's root that is a link was not read through. A root is the one link
+    /// the import does follow, so when it does not, the reason is the specific one.
+    /// </summary>
+    private static string? LinkedRootExplanation(LinkedRootProblem problem, string? target)
+    {
+        var where = string.IsNullOrWhiteSpace(target) ? "?" : target!;
+
+        return problem switch
+        {
+            LinkedRootProblem.Dangling when string.IsNullOrWhiteSpace(target) => Localize("Import_LinkUnreadable", "this is a link, and where it leads could not be read"),
+            LinkedRootProblem.Dangling => Localize("Import_LinkDangling", "this is a link to {0}, but there is no such folder - the drive is unplugged or the folder was moved", where),
+            LinkedRootProblem.Loop => Localize("Import_LinkLoop", "this is a link that goes round in a circle and arrives nowhere"),
+            LinkedRootProblem.Network => Localize("Import_LinkNetwork", "this is a link to the network folder {0} - the launcher does not take builds from the network. Copy the folder to this computer and point at it by hand", where),
+            LinkedRootProblem.OwnData => Localize("Import_LinkOwnData", "this is a link into the launcher's own folder ({0}) - there is nothing to import from there", where),
+            LinkedRootProblem.System => Localize("Import_LinkSystem", "this is a link to {0} - a place that belongs to the system, the launcher does not look in there", where),
+            LinkedRootProblem.NotAFolder => Localize("Import_LinkNotFolder", "this is a link to {0}, and that is not a folder", where),
+            _ => null
+        };
+    }
 
     /// <summary>
     /// Why a link is not imported, with where it leads when that can be read - so the

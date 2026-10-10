@@ -14,15 +14,13 @@ namespace STlauncher.Core.Worlds;
 /// The single-player worlds of one build: listing them and the things a player does to a
 /// world - rename, copy, export, import, back up, delete. Three rules hold throughout:
 /// nothing is ever overwritten (a copy, an import and a restored backup each get a folder
-/// name that is free), nothing is hard-deleted on a click (a deleted world moves into the
-/// launcher's trash inside the build), and a world the game is using is left alone.
+/// name that is free), deleting is not losing (a deleted world moves into the launcher's
+/// trash inside the build and stays there until the player empties it; the launcher
+/// never does), and a world the game is using is left alone.
 /// </summary>
 public sealed class WorldManager
 {
     public const string SavesFolder = "saves";
-
-    /// <summary>How long a deleted world can still be brought back.</summary>
-    public static readonly TimeSpan TrashRetention = TimeSpan.FromDays(30);
 
     /// <summary>The most an imported world may unpack into. Far above any real world, far below a full disk.</summary>
     public const long DefaultMaxImportBytes = 32L * 1024 * 1024 * 1024;
@@ -208,7 +206,8 @@ public sealed class WorldManager
 
     /// <summary>
     /// Takes the world out of saves and into the launcher's trash inside the build. The
-    /// game no longer sees it; the launcher can put it back until the retention runs out.
+    /// game no longer sees it; the launcher can put it back for as long as the player
+    /// leaves it there. Nothing empties the trash but the player.
     /// </summary>
     public TrashedWorld MoveToTrash(string gameDirectory, WorldInfo world)
     {
@@ -251,7 +250,7 @@ public sealed class WorldManager
 
             if (!match.Success || !TryParseStamp(match.Groups["stamp"].Value, out var deletedAt))
             {
-                // Not something this class put there; it is not ours to list or to expire.
+                // Not something this class put there; it is not ours to list or to delete.
                 continue;
             }
 
@@ -285,22 +284,58 @@ public sealed class WorldManager
     }
 
     /// <summary>
-    /// Removes trashed worlds whose retention has run out. This is the one place a world
-    /// is really deleted, and only one the player deleted themselves that long ago.
+    /// Deletes one trashed world for good. This and <see cref="EmptyTrash"/> are the only
+    /// places a world is really deleted, and neither runs on its own: the trash keeps
+    /// what is in it until the player says otherwise, however long that is.
     /// </summary>
-    public int PurgeExpiredTrash(string gameDirectory, DateTimeOffset now)
+    /// <returns>False when the world was already gone.</returns>
+    public bool DeleteFromTrash(string gameDirectory, TrashedWorld trashed)
+    {
+        var trash = Path.GetFullPath(TrashDirectory(gameDirectory));
+        var target = Path.GetFullPath(trashed.Directory);
+
+        // The record names a folder to remove with everything in it. It is taken at its
+        // word only for a folder that sits right in this build's trash and is named the
+        // way the trash names things.
+        if (!string.Equals(Path.GetDirectoryName(target), trash, StringComparison.OrdinalIgnoreCase) ||
+            !TrashNamePattern.IsMatch(Path.GetFileName(target)))
+        {
+            throw new ArgumentException($"'{trashed.Directory}' is not a world in this build's trash.", nameof(trashed));
+        }
+
+        if (!Directory.Exists(target))
+        {
+            return false;
+        }
+
+        DeleteTree(target);
+        return true;
+    }
+
+    /// <summary>
+    /// Deletes for good the trashed worlds the player was shown and agreed to lose: the
+    /// list is the caller's, so a world that reached the trash after the question was
+    /// asked is not swept along. One that will not go does not stop the rest.
+    /// </summary>
+    public TrashEmptied EmptyTrash(string gameDirectory, IEnumerable<TrashedWorld> worlds)
     {
         var removed = 0;
+        var failed = new List<(TrashedWorld World, string Reason)>();
 
-        foreach (var trashed in ListTrash(gameDirectory))
+        foreach (var world in worlds)
         {
-            if (trashed.ExpiresAt <= now && TryDeleteDirectory(trashed.Directory))
+            try
             {
+                DeleteFromTrash(gameDirectory, world);
                 removed++;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                failed.Add((world, ex.Message));
             }
         }
 
-        return removed;
+        return new TrashEmptied(removed, failed);
     }
 
     // ===================== Export, import =====================
@@ -846,6 +881,34 @@ public sealed class WorldManager
 
     private static bool SameRoot(string a, string b)
         => string.Equals(Path.GetPathRoot(Path.GetFullPath(a)), Path.GetPathRoot(Path.GetFullPath(b)), StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Removes a folder with everything in it. A world copied off a read-only medium, or
+    /// unpacked from some archives, carries read-only files that a plain delete stops at;
+    /// the flag is cleared and the delete tried once more. Links inside are removed as
+    /// links: what they point at is not part of the world.
+    /// </summary>
+    private static void DeleteTree(string path)
+    {
+        try
+        {
+            Directory.Delete(path, recursive: true);
+            return;
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
+
+        foreach (var file in RealFiles(path))
+        {
+            if ((file.Info.Attributes & FileAttributes.ReadOnly) != 0)
+            {
+                file.Info.Attributes &= ~FileAttributes.ReadOnly;
+            }
+        }
+
+        Directory.Delete(path, recursive: true);
+    }
 
     private static bool TryDeleteDirectory(string path)
     {

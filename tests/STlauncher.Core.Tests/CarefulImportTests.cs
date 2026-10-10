@@ -355,12 +355,64 @@ public class CarefulImportTests : IDisposable
 
     // ===================== 2. Links =====================
 
-    [Fact]
-    public void Scan_ARootThatIsALinkIsRefusedWithWhereItLeads()
+    /// <summary>A .minecraft moved to "another drive", with one profile, a mod and a world in it.</summary>
+    private string MovedDotMinecraft()
     {
-        var real = Path.Combine(_root, "D-drive", ".minecraft");
+        var real = Path.Combine(_root, "D-drive", "Games", ".minecraft");
         Write(real, "versions/1.21.1/1.21.1.json", """{ "id": "1.21.1", "mainClass": "net.minecraft.client.main.Main" }""");
+        Write(real, "mods/sodium.jar", "mod");
+        Write(real, "saves/World/level.dat", "world");
+        return real;
+    }
 
+    /// <summary>The path as the resolver spells it: on macOS the temp folder is itself behind a link.</summary>
+    private static string RealPath(string path)
+        => LinkGuard.IsLink(path) ? path : LinkedRootResolver.Resolve(path, Array.Empty<string>()).Target ?? path;
+
+    [Fact]
+    public void Scan_ARootThatIsALinkIsReadFromTheRealFolder_AndSaysSo()
+    {
+        var real = MovedDotMinecraft();
+        var link = Path.Combine(_root, "appdata", ".minecraft");
+        Directory.CreateDirectory(Path.GetDirectoryName(link)!);
+
+        if (!TryLinkDirectory(link, real))
+        {
+            return;
+        }
+
+        var scanned = new List<string>();
+
+        foreach (var found in new[]
+                 {
+                     ExternalInstanceScanner.Scan(link, ExternalLauncherKind.DotMinecraft),
+                     ExternalInstanceScanner.ScanUnknownFolder(link),
+                     ExternalInstanceScanner.ScanAll(new[] { (link, ExternalLauncherKind.DotMinecraft) }, scanned)
+                 })
+        {
+            var build = Assert.Single(found);
+            Assert.True(build.IsUsable);
+            Assert.Equal("1.21.1", build.VersionId);
+            Assert.Equal(1, build.ModCount);
+
+            // Everything about the build is the real folder; the link is only how it was found.
+            Assert.Equal(RealPath(real), build.GameDirectory, ignoreCase: true);
+            Assert.StartsWith(RealPath(real), build.VersionJsonPath!, StringComparison.OrdinalIgnoreCase);
+            Assert.Equal(link, build.ReachedThrough);
+        }
+
+        Assert.Contains("a link - read from", Assert.Single(scanned));
+
+        // Found by its real path, it is the same build and nothing is said about links.
+        var direct = ExternalInstanceScanner.ScanUnknownFolder(real).Single();
+        Assert.Equal("1.21.1", direct.VersionId);
+        Assert.Null(direct.ReachedThrough);
+    }
+
+    [Fact]
+    public async Task Import_FromALinkedRoot_TakesTheRealFolderInBothModes()
+    {
+        var real = MovedDotMinecraft();
         var link = Path.Combine(_root, "appdata-minecraft");
 
         if (!TryLinkDirectory(link, real))
@@ -368,21 +420,197 @@ public class CarefulImportTests : IDisposable
             return;
         }
 
+        var source = ExternalInstanceScanner.Scan(link, ExternalLauncherKind.DotMinecraft).Single();
+
+        var linked = await _importer.ImportAsync(source, ImportMode.Link, "linked");
+        Assert.Equal(RealPath(real), linked.Instance.ExternalGameDirectory, ignoreCase: true);
+
+        var copied = await _importer.ImportAsync(source, ImportMode.Copy, "copied");
+        var directory = _instances.GameDirectory(copied.Instance);
+
+        Assert.True(File.Exists(Path.Combine(directory, "mods", "sodium.jar")));
+        Assert.True(File.Exists(Path.Combine(directory, "saves", "World", "level.dat")));
+        Assert.Empty(copied.SkippedLinks);
+    }
+
+    [Fact]
+    public void Scan_ALinkedRoot_StillDoesNotFollowLinksInsideIt()
+    {
+        var real = MovedDotMinecraft();
+        var outside = Path.Combine(_root, "outside");
+        Write(outside, "elsewhere/elsewhere.json", """{ "id": "elsewhere", "mainClass": "x" }""");
+        Write(outside, "a.jar", "not this build's mod");
+
+        var link = Path.Combine(_root, "appdata-minecraft");
+
+        if (!TryLinkDirectory(link, real) ||
+            !TryLinkDirectory(Path.Combine(real, "versions", "linked-version"), Path.Combine(outside, "elsewhere")))
+        {
+            return;
+        }
+
+        var found = ExternalInstanceScanner.Scan(link, ExternalLauncherKind.DotMinecraft);
+
+        Assert.Equal("1.21.1", found.Single(i => i.IsUsable).VersionId);
+
+        var inner = found.Single(i => !i.IsUsable);
+        Assert.Equal(ExternalInstanceProblem.SourceIsLink, inner.Problem);
+        Assert.Equal(LinkedRootProblem.None, inner.LinkProblem);
+        Assert.Equal(string.Empty, inner.VersionId);
+    }
+
+    [Fact]
+    public void Scan_ARootThatIsAChainOfLinksArrivesAtTheLastFolder()
+    {
+        var real = MovedDotMinecraft();
+        var middle = Path.Combine(_root, "middle");
+        var link = Path.Combine(_root, "first");
+
+        // The second link is not the last part of the path but a folder above it.
+        if (!TryLinkDirectory(middle, Path.GetDirectoryName(real)!) ||
+            !TryLinkDirectory(link, Path.Combine(middle, ".minecraft")))
+        {
+            return;
+        }
+
+        var resolved = LinkedRootResolver.Resolve(link, Array.Empty<string>());
+
+        Assert.Equal(LinkedRootProblem.None, resolved.Problem);
+        Assert.Equal(RealPath(real), resolved.Target, ignoreCase: true);
+        Assert.Equal(RealPath(real), ExternalInstanceScanner.Scan(link, ExternalLauncherKind.DotMinecraft).Single().GameDirectory, ignoreCase: true);
+    }
+
+    [Fact]
+    public void Scan_ALinkThatLeadsNowhereIsRefusedWithThatReason()
+    {
+        var gone = Path.Combine(_root, "unplugged", ".minecraft");
+        var link = Path.Combine(_root, "dangling");
+
+        Directory.CreateDirectory(gone);
+
+        if (!TryLinkDirectory(link, gone))
+        {
+            return;
+        }
+
+        Directory.Delete(gone);
+
+        // Where the system still calls a link to nothing a folder, the scan must say why it is empty.
+        if (!Directory.Exists(link))
+        {
+            return;
+        }
+
         foreach (var found in new[]
                  {
                      ExternalInstanceScanner.Scan(link, ExternalLauncherKind.DotMinecraft),
-                     ExternalInstanceScanner.ScanUnknownFolder(link),
-                     ExternalInstanceScanner.ScanAll(new[] { (link, ExternalLauncherKind.DotMinecraft) })
+                     ExternalInstanceScanner.ScanUnknownFolder(link)
                  })
         {
             var refused = Assert.Single(found);
             Assert.False(refused.IsUsable);
             Assert.Equal(ExternalInstanceProblem.SourceIsLink, refused.Problem);
-            Assert.Equal(real, refused.LinkTarget, ignoreCase: true);
+            Assert.Equal(LinkedRootProblem.Dangling, refused.LinkProblem);
+            Assert.Equal(gone, refused.LinkTarget, ignoreCase: true);
+        }
+    }
+
+    [Fact]
+    public void Scan_LinksThatLeadToEachOtherAreRefusedAsALoop()
+    {
+        var first = Path.Combine(_root, "loop-a");
+        var second = Path.Combine(_root, "loop-b");
+
+        Directory.CreateDirectory(second);
+
+        if (!TryLinkDirectory(first, second))
+        {
+            return;
         }
 
-        // The real folder, pointed at by hand, is still found.
-        Assert.Equal("1.21.1", ExternalInstanceScanner.ScanUnknownFolder(real).Single().VersionId);
+        Directory.Delete(second);
+
+        if (!TryLinkDirectory(second, first) || !Directory.Exists(first))
+        {
+            return;
+        }
+
+        Assert.Equal(LinkedRootProblem.Loop, LinkedRootResolver.Resolve(first, Array.Empty<string>()).Problem);
+
+        var refused = Assert.Single(ExternalInstanceScanner.Scan(first, ExternalLauncherKind.DotMinecraft));
+        Assert.Equal(ExternalInstanceProblem.SourceIsLink, refused.Problem);
+        Assert.Equal(LinkedRootProblem.Loop, refused.LinkProblem);
+    }
+
+    [Fact]
+    public void ALinkedRootMustArriveAtAnOrdinaryFolder()
+    {
+        var real = MovedDotMinecraft();
+        var data = Path.Combine(_root, "launcher-data");
+        Write(data, "instances/mine/saves/w/level.dat", "x");
+        var file = Path.Combine(_root, "a-file.txt");
+        File.WriteAllText(file, "x");
+
+        var toReal = Path.Combine(_root, "to-real");
+        var toData = Path.Combine(_root, "to-data");
+        var toInside = Path.Combine(_root, "to-inside");
+
+        if (!TryLinkDirectory(toReal, real) ||
+            !TryLinkDirectory(toData, data) ||
+            !TryLinkDirectory(toInside, Path.Combine(data, "instances", "mine")))
+        {
+            return;
+        }
+
+        var own = new[] { data };
+
+        Assert.Equal(LinkedRootProblem.None, LinkedRootResolver.Resolve(toReal, own).Problem);
+
+        // The launcher's own data, or anything inside it, is not another launcher's game.
+        Assert.Equal(LinkedRootProblem.OwnData, LinkedRootResolver.Resolve(toData, own).Problem);
+        Assert.Equal(LinkedRootProblem.OwnData, LinkedRootResolver.Resolve(toInside, own).Problem);
+
+        // A folder that merely starts with the same letters is not inside it.
+        Assert.Equal(LinkedRootProblem.None, LinkedRootResolver.Resolve(toData, new[] { data + "-other" }).Problem);
+
+        Assert.True(LinkedRootResolver.IsSystemPlace(Path.GetPathRoot(Path.GetFullPath(_root))!));
+        Assert.True(LinkedRootResolver.IsSystemPlace(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)));
+        Assert.False(LinkedRootResolver.IsSystemPlace(real));
+        Assert.False(LinkedRootResolver.IsNetworkPath(real));
+
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.True(LinkedRootResolver.IsSystemPlace(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "System32")));
+            Assert.True(LinkedRootResolver.IsSystemPlace(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Some Game")));
+
+            // Decided from the spelling alone: nothing is asked of the other computer.
+            Assert.True(LinkedRootResolver.IsNetworkPath(@"\\nas.invalid\games\.minecraft"));
+            Assert.True(LinkedRootResolver.IsNetworkPath(@"\\?\UNC\nas.invalid\games\.minecraft"));
+            Assert.False(LinkedRootResolver.IsNetworkPath(@"\\?\" + real));
+        }
+    }
+
+    [Fact]
+    public void Scan_ALinkedRootThatLeadsIntoTheSystemIsRefusedWithThatReason()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        var link = Path.Combine(_root, "to-windows");
+
+        if (!TryLinkDirectory(link, Environment.GetFolderPath(Environment.SpecialFolder.Windows)))
+        {
+            return;
+        }
+
+        var refused = Assert.Single(ExternalInstanceScanner.ScanUnknownFolder(link));
+
+        Assert.False(refused.IsUsable);
+        Assert.Equal(ExternalInstanceProblem.SourceIsLink, refused.Problem);
+        Assert.Equal(LinkedRootProblem.System, refused.LinkProblem);
+        Assert.Null(refused.ReachedThrough);
     }
 
     [Fact]

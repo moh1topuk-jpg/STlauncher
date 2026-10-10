@@ -416,11 +416,53 @@ public static class ExternalInstanceScanner
                 continue;
             }
 
-            scannedRoots?.Add(LinkGuard.IsLink(path) ? $"{path} ({kind}, a link - not opened)" : $"{path} ({kind})");
+            if (LinkGuard.IsLink(path))
+            {
+                var resolved = LinkedRootResolver.Resolve(path);
+
+                scannedRoots?.Add(resolved.IsUsable
+                    ? $"{path} ({kind}, a link - read from {resolved.Target})"
+                    : $"{path} ({kind}, a link - not opened: {resolved.Problem})");
+            }
+            else
+            {
+                scannedRoots?.Add($"{path} ({kind})");
+            }
+
             result.AddRange(Scan(path, kind));
         }
 
         return Sort(Deduplicate(result));
+    }
+
+    /// <summary>
+    /// A root that is a link: where it really is, or the reason it is not read. The only
+    /// link the scan goes through - see <see cref="LinkedRootResolver"/> for why this one.
+    /// </summary>
+    private static IReadOnlyList<ExternalInstance> ScanLinkedRoot(
+        string link,
+        ExternalLauncherKind kind,
+        Func<string, IReadOnlyList<ExternalInstance>> scan)
+    {
+        var resolved = LinkedRootResolver.Resolve(link);
+
+        if (!resolved.IsUsable)
+        {
+            return new[]
+            {
+                RefusedLink(link, kind) with
+                {
+                    LinkTarget = resolved.Target ?? LinkGuard.TargetOf(link),
+                    LinkProblem = resolved.Problem
+                }
+            };
+        }
+
+        // From here on it is an ordinary folder, read like any other and by its real
+        // path: that is the path the game will be started in and the copy taken from.
+        return scan(resolved.Target!)
+            .Select(found => found with { ReachedThrough = link })
+            .ToList();
     }
 
     /// <summary>
@@ -437,7 +479,7 @@ public static class ExternalInstanceScanner
 
         if (LinkGuard.IsLink(root))
         {
-            return new[] { RefusedLink(root, kind) };
+            return ScanLinkedRoot(root, kind, real => Scan(real, kind));
         }
 
         return kind == ExternalLauncherKind.DotMinecraft
@@ -458,7 +500,7 @@ public static class ExternalInstanceScanner
 
         if (LinkGuard.IsLink(path))
         {
-            return new[] { RefusedLink(path, ExternalLauncherKind.Unknown) };
+            return ScanLinkedRoot(path, ExternalLauncherKind.Unknown, ScanUnknownFolder);
         }
 
         if (Directory.Exists(Path.Combine(path, "versions")) || Directory.Exists(Path.Combine(path, LegacyHomeFolder)))
@@ -522,7 +564,8 @@ public static class ExternalInstanceScanner
     /// <summary>
     /// A folder that is a symbolic link or a junction, listed so the player sees why it
     /// was left alone and where it leads. Following it is their call: the real folder
-    /// can be pointed at by hand.
+    /// can be pointed at by hand. A launcher's root is the exception and goes through
+    /// <see cref="ScanLinkedRoot"/> first; this is what it gets when that says no.
     /// </summary>
     private static ExternalInstance RefusedLink(string path, ExternalLauncherKind kind, string? name = null)
     {

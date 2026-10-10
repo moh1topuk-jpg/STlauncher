@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using STlauncher.Core.Nbt;
 
@@ -139,12 +140,12 @@ public sealed record WorldInfo(
     }
 }
 
-/// <summary>A world the player deleted: it sits in the launcher's trash inside the build until it is brought back or its time runs out.</summary>
+/// <summary>A world the player deleted: it sits in the launcher's trash inside the build until the player brings it back or deletes it for good.</summary>
 /// <param name="FolderName">The name the world's folder had in saves.</param>
-public sealed record TrashedWorld(string Directory, string FolderName, string Name, DateTimeOffset DeletedAt)
-{
-    public DateTimeOffset ExpiresAt => DeletedAt + WorldManager.TrashRetention;
-}
+public sealed record TrashedWorld(string Directory, string FolderName, string Name, DateTimeOffset DeletedAt);
+
+/// <summary>What emptying the trash did: how many worlds went, and which would not, with the system's reason.</summary>
+public sealed record TrashEmptied(int Removed, IReadOnlyList<(TrashedWorld World, string Reason)> Failed);
 
 /// <summary>One zip of one world in the build's backups area.</summary>
 public sealed record WorldBackupInfo(string Path, string FileName, string FolderName, DateTimeOffset CreatedAt, long Size);

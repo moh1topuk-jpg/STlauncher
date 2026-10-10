@@ -41,8 +41,10 @@ public enum ExternalInstanceProblem
     AlreadyImported,
 
     /// <summary>
-    /// The folder is a symbolic link or a junction. The import never walks through one,
-    /// so the build is listed with where the link points and left alone.
+    /// The folder is a symbolic link or a junction. The import never walks through one
+    /// inside a tree, and through a root only when it leads to an ordinary local folder
+    /// (see <see cref="LinkedRootResolver"/>); otherwise the build is listed with where
+    /// the link points and left alone.
     /// </summary>
     SourceIsLink
 }
@@ -112,6 +114,20 @@ public sealed record ExternalInstance(
 
     /// <summary>Where the link points, when the problem is <see cref="ExternalInstanceProblem.SourceIsLink"/>.</summary>
     public string? LinkTarget { get; init; }
+
+    /// <summary>
+    /// Why a root that is a link was not read through, when that is the reason it is
+    /// listed as a problem: it leads nowhere, to another computer, into the system.
+    /// <see cref="LinkedRootProblem.None"/> for a link inside a tree, which is never followed.
+    /// </summary>
+    public LinkedRootProblem LinkProblem { get; init; }
+
+    /// <summary>
+    /// The link the scan came in by, when the launcher's root folder was one: the path
+    /// the other launcher knows, while <see cref="GameDirectory"/> is the real folder
+    /// behind it. The import screen shows both, so what will be read is not a surprise.
+    /// </summary>
+    public string? ReachedThrough { get; init; }
 
     /// <summary>
     /// True when the build is started by its own profile JSON rather than assembled by
