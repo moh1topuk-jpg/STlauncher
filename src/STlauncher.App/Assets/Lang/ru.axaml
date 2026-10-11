@@ -1034,6 +1034,8 @@
     <x:String x:Key="Builds_TabWorlds">Миры</x:String>
     <x:String x:Key="Builds_New">Новая</x:String>
     <x:String x:Key="Builds_FromLauncher">Из другого лаунчера</x:String>
+    <x:String x:Key="Builds_PacksOrderShort">Верхний пак перекрывает нижние</x:String>
+    <x:String x:Key="Builds_ShadersOneShort">Игра загружает один шейдер за раз</x:String>
     <x:String x:Key="Builds_NoneTitle">Сборок пока нет</x:String>
     <x:String x:Key="Builds_NoneHint">Сборка — это версия игры, загрузчик и набор модов. Создайте новую или перенесите готовые из другого лаунчера.</x:String>
     <x:String x:Key="Builds_DeleteBuild">Удалить сборку</x:String>

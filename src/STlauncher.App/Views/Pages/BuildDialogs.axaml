@@ -21,7 +21,7 @@
         </Style>
         <!-- What a choice will do to the player's files: always on screen, under the choice. -->
         <Style Selector="TextBlock.consent">
-            <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
             <Setter Property="FontSize" Value="12.5"/>
             <Setter Property="TextWrapping" Value="Wrap"/>
             <Setter Property="LineHeight" Value="18"/>
@@ -77,7 +77,7 @@
                         <!-- Walking whole drives is slow and nobody asked for it, so it
                              happens only on this button; the same button stops it. -->
                         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                            <Button Classes="link"
+                            <Button Classes="small raised" VerticalAlignment="Center"
                                     Content="{Binding SweepButtonLabel}"
                                     Command="{Binding SweepDrivesCommand}"
                                     IsEnabled="{Binding CanSweep}"/>
@@ -86,14 +86,15 @@
                         </Grid>
                     </StackPanel>
 
-                    <ScrollViewer Grid.Row="2" MinHeight="96">
-                        <StackPanel Margin="0,0,10,0">
+                    <Border Grid.Row="2" Classes="panel inset" Padding="6" MinHeight="96">
+                    <ScrollViewer>
+                        <StackPanel Margin="0,0,6,0">
                             <StackPanel IsVisible="{Binding HasSweepFolders}" Margin="0,0,0,12">
-                                <controls:Caption Text="{DynamicResource Import_SweepFoldersTitle}" Margin="0,0,0,4"/>
+                                <controls:Caption Text="{DynamicResource Import_SweepFoldersTitle}" Margin="12,8,0,4"/>
                                 <ItemsControl ItemsSource="{Binding SweepFolders}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="vm:SweepFolder">
-                                            <Border Classes="row" Padding="0,9">
+                                            <Border Classes="row" Padding="12,9">
                                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
                                                     <StackPanel VerticalAlignment="Center">
                                                         <TextBlock Text="{Binding Path}" Classes="strong"
@@ -118,7 +119,7 @@
                             <ItemsControl ItemsSource="{Binding ImportCandidates}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:ImportCandidate">
-                                        <Border Classes="row" Padding="0,10">
+                                        <Border Classes="row" Padding="12,10">
                                             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                                                 <CheckBox IsChecked="{Binding IsSelected}"
                                                           IsEnabled="{Binding IsUsable}"
@@ -159,6 +160,7 @@
                             </ItemsControl>
                         </StackPanel>
                     </ScrollViewer>
+                    </Border>
 
                     <!-- What happens to the files: both answers and what each means stay on screen. -->
                     <StackPanel Grid.Row="3" Spacing="6">

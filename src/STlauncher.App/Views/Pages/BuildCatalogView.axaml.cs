@@ -15,7 +15,10 @@ namespace STlauncher.App.Views.Pages;
 public partial class BuildCatalogView : UserControl
 {
     /// <summary>Below this the list and the details do not fit side by side.</summary>
-    private const double SideBySideWidth = 660;
+    private const double SideBySideWidth = 760;
+
+    /// <summary>The width the page offers this view, as of the last measure.</summary>
+    private double _offeredWidth;
 
     private MainWindowViewModel? _viewModel;
 
@@ -96,29 +99,45 @@ public partial class BuildCatalogView : UserControl
         };
     }
 
-    private void OnBodySizeChanged(object? sender, SizeChangedEventArgs e) => ArrangePanes();
+    /// <summary>
+    /// What the page offers is the measure of "narrow", not what the view ends up with:
+    /// the details card has a fixed width, and with it the view asks for - and is given -
+    /// more than the window has, so its own bounds never look narrow.
+    /// </summary>
+    protected override Size MeasureOverride(Size availableSize)
+    {
+        if (!double.IsInfinity(availableSize.Width) && System.Math.Abs(availableSize.Width - _offeredWidth) > 0.5)
+        {
+            _offeredWidth = availableSize.Width;
+            ArrangePanes();
+        }
+
+        return base.MeasureOverride(availableSize);
+    }
 
     /// <summary>
-    /// The details stand beside the list while both fit; in a narrow window the details
-    /// take the list's place until they are closed.
+    /// The details stand beside the search, the list and the pager while all fit, as tall
+    /// as the view. In a narrow window the details take the whole view - the search and
+    /// the pager step aside with the list - until they are closed.
     /// </summary>
     private void ArrangePanes()
     {
-        if (this.FindControl<Grid>("Body") is not { } body ||
-            this.FindControl<Panel>("ListPane") is not { } list ||
-            this.FindControl<Border>("DetailsPane") is not { } details)
+        if (this.FindControl<Panel>("ListPane") is not { } list ||
+            this.FindControl<Border>("DetailsPane") is not { } details ||
+            this.FindControl<StackPanel>("Filters") is not { } filters ||
+            this.FindControl<Border>("Pager") is not { } pager)
         {
             return;
         }
 
-        var narrow = body.Bounds.Width > 0 && body.Bounds.Width < SideBySideWidth;
+        var narrow = _offeredWidth > 0 && _offeredWidth < SideBySideWidth;
         var open = _viewModel?.IsProjectOpen == true;
 
         list.IsVisible = !(narrow && open);
-        details.Width = narrow ? double.NaN : 320;
-        details.Margin = narrow ? default : new Thickness(18, 0, 0, 0);
-        details.Padding = narrow ? default : new Thickness(18, 0, 0, 0);
-        details.BorderThickness = narrow ? default : new Thickness(1, 0, 0, 0);
+        filters.IsVisible = !(narrow && open);
+        pager.IsVisible = !(narrow && open);
+        details.Width = narrow ? double.NaN : 344;
+        details.Margin = narrow ? new Thickness(0, 0, 0, 14) : new Thickness(22, 0, 0, 14);
         Grid.SetColumn(details, narrow ? 0 : 1);
         Grid.SetColumnSpan(details, narrow ? 2 : 1);
     }

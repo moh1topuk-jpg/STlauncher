@@ -1034,6 +1034,8 @@
     <x:String x:Key="Builds_TabWorlds">Worlds</x:String>
     <x:String x:Key="Builds_New">New</x:String>
     <x:String x:Key="Builds_FromLauncher">From another launcher</x:String>
+    <x:String x:Key="Builds_PacksOrderShort">The top pack overrides the ones below</x:String>
+    <x:String x:Key="Builds_ShadersOneShort">The game loads one shader at a time</x:String>
     <x:String x:Key="Builds_NoneTitle">No builds yet</x:String>
     <x:String x:Key="Builds_NoneHint">A build is a game version, a loader and a set of mods. Create a new one or bring yours over from another launcher.</x:String>
     <x:String x:Key="Builds_DeleteBuild">Delete the build</x:String>
