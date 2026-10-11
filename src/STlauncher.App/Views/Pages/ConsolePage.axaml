@@ -4,8 +4,8 @@
              x:Class="STlauncher.App.Views.Pages.ConsolePage"
              x:DataType="vm:MainWindowViewModel">
 
-    <!-- The technical log: a title with its three actions, and the lines in mono on the
-         field ground. No frame: the ground is the only thing that sets the log apart. -->
+    <!-- The technical log: a title with its three actions as real buttons, and the lines
+         in mono on an inset panel: a well in the ground, with an edge. -->
 
     <UserControl.Styles>
         <!-- A log line is text, not a list item: close together, a faint tone when aimed at. -->
@@ -29,19 +29,23 @@
         </Style>
     </UserControl.Styles>
 
-    <Grid Margin="30,8,30,22" RowDefinitions="Auto,*" RowSpacing="14">
+    <Grid Margin="24,8,24,18" RowDefinitions="Auto,*" RowSpacing="14">
 
         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
             <TextBlock Text="{DynamicResource Nav_Console}" Classes="page-title" VerticalAlignment="Center"/>
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                <Button Classes="ghost small" Click="OnCopyClick" ToolTip.Tip="{DynamicResource Console_CopyHint}">
+                <Button Classes="small" Click="OnCopyClick" ToolTip.Tip="{DynamicResource Console_CopyHint}">
                     <StackPanel Orientation="Horizontal" Spacing="7">
                         <PathIcon Data="{StaticResource IconCopy}" Classes="small"/>
                         <TextBlock Text="{DynamicResource Console_Copy}" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Button>
-                <Button Classes="ghost small" Content="{DynamicResource Console_Clear}"
-                        Command="{Binding ClearConsoleCommand}"/>
+                <Button Classes="small" Command="{Binding ClearConsoleCommand}">
+                    <StackPanel Orientation="Horizontal" Spacing="7">
+                        <PathIcon Data="{StaticResource IconSkinDelete}" Classes="small"/>
+                        <TextBlock Text="{DynamicResource Console_Clear}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
                 <Button Classes="small" Command="{Binding OpenLauncherLogCommand}">
                     <StackPanel Orientation="Horizontal" Spacing="7">
                         <PathIcon Data="{StaticResource IconFolder}" Classes="small"/>
@@ -51,7 +55,7 @@
             </StackPanel>
         </Grid>
 
-        <Border Grid.Row="1" Background="{DynamicResource FieldBrush}" CornerRadius="12" ClipToBounds="True">
+        <Border Grid.Row="1" Classes="panel inset" Padding="0" ClipToBounds="True">
             <Panel>
                 <ListBox Name="Lines" Classes="log" ItemsSource="{Binding Console}" SelectionMode="Multiple"
                          Background="Transparent" Padding="0,10">
@@ -61,8 +65,10 @@
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
-                <TextBlock Text="{DynamicResource Console_Empty}" Classes="sub" IsVisible="{Binding !Console.Count}"
-                           HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False"/>
+                <StackPanel Classes="empty" IsVisible="{Binding !Console.Count}" IsHitTestVisible="False">
+                    <Border Classes="empty-icon"><PathIcon Data="{StaticResource IconConsole}"/></Border>
+                    <TextBlock Classes="sub" Text="{DynamicResource Console_Empty}"/>
+                </StackPanel>
             </Panel>
         </Border>
     </Grid>
