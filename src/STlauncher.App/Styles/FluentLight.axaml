@@ -68,6 +68,14 @@
     <SolidColorBrush x:Key="CheckBoxForegroundUnchecked" Color="#1B1418"/>
     <SolidColorBrush x:Key="CheckBoxForegroundChecked" Color="#1B1418"/>
     <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundChecked" Color="#FFFFFF"/>
+    <!-- A switched-off checkbox keeps the dark theme's pale tones unless told otherwise. -->
+    <SolidColorBrush x:Key="CheckBoxForegroundUncheckedDisabled" Color="#8E8288"/>
+    <SolidColorBrush x:Key="CheckBoxForegroundCheckedDisabled" Color="#8E8288"/>
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeUncheckedDisabled" Color="#C4B9BE"/>
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedDisabled" Color="#C4B9BE"/>
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillUncheckedDisabled" Color="#00FFFFFF"/>
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedDisabled" Color="#C4B9BE"/>
+    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedDisabled" Color="#FFFFFF"/>
 
     <!-- The switch: a filled track either way, no outline. A switch that cannot be
          flipped is still there to be seen: the stock disabled colours are white on white. -->
