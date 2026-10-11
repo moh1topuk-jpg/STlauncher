@@ -636,7 +636,6 @@ public partial class MainWindowViewModel
         }
 
         RefreshHostWays();
-        RefreshHostServerRows();
     }
 
     private void RefreshHostPlayers(ServerProcess process)
@@ -688,7 +687,6 @@ public partial class MainWindowViewModel
 
         Status = notice.Length == 0 ? Localize("Host_Stopped", "The server is stopped, the world is saved") : notice;
         RefreshHostWays();
-        RefreshHostServerRows();
     }
 
     private static string DescribeHostExit(HostedServer server, ServerExit exit)

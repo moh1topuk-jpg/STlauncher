@@ -1664,6 +1664,10 @@
     <x:String x:Key="Host_RemoveMenu">Take off the list…</x:String>
     <x:String x:Key="Host_FolderTitle">Server folder</x:String>
     <x:String x:Key="Host_WhitelistShort">The server lets in only the nicknames on the list. A nickname is not a password: give the address only to people you trust.</x:String>
+    <x:String x:Key="Host_JoinEmptyTitle">No friends' servers yet</x:String>
+    <x:String x:Key="Host_JoinEmptyText">Paste the code from an invite into the box above. The server stays on this list, and next time one “Join” button is enough.</x:String>
+    <x:String x:Key="Host_EmptyStep1">Create and start the server</x:String>
+    <x:String x:Key="Host_EmptyStep3Note">The friend pastes the code under “Friends” on their side, and the mods of your build install there by themselves.</x:String>
 
     <!-- My server: the server's mods and their settings -->
     <x:String x:Key="HostMods_Installed">On the server · {0}</x:String>
