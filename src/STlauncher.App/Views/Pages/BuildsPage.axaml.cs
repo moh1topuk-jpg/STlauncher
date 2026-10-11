@@ -12,11 +12,19 @@ namespace STlauncher.App.Views.Pages;
 
 public partial class BuildsPage : UserControl
 {
+    /// <summary>The page's width under which the three panels no longer fit at full size.</summary>
+    private const double CompactBelow = 980;
+
     private MainWindowViewModel? _viewModel;
 
     public BuildsPage()
     {
         InitializeComponent();
+
+        // XAML has no width queries: below this the page is "compact", and its styles give
+        // the content the room the list and the wide labels took.
+        SizeChanged += (_, e) =>
+            this.FindControl<Grid>("Root")?.Classes.Set("compact", e.NewSize.Width < CompactBelow);
 
         AddHandler(DragDrop.DragEnterEvent, OnDragOver);
         AddHandler(DragDrop.DragOverEvent, OnDragOver);
@@ -122,7 +130,7 @@ public partial class BuildsPage : UserControl
         }, Avalonia.Threading.DispatcherPriority.Background);
     }
 
-    /// <summary>A click on a pack's row unfolds what the pack says about itself.</summary>
+    /// <summary>A click on a pack's row picks it: its details show in the card beside the list.</summary>
     private void OnPackRowPressed(object? sender, PointerPressedEventArgs e)
     {
         if (sender is not Control { DataContext: ResourcePackItem item } control ||
@@ -186,48 +194,6 @@ public partial class BuildsPage : UserControl
         {
             command.Execute(item);
         }
-    }
-
-    // ===================== Shaders: one at a time =====================
-
-    /// <summary>
-    /// A shader's switch: on makes it the one the game loads, off leaves the game without
-    /// shaders. The switch then shows what really happened - the game may be running,
-    /// and then nothing changes.
-    /// </summary>
-    private void OnShaderToggle(object? sender, RoutedEventArgs e)
-    {
-        if (sender is not ToggleSwitch { DataContext: ShaderPackItem item } toggle || _viewModel is not { } viewModel)
-        {
-            return;
-        }
-
-        if (item.IsActive)
-        {
-            viewModel.DisableShadersCommand.Execute(null);
-        }
-        else
-        {
-            viewModel.ActivateShaderCommand.Execute(item);
-        }
-
-        toggle.SetCurrentValue(ToggleSwitch.IsCheckedProperty, item.IsActive);
-    }
-
-    /// <summary>"No shaders" can only be switched on: switching it off would need a shader to pick.</summary>
-    private void OnNoShaderToggle(object? sender, RoutedEventArgs e)
-    {
-        if (sender is not ToggleSwitch toggle || _viewModel is not { } viewModel)
-        {
-            return;
-        }
-
-        if (!viewModel.NoShaderActive)
-        {
-            viewModel.DisableShadersCommand.Execute(null);
-        }
-
-        toggle.SetCurrentValue(ToggleSwitch.IsCheckedProperty, viewModel.NoShaderActive);
     }
 
     /// <summary>A build picked from the "From the catalog" submenu.</summary>

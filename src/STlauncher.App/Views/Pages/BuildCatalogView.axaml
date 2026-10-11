@@ -9,10 +9,10 @@
              x:DataType="vm:MainWindowViewModel">
 
     <!-- The catalog of the builds page: where mods, resource packs and shaders are looked
-         for and added. It is a detour, not a tab: a content tab's "add" opens it on that
-         kind, and the first thing in it is the way back. Results are rows; the row that is
-         picked opens beside the list with what "Add" will bring, read before anything is
-         downloaded. -->
+         for and added. It is the last of the build's tabs, and a content tab's "add" opens
+         it on that kind; the first thing in it is the way back to where it was opened
+         from. Results are rows; the row that is picked opens in a card beside the list with
+         what "Add" will bring, read before anything is downloaded. -->
 
     <UserControl.Styles>
         <!-- A fact about what will be installed: what it is on the left, the value on the right. -->
@@ -21,21 +21,16 @@
             <Setter Property="HorizontalAlignment" Value="Right"/>
             <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
         </Style>
-        <Style Selector="Border.note">
-            <Setter Property="Background" Value="{DynamicResource FieldBrush}"/>
-            <Setter Property="CornerRadius" Value="12"/>
-            <Setter Property="Padding" Value="14,10"/>
-        </Style>
     </UserControl.Styles>
 
-    <Grid RowDefinitions="Auto,*,Auto" Margin="12,0,0,0">
-        <StackPanel Spacing="10" Margin="0,0,0,10">
+    <Grid Name="View" RowDefinitions="Auto,*,Auto" ColumnDefinitions="*,Auto" Margin="18,14,18,0">
+        <StackPanel Name="Filters" Spacing="10" Margin="0,0,0,10">
             <!-- The way back to the tab the catalog was opened from, what kind of thing is
                  being looked for, and where. Packs and shaders go to their own folders and
                  fit a vanilla build too. A wrap panel: in a narrow window the pickers drop
                  under the way back. -->
             <WrapPanel ItemSpacing="12" LineSpacing="8">
-                <Button Classes="ghost small" Padding="8,6,12,6" Command="{Binding CloseCatalogCommand}" VerticalAlignment="Center">
+                <Button Classes="small" Padding="9,6,12,6" Command="{Binding CloseCatalogCommand}" VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <PathIcon Data="{StaticResource IconChevronLeft}" Width="11" Height="11"/>
                         <TextBlock Name="BackLabel" Text="{DynamicResource Catalog_Back}" FontWeight="Bold"/>
@@ -71,11 +66,11 @@
                 </Border>
             </WrapPanel>
 
-            <Border Classes="note" IsVisible="{Binding !IsBuildConfigured}">
+            <Border Classes="panel inset" Padding="14,10" IsVisible="{Binding !IsBuildConfigured}">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                     <TextBlock Text="{DynamicResource Builds_NotConfigured}" Foreground="{DynamicResource TextSecondaryBrush}"
                                TextWrapping="Wrap" VerticalAlignment="Center"/>
-                    <Button Grid.Column="1" Classes="small" VerticalAlignment="Center"
+                    <Button Grid.Column="1" Classes="accent-soft small" VerticalAlignment="Center"
                             Content="{DynamicResource Builds_TabSettings}"
                             Command="{Binding OpenBuildSettingsCommand}"/>
                 </Grid>
@@ -96,7 +91,7 @@
                                    IsVisible="{Binding !IsCurseForgeAvailable}"/>
                     </Grid>
                 </Border>
-                <Button Grid.Column="1" Height="36" Padding="16,0" FontWeight="Bold"
+                <Button Grid.Column="1" Classes="accent-soft" Height="36" Padding="18,0" FontWeight="Bold"
                         Content="{DynamicResource Mods_Search}"
                         Command="{Binding SearchModsCommand}" IsEnabled="{Binding !IsBrowserBusy}"/>
             </Grid>
@@ -135,13 +130,14 @@
             </Grid>
         </StackPanel>
 
-        <Grid Grid.Row="1" Name="Body" ColumnDefinitions="*,Auto" SizeChanged="OnBodySizeChanged">
+        <Grid Grid.Row="1" Name="Body" Margin="-12,0,-12,0">
 
             <!-- Results -->
             <Panel Name="ListPane">
-                <TextBlock Text="{DynamicResource Catalog_Empty}" Foreground="{DynamicResource TextSecondaryBrush}"
-                           TextWrapping="Wrap" Margin="12,14,12,0" VerticalAlignment="Top"
-                           IsVisible="{Binding IsBrowserEmpty}"/>
+                <StackPanel Classes="empty" IsVisible="{Binding IsBrowserEmpty}">
+                    <Border Classes="empty-icon"><PathIcon Data="{StaticResource IconSearch}"/></Border>
+                    <TextBlock Classes="sub" Text="{DynamicResource Catalog_Empty}"/>
+                </StackPanel>
 
                 <ScrollViewer>
                     <ItemsControl Name="BrowserItems" ItemsSource="{Binding ModBrowserItems}" VerticalAlignment="Top">
@@ -234,15 +230,16 @@
                     </ItemsControl>
                 </ScrollViewer>
             </Panel>
+        </Grid>
 
-            <!-- Details of the row that was picked. What "Add" will bring - the file, where it
+            <!-- Details of the row that was picked. The card stands beside the search, the
+                 list and the pager, as tall as the view, so the plan is read without scrolling. What "Add" will bring - the file, where it
                  is from, how big, and what comes with it - is the first thing under the
                  title, before the description: it is read before anything is downloaded.
                  Only while a row is open: an empty panel took a third of a small window
                  for a hint nobody needed twice. -->
-            <Border Grid.Column="1" Name="DetailsPane" Width="320" Margin="18,0,0,0" Padding="18,0,0,0"
-                    BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1,0,0,0"
-                    IsVisible="{Binding IsProjectOpen}">
+            <Border Grid.Column="1" Grid.RowSpan="3" Name="DetailsPane" Classes="panel inset" Width="344" Margin="22,0,0,14" Padding="16,14,6,4"
+                    ClipToBounds="True" IsVisible="{Binding IsProjectOpen}">
                 <Grid RowDefinitions="Auto,*,Auto">
                     <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" Margin="0,2,0,12">
                         <Border Classes="icon-tile" Width="44" Height="44" CornerRadius="11" Margin="0,0,12,0"
@@ -273,7 +270,7 @@
                         <StackPanel Spacing="14" Margin="0,0,12,12">
 
                             <!-- A file its author keeps to the site: said plainly, with the way to get it. -->
-                            <Border Classes="note" IsVisible="{Binding IsOpenedProjectBlocked}">
+                            <Border Classes="chip warn" CornerRadius="10" Padding="12,9" IsVisible="{Binding IsOpenedProjectBlocked}">
                                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                                     <PathIcon Data="{StaticResource IconWarning}" Classes="small gold" VerticalAlignment="Top" Margin="0,2,0,0"/>
                                     <TextBlock Grid.Column="1" Text="{DynamicResource Mods_BlockedNote}" FontSize="12.5"
@@ -399,7 +396,7 @@
                         </StackPanel>
                     </ScrollViewer>
 
-                    <StackPanel Grid.Row="2" Margin="0,8,0,12" Spacing="8">
+                    <StackPanel Grid.Row="2" Margin="0,8,10,10" Spacing="8">
                         <ProgressBar IsIndeterminate="True" Height="3" IsVisible="{Binding IsProjectBusy}"/>
                         <!-- Nothing to install from here: the mod's own page is the offer. -->
                         <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
@@ -412,9 +409,9 @@
                         </Button>
                         <!-- The quiet button takes what its words need; the one that acts gets the rest. -->
                         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-                            <Button Classes="ghost" Content="{DynamicResource Mods_OtherVersions}"
+                            <Button Padding="12,9" Content="{DynamicResource Mods_OtherVersions}"
                                     Command="{Binding ToggleOtherVersionsCommand}" IsEnabled="{Binding HasOpenedProjectVersion}"/>
-                            <Button Grid.Column="1" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" FontWeight="Bold"
+                            <Button Grid.Column="1" Classes="primary" Padding="10,9" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" FontWeight="Bold"
                                     IsVisible="{Binding CanInstallOpenedProject}" IsEnabled="{Binding CanAddOpenedProject}"
                                     Content="{DynamicResource Mods_AddToBuild}" Command="{Binding InstallOpenedProjectCommand}"/>
                             <Button Grid.Column="1" Classes="danger" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
@@ -424,17 +421,16 @@
                     </StackPanel>
                 </Grid>
             </Border>
-        </Grid>
 
         <!-- Pages -->
-        <Border Grid.Row="2" BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="0,1,0,0" Padding="12,8,0,10">
+        <Border Grid.Row="2" Name="Pager" BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="0,1,0,0" Padding="0,8,0,10">
             <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="10">
                 <TextBlock Text="{Binding BrowserSummary}" Classes="sub" VerticalAlignment="Center"
                            TextTrimming="CharacterEllipsis"/>
-                <Button Grid.Column="1" Classes="ghost small" Content="{DynamicResource Mods_PrevPage}"
+                <Button Grid.Column="1" Classes="small" Content="{DynamicResource Mods_PrevPage}"
                         Command="{Binding PreviousBrowserPageCommand}" IsEnabled="{Binding CanGoToPreviousPage}"/>
                 <TextBlock Grid.Column="2" Text="{Binding BrowserPageLabel}" Classes="mono" VerticalAlignment="Center"/>
-                <Button Grid.Column="3" Classes="ghost small" Content="{DynamicResource Mods_NextPage}"
+                <Button Grid.Column="3" Classes="small" Content="{DynamicResource Mods_NextPage}"
                         Command="{Binding NextBrowserPageCommand}" IsEnabled="{Binding CanGoToNextPage}"/>
             </Grid>
         </Border>
