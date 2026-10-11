@@ -50,6 +50,18 @@ public sealed class PlayerSkin
         }
     }
 
+    /// <summary>
+    /// Frees the enlarged copy and nothing else: a megabyte per skin that only a figure
+    /// on screen needs. The skins page shows a dozen figures; once the page is left, or
+    /// the launcher hides for the game, their copies are dead weight. It is made again
+    /// the next time the skin is drawn.
+    /// </summary>
+    public void ReleaseEnlarged()
+    {
+        _enlarged?.Dispose();
+        _enlarged = null;
+    }
+
     /// <summary>True for the built-in Steve shown when nothing else could be found.</summary>
     public bool IsDefault { get; }
 

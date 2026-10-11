@@ -458,6 +458,9 @@ public partial class MainWindowViewModel
 
                     default:
                         AppendConsole("[launcher] game started.");
+
+                        // The window stays; what it does not show is still let go of.
+                        _images.Clear();
                         break;
                 }
             });

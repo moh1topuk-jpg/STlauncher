@@ -59,6 +59,86 @@ public partial class MainWindowViewModel
 
     private int _screenshotsRun;
 
+    /// <summary>A decoded thumbnail and the file it was decoded from, as it was then.</summary>
+    private sealed record CachedThumbnail(DateTime TakenAt, long Size, Bitmap Image);
+
+    /// <summary>
+    /// The thumbnails of the build on screen, by file path. Opening the tab used to decode
+    /// every screenshot again, each time, and leave the previous set to the collector; now
+    /// a picture is decoded once for as long as the build stays selected and its file
+    /// stays the same. Let go of when another build is selected and when the game starts.
+    /// </summary>
+    private readonly System.Collections.Generic.Dictionary<string, CachedThumbnail> _thumbnails = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>The build folder <see cref="_thumbnails"/> belongs to.</summary>
+    private string? _thumbnailsDirectory;
+
+    private bool IsScreenshotsTabOnScreen => Section == ShellSection.Builds && BuildTab == BuildTab.Screenshots;
+
+    /// <summary>
+    /// Another build was selected: its count for the tab label, read off this thread, and
+    /// its pictures if the tab is the one open. The previous build's thumbnails are freed.
+    /// </summary>
+    private void OnScreenshotsBuildChanged()
+    {
+        var directory = InstanceDirectory;
+
+        if (!string.Equals(_thumbnailsDirectory, directory, StringComparison.OrdinalIgnoreCase))
+        {
+            ReleaseScreenshotThumbnails();
+        }
+
+        if (BuildTab == BuildTab.Screenshots)
+        {
+            RefreshScreenshots();
+            return;
+        }
+
+        _ = CountScreenshotsAsync(directory);
+    }
+
+    /// <summary>The number on the tab. A folder of a thousand pictures is a thousand file lookups: not for the interface thread.</summary>
+    private async Task CountScreenshotsAsync(string directory)
+    {
+        int count;
+
+        try
+        {
+            count = await Task.Run(() => ScreenshotFolder.List(directory).Count);
+        }
+        catch (Exception)
+        {
+            count = 0;
+        }
+
+        // Only if the build is still the one that was asked about.
+        if (string.Equals(InstanceDirectory, directory, StringComparison.OrdinalIgnoreCase))
+        {
+            ScreenshotCount = count;
+        }
+    }
+
+    /// <summary>
+    /// Takes the tiles off the screen and frees their thumbnails. The list is emptied
+    /// first: a picture is only disposed once nothing shows it.
+    /// </summary>
+    private void ReleaseScreenshotThumbnails()
+    {
+        _screenshotsRun++;
+        Screenshots.Clear();
+
+        foreach (var cached in _thumbnails.Values)
+        {
+            cached.Image.Dispose();
+        }
+
+        _thumbnails.Clear();
+        _thumbnailsDirectory = null;
+    }
+
+    /// <summary>The tab was left: whatever is still being decoded for it stops after the picture in hand.</summary>
+    private void PauseScreenshots() => _screenshotsRun++;
+
     /// <summary>Lists the folder at once; thumbnails arrive one by one from a background decode.</summary>
     private void RefreshScreenshots()
     {
@@ -67,19 +147,53 @@ public partial class MainWindowViewModel
 
         Screenshots.Clear();
 
+        if (!string.Equals(_thumbnailsDirectory, directory, StringComparison.OrdinalIgnoreCase))
+        {
+            ReleaseScreenshotThumbnails();
+            run = ++_screenshotsRun;
+            _thumbnailsDirectory = directory;
+        }
+
         var list = ScreenshotFolder.List(directory);
         var items = list.Select(s => new ScreenshotItem(s)).ToList();
+        var pending = new System.Collections.Generic.List<ScreenshotItem>();
+        var present = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var item in items)
         {
+            present.Add(item.Path);
+
+            // The same file as when it was decoded: the thumbnail is on the tile at once.
+            if (_thumbnails.TryGetValue(item.Path, out var cached) &&
+                cached.TakenAt == item.Info.TakenAt && cached.Size == item.Size)
+            {
+                item.Thumbnail = cached.Image;
+            }
+            else
+            {
+                pending.Add(item);
+            }
+
             Screenshots.Add(item);
+        }
+
+        // Pictures deleted or replaced since: nothing shows their thumbnails any more.
+        foreach (var gone in _thumbnails.Where(t => !present.Contains(t.Key) || pending.Any(p => string.Equals(p.Path, t.Key, StringComparison.OrdinalIgnoreCase))).ToList())
+        {
+            _thumbnails.Remove(gone.Key);
+            gone.Value.Image.Dispose();
         }
 
         ScreenshotCount = items.Count;
 
+        if (pending.Count == 0)
+        {
+            return;
+        }
+
         _ = Task.Run(async () =>
         {
-            foreach (var item in items)
+            foreach (var item in pending)
             {
                 if (run != _screenshotsRun)
                 {
@@ -102,6 +216,30 @@ public partial class MainWindowViewModel
                 {
                     await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                     {
+                        // Decoded for a list that is gone, or for another build: nobody will show it.
+                        if (!string.Equals(_thumbnailsDirectory, directory, StringComparison.OrdinalIgnoreCase))
+                        {
+                            thumbnail.Dispose();
+                            return;
+                        }
+
+                        // An earlier pass finished this very picture a moment ago: one copy is enough.
+                        if (_thumbnails.TryGetValue(item.Path, out var known))
+                        {
+                            thumbnail.Dispose();
+
+                            if (run == _screenshotsRun)
+                            {
+                                item.Thumbnail = known.Image;
+                            }
+
+                            return;
+                        }
+
+                        // Kept even when the tab was left meanwhile: the work is done, and
+                        // the tile has it the moment the tab is opened again.
+                        _thumbnails[item.Path] = new CachedThumbnail(item.Info.TakenAt, item.Size, thumbnail);
+
                         if (run == _screenshotsRun)
                         {
                             item.Thumbnail = thumbnail;
@@ -124,6 +262,8 @@ public partial class MainWindowViewModel
         {
             using var stream = File.OpenRead(item.Path);
             var full = new Bitmap(stream);
+
+            // The viewer made this picture and frees it when it shows another or closes.
             ShowLightboxFile(full, item.Path, item.FileName);
         }
         catch (Exception ex)
@@ -193,6 +333,12 @@ public partial class MainWindowViewModel
         {
             ScreenshotFolder.Delete(item.Path);
             Screenshots.Remove(item);
+
+            if (_thumbnails.Remove(item.Path, out var cached))
+            {
+                cached.Image.Dispose();
+            }
+
             ScreenshotCount = Screenshots.Count;
         }
         catch (Exception ex)

@@ -234,6 +234,33 @@ public partial class MainWindowViewModel
 
     public bool HasImportSuggestion => !ImportSuggestionDismissed && ImportSuggestionText.Length > 0;
 
+    /// <summary>
+    /// When the look at start last found nothing to bring over; see
+    /// <see cref="ImportScanMemory"/>. Kept in the settings.
+    /// </summary>
+    private DateTimeOffset? _importScanEmptyAt;
+
+    /// <summary>Records how a look for other launchers' builds ended.</summary>
+    private void RememberImportScan(bool foundSomething)
+    {
+        if (foundSomething)
+        {
+            if (_importScanEmptyAt is null)
+            {
+                return;
+            }
+
+            // There is something to offer now: the next start looks and says so.
+            _importScanEmptyAt = null;
+        }
+        else
+        {
+            _importScanEmptyAt = DateTimeOffset.UtcNow;
+        }
+
+        PersistSettings();
+    }
+
     private async Task LookForImportableBuildsAsync()
     {
         if (ImportSuggestionDismissed)
@@ -241,15 +268,26 @@ public partial class MainWindowViewModel
             return;
         }
 
+        // The other launchers' folders were walked on every start until the offer was
+        // closed - and a player with no other launcher never sees an offer to close.
+        if (!ImportScanMemory.ShouldScan(_importScanEmptyAt, DateTimeOffset.UtcNow))
+        {
+            AppendConsole($"[import] not looking: nothing was found on {_importScanEmptyAt:yyyy-MM-dd}, the next look at start is a week after that; the import dialog looks at once");
+            return;
+        }
+
         try
         {
+            var clock = System.Diagnostics.Stopwatch.StartNew();
             var scanned = new List<string>();
             var found = await Task.Run(() => ExternalInstanceScanner.ScanAll(null, scanned));
-            AppendConsole($"[import] looked in {scanned.Count} place(s): {string.Join("; ", scanned)}");
+            AppendConsole($"[import] looked in {scanned.Count} place(s) in {clock.ElapsedMilliseconds} ms: {string.Join("; ", scanned)}");
             AppendConsole($"[import] found {found.Count} build(s): {string.Join("; ", found.Select(f => $"{f.Name} [{f.Source}, {f.VersionId}{(f.Problem == ExternalInstanceProblem.None ? string.Empty : ", " + f.Problem)}]"))}");
 
             // Only builds that would actually import, and are not here already.
             var usable = found.Where(i => i.IsUsable && !IsAlreadyLinked(i)).ToList();
+
+            RememberImportScan(foundSomething: usable.Count > 0);
 
             if (usable.Count == 0)
             {
@@ -510,6 +548,14 @@ public partial class MainWindowViewModel
             AppendConsole($"[import] found {found.Count} build(s): {string.Join("; ", found.Select(f => $"{f.Name} [{f.Source}, {f.VersionId}{(f.Problem == ExternalInstanceProblem.None ? string.Empty : ", " + f.Problem)}]"))}");
 
             ShowCandidates(found);
+
+            // This look is asked for and always made. When it finds what the start had
+            // given up looking for, the start looks again too; finding nothing does not
+            // make the start wait any longer than it already does.
+            if (found.Any(i => i.IsUsable && !IsAlreadyLinked(i)))
+            {
+                RememberImportScan(foundSomething: true);
+            }
         }
         catch (Exception ex)
         {

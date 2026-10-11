@@ -118,6 +118,9 @@ public partial class MainWindowViewModel
             var progress = new Progress<string>(part =>
                 DataMoveStatus = Localize("DataFolder_MovingPart", "Moving: {0}…", part));
 
+            // A save still waiting goes into the file before the file is carried across.
+            FlushSettings();
+
             var result = await DataDirectoryMover.MoveAsync(_paths.Root, target, progress);
 
             // The pointer is written only once every file is across; the launcher
@@ -129,6 +132,7 @@ public partial class MainWindowViewModel
 
             // Nothing else may write into the old folder from here on.
             _dataMoved = true;
+            _settings.StopWriting();
             RequestRestartLauncher?.Invoke();
         }
         catch (Exception ex)

@@ -47,12 +47,37 @@ public partial class MainWindowViewModel
     [ObservableProperty]
     private string _lightboxTitle = string.Empty;
 
+    /// <summary>
+    /// The full-size picture the viewer fetched or decoded for itself: a screenshot from
+    /// disk or a gallery original, eight megabytes each once decoded. It lives exactly as
+    /// long as the viewer shows it. They used to pile up - the originals in the image
+    /// cache, the screenshots nowhere at all, until the collector found them.
+    /// </summary>
+    private Bitmap? _lightboxOwned;
+
+    /// <summary>
+    /// Frees the viewer's own picture, after the screen has let go of it: the property is
+    /// changed first, and the disposal waits for the interface to catch up.
+    /// </summary>
+    private void ReleaseLightboxOwned()
+    {
+        if (_lightboxOwned is not { } owned)
+        {
+            return;
+        }
+
+        _lightboxOwned = null;
+        Avalonia.Threading.Dispatcher.UIThread.Post(owned.Dispose, Avalonia.Threading.DispatcherPriority.Background);
+    }
+
     /// <summary>Shows one picture from disk: no arrows, "open" launches the system viewer.</summary>
     private void ShowLightboxFile(Bitmap image, string path, string title)
     {
         _lightboxPath = path;
         LightboxIndex = 0;
         LightboxImage = image;
+        ReleaseLightboxOwned();
+        _lightboxOwned = image;
         LightboxTitle = title;
         IsLightboxLoading = false;
         IsLightboxOpen = true;
@@ -89,6 +114,7 @@ public partial class MainWindowViewModel
     {
         IsLightboxOpen = false;
         LightboxImage = null;
+        ReleaseLightboxOwned();
         _lightboxPath = null;
         LightboxTitle = string.Empty;
     }
@@ -125,6 +151,7 @@ public partial class MainWindowViewModel
         _lightboxPath = null;
         LightboxIndex = index;
         LightboxImage = OpenedProjectGallery[index];
+        ReleaseLightboxOwned();
         LightboxTitle = OpenedProject?.Title ?? string.Empty;
         IsLightboxOpen = true;
         OnPropertyChanged(nameof(LightboxCounter));
@@ -139,12 +166,19 @@ public partial class MainWindowViewModel
         try
         {
             IsLightboxLoading = true;
-            var full = await _images.GetAsync(_galleryUrls[index]);
+            // Not through the cache: an original is looked at once and is far too large to keep.
+            var full = await _images.GetUncachedAsync(_galleryUrls[index]);
 
             // Only if the viewer is still on this picture: arrows may have moved on.
-            if (full is not null && IsLightboxOpen && LightboxIndex == index)
+            if (full is not null && IsLightboxOpen && LightboxIndex == index && _lightboxPath is null)
             {
                 LightboxImage = full;
+                ReleaseLightboxOwned();
+                _lightboxOwned = full;
+            }
+            else
+            {
+                full?.Dispose();
             }
         }
         catch (Exception ex)

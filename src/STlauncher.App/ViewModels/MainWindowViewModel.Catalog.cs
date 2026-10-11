@@ -199,8 +199,26 @@ public partial class MainWindowViewModel
         }
     }
 
+    /// <summary>What a rebuild of the mod list does about the resource packs and shaders beside it.</summary>
+    private enum PackRefresh
+    {
+        /// <summary>Read them again before returning: something in their folders may have changed.</summary>
+        Now,
+
+        /// <summary>Read them off the interface thread and fill the lists when that is done: a build was selected.</summary>
+        Background,
+
+        /// <summary>Leave the pack lists as they are: only a mod was switched or removed.</summary>
+        Keep
+    }
+
+    /// <summary>The build the mod list on screen was last read for.</summary>
+    private Instance? _modsListedFor;
+
     [RelayCommand]
-    private void RefreshMods()
+    private void RefreshMods() => RefreshModList(PackRefresh.Now);
+
+    private void RefreshModList(PackRefresh packs)
     {
         if (_deferModRefresh)
         {
@@ -210,18 +228,23 @@ public partial class MainWindowViewModel
 
         try
         {
-            ReconcileInstalledMods();
+            // Listed once: the same list tells which records have lost their file and
+            // fills the page. It used to be read from disk twice for every rebuild.
+            var listed = _mods.ListMods(InstanceDirectory);
+
+            ReconcileInstalledMods(listed);
 
             InstalledMods.Clear();
+            _modsListedFor = SelectedInstance;
 
             // Packs and shaders live on their own tabs now; this list is jars only.
-            foreach (var mod in _mods.ListMods(InstanceDirectory))
+            foreach (var mod in listed)
             {
                 var record = SelectedInstance?.InstalledMods.FirstOrDefault(m =>
                     string.Equals(m.FileName, mod.FileName, StringComparison.OrdinalIgnoreCase) &&
                     string.Equals(m.Folder ?? ModManager.ModsFolderName, mod.Folder, StringComparison.OrdinalIgnoreCase));
 
-                var item = new InstalledModItem(mod, record) { Added = ModFileStamp(mod.Path) };
+                var item = new InstalledModItem(mod, record) { Added = mod.CreatedUtc != default ? mod.CreatedUtc : ModFileStamp(mod.Path) };
                 RestoreKnownUpdate(item);
                 item.IsNew = _freshModFiles.Contains(mod.FileName);
                 item.PropertyChanged += OnModItemChanged;
@@ -244,6 +267,7 @@ public partial class MainWindowViewModel
             {
                 var changed = current.DetectedModCount != mods.Count;
                 current.DetectedModCount = mods.Count;
+                _modFileCounts[current.Id] = mods.Count;
 
                 if (changed)
                 {
@@ -255,7 +279,24 @@ public partial class MainWindowViewModel
             OnPropertyChanged(nameof(BuildModCountLabel));
             OnPropertyChanged(nameof(HasNoInstalledMods));
 
-            RefreshPacks();
+            switch (packs)
+            {
+                case PackRefresh.Now:
+                    RefreshPacks();
+                    break;
+
+                case PackRefresh.Background:
+                    RefreshPacksInBackground();
+                    break;
+
+                default:
+                    // Which shader loader is in the build is read off the mods; the packs
+                    // themselves have not moved.
+                    RefreshShaders();
+                    OnPropertyChanged(nameof(ModsTabLabel));
+                    break;
+            }
+
             RaiseMemoryAdvice();
             ApplyModsFilter();
             ScheduleBuildCheck();
@@ -404,7 +445,7 @@ public partial class MainWindowViewModel
                 _instances.Save(SelectedInstance);
             }
 
-            RefreshMods();
+            RefreshModList(PackRefresh.Keep);
         }
         catch (Exception ex)
         {
@@ -436,7 +477,7 @@ public partial class MainWindowViewModel
                 _instances.Save(instance);
             }
 
-            RefreshMods();
+            RefreshModList(PackRefresh.Keep);
         }
         catch (Exception ex)
         {

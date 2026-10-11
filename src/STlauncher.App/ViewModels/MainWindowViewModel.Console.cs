@@ -21,14 +21,16 @@ public partial class MainWindowViewModel
     public string LauncherLogPath => System.IO.Path.Combine(_paths.Logs, "launcher.log");
 
     private const long MaxLauncherLogBytes = 2 * 1024 * 1024;
-    private bool _launcherLogFailed;
+    private volatile bool _launcherLogFailed;
 
     /// <summary>Game output arrives on background threads; the UI drains it in batches.</summary>
     private readonly System.Collections.Concurrent.ConcurrentQueue<string> _pendingConsoleLines = new();
 
     private const int MaxConsoleLines = 2000;
 
-    public ObservableCollection<string> Console { get; } = new();
+    private readonly LineLog _consoleLines = new();
+
+    public ObservableCollection<string> Console => _consoleLines;
 
 
     [RelayCommand]
@@ -48,17 +50,64 @@ public partial class MainWindowViewModel
     /// emits thousands of lines during startup, and posting one dispatcher work item per
     /// line makes the window unresponsive exactly when the user is watching it.
     /// </summary>
-    private void AppendConsole(string line) => _pendingConsoleLines.Enqueue(line);
+    private void AppendConsole(string line)
+    {
+        _pendingConsoleLines.Enqueue(line);
+        ArmConsoleFlusher();
+    }
+
+    /// <summary>1 while the flusher is running or has been asked to; 0 while it rests with nothing to do.</summary>
+    private int _consoleFlusherArmed;
+
+    /// <summary>
+    /// The flusher only ticks while there are lines to move. It used to tick for the life
+    /// of the launcher, seven times a second, to find the queue empty nearly every time.
+    /// </summary>
+    private void ArmConsoleFlusher()
+    {
+        if (_consoleTimer is not null && System.Threading.Interlocked.CompareExchange(ref _consoleFlusherArmed, 1, 0) == 0)
+        {
+            Dispatcher.UIThread.Post(() => _consoleTimer?.Start(), DispatcherPriority.Background);
+        }
+    }
 
     private void StartConsoleFlusher()
     {
         _consoleTimer?.Stop();
 
         _consoleTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(150) };
-        _consoleTimer.Tick += (_, _) => FlushConsole();
+        _consoleTimer.Tick += (_, _) =>
+        {
+            FlushConsole();
+
+            // Rest until the next line; one that slipped in just now starts it again.
+            _consoleTimer?.Stop();
+            System.Threading.Volatile.Write(ref _consoleFlusherArmed, 0);
+
+            if (!_pendingConsoleLines.IsEmpty)
+            {
+                ArmConsoleFlusher();
+            }
+        };
+
+        System.Threading.Volatile.Write(ref _consoleFlusherArmed, 1);
         _consoleTimer.Start();
     }
 
+    /// <summary>Lines on their way to launcher.log, stamped, in the order they were printed.</summary>
+    private readonly System.Collections.Concurrent.ConcurrentQueue<string> _launcherLogLines = new();
+
+    /// <summary>Held by whoever is writing the file, so the lines of two writers never interleave.</summary>
+    private readonly object _launcherLogGate = new();
+
+    /// <summary>1 while a background writer is at work or about to be.</summary>
+    private int _launcherLogWriting;
+
+    /// <summary>
+    /// Sends the lines to the file from a pool thread. The file used to be appended to
+    /// from the thread that draws the window, on every batch: a slow or sleeping disk
+    /// held the interface each time the game printed a line.
+    /// </summary>
     private void WriteLauncherLog(System.Collections.Generic.List<string> lines)
     {
         if (_launcherLogFailed)
@@ -66,25 +115,91 @@ public partial class MainWindowViewModel
             return;
         }
 
-        try
+        var stamp = DateTime.Now.ToString("HH:mm:ss");
+
+        foreach (var line in lines)
         {
-            System.IO.Directory.CreateDirectory(_paths.Logs);
+            _launcherLogLines.Enqueue($"{stamp} {line}");
+        }
 
-            var info = new System.IO.FileInfo(LauncherLogPath);
-
-            // Rolled, not truncated: the previous file still holds yesterday's failure.
-            if (info.Exists && info.Length > MaxLauncherLogBytes)
+        if (System.Threading.Interlocked.CompareExchange(ref _launcherLogWriting, 1, 0) == 0)
+        {
+            _ = System.Threading.Tasks.Task.Run(() =>
             {
-                System.IO.File.Move(LauncherLogPath, LauncherLogPath + ".old", overwrite: true);
+                try
+                {
+                    DrainLauncherLog();
+                }
+                finally
+                {
+                    System.Threading.Volatile.Write(ref _launcherLogWriting, 0);
+                }
+
+                // A line that arrived after the last look and before the flag went down.
+                if (!_launcherLogLines.IsEmpty && System.Threading.Interlocked.CompareExchange(ref _launcherLogWriting, 1, 0) == 0)
+                {
+                    try
+                    {
+                        DrainLauncherLog();
+                    }
+                    finally
+                    {
+                        System.Threading.Volatile.Write(ref _launcherLogWriting, 0);
+                    }
+                }
+            });
+        }
+    }
+
+    /// <summary>
+    /// Everything printed so far is in the file when this returns. For the places that
+    /// read the file or may be the last to run: sending a report, opening the log, a
+    /// failed start, the exit.
+    /// </summary>
+    public void FlushLauncherLog()
+    {
+        FlushConsole();
+        DrainLauncherLog();
+    }
+
+    /// <summary>The same for a caller off the interface thread: what has reached the queue is written; the console list is not touched.</summary>
+    private void FlushLauncherLogFromAnyThread() => DrainLauncherLog();
+
+    private void DrainLauncherLog()
+    {
+        lock (_launcherLogGate)
+        {
+            if (_launcherLogFailed || _launcherLogLines.IsEmpty)
+            {
+                return;
             }
 
-            var stamp = DateTime.Now.ToString("HH:mm:ss");
-            System.IO.File.AppendAllLines(LauncherLogPath, lines.Select(l => $"{stamp} {l}"));
-        }
-        catch (Exception)
-        {
-            // A log that cannot be written is not worth failing every flush over.
-            _launcherLogFailed = true;
+            var lines = new System.Collections.Generic.List<string>();
+
+            while (_launcherLogLines.TryDequeue(out var line))
+            {
+                lines.Add(line);
+            }
+
+            try
+            {
+                System.IO.Directory.CreateDirectory(_paths.Logs);
+
+                var info = new System.IO.FileInfo(LauncherLogPath);
+
+                // Rolled, not truncated: the previous file still holds yesterday's failure.
+                if (info.Exists && info.Length > MaxLauncherLogBytes)
+                {
+                    System.IO.File.Move(LauncherLogPath, LauncherLogPath + ".old", overwrite: true);
+                }
+
+                System.IO.File.AppendAllLines(LauncherLogPath, lines);
+            }
+            catch (Exception)
+            {
+                // A log that cannot be written is not worth failing every flush over.
+                _launcherLogFailed = true;
+            }
         }
     }
 
@@ -93,6 +208,8 @@ public partial class MainWindowViewModel
     {
         try
         {
+            FlushLauncherLog();
+
             if (!System.IO.File.Exists(LauncherLogPath))
             {
                 Status = Localize("Console_NoLogYet", "The log file has not been written yet");
@@ -113,26 +230,26 @@ public partial class MainWindowViewModel
 
     private void FlushConsole()
     {
-        var appended = false;
-        var batch = new System.Collections.Generic.List<string>();
-
-        while (_pendingConsoleLines.TryDequeue(out var line))
-        {
-            Console.Add(line);
-            batch.Add(line);
-            appended = true;
-        }
-
-        if (!appended)
+        // Almost every tick finds nothing: no list is made for it.
+        if (_pendingConsoleLines.IsEmpty)
         {
             return;
         }
 
-        WriteLauncherLog(batch);
+        var batch = new System.Collections.Generic.List<string>();
 
-        while (Console.Count > MaxConsoleLines)
+        while (_pendingConsoleLines.TryDequeue(out var line))
         {
-            Console.RemoveAt(0);
+            batch.Add(line);
         }
+
+        if (batch.Count == 0)
+        {
+            return;
+        }
+
+        // One change for the lines that came and one for those that fell off the top.
+        _consoleLines.Append(batch, MaxConsoleLines);
+        WriteLauncherLog(batch);
     }
 }

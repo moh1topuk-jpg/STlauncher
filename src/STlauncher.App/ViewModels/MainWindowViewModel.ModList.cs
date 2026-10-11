@@ -33,10 +33,17 @@ public partial class MainWindowViewModel
 
     private sealed record CachedModDisplay(long Size, DateTime Stamp, string? Name, string? Version, Bitmap? Icon);
 
-    /// <summary>Keyed by path without the .disabled suffix: switching a mod off does not change what it is.</summary>
-    private readonly Dictionary<string, CachedModDisplay> _modDisplayCache = new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>
+    /// Keyed by path without the .disabled suffix: switching a mod off does not change what it is.
+    /// Filled from the pass that reads the jars, off the interface thread, so that a pass
+    /// started while another is still reading finds what that one has already read.
+    /// </summary>
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, CachedModDisplay> _modDisplayCache = new(StringComparer.OrdinalIgnoreCase);
 
     private int _modDetailsRun;
+
+    /// <summary>The pass reading jars now, or the last one: the next waits for it instead of reading the same jars beside it.</summary>
+    private Task _modDetailsWork = Task.CompletedTask;
 
     /// <summary>Shown at this size in the list; decoding a 512 px icon a hundred times over is memory for nothing.</summary>
     private const int ModIconPixels = 96;
@@ -44,10 +51,17 @@ public partial class MainWindowViewModel
     private static string DisplayKey(string path)
         => path.EndsWith(".disabled", StringComparison.OrdinalIgnoreCase) ? path[..^".disabled".Length] : path;
 
+    /// <summary>Where the titles and icons of a build's mods are kept between launches.</summary>
+    private string? ModDisplayStorePath(STlauncher.Core.Instances.Instance? instance)
+        => instance is null || string.IsNullOrWhiteSpace(instance.Id)
+            ? null
+            : Path.Combine(_paths.Root, "cache", "mod-display", instance.Id + ".json");
+
     /// <summary>
     /// Fills in titles, versions and icons after the list is on screen. Jars already read
     /// come from the cache at once; the rest are opened off the UI thread, so a folder of
-    /// a hundred mods does not hold the page.
+    /// a hundred mods does not hold the page - and only the first time: what was read is
+    /// written down, and the next start takes it from one small file.
     /// </summary>
     private async Task LoadModDetailsAsync()
     {
@@ -70,16 +84,29 @@ public partial class MainWindowViewModel
 
         if (pending.Count > 0)
         {
-            var read = await Task.Run(() => pending.Select(item =>
-            {
-                var info = ModMetadataReader.ReadDisplay(item.Path);
-                return (Item: item, Entry: new CachedModDisplay(item.Size, item.Added, info?.Name, info?.Version, DecodeIcon(info?.Icon)));
-            }).ToList());
+            var clock = System.Diagnostics.Stopwatch.StartNew();
+            var storePath = ModDisplayStorePath(SelectedInstance);
+            var present = items.Select(i => i.FileName).ToList();
+            var previous = _modDetailsWork;
 
-            foreach (var (item, entry) in read)
+            var work = Task.Run(async () =>
             {
-                _modDisplayCache[DisplayKey(item.Path)] = entry;
-            }
+                // One pass at a time. The list is rebuilt in bursts - a start, an install of
+                // several mods - and each rebuild used to open every jar beside the others.
+                try
+                {
+                    await previous.ConfigureAwait(false);
+                }
+                catch (Exception)
+                {
+                }
+
+                return ReadModDisplays(pending, present, storePath, () => run != _modDetailsRun);
+            });
+
+            _modDetailsWork = work;
+
+            var read = await work;
 
             if (run != _modDetailsRun)
             {
@@ -87,10 +114,12 @@ public partial class MainWindowViewModel
                 return;
             }
 
-            foreach (var (item, entry) in read)
+            foreach (var (item, entry) in read.Entries)
             {
                 Apply(item, entry);
             }
+
+            AppendConsole($"[mods] titles and icons: {read.Entries.Count} mod(s) in {clock.ElapsedMilliseconds} ms ({read.FromJars} jar(s) opened, the rest remembered)");
         }
 
         // Titles changed what "by name" means and what the search box matches.
@@ -105,9 +134,75 @@ public partial class MainWindowViewModel
         }
     }
 
-    /// <summary>A small icon stays as it is (pixel art must not be smoothed up); a large one is brought down.</summary>
-    private static Bitmap? DecodeIcon(byte[]? bytes)
+    private sealed record ModDisplayPass(List<(InstalledModItem Item, CachedModDisplay Entry)> Entries, int FromJars);
+
+    /// <summary>
+    /// The pass itself, on a pool thread: memory first, then the file kept from earlier
+    /// launches, then the jar. Stops early when a newer list has replaced this one - what
+    /// it has read by then stays in memory for the pass that follows.
+    /// </summary>
+    private ModDisplayPass ReadModDisplays(List<InstalledModItem> pending, List<string> present, string? storePath, Func<bool> superseded)
     {
+        var entries = new List<(InstalledModItem, CachedModDisplay)>(pending.Count);
+        ModDisplayCache? store = null;
+        var fromJars = 0;
+        var complete = true;
+
+        foreach (var item in pending)
+        {
+            if (superseded())
+            {
+                complete = false;
+                break;
+            }
+
+            var key = DisplayKey(item.Path);
+
+            if (_modDisplayCache.TryGetValue(key, out var known) && known.Size == item.Size && known.Stamp == item.Added)
+            {
+                entries.Add((item, known));
+                continue;
+            }
+
+            if (store is null && storePath is not null)
+            {
+                store = ModDisplayCache.Load(storePath);
+            }
+
+            CachedModDisplay entry;
+
+            if (store is not null && store.TryGet(item.FileName, item.Size, item.Added.Ticks, out var stored))
+            {
+                entry = new CachedModDisplay(item.Size, item.Added, stored.Name, stored.Version, DecodeIcon(stored.Icon, out _));
+            }
+            else
+            {
+                var info = ModMetadataReader.ReadDisplay(item.Path);
+                var icon = DecodeIcon(info?.Icon, out var compact);
+
+                entry = new CachedModDisplay(item.Size, item.Added, info?.Name, info?.Version, icon);
+                store?.Set(item.FileName, new ModDisplayEntry(item.Size, item.Added.Ticks, info?.Name, info?.Version, compact));
+                fromJars++;
+            }
+
+            _modDisplayCache[key] = entry;
+            entries.Add((item, entry));
+        }
+
+        // Only a pass that saw the whole folder may say which files have left it.
+        store?.Save(complete ? present : null);
+
+        return new ModDisplayPass(entries, fromJars);
+    }
+
+    private static Bitmap? DecodeIcon(byte[]? bytes) => DecodeIcon(bytes, out _);
+
+    /// <summary>A small icon stays as it is (pixel art must not be smoothed up); a large one is brought down.</summary>
+    /// <param name="compact">The icon at the size it is shown, as an image file's bytes: what is worth keeping between launches.</param>
+    private static Bitmap? DecodeIcon(byte[]? bytes, out byte[]? compact)
+    {
+        compact = null;
+
         if (bytes is null || bytes.Length == 0)
         {
             return null;
@@ -120,12 +215,25 @@ public partial class MainWindowViewModel
 
             if (bitmap.PixelSize.Width <= ModIconPixels * 2)
             {
+                compact = bytes;
                 return bitmap;
             }
 
             var height = Math.Max(1, (int)Math.Round(bitmap.PixelSize.Height * (ModIconPixels / (double)bitmap.PixelSize.Width)));
             var scaled = bitmap.CreateScaledBitmap(new PixelSize(ModIconPixels, height));
             bitmap.Dispose();
+
+            try
+            {
+                using var encoded = new MemoryStream();
+                scaled.Save(encoded);
+                compact = encoded.ToArray();
+            }
+            catch (Exception)
+            {
+                // The icon is on screen either way; it is only read from the jar again next time.
+            }
+
             return scaled;
         }
         catch (Exception)

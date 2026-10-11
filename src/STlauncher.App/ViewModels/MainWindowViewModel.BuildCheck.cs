@@ -107,9 +107,31 @@ public partial class MainWindowViewModel
 
     private int _buildCheckRun;
 
-    /// <summary>Runs off the UI thread; the newest run wins when several overlap.</summary>
+    /// <summary>True while a check is reading jars on a pool thread.</summary>
+    private bool _buildCheckRunning;
+
+    /// <summary>Asked for again while one was running: it starts when that one ends.</summary>
+    private bool _buildCheckQueued;
+
+    /// <summary>
+    /// Runs off the UI thread, one at a time. A burst of changes - a start, an install of
+    /// several mods - asked for a check each, and every one of them opened every jar of
+    /// the build beside the others; now the burst is one check running and one waiting,
+    /// and the one waiting sees the folder as it is when its turn comes.
+    /// </summary>
     private void ScheduleBuildCheck()
     {
+        if (_buildCheckRunning)
+        {
+            _buildCheckQueued = true;
+            ++_buildCheckRun;
+            IsCheckingBuild = true;
+            return;
+        }
+
+        _buildCheckRunning = true;
+        _buildCheckQueued = false;
+
         var run = ++_buildCheckRun;
         var directory = InstanceDirectory;
         var loader = SelectedInstance?.Loader ?? LoaderKind.Vanilla;
@@ -135,6 +157,16 @@ public partial class MainWindowViewModel
 
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
+                _buildCheckRunning = false;
+
+                if (_buildCheckQueued)
+                {
+                    // Something changed while this one read: its answer is about a folder
+                    // that is no longer so. The one that was waiting runs now.
+                    ScheduleBuildCheck();
+                    return;
+                }
+
                 if (run != _buildCheckRun)
                 {
                     return;

@@ -7,7 +7,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
-using Avalonia.Threading;
+using Avalonia.Media.Immutable;
 using STlauncher.App.Services;
 using STlauncher.App.ViewModels;
 using STlauncher.Core.Emotes;
@@ -69,17 +69,44 @@ public sealed class SkinViewer : Control
     /// <summary>No emote holds the stage longer than this, however long its file says it is.</summary>
     private const double MaxEmoteSeconds = 16;
 
-    private readonly DispatcherTimer _timer;
     private readonly Stopwatch _clock = Stopwatch.StartNew();
+
+    /// <summary>
+    /// The figure's own time, in seconds: it runs while the figure is being stepped and
+    /// stands still while it is not, so a figure that was out of sight goes on from the
+    /// pose it stopped in instead of jumping to where the wall clock would have it.
+    /// </summary>
+    private double _animSeconds;
+
+    /// <summary>When the figure was last stepped, by <see cref="_clock"/>.</summary>
+    private double _lastStep;
+
+    /// <summary>Behind another window the figure is stepped on every sixth tick of the slow clock, as before.</summary>
+    private const int BehindEvery = 6;
+
+    /// <summary>How fast the small preview turns by itself, radians a second, and how long after a drag it waits.</summary>
+    private const double SpinPerSecond = 0.24;
+    private const double SpinAfterSeconds = 1.5;
+
+    /// <summary>True while a display frame has been asked for and has not come yet.</summary>
+    private bool _frameRequested;
+
+    /// <summary>The display's own time at the last frame the figure was stepped on; null before the first.</summary>
+    private TimeSpan? _lastFrameTime;
     private readonly Random _random = new();
 
     private double _yaw = 0.55;
     private double _pitch = 0.15;
-    private double _spin = 0.008;
     private Point? _dragFrom;
-    private double _idleTicks;
-    private int _skippedTicks;
+    private double _idleSeconds;
+    private int _pendingTicks;
     private bool _attached;
+
+    // The camera's turn, worked out once a frame instead of once a corner.
+    private double _cosYaw = 1;
+    private double _sinYaw;
+    private double _cosPitch = 1;
+    private double _sinPitch;
 
     private MotionClip _clip = Clips[0];
     private double _clipStarted;
@@ -107,9 +134,7 @@ public sealed class SkinViewer : Control
         RenderOptions.SetBitmapInterpolationMode(this, BitmapInterpolationMode.HighQuality);
         Cursor = new Cursor(StandardCursorType.Hand);
 
-        _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) };
-
-        // The moving figure is redrawn thirty times a second; the cubic filter that makes
+        // The moving figure is redrawn on every frame of the display; the cubic filter that makes
         // a still one flawless is not worth that many times its price, and in motion
         // nobody can tell.
         PropertyChanged += (_, e) =>
@@ -122,38 +147,109 @@ public sealed class SkinViewer : Control
 
             if (e.Property == AnimatedProperty || e.Property == AutoRotateProperty)
             {
-                SyncTimer();
+                SyncClock();
             }
         };
-        _timer.Tick += (_, _) => Tick();
 
         AttachedToVisualTree += (_, _) =>
         {
             _attached = true;
-            SyncTimer();
+            SyncClock();
             UpdatePoseName();
         };
         DetachedFromVisualTree += (_, _) =>
         {
             _attached = false;
-            _timer.Stop();
+            SyncClock();
         };
     }
 
     /// <summary>
     /// A figure that neither turns by itself nor plays its clips has nothing to tick for:
     /// the skin library shows a dozen of them, and a dozen idle timers are still timers.
+    /// One that does move has three ways to keep time, by how it is being watched.
+    /// In front: a step on every frame the display shows, sixty or a hundred and
+    /// forty-four a second, with the pose worked out from the time that has passed - the
+    /// figure is as smooth as the screen is. Behind another window: a few steps a second
+    /// from the slow clock, as it always was there. Not seen at all - its page hidden, the
+    /// window minimised or in the tray, the game running: nothing, and a look a few times
+    /// a second whether that is still so.
     /// </summary>
-    private void SyncTimer()
+    private void SyncClock()
     {
-        if (_attached && (AutoRotate || Animated))
+        FrameClock.Frame -= OnSlowTick;
+        FrameClock.Check -= OnCheck;
+
+        if (!_attached || !(AutoRotate || Animated))
         {
-            _timer.Start();
+            return;
         }
-        else
+
+        switch (FrameClock.Of(this))
         {
-            _timer.Stop();
+            case FrameClock.Watching.NotAtAll:
+                FrameClock.Check += OnCheck;
+                break;
+
+            case FrameClock.Watching.Behind:
+                _lastStep = _clock.Elapsed.TotalSeconds;
+                _pendingTicks = 0;
+                FrameClock.Frame += OnSlowTick;
+                break;
+
+            default:
+                _lastFrameTime = null;
+                RequestFrame();
+                break;
         }
+    }
+
+    private void OnCheck()
+    {
+        if (FrameClock.Of(this) != FrameClock.Watching.NotAtAll)
+        {
+            SyncClock();
+        }
+    }
+
+    private void RequestFrame()
+    {
+        if (_frameRequested || TopLevel.GetTopLevel(this) is not { } top)
+        {
+            return;
+        }
+
+        _frameRequested = true;
+        top.RequestAnimationFrame(OnDisplayFrame);
+    }
+
+    /// <summary>
+    /// One frame of the display. The time comes from the display itself, so the figure
+    /// moves at the same speed at any refresh rate and a frame that came late is a longer
+    /// step, not a slower figure.
+    /// </summary>
+    private void OnDisplayFrame(TimeSpan time)
+    {
+        _frameRequested = false;
+
+        if (!_attached || !(AutoRotate || Animated))
+        {
+            return;
+        }
+
+        if (FrameClock.Of(this) != FrameClock.Watching.InFront)
+        {
+            // No longer in front: over to the slow clock, or to waiting.
+            SyncClock();
+            return;
+        }
+
+        // A long gap - the first frame, a window dragged, a stall - is capped so the figure does not leap.
+        var elapsed = _lastFrameTime is { } last ? Math.Clamp((time - last).TotalSeconds, 0, 0.25) : 0;
+        _lastFrameTime = time;
+
+        Step(elapsed);
+        RequestFrame();
     }
 
     public PlayerSkin? Skin
@@ -262,11 +358,42 @@ public sealed class SkinViewer : Control
         return Clips[1 + _nextFeature++ % (Clips.Length - 1)];
     }
 
-    private void Tick()
+    /// <summary>
+    /// The lane for a window that is on screen but not in front: every sixth tick of the
+    /// slow clock, a handful of steps a second. The figure is decoration, and behind
+    /// another window decoration does not get to keep a laptop's fan running.
+    /// </summary>
+    private void OnSlowTick()
+    {
+        var watching = FrameClock.Of(this);
+
+        if (watching != FrameClock.Watching.Behind)
+        {
+            SyncClock();
+            return;
+        }
+
+        if (++_pendingTicks < BehindEvery)
+        {
+            return;
+        }
+
+        _pendingTicks = 0;
+
+        // By the clock, not by the tick, so every lane plays at the same speed.
+        var now = _clock.Elapsed.TotalSeconds;
+        var elapsed = Math.Min(now - _lastStep, 0.25);
+        _lastStep = now;
+
+        Step(elapsed);
+    }
+
+    /// <summary>Moves the figure on by the time that has passed, whichever lane it came from.</summary>
+    private void Step(double elapsed)
     {
         if (Animated)
         {
-            TickAnimation();
+            StepAnimation(elapsed);
         }
 
         if (_dragFrom is not null)
@@ -275,44 +402,21 @@ public sealed class SkinViewer : Control
         }
 
         // A little while after the player lets go, the model resumes turning on its own.
-        _idleTicks++;
+        _idleSeconds += elapsed;
 
-        if (AutoRotate && _idleTicks > 45)
+        if (AutoRotate && _idleSeconds > SpinAfterSeconds)
         {
-            _yaw += _spin;
-            _pitch += (0.15 - _pitch) * 0.03;
+            _yaw += SpinPerSecond * elapsed;
+            _pitch += (0.15 - _pitch) * (1 - Math.Pow(0.97, elapsed * 30));
             InvalidateVisual();
         }
     }
 
-    /// <summary>
-    /// Thirty frames a second while the window is in front, five while it is behind
-    /// another, none while it is minimised or the page is not shown: the figure is
-    /// decoration, and decoration does not get to keep a laptop's fan running.
-    /// </summary>
-    private void TickAnimation()
+    private void StepAnimation(double elapsed)
     {
-        if (!IsEffectivelyVisible || Bounds.Width <= 0)
-        {
-            return;
-        }
+        _animSeconds += elapsed;
 
-        if (TopLevel.GetTopLevel(this) is Window window)
-        {
-            if (window.WindowState == WindowState.Minimized)
-            {
-                return;
-            }
-
-            if (!window.IsActive && ++_skippedTicks % 6 != 0)
-            {
-                return;
-            }
-        }
-
-        var now = _clock.Elapsed.TotalSeconds;
-
-        if (now - _clipStarted >= _clipLength)
+        if (_animSeconds - _clipStarted >= _clipLength)
         {
             // Standing between every two things worth watching, for a different while each time.
             if (ReferenceEquals(_clip, Clips[0]))
@@ -330,7 +434,7 @@ public sealed class SkinViewer : Control
 
     private void StartClip(MotionClip clip)
     {
-        var now = _clock.Elapsed.TotalSeconds;
+        var now = _animSeconds;
 
         _blendFrom = CurrentPose(now);
         _blendStarted = now;
@@ -383,7 +487,7 @@ public sealed class SkinViewer : Control
     protected override void OnPointerReleased(PointerReleasedEventArgs e)
     {
         _dragFrom = null;
-        _idleTicks = 0;
+        _idleSeconds = 0;
         e.Pointer.Capture(null);
         base.OnPointerReleased(e);
     }
@@ -399,7 +503,10 @@ public sealed class SkinViewer : Control
 
         var scale = Math.Min(Bounds.Width / 24, Bounds.Height / 40);
         var centre = new Point(Bounds.Width / 2, Bounds.Height / 2);
-        var pose = Animated ? CurrentPose(_clock.Elapsed.TotalSeconds) : Pose.Rest;
+        var pose = Animated ? CurrentPose(_animSeconds) : Pose.Rest;
+
+        (_sinYaw, _cosYaw) = Math.SinCos(_yaw);
+        (_sinPitch, _cosPitch) = Math.SinCos(_pitch);
 
         // Painter's algorithm by body part, not by face. The parts are convex boxes that
         // never intersect, so ordering them by depth is exact enough; ordering single
@@ -428,48 +535,66 @@ public sealed class SkinViewer : Control
 
         _pieces.Sort(BackToFront);
 
-        foreach (var (part, _, _) in _pieces)
+        var texture = skin.Enlarged;
+
+        foreach (var piece in _pieces)
         {
-            foreach (var box in new[] { part.Base, part.Overlay })
+            DrawBox(context, skin, texture, piece.Part, piece.Part.Base, outer: false, pose, scale, centre);
+
+            if (piece.Part.Overlay is { } overlay)
             {
-                if (box is null)
+                DrawBox(context, skin, texture, piece.Part, overlay, outer: true, pose, scale, centre);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Draws the faces of one box that look at the camera: the texture under the face's
+    /// matrix, and over it the shade of a face that looks away from the light.
+    /// </summary>
+    /// <remarks>
+    /// The shade is the same rectangle as the texture, drawn under the same matrix, so it
+    /// covers the face to the pixel and to the same soft edge. It used to be a polygon
+    /// built for every shaded face of every frame - a path, a brush and four arrays each,
+    /// a megabyte or more a second of things made to be thrown away.
+    /// </remarks>
+    private void DrawBox(DrawingContext context, PlayerSkin skin, Bitmap texture, Part part, Box box, bool outer, in Pose pose, double scale, Point centre)
+    {
+        foreach (var face in FacesOf(box))
+        {
+            if (!TryProject(face, part, pose, scale, centre, out var matrix, out var area, out var shade))
+            {
+                continue;
+            }
+
+            // An outer-layer face with nothing drawn on it is not there: no
+            // texture to put down, and above all no shade to lay over nothing.
+            if (outer && skin.IsBlank(face.Texture))
+            {
+                continue;
+            }
+
+            using (context.PushTransform(matrix))
+            {
+                context.DrawImage(texture, area, area);
+
+                if (shade > 0.01)
                 {
-                    continue;
-                }
-
-                foreach (var face in box.Faces())
-                {
-                    var projected = Project(face, part, pose, scale, centre);
-
-                    if (projected is null)
-                    {
-                        continue;
-                    }
-
-                    // An outer-layer face with nothing drawn on it is not there: no
-                    // texture to put down, and above all no shade to lay over nothing.
-                    if (ReferenceEquals(box, part.Overlay) && skin.IsBlank(face.Texture))
-                    {
-                        continue;
-                    }
-
-                    using (context.PushTransform(projected.Matrix))
-                    {
-                        context.DrawImage(skin.Enlarged, projected.Texture, projected.Texture);
-                    }
-
-                    if (projected.Shade > 0.01)
-                    {
-                        var geometry = new PolylineGeometry(projected.Corners, isFilled: true);
-                        context.DrawGeometry(new SolidColorBrush(Colors.Black, projected.Shade), null, geometry);
-                    }
+                    context.FillRectangle(ShadeBrush(shade), area);
                 }
             }
         }
     }
 
-    /// <summary>A face on screen: where it goes, what it wears, how far back it is.</summary>
-    private sealed record ProjectedFace(Matrix Matrix, Rect Texture, IList<Point> Corners, double Depth, double Shade);
+    /// <summary>Black at every strength a face can be shaded by, each made once.</summary>
+    private static readonly ImmutableSolidColorBrush?[] Shades = new ImmutableSolidColorBrush?[256];
+
+    private static ImmutableSolidColorBrush ShadeBrush(double shade)
+    {
+        // Cut off, not rounded: the same byte a brush with this opacity came to.
+        var alpha = (byte)(255 * Math.Clamp(shade, 0, 1));
+        return Shades[alpha] ??= new ImmutableSolidColorBrush(Color.FromArgb(alpha, 0, 0, 0));
+    }
 
     /// <summary>Half the model's height: it turns about its middle, not its feet.</summary>
     private const double ModelMidHeight = 16;
@@ -571,14 +696,21 @@ public sealed class SkinViewer : Control
         return v;
     }
 
-    private ProjectedFace? Project(Face face, Part part, Pose pose, double scale, Point centre)
+    /// <summary>
+    /// Where a face lands on the screen: the matrix that carries its texture rectangle
+    /// there and how deep its shade is. False for a face turned away from the camera.
+    /// </summary>
+    private bool TryProject(Face face, Part part, in Pose pose, double scale, Point centre, out Matrix matrix, out Rect area, out double shade)
     {
-        var p = face.Corners.Select(c => Rotate(Place(c, part, pose))).ToArray();
+        Span<Point> s = stackalloc Point[4];
+        var corners = face.Corners;
 
         // Orthographic: x right, y up, z towards the viewer.
-        Point Screen(Vector3 v) => new(centre.X + v.X * scale, centre.Y - v.Y * scale);
-
-        var s = p.Select(Screen).ToArray();
+        for (var i = 0; i < 4; i++)
+        {
+            var v = Rotate(Place(corners[i], part, pose));
+            s[i] = new Point(centre.X + v.X * scale, centre.Y - v.Y * scale);
+        }
 
         // Back-face culling from the on-screen winding: a face seen from behind is drawn
         // with its corners going the other way round.
@@ -586,16 +718,19 @@ public sealed class SkinViewer : Control
 
         if (cross <= 0)
         {
-            return null;
+            matrix = default;
+            area = default;
+            shade = 0;
+            return false;
         }
 
         // Each face is pushed a third of a pixel outwards from its centre. Neighbouring
         // faces drawn with smoothing would otherwise meet in a hairline seam where both
         // edges are half-covered.
-        var cx = s.Average(v => v.X);
-        var cy = s.Average(v => v.Y);
+        var cx = (s[0].X + s[1].X + s[2].X + s[3].X) / 4;
+        var cy = (s[0].Y + s[1].Y + s[2].Y + s[3].Y) / 4;
 
-        for (var i = 0; i < s.Length; i++)
+        for (var i = 0; i < 4; i++)
         {
             var dx = s[i].X - cx;
             var dy = s[i].Y - cy;
@@ -616,29 +751,25 @@ public sealed class SkinViewer : Control
         var ay = (s[1].Y - s[0].Y) / t.Width;
         var bx = (s[3].X - s[0].X) / t.Height;
         var by = (s[3].Y - s[0].Y) / t.Height;
-        var matrix = new Matrix(ax, ay, bx, by,
+        matrix = new Matrix(ax, ay, bx, by,
             s[0].X - ax * t.X - bx * t.Y,
             s[0].Y - ay * t.X - by * t.Y);
+        area = t;
 
         var normal = Rotate(PlaceNormal(face.Normal, part, pose));
         var lit = Math.Max(0, Dot(normal, Light));
-        var shade = (1 - lit) * 0.45;
-
-        return new ProjectedFace(matrix, t, s, 0, shade);
+        shade = (1 - lit) * 0.45;
+        return true;
     }
 
     private Vector3 Rotate(Vector3 v)
     {
         // Yaw about Y, then pitch about X.
-        var cy = Math.Cos(_yaw);
-        var sy = Math.Sin(_yaw);
-        var x = v.X * cy + v.Z * sy;
-        var z = -v.X * sy + v.Z * cy;
+        var x = v.X * _cosYaw + v.Z * _sinYaw;
+        var z = -v.X * _sinYaw + v.Z * _cosYaw;
 
-        var cp = Math.Cos(_pitch);
-        var sp = Math.Sin(_pitch);
-        var y = v.Y * cp - z * sp;
-        z = v.Y * sp + z * cp;
+        var y = v.Y * _cosPitch - z * _sinPitch;
+        z = v.Y * _sinPitch + z * _cosPitch;
 
         return new Vector3(x, y, z);
     }
@@ -1088,6 +1219,24 @@ public sealed class SkinViewer : Control
     /// <summary>A part with how far back it is in this frame, and its place in the model for parts equally far.</summary>
     private readonly record struct Piece(Part Part, double Depth, int Order);
 
+    /// <summary>
+    /// The faces of every box drawn so far. A box is the same box on every frame - and the
+    /// halves of a bent one are the same few halves - so its faces are worked out once and
+    /// not thirty times a second. Boxes are compared by what they are, not by which object.
+    /// </summary>
+    private static readonly Dictionary<Box, Face[]> FaceCache = new();
+
+    private static Face[] FacesOf(Box box)
+    {
+        if (!FaceCache.TryGetValue(box, out var faces))
+        {
+            faces = box.Faces().ToArray();
+            FaceCache[box] = faces;
+        }
+
+        return faces;
+    }
+
     private static readonly Comparison<Piece> BackToFront = (a, b) =>
     {
         var byDepth = a.Depth.CompareTo(b.Depth);
@@ -1122,7 +1271,7 @@ public sealed class SkinViewer : Control
     {
         var lean = Fold(pose.Body, ChestMiddle);
 
-        foreach (var part in Model(skin))
+        foreach (var part in ModelOf(skin))
         {
             var box = part.Base;
             var middle = box.Height / 2;
@@ -1165,13 +1314,19 @@ public sealed class SkinViewer : Control
         }
     }
 
+    /// <summary>The four figures there are: classic or slim arms, modern or pre-1.8 texture. Each is built once.</summary>
+    private static readonly Part[]?[] Models = new Part[]?[4];
+
+    private static Part[] ModelOf(PlayerSkin skin)
+        => Models[(skin.IsSlim ? 1 : 0) | (skin.IsLegacy ? 2 : 0)] ??= Model(skin.IsSlim, skin.IsLegacy).ToArray();
+
     /// <summary>
     /// The player: head, body, two arms, two legs, each with its outer layer and its
     /// joint. The body comes before the arms: what it bends by, they lean by.
     /// </summary>
-    private static IEnumerable<Part> Model(PlayerSkin skin)
+    private static IEnumerable<Part> Model(bool slim, bool legacy)
     {
-        var arm = skin.IsSlim ? 3 : 4;
+        var arm = slim ? 3 : 4;
 
         // Joints: the neck, the shoulders two pixels below the top of the arm, the hips.
         var neck = new Vector3(0, 24, 0);
@@ -1188,7 +1343,7 @@ public sealed class SkinViewer : Control
             new Box(-4, 24, -4, 8, 8, 8, 32, 0, Inflate: 0.5),
             PartKind.Head, neck);                                                       // head + hat
 
-        if (skin.IsLegacy)
+        if (legacy)
         {
             // One arm and one leg in the texture; the other side is the same, mirrored.
             yield return new Part(new Box(-4, 12, -2, 8, 12, 4, 16, 16), null, PartKind.Body, waist);
