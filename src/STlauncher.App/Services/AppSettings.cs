@@ -84,6 +84,9 @@ public sealed class AppSettings
     /// </summary>
     public System.DateTimeOffset? ImportScanEmptyAt { get; set; }
 
+    /// <summary>The figure's frames a second: 0 follows the display, otherwise 60 or 30.</summary>
+    public int AnimationFps { get; set; }
+
     /// <summary>The drifting embers behind the main screen.</summary>
     public bool AnimatedBackground { get; set; } = true;
 

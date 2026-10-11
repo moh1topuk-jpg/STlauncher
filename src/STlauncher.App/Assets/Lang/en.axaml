@@ -391,6 +391,9 @@
     <x:String x:Key="Error_DependencyMissing">{0} needs {1}, which has no version for this build</x:String>
     <x:String x:Key="Game_SkinTap">tap for 3D</x:String>
     <x:String x:Key="Settings_AnimatedBackground">Animated background on the main screen</x:String>
+    <x:String x:Key="Settings_AnimationFps">Character animation smoothness</x:String>
+    <x:String x:Key="Settings_AnimationFpsSub">"Display" draws every frame your screen shows (60, 144 Hz and up): the smoothest, but it loads the processor while the launcher window is open. On a weak PC pick 60 or 30 frames a second.</x:String>
+    <x:String x:Key="Settings_AnimationFpsDisplay">Display</x:String>
     <x:String x:Key="Game_PickBuild">Pick a build</x:String>
     <x:String x:Key="Game_ViewSkin">View skin</x:String>
     <x:String x:Key="Game_ViewerHint">Drag to turn</x:String>

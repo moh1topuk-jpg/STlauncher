@@ -391,6 +391,9 @@
     <x:String x:Key="Error_DependencyMissing">{0} требует {1}, а для этой сборки у него нет версии</x:String>
     <x:String x:Key="Game_SkinTap">нажмите — 3D</x:String>
     <x:String x:Key="Settings_AnimatedBackground">Живой фон на главном экране</x:String>
+    <x:String x:Key="Settings_AnimationFps">Плавность анимации персонажа</x:String>
+    <x:String x:Key="Settings_AnimationFpsSub">«Как монитор» рисует каждый кадр экрана (60, 144 Гц и выше): плавнее всего, но нагружает процессор, пока окно лаунчера открыто. На слабом ПК выберите 60 или 30 кадров в секунду.</x:String>
+    <x:String x:Key="Settings_AnimationFpsDisplay">Как монитор</x:String>
     <x:String x:Key="Game_PickBuild">Выбрать сборку</x:String>
     <x:String x:Key="Game_ViewSkin">Посмотреть скин</x:String>
     <x:String x:Key="Game_ViewerHint">Потяните, чтобы повернуть</x:String>

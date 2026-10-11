@@ -459,6 +459,8 @@ public partial class MainWindowViewModel : ViewModelBase
         ImportSuggestionDismissed = settings.ImportSuggestionDismissed;
         _importScanEmptyAt = settings.ImportScanEmptyAt;
         AnimatedBackground = settings.AnimatedBackground;
+        AnimationFps = NormalizeAnimationFps(settings.AnimationFps);
+        Controls.SkinViewer.FrameCap = AnimationFps;
         UiScale = NormalizeUiScale(settings.UiScale);
         PreferDiscreteGpu = settings.PreferDiscreteGpu;
         ModsSort = Enum.TryParse<ModsSortOrder>(settings.ModsSort, ignoreCase: true, out var modsSort) ? modsSort : ModsSortOrder.Default;
@@ -1469,6 +1471,7 @@ public partial class MainWindowViewModel : ViewModelBase
             ImportSuggestionDismissed = ImportSuggestionDismissed,
             ImportScanEmptyAt = _importScanEmptyAt,
             AnimatedBackground = AnimatedBackground,
+            AnimationFps = AnimationFps,
             UiScale = UiScale,
             PreferDiscreteGpu = PreferDiscreteGpu,
             ModsSort = ModsSort.ToString(),

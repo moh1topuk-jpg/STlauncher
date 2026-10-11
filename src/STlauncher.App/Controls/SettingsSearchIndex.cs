@@ -34,6 +34,7 @@ public static class SettingsSearchIndex
         new("Settings_Accent", "Settings_SectionLook", "цвет акцент оформление красный синий color colour accent"),
         new("Settings_Language", "Settings_SectionLook", "язык русский английский перевод language russian english locale"),
         new("Settings_UiScale", "Settings_SectionLook", "масштаб размер интерфейса шрифт мелко крупно 4k scale zoom font size dpi"),
+        new("Settings_AnimationFps", "Settings_SectionLook", "плавность анимация персонаж фигурка скин кадры fps фпс герц 60 144 smooth animation frames hz"),
         new("Settings_AnimatedBackground", "Settings_SectionLook", "фон анимация искры живой background animation embers"),
 
         // Launcher

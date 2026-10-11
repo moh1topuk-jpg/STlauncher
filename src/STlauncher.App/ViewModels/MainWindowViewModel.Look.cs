@@ -33,6 +33,39 @@ public partial class MainWindowViewModel
 
     partial void OnUiScaleChanged(double value) => PersistSettings();
 
+    /// <summary>
+    /// How smoothly the figure moves: 0 is every frame the display shows, 60 and 30 are
+    /// ceilings for a PC that would rather keep the processor for something else.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsAnimationFpsDisplay))]
+    [NotifyPropertyChangedFor(nameof(IsAnimationFps60))]
+    [NotifyPropertyChangedFor(nameof(IsAnimationFps30))]
+    private int _animationFps;
+
+    public bool IsAnimationFpsDisplay => AnimationFps == 0;
+
+    public bool IsAnimationFps60 => AnimationFps == 60;
+
+    public bool IsAnimationFps30 => AnimationFps == 30;
+
+    partial void OnAnimationFpsChanged(int value)
+    {
+        Controls.SkinViewer.FrameCap = value;
+        PersistSettings();
+    }
+
+    private static int NormalizeAnimationFps(int value) => value is 30 or 60 ? value : 0;
+
+    [RelayCommand]
+    private void SelectAnimationFps(string? value)
+    {
+        if (int.TryParse(value, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var fps))
+        {
+            AnimationFps = NormalizeAnimationFps(fps);
+        }
+    }
+
     /// <summary>A value from settings.json that is not one of the choices snaps to the nearest.</summary>
     private static double NormalizeUiScale(double value)
     {

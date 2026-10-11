@@ -433,6 +433,25 @@
                             </Grid>
                         </Border>
 
+                        <Border Classes="setting" controls:SettingsSearch.Keywords="плавность анимация персонаж фигурка скин кадры fps фпс герц 60 144 smooth animation frames hz">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Classes="strong" Text="{DynamicResource Settings_AnimationFps}"/>
+                                    <TextBlock Classes="sub" Text="{DynamicResource Settings_AnimationFpsSub}" TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <Border Grid.Column="1" Classes="segments" VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Classes="segment" Classes.active="{Binding IsAnimationFpsDisplay}" Content="{DynamicResource Settings_AnimationFpsDisplay}"
+                                                Command="{Binding SelectAnimationFpsCommand}" CommandParameter="0"/>
+                                        <Button Classes="segment" Classes.active="{Binding IsAnimationFps60}" Content="60"
+                                                Command="{Binding SelectAnimationFpsCommand}" CommandParameter="60"/>
+                                        <Button Classes="segment" Classes.active="{Binding IsAnimationFps30}" Content="30"
+                                                Command="{Binding SelectAnimationFpsCommand}" CommandParameter="30"/>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </Border>
+
                         <Border Classes="setting last" controls:SettingsSearch.Keywords="фон анимация искры живой background animation embers">
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
                                 <TextBlock Classes="strong" Text="{DynamicResource Settings_AnimatedBackground}" VerticalAlignment="Center"/>

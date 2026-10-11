@@ -88,6 +88,13 @@ public sealed class SkinViewer : Control
     private const double SpinPerSecond = 0.24;
     private const double SpinAfterSeconds = 1.5;
 
+    /// <summary>
+    /// The most frames a second the figure draws, 0 for "as many as the display shows".
+    /// The player's choice in Settings: every display frame is the smoothest and costs the
+    /// most, and a weak PC may prefer 60 or 30.
+    /// </summary>
+    public static int FrameCap { get; set; }
+
     /// <summary>True while a display frame has been asked for and has not come yet.</summary>
     private bool _frameRequested;
 
@@ -241,6 +248,15 @@ public sealed class SkinViewer : Control
         {
             // No longer in front: over to the slow clock, or to waiting.
             SyncClock();
+            return;
+        }
+
+        // Under a ceiling a frame that came too soon is let go by: nothing is stepped or
+        // redrawn, the next one is asked for. The margin keeps 60 on a 144 Hz display from
+        // falling to 48 because a frame arrived a hair early.
+        if (FrameCap > 0 && _lastFrameTime is { } previous && (time - previous).TotalSeconds < 1.0 / FrameCap - 0.002)
+        {
+            RequestFrame();
             return;
         }
 
