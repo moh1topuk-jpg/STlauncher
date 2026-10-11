@@ -146,21 +146,7 @@ public partial class SkinsPage : UserControl
         }
     }
 
-    // ===================== Sources, and the menu on a picture =====================
-
-    /// <summary>
-    /// "My skins" or the public feed. Which one is looked at is the page's own business,
-    /// so it lives here and not in the view model.
-    /// </summary>
-    private void OnTabClick(object? sender, RoutedEventArgs e)
-    {
-        var random = (sender as Control)?.Tag as string == "random";
-
-        LibraryTab.IsVisible = !random;
-        RandomTab.IsVisible = random;
-        LibraryTabButton.Classes.Set("active", !random);
-        RandomTabButton.Classes.Set("active", random);
-    }
+    // ===================== The menu on a picture =====================
 
     /// <summary>
     /// The "..." on a library picture. A menu lives in its own popup, out of reach of a
