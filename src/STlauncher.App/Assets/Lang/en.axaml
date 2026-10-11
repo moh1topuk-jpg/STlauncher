@@ -456,6 +456,13 @@
     <x:String x:Key="Home_WhatChanged">What changed</x:String>
     <x:String x:Key="Home_NoBuilds">No builds yet</x:String>
     <x:String x:Key="Home_NoBuildsHint">Make your own or take a ready one: with a friend's code, or from another launcher.</x:String>
+    <x:String x:Key="Home_OpenBuilds">All builds</x:String>
+    <x:String x:Key="Home_NoOtherBuilds">No other builds yet</x:String>
+    <x:String x:Key="Home_NoOtherBuildsHint">Make another one: for a different server or another version of the game.</x:String>
+    <x:String x:Key="Home_BuildsHere">Your builds will appear here</x:String>
+    <x:String x:Key="Home_BuildsHereHint">Each one can be started from here with one button.</x:String>
+    <x:String x:Key="Home_FriendsLine">Your own server, or a friend's code</x:String>
+    <x:String x:Key="Home_FriendsServer">Your server:</x:String>
 
     <x:String x:Key="Server_AverageWeek">Average for the week: {0:F0}</x:String>
     <x:String x:Key="Server_Record">Record: {0}</x:String>

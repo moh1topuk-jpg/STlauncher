@@ -9,74 +9,115 @@
              x:Class="STlauncher.App.Views.Pages.GamePage"
              x:DataType="vm:MainWindowViewModel">
 
-    <!-- Home. On the left, what to play: the build's name straight on the ground, one loud
-         button, and under it a short list of the other ways in. On the right, the player on
-         a lit stage. Whatever the launcher has to say (a launch going, a crash, an offer)
-         appears between the two as quiet strips; only the crash is an object with a frame. -->
+    <!-- Home. Four panels on the ground, each where the hand expects it: the build to
+         continue with (the lead panel, with the one filled button), the two other ways in
+         side by side under it, the player's other builds below, and on the right the
+         player on a lit stage. Whatever the launcher has to say about the build (a launch
+         going, a crash, a check, an offer) stands in or right under the lead panel. -->
     <UserControl.Styles>
-        <!-- The greeting is a line to pass by, not a headline. -->
+        <!-- The greeting: a heading, but a step below the build's name. -->
         <Style Selector="TextBlock.hello">
-            <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontFamily" Value="{StaticResource DisplayFont}"/>
+            <Setter Property="FontSize" Value="22"/>
+            <Setter Property="FontWeight" Value="ExtraBold"/>
+            <Setter Property="LetterSpacing" Value="-0.4"/>
         </Style>
 
-        <!-- A long name gives up size before it gives up letters (see FitTitle in the code-behind). -->
-        <Style Selector="TextBlock.page-title.huge.long">
-            <Setter Property="FontSize" Value="42"/>
-            <Setter Property="LetterSpacing" Value="-1.1"/>
-            <Setter Property="LineHeight" Value="46"/>
-        </Style>
-        <Style Selector="TextBlock.page-title.huge.longer">
+        <!-- The build's name. A long one gives up size before it gives up letters (see
+             FitTitle in the code-behind). -->
+        <Style Selector="TextBlock.build-name">
             <Setter Property="FontSize" Value="32"/>
-            <Setter Property="LetterSpacing" Value="-0.7"/>
-            <Setter Property="LineHeight" Value="37"/>
+            <Setter Property="LetterSpacing" Value="-0.8"/>
+            <Setter Property="LineHeight" Value="36"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="MaxLines" Value="2"/>
+        </Style>
+        <Style Selector="TextBlock.build-name.long">
+            <Setter Property="FontSize" Value="25"/>
+            <Setter Property="LetterSpacing" Value="-0.5"/>
+            <Setter Property="LineHeight" Value="29"/>
+        </Style>
+        <Style Selector="TextBlock.build-name.longer">
+            <Setter Property="FontSize" Value="20"/>
+            <Setter Property="LetterSpacing" Value="-0.3"/>
+            <Setter Property="LineHeight" Value="24"/>
         </Style>
 
-        <!-- The meta line of the shared look, but one that may wrap: this one carries the
-             hours and the catalog state too, and the window can be narrow. -->
-        <Style Selector="WrapPanel.meta > StackPanel">
-            <Setter Property="Orientation" Value="Horizontal"/>
-            <Setter Property="Spacing" Value="10"/>
-            <Setter Property="Margin" Value="0,0,10,4"/>
+        <!-- The build's own tile in the lead panel, and the smaller one of a way in. -->
+        <Style Selector="Border.build-tile">
+            <Setter Property="Width" Value="64"/>
+            <Setter Property="Height" Value="64"/>
+            <Setter Property="CornerRadius" Value="17"/>
+            <Setter Property="VerticalAlignment" Value="Top"/>
         </Style>
-        <Style Selector="WrapPanel.meta > StackPanel > TextBlock">
-            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
+        <Style Selector="Border.build-tile > PathIcon">
+            <Setter Property="Width" Value="30"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextOnAccentBrush}"/>
         </Style>
-        <Style Selector="WrapPanel.meta.quiet > StackPanel > TextBlock">
-            <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
-            <Setter Property="FontSize" Value="12.5"/>
+        <Style Selector="Border.icon-tile.way">
+            <Setter Property="Width" Value="42"/>
+            <Setter Property="Height" Value="42"/>
+            <Setter Property="CornerRadius" Value="12"/>
         </Style>
-        <Style Selector="WrapPanel.meta > StackPanel > Ellipse.sep">
-            <Setter Property="Width" Value="3"/>
-            <Setter Property="Height" Value="3"/>
-            <Setter Property="Fill" Value="{DynamicResource TextMutedBrush}"/>
+
+        <!-- The two buttons beside the big one: real buttons, a little lower than it. -->
+        <Style Selector="Button.beside">
+            <Setter Property="Height" Value="46"/>
+            <Setter Property="Padding" Value="16,0"/>
+            <Setter Property="CornerRadius" Value="12"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
 
-        <!-- Something the launcher has to say: a strip under a hairline, no fill, no frame. -->
-        <Style Selector="Border.note">
-            <Setter Property="Padding" Value="0,13,0,13"/>
+        <!-- A section of the lead panel under its buttons (the launch, the safe start). -->
+        <Style Selector="Border.under">
+            <Setter Property="Margin" Value="0,18,0,0"/>
+            <Setter Property="Padding" Value="0,15,0,0"/>
             <Setter Property="BorderThickness" Value="0,1,0,0"/>
             <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}"/>
         </Style>
-        <Style Selector="Border.note PathIcon.lead">
-            <Setter Property="Width" Value="16"/>
-            <Setter Property="Height" Value="16"/>
+
+        <!-- A notice panel's leading icon. -->
+        <Style Selector="PathIcon.lead">
+            <Setter Property="Width" Value="17"/>
+            <Setter Property="Height" Value="17"/>
             <Setter Property="VerticalAlignment" Value="Top"/>
             <Setter Property="Margin" Value="0,2,0,0"/>
         </Style>
 
-        <!-- The column scrolls only when a card takes its room; its bar should not draw a
-             line between the build and the stage. -->
+        <!-- A build of the list: the whole row is the button that makes it the build on
+             screen; the row itself (Border.row) draws the hairline and the tone under the
+             pointer, so the button draws nothing. -->
+        <Style Selector="Button.build-row">
+            <Setter Property="Padding" Value="12,9"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+        </Style>
+        <Style Selector="Button.build-row:pointerover">
+            <Setter Property="BorderBrush" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.build-row:pointerover /template/ Border#PART_Root">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.build-row:pressed /template/ Border#PART_Root">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+
+        <!-- The columns scroll only when a notice takes their room; the bar should not
+             draw a line between the panels. -->
         <Style Selector="ScrollViewer.home /template/ ScrollBar">
             <Setter Property="Opacity" Value="0.35"/>
         </Style>
 
-        <!-- The player's name under the figure. -->
+        <!-- The player's name on the plate. -->
         <Style Selector="TextBlock.who">
             <Setter Property="FontFamily" Value="{StaticResource DisplayFont}"/>
-            <Setter Property="FontSize" Value="20"/>
+            <Setter Property="FontSize" Value="17"/>
             <Setter Property="FontWeight" Value="ExtraBold"/>
             <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
         </Style>
@@ -90,696 +131,656 @@
         <!-- Embers drifting behind everything; off in the settings for those who want it still. -->
         <controls:EmberField IsActive="{Binding AnimatedBackground}" IsLight="{Binding IsThemeLight}"/>
 
-        <Grid MaxWidth="1320">
+        <Grid MaxWidth="1320" Margin="28,4,10,0">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="1.9*"/>
-                <ColumnDefinition Width="*" MinWidth="300" MaxWidth="380"/>
+                <ColumnDefinition Width="2.15*"/>
+                <ColumnDefinition Width="*" MinWidth="312" MaxWidth="372"/>
             </Grid.ColumnDefinitions>
 
             <!-- ======== What to play ========
                  The scroll viewer hands its content the whole height when there is room, so
-                 the list below stays pinned to the bottom; when a crash card or a long
-                 notice takes the room, the same column simply scrolls. -->
+                 the builds panel reaches the bottom of the window; when a crash card or a
+                 long notice takes the room, the same column simply scrolls. -->
             <ScrollViewer Grid.Column="0" Classes="home" HorizontalScrollBarVisibility="Disabled">
-                <Grid RowDefinitions="Auto,*,Auto" Margin="48,30,20,0">
+                <Grid RowDefinitions="Auto,*" Margin="0,0,14,14">
 
-                    <StackPanel Grid.Row="0">
+                    <StackPanel Grid.Row="0" Spacing="14">
 
-                        <StackPanel Orientation="Horizontal" Spacing="5">
-                            <TextBlock Text="{DynamicResource Home_Hello}" Classes="hello"/>
-                            <TextBlock Text="{Binding Username}" Classes="hello"/>
-                        </StackPanel>
-
-                        <!-- ===== The build to continue with ===== -->
-                        <StackPanel IsVisible="{Binding SelectedInstance, Converter={x:Static ObjectConverters.IsNotNull}}">
-                            <TextBlock Name="BuildTitle" Text="{Binding SelectedInstance.Name}" Classes="page-title huge"
-                                       TextWrapping="Wrap" MaxLines="2" Margin="0,12,0,7" Padding="0,0,0,8"
-                                       ToolTip.Tip="{Binding SelectedInstance.Name}"/>
-
-                            <!-- What it is. -->
-                            <WrapPanel Classes="meta">
-                                <StackPanel>
-                                    <TextBlock Classes="mono" Text="{Binding SelectedInstance.Loader}"/>
-                                    <TextBlock Classes="mono" Text="{Binding SelectedInstance.VersionId, TargetNullValue=—}" Margin="-3,0,0,0"/>
-                                </StackPanel>
-                                <StackPanel>
-                                    <Ellipse Classes="sep"/>
-                                    <TextBlock Text="{Binding BuildModCountLabel}"/>
-                                </StackPanel>
-                                <StackPanel>
-                                    <Ellipse Classes="sep"/>
-                                    <TextBlock Text="{Binding LastPlayedLabel}"/>
-                                </StackPanel>
-                            </WrapPanel>
-
-                            <!-- How it has been going: the hours, and whether the catalog keeps it in step. -->
-                            <WrapPanel Classes="meta quiet">
-                                <!-- On hover: all builds together, and where the hours of this one
-                                     went. The addresses are read from the game's log and stay on
-                                     this computer. -->
-                                <StackPanel IsVisible="{Binding HasPlaytime}" Background="Transparent"
-                                            ToolTip.ServiceEnabled="{Binding HasPlaytimeDetails}">
-                                    <ToolTip.Tip>
-                                        <StackPanel Spacing="6" MinWidth="220">
-                                            <TextBlock Text="{Binding PlaytimeAllLabel}" IsVisible="{Binding HasPlaytimeAllLabel}"/>
-                                            <TextBlock Text="{DynamicResource Game_PlaytimePlaces}" FontWeight="SemiBold"
-                                                       IsVisible="{Binding HasPlaytimePlaces}"/>
-                                            <ItemsControl ItemsSource="{Binding PlaytimePlaces}" IsVisible="{Binding HasPlaytimePlaces}">
-                                                <ItemsControl.ItemTemplate>
-                                                    <DataTemplate x:DataType="vm:PlaytimePlaceRow">
-                                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18" Margin="0,1">
-                                                            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" MaxWidth="260"/>
-                                                            <TextBlock Grid.Column="1" Text="{Binding Time}" Classes="faint"/>
-                                                        </Grid>
-                                                    </DataTemplate>
-                                                </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
-                                        </StackPanel>
-                                    </ToolTip.Tip>
-                                    <TextBlock Text="{Binding PlaytimeLabel}"/>
-                                </StackPanel>
-                                <!-- Its own dot is separator enough, and nothing is left dangling
-                                     when a narrow window puts it on a line of its own. -->
-                                <StackPanel Spacing="6" Margin="4,0,10,4">
-                                    <Ellipse Classes="dot" IsVisible="{Binding !IsBuildSyncBusy}"/>
-                                    <Ellipse Classes="dot warn" IsVisible="{Binding IsBuildSyncBusy}"/>
-                                    <TextBlock Text="{Binding BuildStateLabel}"/>
-                                </StackPanel>
-                            </WrapPanel>
-
-                            <WrapPanel Margin="0,22,0,0" ItemSpacing="14" LineSpacing="10">
-                                <Button Classes="primary hero" Command="{Binding PlayCommand}" IsEnabled="{Binding !IsBusy}">
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <PathIcon Data="{StaticResource IconPlay}"/>
-                                        <TextBlock Text="{DynamicResource Game_Play}" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-
-                                <Button Classes="ghost" VerticalAlignment="Center" ToolTip.Tip="{DynamicResource Game_PickBuild}">
-                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <TextBlock Text="{DynamicResource Home_OtherBuild}" VerticalAlignment="Center"
-                                                   FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                        <PathIcon Data="{StaticResource IconChevronDown}" Width="12" Height="12"
-                                                  Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                    </StackPanel>
-                                    <Button.Flyout>
-                                        <controls:RevealFlyout Placement="BottomEdgeAlignedLeft">
-                                            <StackPanel Spacing="10" Width="320">
-                                                <controls:Caption Text="{DynamicResource Game_PickBuild}"/>
-                                                <ListBox ItemsSource="{Binding Instances}"
-                                                         SelectedItem="{Binding SelectedInstance}" MaxHeight="320">
-                                                    <ListBox.ItemTemplate>
-                                                        <DataTemplate x:DataType="inst:Instance">
-                                                            <StackPanel Spacing="2">
-                                                                <TextBlock Text="{Binding Name}" Classes="strong" TextTrimming="CharacterEllipsis"/>
-                                                                <StackPanel Orientation="Horizontal" Spacing="6">
-                                                                    <TextBlock Classes="sub" Text="{Binding VersionId, TargetNullValue=—}"/>
-                                                                    <TextBlock Classes="sub" Text="·"/>
-                                                                    <TextBlock Classes="sub" Text="{Binding Loader}"/>
-                                                                    <TextBlock Classes="sub" Text="·"/>
-                                                                    <TextBlock Classes="sub"
-                                                                               Text="{Binding ModCount, Converter={x:Static conv:ModCountConverter.Instance}}"/>
-                                                                </StackPanel>
-                                                            </StackPanel>
-                                                        </DataTemplate>
-                                                    </ListBox.ItemTemplate>
-                                                </ListBox>
-                                                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                                                    <Button Classes="small" HorizontalAlignment="Stretch"
-                                                            Command="{Binding NewBuildFromHomeCommand}">
-                                                        <StackPanel Orientation="Horizontal" Spacing="6">
-                                                            <PathIcon Data="{StaticResource IconPlus}" Width="12" Height="12"/>
-                                                            <TextBlock Text="{DynamicResource Home_NewBuild}"/>
-                                                        </StackPanel>
-                                                    </Button>
-                                                    <Button Grid.Column="1" Classes="ghost small" HorizontalAlignment="Stretch"
-                                                            Content="{DynamicResource Game_SetupBuild}"
-                                                            Command="{Binding SelectSectionCommand}"
-                                                            CommandParameter="Builds"/>
-                                                </Grid>
-                                            </StackPanel>
-                                        </controls:RevealFlyout>
-                                    </Button.Flyout>
-                                </Button>
-
-                                <Button Classes="link" VerticalAlignment="Center"
-                                        Content="{DynamicResource Home_ModsAndSettings}"
-                                        ToolTip.Tip="{DynamicResource Home_BuildSettings}"
-                                        Command="{Binding SelectSectionCommand}" CommandParameter="Builds"/>
-                            </WrapPanel>
-                        </StackPanel>
-
-                        <!-- ===== No build at all: the same place, the one thing to do ===== -->
-                        <StackPanel IsVisible="{Binding SelectedInstance, Converter={x:Static ObjectConverters.IsNull}}">
-                            <TextBlock Text="{DynamicResource Home_NoBuilds}" Classes="page-title huge"
-                                       TextWrapping="Wrap" MaxLines="2" Margin="0,12,0,12" Padding="0,0,0,8"/>
-                            <TextBlock Text="{DynamicResource Home_NoBuildsHint}" Classes="muted" TextWrapping="Wrap" MaxWidth="460"
-                                       HorizontalAlignment="Left"/>
-                            <WrapPanel Margin="0,22,0,0" ItemSpacing="14" LineSpacing="10">
-                                <Button Classes="primary hero" Command="{Binding NewBuildFromHomeCommand}">
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <PathIcon Data="{StaticResource IconPlus}"/>
-                                        <TextBlock Text="{DynamicResource Home_NewBuild}" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-                                <Button Classes="link" VerticalAlignment="Center"
-                                        Content="{DynamicResource Home_AllBuilds}"
-                                        Command="{Binding SelectSectionCommand}" CommandParameter="Builds"/>
-                            </WrapPanel>
-                        </StackPanel>
-
-                        <!-- ===== What the launcher has to say ===== -->
-                        <StackPanel Margin="0,20,0,0">
-
-                            <!-- Launch progress: the steps, each marked as it goes, so minutes of
-                                 downloading on a first start read as work, not as a hang. It stays
-                                 while the game runs, saying so. -->
-                            <Border Classes="note" IsVisible="{Binding ShowLaunchProgress}">
-                                <StackPanel Spacing="9">
-                                    <TextBlock Text="{Binding Status}" TextWrapping="Wrap" Classes="strong"/>
-                                    <ProgressBar Value="{Binding Progress}" Minimum="0" Maximum="100" Height="4" MaxWidth="560"
-                                                 HorizontalAlignment="Stretch" IsVisible="{Binding !IsGameRunning}"/>
-                                    <ItemsControl ItemsSource="{Binding LaunchStages}" IsVisible="{Binding LaunchStages.Count}">
-                                        <ItemsControl.ItemsPanel>
-                                            <ItemsPanelTemplate>
-                                                <WrapPanel ItemSpacing="18" LineSpacing="5"/>
-                                            </ItemsPanelTemplate>
-                                        </ItemsControl.ItemsPanel>
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate x:DataType="vm:LaunchStageItem">
-                                                <StackPanel Orientation="Horizontal" Spacing="6">
-                                                    <Panel Width="14" Height="16" VerticalAlignment="Center">
-                                                        <Ellipse Classes="dot off" Width="5" Height="5" HorizontalAlignment="Center"
-                                                                 IsVisible="{Binding IsPending}"/>
-                                                        <Ellipse Classes="dot warn" HorizontalAlignment="Center"
-                                                                 IsVisible="{Binding IsActive}"/>
-                                                        <PathIcon Data="{StaticResource IconCheck}" Width="12" Height="12"
-                                                                  Foreground="{DynamicResource SuccessBrush}" IsVisible="{Binding IsDone}"/>
-                                                        <PathIcon Data="{StaticResource IconClose}" Width="12" Height="12"
-                                                                  Foreground="{DynamicResource DangerBrush}" IsVisible="{Binding IsFailed}"/>
-                                                    </Panel>
-                                                    <TextBlock Text="{Binding Name}" FontSize="12.5" VerticalAlignment="Center"
-                                                               Classes.muted="{Binding IsPending}"/>
-                                                    <TextBlock Text="{Binding Detail}" Classes="sub" FontSize="12"
-                                                               VerticalAlignment="Center" MaxWidth="260" TextTrimming="CharacterEllipsis"/>
-                                                </StackPanel>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </StackPanel>
-                            </Border>
-
-                            <!-- The last run crashed. This one is an object: the cause, what to do
-                                 about it, and every way to get help, in one frame. -->
-                            <Border Classes="card" Padding="18,16" Margin="0,0,0,14" IsVisible="{Binding HasGameCrashed}"
-                                    BorderBrush="{DynamicResource BorderBrushSubtle}" BorderThickness="1"
-                                    controls:Reveal.OnVisible="True">
-                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                                    <PathIcon Data="{StaticResource IconWarning}" Foreground="{DynamicResource DangerBrush}"
-                                              Width="18" Height="18" VerticalAlignment="Top" Margin="0,1,0,0"/>
-                                    <StackPanel Grid.Column="1" Spacing="6">
-                                        <TextBlock Text="{Binding GameCrashNotice}" TextWrapping="Wrap" Classes="muted"
-                                                   IsVisible="{Binding !HasCrashDiagnosis}"/>
-                                        <!-- The cause, in words, and what to do about it. -->
-                                        <TextBlock Text="{Binding CrashDiagnosisTitle}" TextWrapping="Wrap" Classes="strong" FontSize="15"
-                                                   IsVisible="{Binding HasCrashDiagnosis}"/>
-                                        <TextBlock Text="{Binding CrashDiagnosisAdvice}" TextWrapping="Wrap" Classes="muted" FontSize="13"/>
-                                        <WrapPanel Margin="0,6,0,0" ItemSpacing="6" LineSpacing="6">
-                                            <!-- The fix is the answer; the rest are ways to ask someone. -->
-                                            <Button Classes="small" IsVisible="{Binding HasCrashFix}"
-                                                    Content="{Binding CrashFixLabel}" Command="{Binding ApplyCrashFixCommand}"/>
-                                            <Button Classes="small" Command="{Binding CopyCrashReportCommand}">
-                                                <StackPanel Orientation="Horizontal" Spacing="6">
-                                                    <PathIcon Data="{StaticResource IconCopy}" Classes="small"/>
-                                                    <TextBlock Text="{DynamicResource Crash_CopyReport}"/>
-                                                </StackPanel>
-                                            </Button>
-                                            <!-- Opens the note below; nothing leaves the computer on this click. -->
-                                            <Button Classes="small"
-                                                    Content="{DynamicResource LogShare_Open}"
-                                                    Command="{Binding OpenLogShareCommand}"/>
-                                            <Button Classes="ghost small"
-                                                    Content="{DynamicResource Game_OpenLog}"
-                                                    Command="{Binding OpenLastGameLogCommand}"/>
-                                            <Button Classes="ghost small"
-                                                    Content="{DynamicResource Builds_Repair}" ToolTip.Tip="{DynamicResource Builds_RepairHint}"
-                                                    Command="{Binding RepairBuildCommand}" IsEnabled="{Binding CanRepairBuild}"/>
-                                            <Button Classes="ghost small"
-                                                    Content="{DynamicResource Report_Collect}"
-                                                    Command="{Binding CollectSupportReportCommand}"/>
-                                            <Button Classes="ghost small" IsVisible="{Binding CanSendReport}"
-                                                    Content="{DynamicResource Report_SendOpen}"
-                                                    Command="{Binding OpenReportSendCommand}"/>
-                                            <Button Classes="ghost small" IsVisible="{Binding HasCrashReportFile}"
-                                                    Content="{DynamicResource Crash_OpenReport}"
-                                                    Command="{Binding OpenCrashReportCommand}"/>
-                                        </WrapPanel>
-                                        <!-- "Share the log": where it goes and who can read it, then the button that sends. -->
-                                        <Border Classes="panel" Padding="14,12" IsVisible="{Binding IsLogShareOpen}" controls:Reveal.OnVisible="True">
-                                            <StackPanel Spacing="10">
-                                                <TextBlock Text="{DynamicResource LogShare_Note}" Classes="muted" FontSize="13" TextWrapping="Wrap"/>
-                                                <WrapPanel ItemSpacing="8" LineSpacing="6">
-                                                    <Button Classes="small" Content="{DynamicResource LogShare_Publish}"
-                                                            Command="{Binding ShareCrashLogCommand}" IsEnabled="{Binding !IsLogSharing}"/>
-                                                    <Button Classes="ghost small" Content="{DynamicResource Common_Cancel}"
-                                                            Command="{Binding CancelLogShareCommand}" IsEnabled="{Binding !IsLogSharing}"/>
-                                                    <ProgressBar IsIndeterminate="True" Width="60" Height="3" VerticalAlignment="Center"
-                                                                 IsVisible="{Binding IsLogSharing}"/>
-                                                </WrapPanel>
-                                            </StackPanel>
-                                        </Border>
-                                        <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding HasLogShareLink}">
-                                            <TextBlock Text="{Binding LogShareLink}" Classes="mono" FontSize="13" VerticalAlignment="Center"/>
-                                            <Button Classes="icon" ToolTip.Tip="{DynamicResource LogShare_CopyLink}"
-                                                    Command="{Binding CopyLogShareLinkCommand}">
-                                                <PathIcon Data="{StaticResource IconCopy}"/>
-                                            </Button>
-                                        </StackPanel>
-                                        <!-- "Send to the admin": what goes, a line from the player, and the button. -->
-                                        <Border Classes="panel" Padding="14,12" IsVisible="{Binding IsReportSendOpen}" controls:Reveal.OnVisible="True">
-                                            <StackPanel Spacing="10">
-                                                <TextBlock Text="{DynamicResource Report_SendTitle}" Classes="strong"/>
-                                                <TextBlock Text="{Binding ReportSendSummary}" Classes="muted" FontSize="13" TextWrapping="Wrap"/>
-                                                <TextBox Text="{Binding ReportComment}" Watermark="{DynamicResource Report_CommentHint}"
-                                                         AcceptsReturn="True" MaxLength="600" MinHeight="56" TextWrapping="Wrap"/>
-                                                <WrapPanel ItemSpacing="8" LineSpacing="6">
-                                                    <Button Classes="small" Content="{DynamicResource Report_SendButton}"
-                                                            Command="{Binding SendSupportReportCommand}" IsEnabled="{Binding !IsReportSending}"/>
-                                                    <Button Classes="ghost small" Content="{DynamicResource Common_Cancel}"
-                                                            Command="{Binding CancelReportSendCommand}" IsEnabled="{Binding !IsReportSending}"/>
-                                                    <ProgressBar IsIndeterminate="True" Width="60" Height="3" VerticalAlignment="Center"
-                                                                 IsVisible="{Binding IsReportSending}"/>
-                                                </WrapPanel>
-                                            </StackPanel>
-                                        </Border>
-                                    </StackPanel>
-                                </Grid>
-                            </Border>
-
-                            <!-- What the jars say before the game is asked: the same verdicts the crash
-                                 analyser gives afterwards, offered while there is still time to act. -->
-                            <Border Classes="note" IsVisible="{Binding HasBuildIssues}" controls:Reveal.OnVisible="True">
-                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                                    <PathIcon Classes="lead" Data="{StaticResource IconWarning}" Foreground="{DynamicResource GoldBrush}"/>
-                                    <StackPanel Grid.Column="1" Spacing="8">
-                                        <TextBlock Text="{Binding BuildCheckSummary}" Classes="strong" TextWrapping="Wrap"/>
-                                        <ItemsControl ItemsSource="{Binding BuildIssues}">
-                                            <ItemsControl.ItemsPanel>
-                                                <ItemsPanelTemplate>
-                                                    <StackPanel Spacing="4"/>
-                                                </ItemsPanelTemplate>
-                                            </ItemsControl.ItemsPanel>
+                        <!-- A greeting, and the hours. The name is never cut for the sake of the
+                             hours: when the two do not fit on one line, the pill goes under. -->
+                        <WrapPanel Margin="2,0,0,0">
+                            <StackPanel Orientation="Horizontal" Spacing="7" Margin="0,0,14,0" VerticalAlignment="Center">
+                                <TextBlock Text="{DynamicResource Home_Hello}" Classes="hello"/>
+                                <TextBlock Text="{Binding Username}" Classes="hello"
+                                           Foreground="{DynamicResource NickGradientBrush}"/>
+                            </StackPanel>
+                            <!-- On hover: all builds together, and where the hours of this one
+                                 went. The addresses are read from the game's log and stay on
+                                 this computer. -->
+                            <Border Classes="pill small" VerticalAlignment="Center" Margin="0,3,0,3"
+                                    IsVisible="{Binding HasPlaytime}"
+                                    ToolTip.ServiceEnabled="{Binding HasPlaytimeDetails}">
+                                <ToolTip.Tip>
+                                    <StackPanel Spacing="6" MinWidth="220">
+                                        <TextBlock Text="{Binding PlaytimeAllLabel}" IsVisible="{Binding HasPlaytimeAllLabel}"/>
+                                        <TextBlock Text="{DynamicResource Game_PlaytimePlaces}" FontWeight="SemiBold"
+                                                   IsVisible="{Binding HasPlaytimePlaces}"/>
+                                        <ItemsControl ItemsSource="{Binding PlaytimePlaces}" IsVisible="{Binding HasPlaytimePlaces}">
                                             <ItemsControl.ItemTemplate>
-                                                <DataTemplate x:DataType="vm:BuildIssueItem">
-                                                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
-                                                        <TextBlock Text="{Binding Title}" Classes="muted" FontSize="13" TextWrapping="Wrap"
-                                                                   VerticalAlignment="Center"/>
-                                                        <Button Grid.Column="1" Classes="small" Content="{Binding FixLabel}" VerticalAlignment="Center"
-                                                                Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).ApplyBuildFixCommand}"
-                                                                CommandParameter="{Binding}"/>
-                                                        <Button Grid.Column="2" Classes="ghost small" Content="{Binding AltFixLabel}" VerticalAlignment="Center"
-                                                                IsVisible="{Binding HasAltFix}"
-                                                                Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).ApplyBuildAltFixCommand}"
-                                                                CommandParameter="{Binding}"/>
+                                                <DataTemplate x:DataType="vm:PlaytimePlaceRow">
+                                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18" Margin="0,1">
+                                                        <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" MaxWidth="260"/>
+                                                        <TextBlock Grid.Column="1" Text="{Binding Time}" Classes="faint"/>
                                                     </Grid>
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
                                         </ItemsControl>
-                                        <WrapPanel Margin="0,2,0,0" ItemSpacing="6" LineSpacing="6">
-                                            <Button Classes="small" IsVisible="{Binding HasBulkBuildFix}"
-                                                    Content="{DynamicResource Check_FixAll}" Command="{Binding ApplyAllBuildFixesCommand}"/>
-                                            <Button Classes="ghost small" IsVisible="{Binding HasBulkKeepOld}"
-                                                    Content="{DynamicResource Check_KeepOld}" Command="{Binding KeepOlderVersionsCommand}"/>
-                                            <Button Classes="ghost small" IsVisible="{Binding CanUseSafeMode}"
-                                                    Content="{DynamicResource Game_PlaySafe}" Command="{Binding PlaySafeCommand}"
-                                                    IsEnabled="{Binding !IsBusy}" ToolTip.Tip="{DynamicResource Game_PlaySafeHint}"/>
-                                            <Button Classes="link" VerticalAlignment="Center" Margin="8,0,0,0"
-                                                    Content="{DynamicResource Check_OpenMods}"
-                                                    Command="{Binding OpenBuildIssuesCommand}"/>
-                                        </WrapPanel>
                                     </StackPanel>
-                                </Grid>
+                                </ToolTip.Tip>
+                                <StackPanel Orientation="Horizontal" Spacing="7">
+                                    <PathIcon Data="{StaticResource IconClock}" Classes="small gold"/>
+                                    <TextBlock Text="{Binding PlaytimeLabel}" VerticalAlignment="Center"/>
+                                </StackPanel>
                             </Border>
+                        </WrapPanel>
 
-                            <!-- The server owner changed the build: what is different today, or, when
-                                 nothing has been touched yet, the offer to update. -->
-                            <Border Classes="note" IsVisible="{Binding HasBuildChangeNotice}">
-                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                                    <PathIcon Classes="lead" Data="{StaticResource IconRefresh}" Foreground="{DynamicResource GoldBrush}"/>
-                                    <StackPanel Grid.Column="1" Spacing="7">
-                                        <TextBlock Text="{Binding BuildChangeTitle}" Classes="strong" TextWrapping="Wrap"/>
-                                        <ItemsControl ItemsSource="{Binding BuildChangeLines}">
+                        <!-- ===== The build to continue with: the lead panel ===== -->
+                        <Border Classes="panel tint" Padding="22,18,22,20">
+                            <StackPanel>
+
+                                <StackPanel Spacing="14"
+                                            IsVisible="{Binding SelectedInstance, Converter={x:Static ObjectConverters.IsNotNull}}">
+
+                                    <!-- What this is, and whether the catalog keeps it in step. -->
+                                    <WrapPanel ItemSpacing="10" LineSpacing="6">
+                                        <controls:Caption Text="{DynamicResource Home_Continue}" VerticalAlignment="Center"/>
+                                        <Border Classes="chip" Padding="10,3">
+                                            <StackPanel Orientation="Horizontal" Spacing="7">
+                                                <Ellipse Classes="dot" VerticalAlignment="Center" IsVisible="{Binding !IsBuildSyncBusy}"/>
+                                                <Ellipse Classes="dot warn" VerticalAlignment="Center" IsVisible="{Binding IsBuildSyncBusy}"/>
+                                                <TextBlock Text="{Binding BuildStateLabel}"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </WrapPanel>
+
+                                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
+                                        <Border Classes="build-tile"
+                                                Background="{Binding SelectedInstance.Id, Converter={x:Static conv:TintBrushConverter.Instance}}">
+                                            <PathIcon Data="{StaticResource IconBuilds}"/>
+                                        </Border>
+                                        <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
+                                            <TextBlock Name="BuildTitle" Text="{Binding SelectedInstance.Name}"
+                                                       Classes="page-title build-name"
+                                                       ToolTip.Tip="{Binding SelectedInstance.Name}"/>
+                                            <!-- The facts. -->
+                                            <WrapPanel ItemSpacing="6" LineSpacing="6">
+                                                <Border Classes="chip" Padding="10,3">
+                                                    <TextBlock Text="{Binding SelectedInstance.VersionId, TargetNullValue=—}"/>
+                                                </Border>
+                                                <Border Classes="chip" Padding="10,3">
+                                                    <TextBlock Text="{Binding SelectedInstance.Loader}"/>
+                                                </Border>
+                                                <Border Classes="chip" Padding="10,3">
+                                                    <TextBlock Text="{Binding BuildModCountLabel}"/>
+                                                </Border>
+                                                <TextBlock Text="{Binding LastPlayedLabel}" Classes="muted"
+                                                           VerticalAlignment="Center" Margin="4,0,0,0"/>
+                                            </WrapPanel>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <WrapPanel ItemSpacing="10" LineSpacing="10" Margin="0,2,0,0">
+                                        <Button Classes="primary hero" Command="{Binding PlayCommand}" IsEnabled="{Binding !IsBusy}">
+                                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                                <PathIcon Data="{StaticResource IconPlay}"/>
+                                                <TextBlock Text="{DynamicResource Game_Play}" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Button>
+
+                                        <Button Classes="beside" ToolTip.Tip="{DynamicResource Game_PickBuild}">
+                                            <StackPanel Orientation="Horizontal" Spacing="9">
+                                                <TextBlock Text="{DynamicResource Home_OtherBuild}" VerticalAlignment="Center"/>
+                                                <PathIcon Data="{StaticResource IconChevronDown}" Width="12" Height="12"
+                                                          Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                            </StackPanel>
+                                            <Button.Flyout>
+                                                <controls:RevealFlyout Placement="BottomEdgeAlignedLeft">
+                                                    <StackPanel Spacing="10" Width="320">
+                                                        <controls:Caption Text="{DynamicResource Game_PickBuild}"/>
+                                                        <ListBox ItemsSource="{Binding Instances}"
+                                                                 SelectedItem="{Binding SelectedInstance}" MaxHeight="320">
+                                                            <ListBox.ItemTemplate>
+                                                                <DataTemplate x:DataType="inst:Instance">
+                                                                    <StackPanel Spacing="2">
+                                                                        <TextBlock Text="{Binding Name}" Classes="strong" TextTrimming="CharacterEllipsis"/>
+                                                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                                                            <TextBlock Classes="sub" Text="{Binding VersionId, TargetNullValue=—}"/>
+                                                                            <TextBlock Classes="sub" Text="·"/>
+                                                                            <TextBlock Classes="sub" Text="{Binding Loader}"/>
+                                                                            <TextBlock Classes="sub" Text="·"/>
+                                                                            <TextBlock Classes="sub"
+                                                                                       Text="{Binding ModCount, Converter={x:Static conv:ModCountConverter.Instance}}"/>
+                                                                        </StackPanel>
+                                                                    </StackPanel>
+                                                                </DataTemplate>
+                                                            </ListBox.ItemTemplate>
+                                                        </ListBox>
+                                                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                                            <Button Classes="small" HorizontalAlignment="Stretch"
+                                                                    Command="{Binding NewBuildFromHomeCommand}">
+                                                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                                                    <PathIcon Data="{StaticResource IconPlus}" Width="12" Height="12"/>
+                                                                    <TextBlock Text="{DynamicResource Home_NewBuild}"/>
+                                                                </StackPanel>
+                                                            </Button>
+                                                            <Button Grid.Column="1" Classes="small" HorizontalAlignment="Stretch"
+                                                                    Content="{DynamicResource Game_SetupBuild}"
+                                                                    Command="{Binding SelectSectionCommand}"
+                                                                    CommandParameter="Builds"/>
+                                                        </Grid>
+                                                    </StackPanel>
+                                                </controls:RevealFlyout>
+                                            </Button.Flyout>
+                                        </Button>
+
+                                        <Button Classes="beside"
+                                                ToolTip.Tip="{DynamicResource Home_BuildSettings}"
+                                                Command="{Binding SelectSectionCommand}" CommandParameter="Builds">
+                                            <StackPanel Orientation="Horizontal" Spacing="9">
+                                                <PathIcon Data="{StaticResource IconBuilds}" Width="15" Height="15"
+                                                          Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                <TextBlock Text="{DynamicResource Home_ModsAndSettings}" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Button>
+                                    </WrapPanel>
+                                </StackPanel>
+
+                                <!-- No build at all: the same panel, the one thing to do. -->
+                                <StackPanel Spacing="12"
+                                            IsVisible="{Binding SelectedInstance, Converter={x:Static ObjectConverters.IsNull}}">
+                                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16" Margin="0,4,0,0">
+                                        <Border Classes="build-tile" Background="{DynamicResource HeroGradientBrush}">
+                                            <PathIcon Data="{StaticResource IconBuilds}"/>
+                                        </Border>
+                                        <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
+                                            <TextBlock Text="{DynamicResource Home_NoBuilds}" Classes="page-title build-name"/>
+                                            <TextBlock Text="{DynamicResource Home_NoBuildsHint}" Classes="muted" TextWrapping="Wrap"
+                                                       MaxWidth="460" HorizontalAlignment="Left"/>
+                                        </StackPanel>
+                                    </Grid>
+                                    <WrapPanel ItemSpacing="10" LineSpacing="10" Margin="0,4,0,0">
+                                        <Button Classes="primary hero" Command="{Binding NewBuildFromHomeCommand}">
+                                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                                <PathIcon Data="{StaticResource IconPlus}"/>
+                                                <TextBlock Text="{DynamicResource Home_NewBuild}" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Button>
+                                        <Button Classes="beside"
+                                                Content="{DynamicResource Home_OpenBuilds}"
+                                                Command="{Binding SelectSectionCommand}" CommandParameter="Builds"/>
+                                    </WrapPanel>
+                                </StackPanel>
+
+                                <!-- Launch progress: the steps, each marked as it goes, so minutes of
+                                     downloading on a first start read as work, not as a hang. It stays
+                                     while the game runs, saying so. -->
+                                <Border Classes="under" IsVisible="{Binding ShowLaunchProgress}">
+                                    <StackPanel Spacing="9">
+                                        <TextBlock Text="{Binding Status}" TextWrapping="Wrap" Classes="strong"/>
+                                        <ProgressBar Value="{Binding Progress}" Minimum="0" Maximum="100" Height="5"
+                                                     HorizontalAlignment="Stretch" IsVisible="{Binding !IsGameRunning}"/>
+                                        <ItemsControl ItemsSource="{Binding LaunchStages}" IsVisible="{Binding LaunchStages.Count}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <WrapPanel ItemSpacing="18" LineSpacing="5"/>
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
                                             <ItemsControl.ItemTemplate>
-                                                <DataTemplate x:DataType="sys:String">
-                                                    <TextBlock Text="{Binding}" TextWrapping="Wrap" FontSize="12.5" LineHeight="18"
-                                                               Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                <DataTemplate x:DataType="vm:LaunchStageItem">
+                                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                                        <Panel Width="14" Height="16" VerticalAlignment="Center">
+                                                            <Ellipse Classes="dot off" Width="5" Height="5" HorizontalAlignment="Center"
+                                                                     IsVisible="{Binding IsPending}"/>
+                                                            <Ellipse Classes="dot warn" HorizontalAlignment="Center"
+                                                                     IsVisible="{Binding IsActive}"/>
+                                                            <PathIcon Data="{StaticResource IconCheck}" Width="12" Height="12"
+                                                                      Foreground="{DynamicResource SuccessBrush}" IsVisible="{Binding IsDone}"/>
+                                                            <PathIcon Data="{StaticResource IconClose}" Width="12" Height="12"
+                                                                      Foreground="{DynamicResource DangerBrush}" IsVisible="{Binding IsFailed}"/>
+                                                        </Panel>
+                                                        <TextBlock Text="{Binding Name}" FontSize="12.5" VerticalAlignment="Center"
+                                                                   Classes.muted="{Binding IsPending}"/>
+                                                        <TextBlock Text="{Binding Detail}" Classes="sub" FontSize="12"
+                                                                   VerticalAlignment="Center" MaxWidth="260" TextTrimming="CharacterEllipsis"/>
+                                                    </StackPanel>
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
                                         </ItemsControl>
-                                        <TextBlock Text="{DynamicResource BuildChange_Hint}" Classes="sub" TextWrapping="Wrap"
-                                                   IsVisible="{Binding !HasPendingBuildSync}"/>
+                                    </StackPanel>
+                                </Border>
 
-                                        <!-- Nothing has happened yet: the player decides. -->
-                                        <StackPanel Spacing="9" IsVisible="{Binding HasPendingBuildSync}">
-                                            <TextBlock Text="{DynamicResource BuildChange_PendingHint}" Classes="sub" TextWrapping="Wrap"/>
-                                            <WrapPanel ItemSpacing="6" LineSpacing="6">
-                                                <Button Classes="small" Content="{DynamicResource BuildChange_Apply}"
-                                                        Command="{Binding ApplyPendingBuildSyncCommand}" IsEnabled="{Binding !IsBuildSyncBusy}"/>
-                                                <Button Classes="ghost small" Content="{DynamicResource BuildChange_Later}"
-                                                        Command="{Binding DeclinePendingBuildSyncCommand}"/>
+                                <!-- Safe mode is offered on its own too: half the "it crashes" reports have no
+                                     issue the metadata can see. What it does to the player's mods stays in sight. -->
+                                <Border Classes="under">
+                                    <Border.IsVisible>
+                                        <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                            <Binding Path="CanUseSafeMode"/>
+                                            <Binding Path="!HasBuildIssues"/>
+                                        </MultiBinding>
+                                    </Border.IsVisible>
+                                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                                        <Button Classes="small" VerticalAlignment="Center"
+                                                Command="{Binding PlaySafeCommand}" IsEnabled="{Binding !IsBusy}"
+                                                Content="{DynamicResource Game_PlaySafe}"/>
+                                        <TextBlock Grid.Column="1" Text="{DynamicResource Game_PlaySafeHint}" Classes="muted"
+                                                   VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- The last run crashed: the cause, what to do about it, and every way
+                             to get help, in one panel right under the build. -->
+                        <Border Classes="panel" IsVisible="{Binding HasGameCrashed}" controls:Reveal.OnVisible="True">
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                                <PathIcon Classes="lead" Data="{StaticResource IconWarning}" Foreground="{DynamicResource DangerBrush}"/>
+                                <StackPanel Grid.Column="1" Spacing="6">
+                                    <TextBlock Text="{Binding GameCrashNotice}" TextWrapping="Wrap" Classes="muted"
+                                               IsVisible="{Binding !HasCrashDiagnosis}"/>
+                                    <!-- The cause, in words, and what to do about it. -->
+                                    <TextBlock Text="{Binding CrashDiagnosisTitle}" TextWrapping="Wrap" Classes="strong" FontSize="15"
+                                               IsVisible="{Binding HasCrashDiagnosis}"/>
+                                    <TextBlock Text="{Binding CrashDiagnosisAdvice}" TextWrapping="Wrap" Classes="muted" FontSize="13"/>
+                                    <WrapPanel Margin="0,6,0,0" ItemSpacing="6" LineSpacing="6">
+                                        <!-- The fix is the answer; the rest are ways to ask someone. -->
+                                        <Button Classes="accent-soft small" IsVisible="{Binding HasCrashFix}"
+                                                Content="{Binding CrashFixLabel}" Command="{Binding ApplyCrashFixCommand}"/>
+                                        <Button Classes="small" Command="{Binding CopyCrashReportCommand}">
+                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <PathIcon Data="{StaticResource IconCopy}" Classes="small"/>
+                                                <TextBlock Text="{DynamicResource Crash_CopyReport}"/>
+                                            </StackPanel>
+                                        </Button>
+                                        <!-- Opens the note below; nothing leaves the computer on this click. -->
+                                        <Button Classes="small"
+                                                Content="{DynamicResource LogShare_Open}"
+                                                Command="{Binding OpenLogShareCommand}"/>
+                                        <Button Classes="small"
+                                                Content="{DynamicResource Game_OpenLog}"
+                                                Command="{Binding OpenLastGameLogCommand}"/>
+                                        <Button Classes="small"
+                                                Content="{DynamicResource Builds_Repair}" ToolTip.Tip="{DynamicResource Builds_RepairHint}"
+                                                Command="{Binding RepairBuildCommand}" IsEnabled="{Binding CanRepairBuild}"/>
+                                        <Button Classes="small"
+                                                Content="{DynamicResource Report_Collect}"
+                                                Command="{Binding CollectSupportReportCommand}"/>
+                                        <Button Classes="small" IsVisible="{Binding CanSendReport}"
+                                                Content="{DynamicResource Report_SendOpen}"
+                                                Command="{Binding OpenReportSendCommand}"/>
+                                        <Button Classes="small" IsVisible="{Binding HasCrashReportFile}"
+                                                Content="{DynamicResource Crash_OpenReport}"
+                                                Command="{Binding OpenCrashReportCommand}"/>
+                                    </WrapPanel>
+                                    <!-- "Share the log": where it goes and who can read it, then the button that sends. -->
+                                    <Border Classes="panel inset" Padding="14,12" Margin="0,4,0,0"
+                                            IsVisible="{Binding IsLogShareOpen}" controls:Reveal.OnVisible="True">
+                                        <StackPanel Spacing="10">
+                                            <TextBlock Text="{DynamicResource LogShare_Note}" Classes="muted" FontSize="13" TextWrapping="Wrap"/>
+                                            <WrapPanel ItemSpacing="8" LineSpacing="6">
+                                                <Button Classes="accent-soft small" Content="{DynamicResource LogShare_Publish}"
+                                                        Command="{Binding ShareCrashLogCommand}" IsEnabled="{Binding !IsLogSharing}"/>
+                                                <Button Classes="ghost small" Content="{DynamicResource Common_Cancel}"
+                                                        Command="{Binding CancelLogShareCommand}" IsEnabled="{Binding !IsLogSharing}"/>
+                                                <ProgressBar IsIndeterminate="True" Width="60" Height="3" VerticalAlignment="Center"
+                                                             IsVisible="{Binding IsLogSharing}"/>
                                             </WrapPanel>
                                         </StackPanel>
+                                    </Border>
+                                    <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding HasLogShareLink}">
+                                        <TextBlock Text="{Binding LogShareLink}" Classes="mono" FontSize="13" VerticalAlignment="Center"/>
+                                        <Button Classes="icon" ToolTip.Tip="{DynamicResource LogShare_CopyLink}"
+                                                Command="{Binding CopyLogShareLinkCommand}">
+                                            <PathIcon Data="{StaticResource IconCopy}"/>
+                                        </Button>
                                     </StackPanel>
-                                    <Button Grid.Column="2" Classes="icon" VerticalAlignment="Top"
-                                            Command="{Binding DismissBuildChangeNoticeCommand}"
-                                            ToolTip.Tip="{DynamicResource WhatsNew_Close}">
-                                        <PathIcon Data="{StaticResource IconClose}"/>
-                                    </Button>
-                                </Grid>
-                            </Border>
-
-                            <!-- Builds found in other launchers: offered once, right where the
-                                 player looks first. -->
-                            <Border Classes="note" IsVisible="{Binding HasImportSuggestion}">
-                                <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
-                                    <PathIcon Classes="lead" Data="{StaticResource IconBuilds}" Foreground="{DynamicResource GoldBrush}"/>
-                                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding ImportSuggestionText}" TextWrapping="Wrap" Classes="strong"/>
-                                        <TextBlock Text="{DynamicResource Import_SuggestHint}" Classes="sub" TextWrapping="Wrap"/>
-                                    </StackPanel>
-                                    <Button Grid.Column="2" VerticalAlignment="Center"
-                                            Content="{DynamicResource Import_SuggestAccept}"
-                                            Command="{Binding AcceptImportSuggestionCommand}"/>
-                                    <Button Grid.Column="3" Classes="icon" VerticalAlignment="Center"
-                                            Command="{Binding DismissImportSuggestionCommand}"
-                                            ToolTip.Tip="{DynamicResource Import_SuggestDismiss}">
-                                        <PathIcon Data="{StaticResource IconClose}"/>
-                                    </Button>
-                                </Grid>
-                            </Border>
-
-                            <!-- What this version changed, once after an update: one line here, the
-                                 list itself on request. -->
-                            <Border Classes="note" IsVisible="{Binding ShowWhatsNew}">
-                                <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
-                                    <PathIcon Classes="lead" Data="{StaticResource IconStar}" Foreground="{DynamicResource GoldBrush}"
-                                              VerticalAlignment="Center" Margin="0"/>
-                                    <TextBlock Grid.Column="1" Text="{Binding WhatsNewTitle}" Classes="strong" VerticalAlignment="Center"
-                                               TextTrimming="CharacterEllipsis"/>
-                                    <Button Grid.Column="2" Name="WhatsNewButton" VerticalAlignment="Center"
-                                            Content="{DynamicResource Home_WhatChanged}">
-                                        <Button.Flyout>
-                                            <controls:RevealFlyout Placement="TopEdgeAlignedRight">
-                                                <StackPanel Spacing="10" Width="420">
-                                                    <TextBlock Text="{Binding WhatsNewTitle}" Classes="group"/>
-                                                    <ScrollViewer MaxHeight="300">
-                                                        <ItemsControl ItemsSource="{Binding WhatsNewLines}" Margin="0,0,12,0">
-                                                            <ItemsControl.ItemTemplate>
-                                                                <DataTemplate x:DataType="vm:WhatsNewLine">
-                                                                    <Panel>
-                                                                        <controls:Caption Text="{Binding Text}" Margin="0,8,0,4"
-                                                                                          IsVisible="{Binding IsHeading}"/>
-                                                                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" Margin="0,0,0,6"
-                                                                              IsVisible="{Binding !IsHeading}">
-                                                                            <Ellipse Width="4" Height="4" Margin="2,7,0,0"
-                                                                                     Fill="{DynamicResource TextMutedBrush}" VerticalAlignment="Top"/>
-                                                                            <TextBlock Grid.Column="1" Text="{Binding Text}" TextWrapping="Wrap"
-                                                                                       FontSize="12.5" LineHeight="18"
-                                                                                       Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                                                        </Grid>
-                                                                    </Panel>
-                                                                </DataTemplate>
-                                                            </ItemsControl.ItemTemplate>
-                                                        </ItemsControl>
-                                                    </ScrollViewer>
-                                                    <Button Classes="small" HorizontalAlignment="Left"
-                                                            Content="{DynamicResource WhatsNew_Ok}" Click="OnWhatsNewRead"/>
-                                                </StackPanel>
-                                            </controls:RevealFlyout>
-                                        </Button.Flyout>
-                                    </Button>
-                                    <Button Grid.Column="3" Classes="icon" VerticalAlignment="Center"
-                                            Command="{Binding DismissWhatsNewCommand}"
-                                            ToolTip.Tip="{DynamicResource WhatsNew_Close}">
-                                        <PathIcon Data="{StaticResource IconClose}"/>
-                                    </Button>
-                                </Grid>
-                            </Border>
-
-                            <!-- Safe mode is offered on its own too: half the "it crashes" reports have no
-                                 issue the metadata can see. What it does to the player's mods stays in sight. -->
-                            <Border Classes="note">
-                                <Border.IsVisible>
-                                    <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                        <Binding Path="CanUseSafeMode"/>
-                                        <Binding Path="!HasBuildIssues"/>
-                                    </MultiBinding>
-                                </Border.IsVisible>
-                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
-                                    <Button Classes="small" VerticalAlignment="Center"
-                                            Command="{Binding PlaySafeCommand}" IsEnabled="{Binding !IsBusy}"
-                                            Content="{DynamicResource Game_PlaySafe}"/>
-                                    <TextBlock Grid.Column="1" Text="{DynamicResource Game_PlaySafeHint}" Classes="sub"
-                                               VerticalAlignment="Center" TextWrapping="Wrap"/>
-                                </Grid>
-                            </Border>
-                        </StackPanel>
-                    </StackPanel>
-
-                    <!-- ======== Where else ========
-                         One short list: the server, friends, and the other builds. Each row has
-                         its one quiet button; everything else about a build lives on its page. -->
-                    <StackPanel Grid.Row="2" Margin="0,6,0,10">
-                        <Grid ColumnDefinitions="*,Auto" Margin="12,0,6,4">
-                            <controls:Caption Text="{DynamicResource Home_Elsewhere}" VerticalAlignment="Center"/>
-                            <Button Grid.Column="1" Classes="ghost small" Command="{Binding NewBuildFromHomeCommand}">
-                                <StackPanel Orientation="Horizontal" Spacing="6">
-                                    <PathIcon Data="{StaticResource IconPlus}" Width="11" Height="11"
-                                              Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                    <TextBlock Text="{DynamicResource Home_NewBuild}" FontSize="12.5"
-                                               Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                    <!-- "Send to the admin": what goes, a line from the player, and the button. -->
+                                    <Border Classes="panel inset" Padding="14,12" Margin="0,4,0,0"
+                                            IsVisible="{Binding IsReportSendOpen}" controls:Reveal.OnVisible="True">
+                                        <StackPanel Spacing="10">
+                                            <TextBlock Text="{DynamicResource Report_SendTitle}" Classes="strong"/>
+                                            <TextBlock Text="{Binding ReportSendSummary}" Classes="muted" FontSize="13" TextWrapping="Wrap"/>
+                                            <TextBox Text="{Binding ReportComment}" Watermark="{DynamicResource Report_CommentHint}"
+                                                     AcceptsReturn="True" MaxLength="600" MinHeight="56" TextWrapping="Wrap"/>
+                                            <WrapPanel ItemSpacing="8" LineSpacing="6">
+                                                <Button Classes="accent-soft small" Content="{DynamicResource Report_SendButton}"
+                                                        Command="{Binding SendSupportReportCommand}" IsEnabled="{Binding !IsReportSending}"/>
+                                                <Button Classes="ghost small" Content="{DynamicResource Common_Cancel}"
+                                                        Command="{Binding CancelReportSendCommand}" IsEnabled="{Binding !IsReportSending}"/>
+                                                <ProgressBar IsIndeterminate="True" Width="60" Height="3" VerticalAlignment="Center"
+                                                             IsVisible="{Binding IsReportSending}"/>
+                                            </WrapPanel>
+                                        </StackPanel>
+                                    </Border>
                                 </StackPanel>
-                            </Button>
+                            </Grid>
+                        </Border>
+
+                        <!-- What the jars say before the game is asked: the same verdicts the crash
+                             analyser gives afterwards, offered while there is still time to act. -->
+                        <Border Classes="panel" IsVisible="{Binding HasBuildIssues}" controls:Reveal.OnVisible="True">
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                                <PathIcon Classes="lead" Data="{StaticResource IconWarning}" Foreground="{DynamicResource GoldBrush}"/>
+                                <StackPanel Grid.Column="1" Spacing="8">
+                                    <TextBlock Text="{Binding BuildCheckSummary}" Classes="strong" FontSize="15" TextWrapping="Wrap"/>
+                                    <ItemsControl ItemsSource="{Binding BuildIssues}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <StackPanel Spacing="5"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:BuildIssueItem">
+                                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                                                    <TextBlock Text="{Binding Title}" Classes="muted" FontSize="13" TextWrapping="Wrap"
+                                                               VerticalAlignment="Center"/>
+                                                    <Button Grid.Column="1" Classes="small" Content="{Binding FixLabel}" VerticalAlignment="Center"
+                                                            Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).ApplyBuildFixCommand}"
+                                                            CommandParameter="{Binding}"/>
+                                                    <Button Grid.Column="2" Classes="small" Content="{Binding AltFixLabel}" VerticalAlignment="Center"
+                                                            IsVisible="{Binding HasAltFix}"
+                                                            Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).ApplyBuildAltFixCommand}"
+                                                            CommandParameter="{Binding}"/>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <WrapPanel Margin="0,4,0,0" ItemSpacing="6" LineSpacing="6">
+                                        <Button Classes="accent-soft small" IsVisible="{Binding HasBulkBuildFix}"
+                                                Content="{DynamicResource Check_FixAll}" Command="{Binding ApplyAllBuildFixesCommand}"/>
+                                        <Button Classes="small" IsVisible="{Binding HasBulkKeepOld}"
+                                                Content="{DynamicResource Check_KeepOld}" Command="{Binding KeepOlderVersionsCommand}"/>
+                                        <Button Classes="small" IsVisible="{Binding CanUseSafeMode}"
+                                                Content="{DynamicResource Game_PlaySafe}" Command="{Binding PlaySafeCommand}"
+                                                IsEnabled="{Binding !IsBusy}" ToolTip.Tip="{DynamicResource Game_PlaySafeHint}"/>
+                                        <Button Classes="small"
+                                                Content="{DynamicResource Check_OpenMods}"
+                                                Command="{Binding OpenBuildIssuesCommand}"/>
+                                    </WrapPanel>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- The server owner changed the build: what is different today, or, when
+                             nothing has been touched yet, the offer to update. -->
+                        <Border Classes="panel" IsVisible="{Binding HasBuildChangeNotice}">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                <PathIcon Classes="lead" Data="{StaticResource IconRefresh}" Foreground="{DynamicResource GoldBrush}"/>
+                                <StackPanel Grid.Column="1" Spacing="7">
+                                    <TextBlock Text="{Binding BuildChangeTitle}" Classes="strong" FontSize="15" TextWrapping="Wrap"/>
+                                    <ItemsControl ItemsSource="{Binding BuildChangeLines}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="sys:String">
+                                                <TextBlock Text="{Binding}" TextWrapping="Wrap" FontSize="12.5" LineHeight="18"
+                                                           Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <TextBlock Text="{DynamicResource BuildChange_Hint}" Classes="muted" TextWrapping="Wrap"
+                                               IsVisible="{Binding !HasPendingBuildSync}"/>
+
+                                    <!-- Nothing has happened yet: the player decides. -->
+                                    <StackPanel Spacing="9" IsVisible="{Binding HasPendingBuildSync}">
+                                        <TextBlock Text="{DynamicResource BuildChange_PendingHint}" Classes="muted" TextWrapping="Wrap"/>
+                                        <WrapPanel ItemSpacing="6" LineSpacing="6">
+                                            <Button Classes="accent-soft small" Content="{DynamicResource BuildChange_Apply}"
+                                                    Command="{Binding ApplyPendingBuildSyncCommand}" IsEnabled="{Binding !IsBuildSyncBusy}"/>
+                                            <Button Classes="small" Content="{DynamicResource BuildChange_Later}"
+                                                    Command="{Binding DeclinePendingBuildSyncCommand}"/>
+                                        </WrapPanel>
+                                    </StackPanel>
+                                </StackPanel>
+                                <Button Grid.Column="2" Classes="icon" VerticalAlignment="Top"
+                                        Command="{Binding DismissBuildChangeNoticeCommand}"
+                                        ToolTip.Tip="{DynamicResource WhatsNew_Close}">
+                                    <PathIcon Data="{StaticResource IconClose}"/>
+                                </Button>
+                            </Grid>
+                        </Border>
+
+                        <!-- ===== Two more ways in, side by side: the server, and friends ===== -->
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+
+                            <!-- The server, alive or quiet, one press from being in it. -->
+                            <Border Classes="panel" Padding="14">
+                                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12">
+                                    <Border Classes="icon-tile way" Background="{DynamicResource IconGoldBrush}">
+                                        <Image Source="/Assets/server-logo.png" Stretch="UniformToFill"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding PlayOnServerLabel}" Classes="h3" TextTrimming="CharacterEllipsis"/>
+                                        <StackPanel Orientation="Horizontal" Spacing="6" ToolTip.Tip="{Binding ServerTileLine}">
+                                            <Ellipse Classes="dot" IsVisible="{Binding IsServerOnline}"/>
+                                            <Ellipse Classes="dot off" IsVisible="{Binding !IsServerOnline}"/>
+                                            <TextBlock Text="{Binding ServerTileLine}" Classes="muted" TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                    <Button Grid.Row="1" Grid.ColumnSpan="2" Classes="accent-soft" HorizontalAlignment="Left" MinWidth="112"
+                                            Content="{DynamicResource Home_ServerEnter}"
+                                            Command="{Binding PlayOnServerCommand}" IsEnabled="{Binding !IsBusy}"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- Friends: their page, or a code that is already in the clipboard. -->
+                            <Border Grid.Column="1" Classes="panel" Padding="14">
+                                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12">
+                                    <Border Classes="icon-tile way" Background="{DynamicResource IconBlueBrush}">
+                                        <PathIcon Data="{StaticResource IconUsers}" Width="21" Height="21"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Text="{DynamicResource Home_Friends}" Classes="h3" TextTrimming="CharacterEllipsis"/>
+                                        <!-- The player's own server when it is up; otherwise what the page is for. -->
+                                        <TextBlock Text="{DynamicResource Home_FriendsLine}" Classes="muted" TextTrimming="CharacterEllipsis"
+                                                   ToolTip.Tip="{DynamicResource Home_FriendsHint}"
+                                                   IsVisible="{Binding IsHostOff}"/>
+                                        <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding !IsHostOff}">
+                                            <Ellipse Classes="dot" IsVisible="{Binding IsHostOnline}"/>
+                                            <Ellipse Classes="dot warn" IsVisible="{Binding IsHostWorking}"/>
+                                            <TextBlock Text="{DynamicResource Home_FriendsServer}" Classes="muted"/>
+                                            <TextBlock Text="{Binding HostStateLabel}" Classes="muted" TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                    <WrapPanel Grid.Row="1" Grid.ColumnSpan="2" ItemSpacing="8" LineSpacing="6">
+                                        <Button Content="{DynamicResource Home_FriendsOpen}" MinWidth="96"
+                                                Command="{Binding SelectSectionCommand}" CommandParameter="Host"/>
+                                        <Button Content="{DynamicResource Home_PasteCode}"
+                                                ToolTip.Tip="{DynamicResource Home_FriendBuildHint}"
+                                                Command="{Binding AddBuildFromCodeCommand}" IsEnabled="{Binding !IsBusy}"/>
+                                    </WrapPanel>
+                                </Grid>
+                            </Border>
                         </Grid>
 
-                        <!-- The server, alive or quiet, one press from being in it. -->
-                        <Border Classes="row first">
-                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
-                                <Border Classes="icon-tile" Background="{DynamicResource IconGoldBrush}">
-                                    <Image Source="/Assets/server-logo.png" Stretch="UniformToFill"/>
-                                </Border>
-                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding PlayOnServerLabel}" Classes="strong" TextTrimming="CharacterEllipsis"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="6">
-                                        <Ellipse Classes="dot" IsVisible="{Binding IsServerOnline}"/>
-                                        <Ellipse Classes="dot off" IsVisible="{Binding !IsServerOnline}"/>
-                                        <TextBlock Text="{Binding ServerTileLine}" Classes="sub" TextTrimming="CharacterEllipsis"/>
-                                    </StackPanel>
+                        <!-- Builds found in other launchers: offered once, right where the
+                             player looks first. -->
+                        <Border Classes="panel" Padding="16,12" IsVisible="{Binding HasImportSuggestion}">
+                            <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
+                                <PathIcon Classes="lead" Data="{StaticResource IconBuilds}" Foreground="{DynamicResource GoldBrush}"/>
+                                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding ImportSuggestionText}" TextWrapping="Wrap" Classes="strong"/>
+                                    <TextBlock Text="{DynamicResource Import_SuggestHint}" Classes="muted" TextWrapping="Wrap"/>
                                 </StackPanel>
-                                <Button Grid.Column="2" VerticalAlignment="Center" MinWidth="92"
-                                        Content="{DynamicResource Home_ServerEnter}"
-                                        Command="{Binding PlayOnServerCommand}" IsEnabled="{Binding !IsBusy}"/>
+                                <Button Grid.Column="2" Classes="accent-soft" VerticalAlignment="Center"
+                                        Content="{DynamicResource Import_SuggestAccept}"
+                                        Command="{Binding AcceptImportSuggestionCommand}"/>
+                                <Button Grid.Column="3" Classes="icon" VerticalAlignment="Center"
+                                        Command="{Binding DismissImportSuggestionCommand}"
+                                        ToolTip.Tip="{DynamicResource Import_SuggestDismiss}">
+                                    <PathIcon Data="{StaticResource IconClose}"/>
+                                </Button>
                             </Grid>
                         </Border>
 
-                        <!-- Friends: their page, or a code that is already in the clipboard. -->
-                        <Border Classes="row">
-                            <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="14">
-                                <Border Classes="icon-tile" Background="{DynamicResource IconBlueBrush}">
-                                    <PathIcon Data="{StaticResource IconUsers}" Width="18" Height="18"/>
-                                </Border>
-                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                    <TextBlock Text="{DynamicResource Home_Friends}" Classes="strong" TextTrimming="CharacterEllipsis"/>
-                                    <TextBlock Text="{DynamicResource Home_FriendsHint}" Classes="sub" TextTrimming="CharacterEllipsis"/>
-                                </StackPanel>
-                                <Button Grid.Column="2" Classes="ghost small" VerticalAlignment="Center" Margin="0,0,-8,0"
-                                        Content="{DynamicResource Home_PasteCode}"
-                                        ToolTip.Tip="{DynamicResource Home_FriendBuildHint}"
-                                        Command="{Binding AddBuildFromCodeCommand}" IsEnabled="{Binding !IsBusy}"/>
-                                <Button Grid.Column="3" VerticalAlignment="Center" MinWidth="92"
-                                        Content="{DynamicResource Home_FriendsOpen}"
-                                        Command="{Binding SelectSectionCommand}" CommandParameter="Host"/>
-                            </Grid>
-                        </Border>
-
-                        <!-- The other builds, each with its own "Play". -->
-                        <ItemsControl ItemsSource="{Binding HomeBuilds}" IsVisible="{Binding HomeBuilds.Count}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="inst:Instance">
-                                    <Border Classes="row">
-                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="14">
-                                            <Border Classes="icon-tile"
-                                                    Background="{Binding Id, Converter={x:Static conv:TintBrushConverter.Instance}}">
-                                                <PathIcon Data="{StaticResource IconBuilds}" Width="18" Height="18"/>
-                                            </Border>
-                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding Name}" Classes="strong" TextTrimming="CharacterEllipsis"/>
-                                                <StackPanel Orientation="Horizontal" Spacing="6">
-                                                    <TextBlock Classes="sub" Text="{Binding Loader}"/>
-                                                    <TextBlock Classes="sub" Text="{Binding VersionId, TargetNullValue=—}"/>
-                                                    <TextBlock Classes="sub" Text="·"/>
-                                                    <TextBlock Classes="sub"
-                                                               Text="{Binding ModCount, Converter={x:Static conv:ModCountConverter.Instance}}"/>
-                                                </StackPanel>
+                        <!-- What this version changed, once after an update: one line here, the
+                             list itself on request. -->
+                        <Border Classes="panel" Padding="16,12" IsVisible="{Binding ShowWhatsNew}">
+                            <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
+                                <PathIcon Classes="lead" Data="{StaticResource IconStar}" Foreground="{DynamicResource GoldBrush}"
+                                          VerticalAlignment="Center" Margin="0"/>
+                                <TextBlock Grid.Column="1" Text="{Binding WhatsNewTitle}" Classes="strong" VerticalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis"/>
+                                <Button Grid.Column="2" Name="WhatsNewButton" VerticalAlignment="Center"
+                                        Content="{DynamicResource Home_WhatChanged}">
+                                    <Button.Flyout>
+                                        <controls:RevealFlyout Placement="TopEdgeAlignedRight">
+                                            <StackPanel Spacing="10" Width="420">
+                                                <TextBlock Text="{Binding WhatsNewTitle}" Classes="group"/>
+                                                <ScrollViewer MaxHeight="300">
+                                                    <ItemsControl ItemsSource="{Binding WhatsNewLines}" Margin="0,0,12,0">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate x:DataType="vm:WhatsNewLine">
+                                                                <Panel>
+                                                                    <controls:Caption Text="{Binding Text}" Margin="0,8,0,4"
+                                                                                      IsVisible="{Binding IsHeading}"/>
+                                                                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" Margin="0,0,0,6"
+                                                                          IsVisible="{Binding !IsHeading}">
+                                                                        <Ellipse Width="4" Height="4" Margin="2,7,0,0"
+                                                                                 Fill="{DynamicResource AccentHoverBrush}" VerticalAlignment="Top"/>
+                                                                        <TextBlock Grid.Column="1" Text="{Binding Text}" TextWrapping="Wrap"
+                                                                                   FontSize="12.5" LineHeight="18"
+                                                                                   Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                                    </Grid>
+                                                                </Panel>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </ScrollViewer>
+                                                <Button Classes="small" HorizontalAlignment="Left"
+                                                        Content="{DynamicResource WhatsNew_Ok}" Click="OnWhatsNewRead"/>
                                             </StackPanel>
-                                            <!-- Making it the build on screen without starting it: on hover,
-                                                 by Tab, and always in the picker behind "Another build". -->
-                                            <Button Grid.Column="2" Classes="ghost small reveal" VerticalAlignment="Center" Margin="0,0,-8,0"
-                                                    Content="{DynamicResource Game_PickBuild}"
-                                                    Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).SelectBuildCommand}"
-                                                    CommandParameter="{Binding}"/>
-                                            <Button Grid.Column="3" VerticalAlignment="Center" MinWidth="92"
-                                                    Content="{DynamicResource Game_Play}"
-                                                    Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).PlayBuildCommand}"
-                                                    CommandParameter="{Binding}"
-                                                    IsEnabled="{Binding !$parent[UserControl].((vm:MainWindowViewModel)DataContext).IsBusy}"/>
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                                        </controls:RevealFlyout>
+                                    </Button.Flyout>
+                                </Button>
+                                <Button Grid.Column="3" Classes="icon" VerticalAlignment="Center"
+                                        Command="{Binding DismissWhatsNewCommand}"
+                                        ToolTip.Tip="{DynamicResource WhatsNew_Close}">
+                                    <PathIcon Data="{StaticResource IconClose}"/>
+                                </Button>
+                            </Grid>
+                        </Border>
                     </StackPanel>
+
+                    <!-- ===== The player's other builds =====
+                         Its own panel, down to the bottom of the window. A click on a build
+                         makes it the one above; its "Play" starts it straight away. -->
+                    <Border Grid.Row="1" Classes="panel flush" Margin="0,14,0,0" VerticalAlignment="Stretch">
+                        <DockPanel>
+                            <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="12,8,6,6">
+                                <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                    <TextBlock Text="{DynamicResource Home_YourBuilds}" Classes="h3" VerticalAlignment="Center"/>
+                                    <Button Classes="link" VerticalAlignment="Center" FontSize="12.5"
+                                            Content="{DynamicResource Home_AllBuilds}"
+                                            Command="{Binding SelectSectionCommand}" CommandParameter="Builds"/>
+                                </StackPanel>
+                                <Button Grid.Column="1" Classes="small" Command="{Binding NewBuildFromHomeCommand}">
+                                    <StackPanel Orientation="Horizontal" Spacing="7">
+                                        <PathIcon Data="{StaticResource IconPlus}" Width="11" Height="11"/>
+                                        <TextBlock Text="{DynamicResource Home_NewBuild}"/>
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+
+                            <Panel>
+                                <ItemsControl ItemsSource="{Binding HomeBuilds}" IsVisible="{Binding HomeBuilds.Count}"
+                                              VerticalAlignment="Top">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="inst:Instance">
+                                            <Border Classes="row" Padding="0">
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <Button Grid.ColumnSpan="2" Classes="build-row"
+                                                            ToolTip.Tip="{DynamicResource Game_PickBuild}"
+                                                            Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).SelectBuildCommand}"
+                                                            CommandParameter="{Binding}">
+                                                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14" Margin="0,0,112,0">
+                                                            <Border Classes="icon-tile"
+                                                                    Background="{Binding Id, Converter={x:Static conv:TintBrushConverter.Instance}}">
+                                                                <PathIcon Data="{StaticResource IconBuilds}" Width="18" Height="18"/>
+                                                            </Border>
+                                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                                <TextBlock Text="{Binding Name}" Classes="strong" TextTrimming="CharacterEllipsis"/>
+                                                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                                                    <TextBlock Classes="muted" Text="{Binding Loader}"/>
+                                                                    <TextBlock Classes="muted" Text="{Binding VersionId, TargetNullValue=—}"/>
+                                                                    <TextBlock Classes="muted" Text="·"/>
+                                                                    <TextBlock Classes="muted"
+                                                                               Text="{Binding ModCount, Converter={x:Static conv:ModCountConverter.Instance}}"/>
+                                                                </StackPanel>
+                                                            </StackPanel>
+                                                        </Grid>
+                                                    </Button>
+                                                    <Button Grid.Column="1" VerticalAlignment="Center" MinWidth="92" Margin="0,0,10,0"
+                                                            Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).PlayBuildCommand}"
+                                                            CommandParameter="{Binding}"
+                                                            IsEnabled="{Binding !$parent[UserControl].((vm:MainWindowViewModel)DataContext).IsBusy}">
+                                                        <StackPanel Orientation="Horizontal" Spacing="7">
+                                                            <PathIcon Data="{StaticResource IconPlay}" Width="10" Height="10"
+                                                                      Foreground="{DynamicResource AccentTextBrush}"/>
+                                                            <TextBlock Text="{DynamicResource Game_Play}"/>
+                                                        </StackPanel>
+                                                    </Button>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <!-- Nothing but the build above, or nothing at all yet. -->
+                                <Panel Margin="0,14,0,20" IsVisible="{Binding !HomeBuilds.Count}">
+                                    <StackPanel Classes="empty"
+                                                IsVisible="{Binding SelectedInstance, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                        <Border Classes="empty-icon"><PathIcon Data="{StaticResource IconBuilds}"/></Border>
+                                        <TextBlock Classes="strong" Text="{DynamicResource Home_NoOtherBuilds}"/>
+                                        <TextBlock Classes="sub" Text="{DynamicResource Home_NoOtherBuildsHint}"/>
+                                    </StackPanel>
+                                    <StackPanel Classes="empty"
+                                                IsVisible="{Binding SelectedInstance, Converter={x:Static ObjectConverters.IsNull}}">
+                                        <Border Classes="empty-icon"><PathIcon Data="{StaticResource IconBuilds}"/></Border>
+                                        <TextBlock Classes="strong" Text="{DynamicResource Home_BuildsHere}"/>
+                                        <TextBlock Classes="sub" Text="{DynamicResource Home_BuildsHereHint}"/>
+                                    </StackPanel>
+                                </Panel>
+                            </Panel>
+                        </DockPanel>
+                    </Border>
                 </Grid>
             </ScrollViewer>
 
             <!-- ======== The player, on a lit stage ======== -->
             <ScrollViewer Grid.Column="1" Classes="home" HorizontalScrollBarVisibility="Disabled">
-                <!-- The stage takes the height the window leaves it, up to the figure's full
-                     size; what is left over goes above it, so the name stays under the feet. -->
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="1000*" MaxHeight="450"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-                    <Panel Grid.Row="1" MinHeight="230">
-                        <!-- The crimson light the figure stands in. -->
-                        <Ellipse IsHitTestVisible="False" Width="340" Height="340"
-                                 VerticalAlignment="Center" HorizontalAlignment="Center"
-                                 Fill="{DynamicResource StageAuraBrush}"/>
+                <Border Classes="panel" Padding="0" Margin="0,0,14,14">
+                    <Grid RowDefinitions="Auto,*,Auto">
 
-                        <!-- The pedestal. -->
-                        <Ellipse IsHitTestVisible="False" Width="236" Height="46" VerticalAlignment="Bottom" Margin="0,0,0,14"
-                                 Fill="{DynamicResource PedestalBrush}" Stroke="{DynamicResource PedestalRimBrush}" StrokeThickness="1"/>
-                        <Ellipse IsHitTestVisible="False" Width="150" Height="20" VerticalAlignment="Bottom" Margin="0,0,0,30"
-                                 Fill="{DynamicResource PedestalShadowBrush}"/>
+                        <!-- The light the figure stands in: a cone from above and a crimson glow.
+                             Plain fills inside the panel's own corners: no clip, no mask. -->
+                        <Path Grid.RowSpan="2" IsHitTestVisible="False" Fill="{DynamicResource StageConeBrush}" Stretch="Fill"
+                              Margin="26,1,26,40" MaxWidth="300"
+                              Data="M 114,0 L 186,0 L 300,440 L 0,440 Z"/>
 
-                        <!-- The figure takes the height the window leaves it, up to its full size. -->
-                        <controls:SkinViewer Name="Stage" Skin="{Binding PlayerSkin}" Animated="True" AutoRotate="False"
-                                             Emotes="{Binding HomeEmotes}"
-                                             Width="300" Margin="0,8,0,28"
-                                             ToolTip.Tip="{DynamicResource Game_ViewerHint}"/>
-                    </Panel>
-
-                    <StackPanel Grid.Row="2" Spacing="10" Margin="16,6,16,22">
-
-                        <!-- Who is playing. -->
-                        <StackPanel Spacing="1" IsVisible="{Binding !IsEditingNickname}">
-                            <Grid ColumnDefinitions="30,Auto,30" ColumnSpacing="4" HorizontalAlignment="Center">
-                                <TextBlock Grid.Column="1" Text="{Binding Username}" Classes="who" MaxWidth="240"
-                                           VerticalAlignment="Center"/>
-                                <Button Grid.Column="2" Classes="icon" VerticalAlignment="Center"
-                                        Command="{Binding EditNicknameCommand}"
-                                        ToolTip.Tip="{DynamicResource Game_EditNickname}">
-                                    <PathIcon Data="{StaticResource IconEdit}"/>
-                                </Button>
-                            </Grid>
-                            <TextBlock Text="{DynamicResource Game_OfflineMode}" Classes="sub" HorizontalAlignment="Center"/>
-                        </StackPanel>
-
-                        <!-- Changing the name: the box, another random one, done; and the saved names. -->
-                        <StackPanel Spacing="10" IsVisible="{Binding IsEditingNickname}">
-                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="4">
-                                <TextBox Text="{Binding Username}" Watermark="{DynamicResource Game_NicknameOwn}" MinHeight="36"/>
-                                <Button Grid.Column="1" Classes="icon" VerticalAlignment="Center"
-                                        Command="{Binding RerollNicknameCommand}"
-                                        ToolTip.Tip="{DynamicResource Game_NicknameReroll}">
-                                    <PathIcon Data="{StaticResource IconDice}"/>
-                                </Button>
-                                <Button Grid.Column="2" VerticalAlignment="Center" Padding="12,0" Height="36"
-                                        Command="{Binding FinishEditingNicknameCommand}"
-                                        Content="{DynamicResource Game_NicknameDone}"/>
-                            </Grid>
-                            <TextBlock Text="{DynamicResource Game_NicknameRule}" Classes="sub" TextWrapping="Wrap"/>
-                            <controls:Caption Text="{DynamicResource Game_Nicknames}" Margin="0,4,0,0"/>
-                            <ItemsControl ItemsSource="{Binding Nicknames}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <WrapPanel/>
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="sys:String">
-                                        <Button Classes="small" Margin="0,0,6,6" Content="{Binding}"
-                                                Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).ApplyNicknameCommand}"
-                                                CommandParameter="{Binding}"/>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                <Button Classes="ghost small"
-                                        Content="{DynamicResource Game_SaveNickname}"
-                                        Command="{Binding SaveNicknameCommand}"/>
-                                <Button Classes="ghost small"
-                                        Content="{DynamicResource Game_RemoveNickname}"
-                                        ToolTip.Tip="{DynamicResource Game_RemoveCurrentNickname}"
-                                        Command="{Binding RemoveNicknameCommand}"
-                                        CommandParameter="{Binding Username}"/>
-                            </StackPanel>
-                        </StackPanel>
-
-                        <!-- The two things to change about the figure. Both lists open beside the
-                             stage, not over it: the next thing a player does is look at the result. -->
-                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6" MaxWidth="300">
-                            <!-- Which skin system to look in; a player can have one in several. -->
-                            <Button Name="MySkinButton" Content="{DynamicResource Home_ChangeSkin}">
+                        <!-- What the figure is doing: the list of what it can do - its own poses,
+                             and the emotes found in the build - and the button for the next one.
+                             The list opens beside the stage, not over it, and stays open while the
+                             player tries one after another. -->
+                        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="12,12,12,0">
+                            <Button Name="PosePill" Classes="small" MaxWidth="220" ToolTip.Tip="{DynamicResource Emotes_Pick}">
+                                <StackPanel Orientation="Horizontal" Spacing="7">
+                                    <PathIcon Data="{StaticResource IconStar}" Width="12" Height="12"
+                                              Foreground="{DynamicResource GoldBrush}"/>
+                                    <TextBlock Text="{Binding #Stage.PoseName}" VerticalAlignment="Center"
+                                               MaxWidth="150" TextTrimming="CharacterEllipsis"/>
+                                    <PathIcon Data="{StaticResource IconChevronDown}" Width="10" Height="10"
+                                              Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                </StackPanel>
                                 <Button.Flyout>
-                                    <controls:RevealFlyout Placement="LeftEdgeAlignedBottom">
-                                        <StackPanel Spacing="10" Width="364">
-                                            <controls:Caption Text="{DynamicResource Home_SkinFrom}"/>
-                                            <Border Classes="segments" HorizontalAlignment="Left">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <Button Classes="segment small" Classes.active="{Binding IsSkinSourceAuto}" Content="{DynamicResource Skin_SourceAuto}"
-                                                            Command="{Binding SelectSkinSourceCommand}" CommandParameter="Auto"/>
-                                                    <Button Classes="segment small" Classes.active="{Binding IsSkinSourceMojang}" Content="Mojang"
-                                                            Command="{Binding SelectSkinSourceCommand}" CommandParameter="Mojang"/>
-                                                    <Button Classes="segment small" Classes.active="{Binding IsSkinSourceTLauncher}" Content="TLauncher"
-                                                            Command="{Binding SelectSkinSourceCommand}" CommandParameter="TLauncher"/>
-                                                    <Button Classes="segment small" Classes.active="{Binding IsSkinSourceElyBy}" Content="ely.by"
-                                                            Command="{Binding SelectSkinSourceCommand}" CommandParameter="ElyBy"/>
-                                                    <!-- Skins: a file from the player's own library. -->
-                                                    <Button Classes="segment small" Classes.active="{Binding IsSkinSourceLibrary}" Content="{DynamicResource Skins_SourceOwn}"
-                                                            Command="{Binding SelectSkinSourceCommand}" CommandParameter="Library"/>
-                                                </StackPanel>
-                                            </Border>
-                                            <TextBlock Text="{Binding SkinSourceLabel}" Classes="sub" TextWrapping="Wrap"/>
-                                            <!-- Skins: the way to the library and the editor. -->
-                                            <Button HorizontalAlignment="Stretch" Click="OnOpenSkinsClick">
-                                                <StackPanel Orientation="Horizontal" Spacing="7">
-                                                    <PathIcon Data="{StaticResource IconSkins}" Classes="small"/>
-                                                    <TextBlock Text="{DynamicResource Skins_OpenFromHome}" VerticalAlignment="Center"/>
-                                                </StackPanel>
-                                            </Button>
-                                        </StackPanel>
-                                    </controls:RevealFlyout>
-                                </Button.Flyout>
-                            </Button>
-
-                            <!-- Emotes: the button says what the figure is doing, and opens the list
-                                 of what it can do - its own poses, and the emotes found in the build.
-                                 The list stays open while the player tries one after another. -->
-                            <Button Grid.Column="1" Name="PosePill" Classes="ghost" Padding="12,10"
-                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                                    ToolTip.Tip="{DynamicResource Emotes_Pick}">
-                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="7">
-                                    <TextBlock Text="{Binding #Stage.PoseName}" VerticalAlignment="Center" FontWeight="Bold"
-                                               Foreground="{DynamicResource TextSecondaryBrush}"
-                                               TextTrimming="CharacterEllipsis"/>
-                                    <PathIcon Grid.Column="1" Data="{StaticResource IconChevronDown}" Width="10" Height="10"
-                                              Foreground="{DynamicResource TextMutedBrush}"/>
-                                </Grid>
-                                <Button.Flyout>
-                                    <controls:RevealFlyout Placement="LeftEdgeAlignedBottom" HorizontalOffset="-140">
+                                    <controls:RevealFlyout Placement="LeftEdgeAlignedTop">
                                         <StackPanel Spacing="10" Width="300">
                                             <controls:Caption Text="{DynamicResource Emotes_Poses}"/>
                                             <ItemsControl ItemsSource="{Binding HomePoses}">
@@ -830,12 +831,139 @@
                             </Button>
                         </Grid>
 
-                        <Button Classes="link" HorizontalAlignment="Center" Margin="0,2,0,0"
-                                IsVisible="{Binding ShowDeveloperConsole}"
-                                Content="{DynamicResource Game_OpenConsole}"
-                                Command="{Binding SelectSectionCommand}" CommandParameter="Console"/>
-                    </StackPanel>
-                </Grid>
+                        <!-- The stage takes the height the window leaves it, up to the figure's
+                             full size; what is left over goes above it, so the feet stay on the
+                             pedestal just over the name plate. -->
+                        <Grid Grid.Row="1">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="1000*" MaxHeight="450"/>
+                            </Grid.RowDefinitions>
+                            <Panel Grid.Row="1" MinHeight="220">
+                                <!-- The crimson light the figure stands in. -->
+                                <Ellipse IsHitTestVisible="False" MaxWidth="340" Height="340" Margin="1,0"
+                                         VerticalAlignment="Center"
+                                         Fill="{DynamicResource StageAuraBrush}"/>
+
+                                <!-- The pedestal. -->
+                                <Ellipse IsHitTestVisible="False" Width="236" Height="46" VerticalAlignment="Bottom" Margin="0,0,0,12"
+                                         Fill="{DynamicResource PedestalBrush}" Stroke="{DynamicResource PedestalRimBrush}" StrokeThickness="1"/>
+                                <Ellipse IsHitTestVisible="False" Width="150" Height="20" VerticalAlignment="Bottom" Margin="0,0,0,28"
+                                         Fill="{DynamicResource PedestalShadowBrush}"/>
+
+                                <controls:SkinViewer Name="Stage" Skin="{Binding PlayerSkin}" Animated="True" AutoRotate="False"
+                                                     Emotes="{Binding HomeEmotes}"
+                                                     MaxWidth="300" Margin="0,6,0,26"
+                                                     ToolTip.Tip="{DynamicResource Game_ViewerHint}"/>
+                            </Panel>
+                        </Grid>
+
+                        <StackPanel Grid.Row="2" Spacing="10" Margin="12,6,12,12">
+
+                            <!-- The name plate: who is playing, and the two things to change about it. -->
+                            <Border Classes="panel inset" Padding="14,10,10,10">
+                                <StackPanel Spacing="10">
+                                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8" IsVisible="{Binding !IsEditingNickname}">
+                                        <StackPanel VerticalAlignment="Center" Spacing="1">
+                                            <TextBlock Text="{Binding Username}" Classes="who" ToolTip.Tip="{Binding Username}"/>
+                                            <TextBlock Text="{DynamicResource Game_OfflineMode}" Classes="muted" FontSize="12"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Classes="icon" VerticalAlignment="Center"
+                                                Command="{Binding EditNicknameCommand}"
+                                                ToolTip.Tip="{DynamicResource Game_EditNickname}">
+                                            <PathIcon Data="{StaticResource IconEdit}"/>
+                                        </Button>
+                                        <!-- Which skin system to look in; a player can have one in several. -->
+                                        <Button Grid.Column="2" Name="MySkinButton" Classes="accent-soft" VerticalAlignment="Center" Padding="13,9"
+                                                Content="{DynamicResource Home_MySkin}">
+                                            <Button.Flyout>
+                                                <controls:RevealFlyout Placement="TopEdgeAlignedRight">
+                                                    <StackPanel Spacing="10" Width="364">
+                                                        <controls:Caption Text="{DynamicResource Home_SkinFrom}"/>
+                                                        <Border Classes="segments" HorizontalAlignment="Left">
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <Button Classes="segment small" Classes.active="{Binding IsSkinSourceAuto}" Content="{DynamicResource Skin_SourceAuto}"
+                                                                        Command="{Binding SelectSkinSourceCommand}" CommandParameter="Auto"/>
+                                                                <Button Classes="segment small" Classes.active="{Binding IsSkinSourceMojang}" Content="Mojang"
+                                                                        Command="{Binding SelectSkinSourceCommand}" CommandParameter="Mojang"/>
+                                                                <Button Classes="segment small" Classes.active="{Binding IsSkinSourceTLauncher}" Content="TLauncher"
+                                                                        Command="{Binding SelectSkinSourceCommand}" CommandParameter="TLauncher"/>
+                                                                <Button Classes="segment small" Classes.active="{Binding IsSkinSourceElyBy}" Content="ely.by"
+                                                                        Command="{Binding SelectSkinSourceCommand}" CommandParameter="ElyBy"/>
+                                                                <!-- Skins: a file from the player's own library. -->
+                                                                <Button Classes="segment small" Classes.active="{Binding IsSkinSourceLibrary}" Content="{DynamicResource Skins_SourceOwn}"
+                                                                        Command="{Binding SelectSkinSourceCommand}" CommandParameter="Library"/>
+                                                            </StackPanel>
+                                                        </Border>
+                                                        <TextBlock Text="{Binding SkinSourceLabel}" Classes="muted" TextWrapping="Wrap"/>
+                                                        <!-- Skins: the way to the library and the editor. -->
+                                                        <Button HorizontalAlignment="Stretch" Click="OnOpenSkinsClick">
+                                                            <StackPanel Orientation="Horizontal" Spacing="7">
+                                                                <PathIcon Data="{StaticResource IconSkins}" Classes="small"/>
+                                                                <TextBlock Text="{DynamicResource Skins_OpenFromHome}" VerticalAlignment="Center"/>
+                                                            </StackPanel>
+                                                        </Button>
+                                                    </StackPanel>
+                                                </controls:RevealFlyout>
+                                            </Button.Flyout>
+                                        </Button>
+                                    </Grid>
+
+                                    <!-- Changing the name: the box, another random one, done; and the saved names. -->
+                                    <StackPanel Spacing="10" IsVisible="{Binding IsEditingNickname}">
+                                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="4">
+                                            <TextBox Text="{Binding Username}" Watermark="{DynamicResource Game_NicknameOwn}" MinHeight="36"/>
+                                            <Button Grid.Column="1" Classes="icon" VerticalAlignment="Center"
+                                                    Command="{Binding RerollNicknameCommand}"
+                                                    ToolTip.Tip="{DynamicResource Game_NicknameReroll}">
+                                                <PathIcon Data="{StaticResource IconDice}"/>
+                                            </Button>
+                                            <Button Grid.Column="2" Classes="accent-soft" VerticalAlignment="Center" Padding="12,0" Height="36"
+                                                    Command="{Binding FinishEditingNicknameCommand}"
+                                                    Content="{DynamicResource Game_NicknameDone}"/>
+                                        </Grid>
+                                        <TextBlock Text="{DynamicResource Game_NicknameRule}" Classes="muted" TextWrapping="Wrap"/>
+                                        <controls:Caption Text="{DynamicResource Game_Nicknames}" Margin="0,2,0,0"/>
+                                        <ItemsControl ItemsSource="{Binding Nicknames}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <WrapPanel/>
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="sys:String">
+                                                    <Button Classes="small" Margin="0,0,6,6" Content="{Binding}"
+                                                            Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).ApplyNicknameCommand}"
+                                                            CommandParameter="{Binding}"/>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                        <WrapPanel ItemSpacing="6" LineSpacing="6">
+                                            <Button Classes="small"
+                                                    Content="{DynamicResource Game_SaveNickname}"
+                                                    Command="{Binding SaveNicknameCommand}"/>
+                                            <Button Classes="ghost small"
+                                                    Content="{DynamicResource Game_RemoveNickname}"
+                                                    ToolTip.Tip="{DynamicResource Game_RemoveCurrentNickname}"
+                                                    Command="{Binding RemoveNicknameCommand}"
+                                                    CommandParameter="{Binding Username}"/>
+                                        </WrapPanel>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+
+                            <Button Classes="small" HorizontalAlignment="Stretch"
+                                    IsVisible="{Binding ShowDeveloperConsole}"
+                                    Command="{Binding SelectSectionCommand}" CommandParameter="Console">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <PathIcon Data="{StaticResource IconConsole}" Classes="small"/>
+                                    <TextBlock Text="{DynamicResource Game_OpenConsole}"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
             </ScrollViewer>
         </Grid>
     </Panel>

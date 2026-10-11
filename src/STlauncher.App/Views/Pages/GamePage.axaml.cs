@@ -31,13 +31,14 @@ public partial class GamePage : UserControl
     /// The name stands at full size while two lines can hold it. A longer one gives up size
     /// first, and only then letters: a build called after its whole mod list should still
     /// be told apart from its neighbour. A narrow window moves every name one step down.
+    /// (The sizes are the "build-name" styles of the page.)
     /// </summary>
     private void FitTitle()
     {
         var length = BuildTitle.Text?.Length ?? 0;
-        var step = length > 44 ? 2 : length > 26 ? 1 : 0;
+        var step = length > 60 ? 2 : length > 34 ? 1 : 0;
 
-        if (Bounds.Width is > 0 and < 960 && length > 12)
+        if (Bounds.Width is > 0 and < 960 && length > 22)
         {
             step++;
         }

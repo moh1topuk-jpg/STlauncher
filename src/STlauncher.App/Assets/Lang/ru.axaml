@@ -456,6 +456,13 @@
     <x:String x:Key="Home_WhatChanged">Что изменилось</x:String>
     <x:String x:Key="Home_NoBuilds">Сборок пока нет</x:String>
     <x:String x:Key="Home_NoBuildsHint">Соберите свою или возьмите готовую: по коду от друга или из другого лаунчера.</x:String>
+    <x:String x:Key="Home_OpenBuilds">Все сборки</x:String>
+    <x:String x:Key="Home_NoOtherBuilds">Других сборок пока нет</x:String>
+    <x:String x:Key="Home_NoOtherBuildsHint">Соберите ещё одну: под другой сервер или другую версию игры.</x:String>
+    <x:String x:Key="Home_BuildsHere">Здесь появятся ваши сборки</x:String>
+    <x:String x:Key="Home_BuildsHereHint">Каждую можно будет запустить отсюда одной кнопкой.</x:String>
+    <x:String x:Key="Home_FriendsLine">Свой сервер или код от друга</x:String>
+    <x:String x:Key="Home_FriendsServer">Ваш сервер:</x:String>
 
     <x:String x:Key="Server_AverageWeek">Средний онлайн за неделю: {0:F0}</x:String>
     <x:String x:Key="Server_Record">Рекорд: {0}</x:String>
