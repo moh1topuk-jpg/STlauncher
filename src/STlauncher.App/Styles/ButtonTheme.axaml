@@ -12,15 +12,19 @@
       presenter, "/template/ ContentPresenter#PART_ContentPresenter".
     -->
     <ControlTheme x:Key="{x:Type Button}" TargetType="Button">
-        <!-- A button with no class is the quiet one: a raised grey slab, bold Manrope.
-             The classes that change it (primary, ghost, icon, hero ...) are listed at the
-             top of Controls.axaml. -->
+        <!-- A button with no class is the quiet one: a raised fill with a 1 px edge, bold
+             Manrope. The fill alone is lost on a panel and the edge alone on the ground;
+             together it is a button on both. The classes that change it (primary,
+             accent-soft, ghost, icon, hero ...) are listed at the top of Controls.axaml. -->
         <Setter Property="Background" Value="{DynamicResource ControlBrush}"/>
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource GhostBrush}"/>
-        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlEdgeBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="CornerRadius" Value="10"/>
-        <Setter Property="Padding" Value="16,10"/>
+        <Setter Property="Padding" Value="15,9"/>
+        <!-- Keyboard focus is a ring drawn by the button's own root (below), so it follows
+             the corners; the theme's square adorner is switched off. -->
+        <Setter Property="FocusAdorner" Value="{x:Null}"/>
         <Setter Property="FontFamily" Value="{DynamicResource DisplayFont}"/>
         <Setter Property="FontWeight" Value="Bold"/>
         <Setter Property="FontSize" Value="13.5"/>
@@ -68,6 +72,11 @@
 
         <Style Selector="^:disabled /template/ Border#PART_Root">
             <Setter Property="Opacity" Value="0.5"/>
+        </Style>
+
+        <!-- Reached with Tab: a 2 px ring of the accent, no blur. -->
+        <Style Selector="^:focus-visible /template/ Border#PART_Root">
+            <Setter Property="BoxShadow" Value="{DynamicResource FocusRingShadow}"/>
         </Style>
     </ControlTheme>
 

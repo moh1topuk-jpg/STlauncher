@@ -125,6 +125,17 @@ public sealed class ThemeService
         var lightest = Shift(accent, 0.30);
         var darker = Shift(accent, -0.22);
 
+        // The accent as ink (an accent-soft button, a key number): the hover tone is only
+        // 3.7:1 on a dark panel, and some presets are darker still, so the ink is stepped
+        // towards white (or towards black on a white panel) until it reads at 5.5:1.
+        var panel = light ? Color.Parse("#FFFFFF") : Color.Parse("#19151A");
+        var ink = light ? accent : hover;
+
+        for (var step = 0; step < 12 && Contrast(ink, panel) < 5.5; step++)
+        {
+            ink = Shift(ink, light ? -0.08 : 0.08);
+        }
+
         var dictionary = new ResourceDictionary
         {
             ["AccentColor"] = accent,
@@ -151,14 +162,35 @@ public sealed class ThemeService
                 // One flat fill since the quiet look; still a gradient brush, the key is shared.
                 GradientStops = { new GradientStop(accent, 0), new GradientStop(accent, 1) }
             },
+            // The same shapes and strengths as in Colors.axaml / ColorsLight.axaml.
             ["GroundGlowBrush"] = new RadialGradientBrush
             {
-                Center = new RelativePoint(0.78, 0.34, RelativeUnit.Relative),
-                GradientOrigin = new RelativePoint(0.78, 0.34, RelativeUnit.Relative),
-                RadiusX = new RelativeScalar(0.52, RelativeUnit.Relative),
-                RadiusY = new RelativeScalar(0.62, RelativeUnit.Relative),
-                GradientStops = { new GradientStop(WithAlpha(accent, light ? 0.09 : 0.12), 0), new GradientStop(WithAlpha(accent, 0), 1) }
+                Center = new RelativePoint(0.74, 0.26, RelativeUnit.Relative),
+                GradientOrigin = new RelativePoint(0.74, 0.26, RelativeUnit.Relative),
+                RadiusX = new RelativeScalar(0.78, RelativeUnit.Relative),
+                RadiusY = new RelativeScalar(0.92, RelativeUnit.Relative),
+                GradientStops =
+                {
+                    new GradientStop(WithAlpha(accent, light ? 0.09 : 0.26), 0),
+                    new GradientStop(WithAlpha(accent, light ? 0.03 : 0.09), 0.5),
+                    new GradientStop(WithAlpha(accent, 0), 1)
+                }
             },
+            ["PanelTintBrush"] = new LinearGradientBrush
+            {
+                StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
+                EndPoint = new RelativePoint(1, 1, RelativeUnit.Relative),
+                GradientStops = { new GradientStop(Mix(panel, accent, light ? 0.10 : 0.18), 0), new GradientStop(panel, 0.6) }
+            },
+            ["PanelTintEdgeBrush"] = new SolidColorBrush(Mix(panel, accent, light ? 0.22 : 0.32)),
+            ["AccentSoftBrush"] = new SolidColorBrush(WithAlpha(accent, light ? 0.08 : 0.18)),
+            ["AccentSoftHoverBrush"] = new SolidColorBrush(WithAlpha(accent, light ? 0.15 : 0.30)),
+            ["AccentSoftPressedBrush"] = new SolidColorBrush(WithAlpha(accent, light ? 0.20 : 0.14)),
+            ["AccentEdgeBrush"] = new SolidColorBrush(WithAlpha(light ? accent : hover, light ? 0.5 : 0.6)),
+            ["AccentTextBrush"] = new SolidColorBrush(ink),
+            ["RowSelectedBrush"] = new SolidColorBrush(WithAlpha(accent, light ? 0.07 : 0.13)),
+            ["SelectedRowShadow"] = BoxShadows.Parse($"inset 0 0 0 1 {ToHex(WithAlpha(light ? accent : hover, light ? 0.4 : 0.5))}"),
+            ["FocusRingShadow"] = BoxShadows.Parse($"0 0 0 2 {ToHex(hover)}"),
             ["HeroGlowBrush"] = new RadialGradientBrush
             {
                 Center = new RelativePoint(0, 1, RelativeUnit.Relative),
@@ -221,6 +253,32 @@ public sealed class ThemeService
         byte Channel(byte c) => (byte)Math.Clamp(Math.Round(c * factor), 0, 255);
 
         return Color.FromArgb(color.A, Channel(color.R), Channel(color.G), Channel(color.B));
+    }
+
+    /// <summary>One colour laid over another at the given strength, as an opaque colour.</summary>
+    private static Color Mix(Color under, Color over, double amount)
+    {
+        byte Channel(byte u, byte o) => (byte)Math.Round(u * (1 - amount) + o * amount);
+
+        return Color.FromRgb(Channel(under.R, over.R), Channel(under.G, over.G), Channel(under.B, over.B));
+    }
+
+    /// <summary>The WCAG contrast ratio of two opaque colours.</summary>
+    private static double Contrast(Color a, Color b)
+    {
+        static double Luminance(Color c)
+        {
+            static double Linear(byte channel)
+            {
+                var v = channel / 255.0;
+                return v <= 0.03928 ? v / 12.92 : Math.Pow((v + 0.055) / 1.055, 2.4);
+            }
+
+            return 0.2126 * Linear(c.R) + 0.7152 * Linear(c.G) + 0.0722 * Linear(c.B);
+        }
+
+        var (high, low) = (Math.Max(Luminance(a), Luminance(b)), Math.Min(Luminance(a), Luminance(b)));
+        return (high + 0.05) / (low + 0.05);
     }
 
     private static Color WithAlpha(Color color, double alpha)

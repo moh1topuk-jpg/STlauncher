@@ -1,40 +1,44 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- The palette of the quiet look. Five tones carry every surface:
-           ground  AppBg      the window itself
-           field   Surface    inputs, chips, the track of a picker; also what is left of cards
-           raised  SurfaceAlt a quiet button, a menu, a dialog
-           hover   Elevated   a row under the pointer, the selected item
+    <!-- The palette. The tones, from the bottom up:
+           ground  AppBg      the window itself, lit by GroundGlowBrush
+           field   Surface    inputs, the track of a picker (always with FieldEdgeBrush)
+           panel   PanelBrush a page's panel: one step above the ground, with PanelEdgeBrush
+           raised  SurfaceAlt a menu, a tile inside a panel
+           hover   Elevated   a row under the pointer (visible on the ground AND on a panel)
+           control ControlBrush  a quiet button: above all of these, with ControlEdgeBrush
            (Hover is one step further, for hovering something already raised)
-         and one hairline (Divider) separates rows. The older key names stay: pages use them. -->
-    <Color x:Key="AppBgColor">#0C0A0D</Color>
-    <Color x:Key="SurfaceColor">#131015</Color>
-    <Color x:Key="SurfaceAltColor">#1B161A</Color>
-    <Color x:Key="ElevatedColor">#221B21</Color>
-    <Color x:Key="HoverColor">#2B232A</Color>
+         and one hairline (Divider) separates rows. The older key names stay: pages use them.
+         Text contrast on a panel: primary 15.7, secondary 8.3, muted 5.5 (never under 4.8
+         on a hovered row or a button). -->
+    <Color x:Key="AppBgColor">#0F0C10</Color>
+    <Color x:Key="SurfaceColor">#151116</Color>
+    <Color x:Key="SurfaceAltColor">#1F1A20</Color>
+    <Color x:Key="ElevatedColor">#262027</Color>
+    <Color x:Key="HoverColor">#2F2730</Color>
 
     <!-- Lines: the hairline between rows, and a stronger one for the rare real frame -->
-    <Color x:Key="DividerColor">#261F25</Color>
-    <Color x:Key="BorderColor">#342B32</Color>
+    <Color x:Key="DividerColor">#2A232A</Color>
+    <Color x:Key="BorderColor">#3E343D</Color>
 
     <!-- Text: three levels -->
-    <Color x:Key="TextPrimaryColor">#F1ECEE</Color>
-    <Color x:Key="TextSecondaryColor">#A99BA3</Color>
-    <Color x:Key="TextMutedColor">#72676E</Color>
+    <Color x:Key="TextPrimaryColor">#F3EEF0</Color>
+    <Color x:Key="TextSecondaryColor">#B9ADB4</Color>
+    <Color x:Key="TextMutedColor">#978A92</Color>
     <Color x:Key="TextOnAccentColor">#FFF6F8</Color>
 
     <!-- Accents. ThemeService replaces the three accent tones for the colour the player chose. -->
     <Color x:Key="AccentColor">#B5294A</Color>
     <Color x:Key="AccentHoverColor">#CF3558</Color>
     <Color x:Key="AccentPressedColor">#96203C</Color>
-    <Color x:Key="GoldColor">#C9A227</Color>
+    <Color x:Key="GoldColor">#D9B13A</Color>
     <Color x:Key="GoldMutedColor">#8A6F1B</Color>
 
     <!-- Status -->
-    <Color x:Key="SuccessColor">#56A877</Color>
-    <Color x:Key="WarningColor">#D19A3A</Color>
-    <Color x:Key="DangerColor">#D4513F</Color>
+    <Color x:Key="SuccessColor">#62B985</Color>
+    <Color x:Key="WarningColor">#DDA748</Color>
+    <Color x:Key="DangerColor">#E8705F</Color>
 
     <!-- Type: Manrope (OFL) for everything with weight - headings, buttons, row titles;
          Inter, which ships with Avalonia, for running text; Consolas for versions and captions. -->
@@ -74,21 +78,55 @@
     <SolidColorBrush x:Key="RaisedBrush" Color="{StaticResource SurfaceAltColor}"/>
     <SolidColorBrush x:Key="RowHoverBrush" Color="{StaticResource ElevatedColor}"/>
     <SolidColorBrush x:Key="HairlineBrush" Color="{StaticResource DividerColor}"/>
-    <!-- A quiet button and its states. -->
-    <SolidColorBrush x:Key="ControlBrush" Color="#1B161A"/>
+    <!-- A quiet button and its states: a fill AND an edge, so it is a button on the
+         ground and on a panel alike. -->
+    <SolidColorBrush x:Key="ControlBrush" Color="#272028"/>
+    <SolidColorBrush x:Key="ControlHoverBrush" Color="#332B34"/>
+    <SolidColorBrush x:Key="ControlPressedBrush" Color="#1F1A20"/>
+    <SolidColorBrush x:Key="ControlEdgeBrush" Color="#3E343D"/>
+    <SolidColorBrush x:Key="ControlEdgeHoverBrush" Color="#574A55"/>
     <!-- A dialog stands a step below the quiet button, so a quiet button on it stays a button. -->
-    <SolidColorBrush x:Key="DialogBrush" Color="#141014"/>
-    <SolidColorBrush x:Key="ControlHoverBrush" Color="#262026"/>
-    <SolidColorBrush x:Key="ControlPressedBrush" Color="#171216"/>
+    <SolidColorBrush x:Key="DialogBrush" Color="#1B161C"/>
+
+    <!-- A panel: the surface a page groups things on. Inset is the tone of a panel inside
+         a panel (a notice, a question). -->
+    <SolidColorBrush x:Key="PanelBrush" Color="#19151A"/>
+    <SolidColorBrush x:Key="PanelEdgeBrush" Color="#2B242B"/>
+    <SolidColorBrush x:Key="InsetBrush" Color="#120F13"/>
+    <!-- The lead panel of a page: the accent washes in from its top left corner.
+         ThemeService repaints it, and every Accent* key below, for the chosen accent. -->
+    <LinearGradientBrush x:Key="PanelTintBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Offset="0" Color="#351924"/>
+        <GradientStop Offset="0.6" Color="#19151A"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="PanelTintEdgeBrush" Color="#4A2330"/>
+    <!-- The edge of an input and of a chip. -->
+    <SolidColorBrush x:Key="FieldEdgeBrush" Color="#42373F"/>
+
+    <!-- accent-soft: the main action of a panel. A wash of the accent, its edge, and the
+         accent as ink (6.4:1 on a panel; AccentHoverBrush is only 3.7 and stays for marks). -->
+    <SolidColorBrush x:Key="AccentSoftBrush" Color="#2EB5294A"/>
+    <SolidColorBrush x:Key="AccentSoftHoverBrush" Color="#4DB5294A"/>
+    <SolidColorBrush x:Key="AccentSoftPressedBrush" Color="#24B5294A"/>
+    <SolidColorBrush x:Key="AccentEdgeBrush" Color="#99CF3558"/>
+    <SolidColorBrush x:Key="AccentTextBrush" Color="#F0718D"/>
+    <!-- The chosen row: a toned fill and a thin ring of the accent (no blur). -->
+    <SolidColorBrush x:Key="RowSelectedBrush" Color="#21B5294A"/>
+    <BoxShadows x:Key="SelectedRowShadow">inset 0 0 0 1 #80CF3558</BoxShadows>
+    <!-- Keyboard focus on a button: a ring that follows its corners. -->
+    <BoxShadows x:Key="FocusRingShadow">0 0 0 2 #CF3558</BoxShadows>
+    <!-- The edge of the chosen segment of a picker. -->
+    <BoxShadows x:Key="SegmentActiveShadow">inset 0 0 0 1 #574A55</BoxShadows>
     <!-- The hairline above a row: a shadow, so it follows the row's rounded corners and
          costs no extra element in a list of hundreds. No blur. -->
-    <BoxShadows x:Key="RowLineShadow">0 -1 0 0 #261F25</BoxShadows>
+    <BoxShadows x:Key="RowLineShadow">0 -1 0 0 #2A232A</BoxShadows>
     <BoxShadows x:Key="NoShadow">0 0 0 0 #00000000</BoxShadows>
     <!-- Under a dialog: the one soft shadow the look allows itself. -->
     <BoxShadows x:Key="DialogShadow">0 18 48 0 #80000000</BoxShadows>
     <!-- The soft light on the window's ground. ThemeService repaints it for the chosen accent. -->
-    <RadialGradientBrush x:Key="GroundGlowBrush" Center="78%,34%" GradientOrigin="78%,34%" RadiusX="52%" RadiusY="62%">
-        <GradientStop Offset="0" Color="#1FB5294A"/>
+    <RadialGradientBrush x:Key="GroundGlowBrush" Center="74%,26%" GradientOrigin="74%,26%" RadiusX="78%" RadiusY="92%">
+        <GradientStop Offset="0" Color="#42B5294A"/>
+        <GradientStop Offset="0.5" Color="#17B5294A"/>
         <GradientStop Offset="1" Color="#00B5294A"/>
     </RadialGradientBrush>
 
@@ -100,26 +138,26 @@
     </LinearGradientBrush>
 
     <LinearGradientBrush x:Key="SidebarBrush" StartPoint="0%,0%" EndPoint="0%,100%">
-        <GradientStop Offset="0" Color="#131015"/>
-        <GradientStop Offset="1" Color="#0C0A0D"/>
+        <GradientStop Offset="0" Color="#151116"/>
+        <GradientStop Offset="1" Color="#0F0C10"/>
     </LinearGradientBrush>
 
     <!-- Chrome: the rail and the strips sit on the ground itself now -->
-    <SolidColorBrush x:Key="GhostBrush" Color="#000C0A0D"/>
-    <SolidColorBrush x:Key="RailBrush" Color="#0C0A0D"/>
-    <SolidColorBrush x:Key="UpdateBannerBrush" Color="#131015"/>
-    <SolidColorBrush x:Key="IndexBorderBrush" Color="#1B161A"/>
+    <SolidColorBrush x:Key="GhostBrush" Color="#000F0C10"/>
+    <SolidColorBrush x:Key="RailBrush" Color="#0F0C10"/>
+    <SolidColorBrush x:Key="UpdateBannerBrush" Color="#19151A"/>
+    <SolidColorBrush x:Key="IndexBorderBrush" Color="#2B242B"/>
 
     <!-- Glass cards on the main screen let the glow show through -->
-    <SolidColorBrush x:Key="CardGlassBrush" Color="#CC131015"/>
+    <SolidColorBrush x:Key="CardGlassBrush" Color="#D919151A"/>
     <SolidColorBrush x:Key="CardGlassWarmBrush" Color="#CC1F1218"/>
     <SolidColorBrush x:Key="TileWarmBrush" Color="#1F1218"/>
     <SolidColorBrush x:Key="HeroSideBrush" Color="#661B161A"/>
 
     <!-- Scrims behind dialogs and the screenshot viewer -->
     <SolidColorBrush x:Key="OverlayScrimBrush" Color="#B0000000"/>
-    <SolidColorBrush x:Key="LightboxScrimBrush" Color="#E60C0A0D"/>
-    <SolidColorBrush x:Key="LightboxFrameBrush" Color="#0C0A0D"/>
+    <SolidColorBrush x:Key="LightboxScrimBrush" Color="#E60F0C10"/>
+    <SolidColorBrush x:Key="LightboxFrameBrush" Color="#0F0C10"/>
     <SolidColorBrush x:Key="LightboxBorderBrush" Color="#22FFFFFF"/>
 
     <!-- "Installed" pill -->
@@ -129,7 +167,7 @@
     <!-- The warm glow behind the play area -->
     <RadialGradientBrush x:Key="StageGlowBrush" Center="42%,38%" GradientOrigin="42%,38%" RadiusX="60%" RadiusY="55%">
         <GradientStop Offset="0" Color="#34191F"/>
-        <GradientStop Offset="1" Color="#000C0A0D"/>
+        <GradientStop Offset="1" Color="#000F0C10"/>
     </RadialGradientBrush>
 
     <!-- Server page banner -->
@@ -162,7 +200,7 @@
     <RadialGradientBrush x:Key="HomeGlowBrush" Center="84%,50%" GradientOrigin="84%,50%" RadiusX="46%" RadiusY="64%">
         <GradientStop Offset="0" Color="#575A1C2C"/>
         <GradientStop Offset="0.5" Color="#1F5A1C2C"/>
-        <GradientStop Offset="1" Color="#000C0A0D"/>
+        <GradientStop Offset="1" Color="#000F0C10"/>
     </RadialGradientBrush>
 
     <LinearGradientBrush x:Key="HeroCardBrush" StartPoint="0%,0%" EndPoint="100%,100%">

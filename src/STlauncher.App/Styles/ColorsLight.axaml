@@ -4,32 +4,32 @@
     <!-- The light palette: warm ivory grounds, the same crimson accent, ink for text.
          Every key mirrors Colors.axaml; ThemeService swaps the two dictionaries. -->
 
-    <!-- Ground, field, raised, hover: see Colors.axaml. On ivory the field is white, and a
-         panel inside a white card needs a tone of its own, so SurfaceAlt is not white here;
-         the mockup's white "raised" lives in RaisedBrush. The muted text is a shade darker
-         than the mockup's #8E8288: that one falls under 3.5:1 on this ground at 12 px. -->
-    <Color x:Key="AppBgColor">#F6F3F4</Color>
+    <!-- The tones: see Colors.axaml. Here the ground is a tinted ivory and a panel is
+         white on it, so a quiet button cannot be white: it is a grey with an edge, and
+         reads on both. Text contrast on the ground / on a panel: primary 15.5 / 18.1,
+         secondary 7.5 / 8.7, muted 5.0 / 5.8. -->
+    <Color x:Key="AppBgColor">#F2ECEF</Color>
     <Color x:Key="SurfaceColor">#FFFFFF</Color>
-    <Color x:Key="SurfaceAltColor">#F1ECEE</Color>
+    <Color x:Key="SurfaceAltColor">#F3EEF1</Color>
     <Color x:Key="ElevatedColor">#EAE3E7</Color>
     <Color x:Key="HoverColor">#DFD6DB</Color>
 
-    <Color x:Key="DividerColor">#E4DCE0</Color>
-    <Color x:Key="BorderColor">#D3C8CE</Color>
+    <Color x:Key="DividerColor">#E6DEE2</Color>
+    <Color x:Key="BorderColor">#CBBDC5</Color>
 
     <Color x:Key="TextPrimaryColor">#1B1418</Color>
-    <Color x:Key="TextSecondaryColor">#5F5359</Color>
-    <Color x:Key="TextMutedColor">#7F7379</Color>
+    <Color x:Key="TextSecondaryColor">#54484E</Color>
+    <Color x:Key="TextMutedColor">#6E6268</Color>
     <Color x:Key="TextOnAccentColor">#FFF6F8</Color>
 
     <Color x:Key="AccentColor">#A3243F</Color>
     <Color x:Key="AccentHoverColor">#B92D4B</Color>
     <Color x:Key="AccentPressedColor">#8A1E35</Color>
-    <Color x:Key="GoldColor">#8A6A10</Color>
+    <Color x:Key="GoldColor">#7D5F0C</Color>
     <Color x:Key="GoldMutedColor">#B08F2E</Color>
 
-    <Color x:Key="SuccessColor">#2F7F52</Color>
-    <Color x:Key="WarningColor">#9A6A12</Color>
+    <Color x:Key="SuccessColor">#2A7449</Color>
+    <Color x:Key="WarningColor">#8A5E0C</Color>
     <Color x:Key="DangerColor">#B8322A</Color>
 
     <FontFamily x:Key="DisplayFont">avares://STlauncher.App/Assets/Fonts#Manrope</FontFamily>
@@ -64,19 +64,42 @@
     <SolidColorBrush x:Key="GroundBrush" Color="{StaticResource AppBgColor}"/>
     <SolidColorBrush x:Key="FieldBrush" Color="{StaticResource SurfaceColor}"/>
     <SolidColorBrush x:Key="RaisedBrush" Color="#FFFFFF"/>
-    <SolidColorBrush x:Key="RowHoverBrush" Color="#EEE8EB"/>
+    <SolidColorBrush x:Key="RowHoverBrush" Color="#F1EAEE"/>
     <SolidColorBrush x:Key="HairlineBrush" Color="{StaticResource DividerColor}"/>
-    <!-- A quiet button is grey here, not the mockup's white: half the pages still stand on
-         white cards, where a white button is only its text. -->
-    <SolidColorBrush x:Key="ControlBrush" Color="#ECE6E9"/>
+    <!-- A quiet button is grey with an edge here, not white: panels are white, and a
+         white button on one is only its text. -->
+    <SolidColorBrush x:Key="ControlBrush" Color="#EAE2E6"/>
+    <SolidColorBrush x:Key="ControlHoverBrush" Color="#DED4D9"/>
+    <SolidColorBrush x:Key="ControlPressedBrush" Color="#D3C7CD"/>
+    <SolidColorBrush x:Key="ControlEdgeBrush" Color="#CBBDC5"/>
+    <SolidColorBrush x:Key="ControlEdgeHoverBrush" Color="#B3A3AC"/>
     <SolidColorBrush x:Key="DialogBrush" Color="#FFFFFF"/>
-    <SolidColorBrush x:Key="ControlHoverBrush" Color="#E2DADE"/>
-    <SolidColorBrush x:Key="ControlPressedBrush" Color="#D9CFD5"/>
-    <BoxShadows x:Key="RowLineShadow">0 -1 0 0 #E4DCE0</BoxShadows>
+
+    <SolidColorBrush x:Key="PanelBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="PanelEdgeBrush" Color="#E2D8DD"/>
+    <SolidColorBrush x:Key="InsetBrush" Color="#F6F2F4"/>
+    <LinearGradientBrush x:Key="PanelTintBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Offset="0" Color="#F6E9EC"/>
+        <GradientStop Offset="0.6" Color="#FFFFFF"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="PanelTintEdgeBrush" Color="#E9CBD3"/>
+    <SolidColorBrush x:Key="FieldEdgeBrush" Color="#C6B8C0"/>
+
+    <SolidColorBrush x:Key="AccentSoftBrush" Color="#14A3243F"/>
+    <SolidColorBrush x:Key="AccentSoftHoverBrush" Color="#26A3243F"/>
+    <SolidColorBrush x:Key="AccentSoftPressedBrush" Color="#33A3243F"/>
+    <SolidColorBrush x:Key="AccentEdgeBrush" Color="#80A3243F"/>
+    <SolidColorBrush x:Key="AccentTextBrush" Color="#A3243F"/>
+    <SolidColorBrush x:Key="RowSelectedBrush" Color="#12A3243F"/>
+    <BoxShadows x:Key="SelectedRowShadow">inset 0 0 0 1 #66A3243F</BoxShadows>
+    <BoxShadows x:Key="FocusRingShadow">0 0 0 2 #B92D4B</BoxShadows>
+    <BoxShadows x:Key="SegmentActiveShadow">inset 0 0 0 1 #B3A3AC</BoxShadows>
+    <BoxShadows x:Key="RowLineShadow">0 -1 0 0 #E6DEE2</BoxShadows>
     <BoxShadows x:Key="NoShadow">0 0 0 0 #00000000</BoxShadows>
     <BoxShadows x:Key="DialogShadow">0 18 48 0 #2E2A1C24</BoxShadows>
-    <RadialGradientBrush x:Key="GroundGlowBrush" Center="78%,34%" GradientOrigin="78%,34%" RadiusX="52%" RadiusY="62%">
+    <RadialGradientBrush x:Key="GroundGlowBrush" Center="74%,26%" GradientOrigin="74%,26%" RadiusX="78%" RadiusY="92%">
         <GradientStop Offset="0" Color="#17A3243F"/>
+        <GradientStop Offset="0.5" Color="#08A3243F"/>
         <GradientStop Offset="1" Color="#00A3243F"/>
     </RadialGradientBrush>
 
@@ -87,14 +110,14 @@
     </LinearGradientBrush>
 
     <LinearGradientBrush x:Key="SidebarBrush" StartPoint="0%,0%" EndPoint="0%,100%">
-        <GradientStop Offset="0" Color="#F6F3F4"/>
-        <GradientStop Offset="1" Color="#F1ECEE"/>
+        <GradientStop Offset="0" Color="#F2ECEF"/>
+        <GradientStop Offset="1" Color="#F3EEF1"/>
     </LinearGradientBrush>
 
     <SolidColorBrush x:Key="GhostBrush" Color="#00F6F3F4"/>
-    <SolidColorBrush x:Key="RailBrush" Color="#F6F3F4"/>
+    <SolidColorBrush x:Key="RailBrush" Color="#F2ECEF"/>
     <SolidColorBrush x:Key="UpdateBannerBrush" Color="#FFFFFF"/>
-    <SolidColorBrush x:Key="IndexBorderBrush" Color="#E4DCE0"/>
+    <SolidColorBrush x:Key="IndexBorderBrush" Color="#E2D8DD"/>
 
     <SolidColorBrush x:Key="CardGlassBrush" Color="#D9FFFFFF"/>
     <SolidColorBrush x:Key="CardGlassWarmBrush" Color="#D9F8ECF1"/>

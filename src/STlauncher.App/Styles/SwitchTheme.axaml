@@ -38,7 +38,8 @@
                                       VerticalAlignment="Center"/>
                     <Panel Grid.Column="1" Width="34" Height="20">
                         <Border Name="Track" CornerRadius="10"
-                                Background="{DynamicResource ToggleSwitchFillOff}">
+                                Background="{DynamicResource ToggleSwitchFillOff}"
+                                BorderBrush="{DynamicResource ToggleSwitchStrokeOff}" BorderThickness="1">
                             <Border.Transitions>
                                 <Transitions>
                                     <BrushTransition Property="Background" Duration="0:0:0.14"/>
@@ -56,17 +57,25 @@
             </ControlTemplate>
         </Setter>
 
+        <!-- Off is a grey track with an edge and a light knob: plainly a switch, plainly
+             off. On, the accent fills the track and the edge goes. -->
         <Style Selector="^:pointerover /template/ Border#Track">
             <Setter Property="Background" Value="{DynamicResource ToggleSwitchFillOffPointerOver}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ToggleSwitchStrokeOffPointerOver}"/>
+        </Style>
+        <Style Selector="^:pointerover /template/ Ellipse#Knob">
+            <Setter Property="Fill" Value="{DynamicResource ToggleSwitchKnobFillOffPointerOver}"/>
         </Style>
         <Style Selector="^:checked /template/ Border#Track">
             <Setter Property="Background" Value="{DynamicResource ToggleSwitchFillOn}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ToggleSwitchStrokeOn}"/>
         </Style>
         <Style Selector="^:checked /template/ Ellipse#Knob">
             <Setter Property="Fill" Value="{DynamicResource ToggleSwitchKnobFillOn}"/>
         </Style>
         <Style Selector="^:checked:pointerover /template/ Border#Track">
             <Setter Property="Background" Value="{DynamicResource ToggleSwitchFillOnPointerOver}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ToggleSwitchStrokeOn}"/>
         </Style>
 
         <!-- A switch that cannot be flipped is still there to be seen, in either position. -->
@@ -75,12 +84,14 @@
         </Style>
         <Style Selector="^:disabled /template/ Border#Track">
             <Setter Property="Background" Value="{DynamicResource ToggleSwitchFillOffDisabled}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ToggleSwitchStrokeOffDisabled}"/>
         </Style>
         <Style Selector="^:disabled /template/ Ellipse#Knob">
             <Setter Property="Fill" Value="{DynamicResource ToggleSwitchKnobFillOffDisabled}"/>
         </Style>
         <Style Selector="^:disabled:checked /template/ Border#Track">
             <Setter Property="Background" Value="{DynamicResource ToggleSwitchFillOnDisabled}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ToggleSwitchStrokeOnDisabled}"/>
         </Style>
         <Style Selector="^:disabled:checked /template/ Ellipse#Knob">
             <Setter Property="Fill" Value="{DynamicResource ToggleSwitchKnobFillOnDisabled}"/>
