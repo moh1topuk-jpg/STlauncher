@@ -7,8 +7,9 @@
 
     <!-- The first run: a stage over the whole window in the theme's own ground, embers
          behind, one dialog with one question at a time. Every screen can be skipped;
-         nothing here is required. Inside the dialog nothing is framed twice: a value, a
-         slider and a line of facts stand on the dialog itself. -->
+         nothing here is required. Inside the dialog what belongs together (the value and
+         its slider, what was found, what was chosen) lies on an inset panel, and every
+         way on is a button with an edge. -->
 
     <UserControl.Styles>
         <!-- The logo breathes on the welcome screen. -->
@@ -61,15 +62,6 @@
         </Style>
         <Style Selector="RadioButton:not(:checked) /template/ Ellipse#OuterEllipse">
             <Setter Property="Stroke" Value="{DynamicResource TextMutedBrush}"/>
-        </Style>
-
-        <!-- A quiet button on the dialog: the dialog's ground is the quiet fill itself, so
-             the button takes the next tone up to stay a button. -->
-        <Style Selector="Button.on-dialog /template/ Border#PART_Root">
-            <Setter Property="Background" Value="{DynamicResource ElevatedBrush}"/>
-        </Style>
-        <Style Selector="Button.on-dialog:pointerover /template/ Border#PART_Root">
-            <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
         </Style>
 
         <Style Selector="Border.dot">
@@ -141,11 +133,13 @@
                         <TextBlock Text="{DynamicResource Game_NicknameRule}" Classes="sub" TextWrapping="Wrap"/>
                         <TextBlock Text="{Binding Owner.SkinSourceLabel}" Classes="sub" TextWrapping="Wrap"/>
                     </StackPanel>
-                    <!-- The figure on its light, as on the home screen: no box around it. -->
-                    <Panel Grid.Column="1" Height="230">
-                        <Border IsHitTestVisible="False" Background="{DynamicResource StageAuraBrush}" Opacity="0.55"/>
-                        <controls:SkinViewer Skin="{Binding Owner.PlayerSkin}"/>
-                    </Panel>
+                    <!-- The figure on its light, in a small lit panel of its own. -->
+                    <Border Grid.Column="1" Classes="panel inset" Padding="0" Height="230" ClipToBounds="True">
+                        <Panel>
+                            <Border IsHitTestVisible="False" Background="{DynamicResource StageAuraBrush}" Opacity="0.7"/>
+                            <controls:SkinViewer Skin="{Binding Owner.PlayerSkin}" Margin="0,8"/>
+                        </Panel>
+                    </Border>
                 </Grid>
             </StackPanel>
         </DataTemplate>
@@ -157,21 +151,22 @@
                     <TextBlock Text="{DynamicResource Onboarding_MemoryTitle}" Classes="page-title"/>
                     <TextBlock Text="{DynamicResource Onboarding_MemoryText}" Classes="muted" TextWrapping="Wrap" LineHeight="20"/>
                 </StackPanel>
-                <StackPanel Spacing="8" Margin="0,6,0,0">
-                    <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Classes="page-title large" VerticalAlignment="Bottom">
-                            <Run Text="{Binding Owner.MaxMemoryMb, StringFormat={}{0:0}}"/><Run Text=" MB" FontSize="16"/>
-                        </TextBlock>
-                        <Button Grid.Column="1" Classes="link" VerticalAlignment="Bottom" Margin="0,0,0,6"
-                                Content="{Binding Owner.RecommendedMemoryLabel}"
-                                Command="{Binding Owner.UseRecommendedMemoryCommand}"/>
-                    </Grid>
-                    <Slider Minimum="1024" Maximum="{Binding Owner.MemorySliderMax}" TickFrequency="512" IsSnapToTickEnabled="True"
-                            Value="{Binding Owner.MaxMemoryMb}"/>
-                    <TextBlock Text="{Binding Owner.MemoryHint}" Classes="sub" TextWrapping="Wrap"/>
-                    <TextBlock Text="{DynamicResource Settings_MemoryCeiling}" Classes="sub"/>
-                </StackPanel>
-                <Border Classes="hairline"/>
+                <Border Classes="panel inset" Padding="18,14">
+                    <StackPanel Spacing="8">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Classes="page-title large accent" VerticalAlignment="Bottom">
+                                <Run Text="{Binding Owner.MaxMemoryMb, StringFormat={}{0:0}}"/><Run Text=" MB" FontSize="16"/>
+                            </TextBlock>
+                            <Button Grid.Column="1" Classes="small" VerticalAlignment="Bottom" Margin="0,0,0,6"
+                                    Content="{Binding Owner.RecommendedMemoryLabel}"
+                                    Command="{Binding Owner.UseRecommendedMemoryCommand}"/>
+                        </Grid>
+                        <Slider Minimum="1024" Maximum="{Binding Owner.MemorySliderMax}" TickFrequency="512" IsSnapToTickEnabled="True"
+                                Value="{Binding Owner.MaxMemoryMb}"/>
+                        <TextBlock Text="{Binding Owner.MemoryHint}" Classes="sub" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource Settings_MemoryCeiling}" Classes="sub"/>
+                    </StackPanel>
+                </Border>
                 <TextBlock Text="{DynamicResource Onboarding_MemoryHint}" Classes="sub" TextWrapping="Wrap"/>
             </StackPanel>
         </DataTemplate>
@@ -183,7 +178,7 @@
                     <TextBlock Text="{DynamicResource Onboarding_ImportTitle}" Classes="page-title"/>
                     <TextBlock Text="{DynamicResource Onboarding_ImportText}" Classes="muted" TextWrapping="Wrap" LineHeight="20"/>
                 </StackPanel>
-                <Border Classes="hairline"/>
+                <Border Classes="panel inset" Padding="18,14">
                 <StackPanel Spacing="12">
                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                         <ProgressBar IsIndeterminate="True" Width="60" Height="3" VerticalAlignment="Center"
@@ -201,7 +196,7 @@
                         <RadioButton GroupName="OnboardingImportMode" IsChecked="{Binding Owner.OnboardingImportByCopying}"
                                      Content="{DynamicResource Import_ModeCopy}"/>
                         <TextBlock Text="{DynamicResource Import_ModeCopyHint}" Classes="sub" TextWrapping="Wrap" Margin="28,-4,0,0"/>
-                        <Button Classes="on-dialog" HorizontalAlignment="Left" Margin="0,6,0,0"
+                        <Button HorizontalAlignment="Left" Margin="0,6,0,0"
                                 Content="{DynamicResource Import_SuggestAccept}"
                                 Command="{Binding Owner.OnboardingImportCommand}"
                                 IsEnabled="{Binding !Owner.IsImportBusy}"/>
@@ -209,6 +204,7 @@
                                    IsVisible="{Binding Owner.IsImportBusy}"/>
                     </StackPanel>
                 </StackPanel>
+                </Border>
             </StackPanel>
         </DataTemplate>
 
@@ -225,9 +221,9 @@
                     <TextBlock Text="{DynamicResource Onboarding_DoneText}" Classes="muted" FontSize="14"
                                TextAlignment="Center" TextWrapping="Wrap" LineHeight="21"/>
                 </StackPanel>
-                <!-- What was chosen: three lines with a hairline between, no box. -->
+                <!-- What was chosen: three lines on an inset panel, a hairline between. -->
+                <Border Classes="panel inset" Padding="16,4">
                 <StackPanel>
-                    <Border Classes="hairline"/>
                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" Margin="0,10">
                         <TextBlock Text="{DynamicResource Game_Nickname}" Classes="sub"/>
                         <TextBlock Grid.Column="1" Text="{Binding Owner.Username}" Classes="strong" HorizontalAlignment="Right"/>
@@ -244,8 +240,8 @@
                         <TextBlock Grid.Column="1" Text="{Binding Owner.SelectedInstance.Name}" Classes="strong"
                                    HorizontalAlignment="Right" TextTrimming="CharacterEllipsis"/>
                     </Grid>
-                    <Border Classes="hairline"/>
                 </StackPanel>
+                </Border>
             </StackPanel>
         </DataTemplate>
     </UserControl.DataTemplates>
@@ -280,10 +276,10 @@
                         <Border Classes="dot" Classes.on="{Binding IsOnboardingImport}"/>
                     </StackPanel>
 
-                    <Button Grid.Column="1" Classes="link" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,8,0"
+                    <Button Grid.Column="1" Classes="ghost" Height="42" HorizontalAlignment="Right" VerticalAlignment="Center"
                             Content="{DynamicResource Onboarding_Skip}" Command="{Binding SkipOnboardingCommand}"
                             IsVisible="{Binding !IsOnboardingDone}"/>
-                    <Button Grid.Column="2" Classes="ghost" Height="42" Content="{DynamicResource Onboarding_Back}"
+                    <Button Grid.Column="2" Height="42" Content="{DynamicResource Onboarding_Back}"
                             Command="{Binding OnboardingBackCommand}" IsVisible="{Binding OnboardingShowsProgress}"/>
                     <Button Grid.Column="3" Classes="primary" MinWidth="130" Height="42"
                             Content="{Binding OnboardingNextLabel}" Command="{Binding OnboardingNextCommand}"/>
