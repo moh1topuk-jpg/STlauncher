@@ -20,6 +20,13 @@ public partial class SplashOverlay : UserControl
 
     private const double GatherMs = 550;
     private const double MinHoldMs = 850;
+
+    /// <summary>
+    /// The hold when the launcher was ready before the mark had even gathered - the usual
+    /// start, with a build remembered from last time. There is nothing to wait for then,
+    /// and the full hold kept a finished screen behind the splash for most of a second.
+    /// </summary>
+    private const double ReadyHoldMs = 250;
     private const double MaxHoldMs = 8000;
     private const double FlashMs = 160;
     private const double ReleaseMs = 480;
@@ -35,6 +42,9 @@ public partial class SplashOverlay : UserControl
     private Color _stageColour = Color.FromRgb(0x0C, 0x0A, 0x0D);
     private double _flashStart = -1;
     private bool _done;
+
+    /// <summary>Whether the launcher was already ready when the gather ended; null until it has.</summary>
+    private bool? _readyAtGather;
 
     private void NextFrame()
     {
@@ -153,7 +163,8 @@ public partial class SplashOverlay : UserControl
         var markScale = 0.55 + 0.51 * EaseOut(markIn) - 0.06 * Math.Sin(markIn * Math.PI);
         _markScale.ScaleX = _markScale.ScaleY = markScale;
 
-        Caption.Opacity = Math.Clamp((t - GatherMs - 100) / 300, 0, 1);
+        var captionIn = Math.Clamp((t - GatherMs - 100) / 300, 0, 1);
+        Caption.Opacity = captionIn;
 
         if (Caption.Bounds.Width > 0)
         {
@@ -164,7 +175,13 @@ public partial class SplashOverlay : UserControl
         var holdElapsed = Math.Max(0, t - GatherMs);
         _frame.Orbit = 22 * Math.Min(1, holdElapsed / 1100) + 8 * Math.Max(0, holdElapsed - 1100) / 1000;
 
-        var canFlash = holdElapsed >= MinHoldMs && (IsReady || holdElapsed >= MaxHoldMs);
+        if (_readyAtGather is null && t >= GatherMs)
+        {
+            _readyAtGather = IsReady;
+        }
+
+        var minHold = _readyAtGather == true ? ReadyHoldMs : MinHoldMs;
+        var canFlash = holdElapsed >= minHold && (IsReady || holdElapsed >= MaxHoldMs);
 
         if (_flashStart < 0 && canFlash)
         {
@@ -184,7 +201,9 @@ public partial class SplashOverlay : UserControl
             // ---- release: sparks settle across the window, the mark flies to the rail
             var release = Math.Clamp((since - FlashMs) / ReleaseMs, 0, 1);
             _frame.Release = release;
-            Caption.Opacity = 1 - Math.Min(1, release * 2);
+            // Still fading in when a short hold ends: it goes on from where it is, in and
+            // then out, instead of jumping to full first.
+            Caption.Opacity = captionIn * (1 - Math.Min(1, release * 2));
 
             var fly = EaseInOut(release);
             var cx = Bounds.Width / 2;

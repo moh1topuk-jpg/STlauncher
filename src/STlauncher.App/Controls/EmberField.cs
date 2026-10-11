@@ -6,7 +6,6 @@ using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Media.Immutable;
-using Avalonia.Threading;
 
 namespace STlauncher.App.Controls;
 
@@ -38,17 +37,18 @@ public sealed class EmberField : Control
 
     private readonly List<Ember> _embers = new();
     private readonly Random _random = new();
-    private readonly DispatcherTimer _timer;
     private readonly System.Diagnostics.Stopwatch _clock = new();
 
     /// <summary>
-    /// The shortest gap between two drawn frames. Every frame repaints the whole page above the
-    /// field, so a 144 Hz screen would pay for the page 144 times a second; embers drift slowly
-    /// and look the same at sixty.
+    /// Behind another window the field is stepped on every third tick of the clock: some
+    /// eight to ten times a second, about what it always was there.
     /// </summary>
-    private const double MinFrameMs = 1000.0 / 60;
-    private double _lastDrawMs;
+    private const int BehindEvery = 3;
+    private int _ticks;
     private bool _attached;
+
+    /// <summary>True while the field takes its steps from the clock; false while it only looks whether it may.</summary>
+    private bool _fast;
     private double _lastMs;
     private Point _pointer = new(double.NaN, double.NaN);
     private Point _lean;
@@ -69,16 +69,6 @@ public sealed class EmberField : Control
     public EmberField()
     {
         IsHitTestVisible = false;
-
-        // The slow lane: while the field is hidden, minimised or behind another window it is
-        // stepped by this timer; while it is watched it runs in step with the screen.
-        _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
-        _timer.Tick += (_, _) =>
-        {
-            _timer.Stop();
-            Step();
-            Schedule();
-        };
     }
 
     public bool IsActive
@@ -121,13 +111,14 @@ public sealed class EmberField : Control
         _attached = true;
         _clock.Restart();
         _lastMs = 0;
-        Schedule();
+        Run(true);
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         _attached = false;
-        _timer.Stop();
+        FrameClock.Frame -= OnFrame;
+        FrameClock.Check -= OnCheck;
 
         if (_topLevel is not null)
         {
@@ -144,44 +135,76 @@ public sealed class EmberField : Control
     private void OnPointerLeft(object? sender, PointerEventArgs e) => _pointer = new Point(double.NaN, double.NaN);
 
     /// <summary>
-    /// Picks the lane for the next step. Watched: the next screen frame, so the drift is as
-    /// smooth as the display allows. Behind another window: ten steps a second. Hidden or
-    /// minimised: a look every half second to see whether that changed, and nothing drawn.
+    /// Moves the field between the two lanes of the slow clock. Watched: a step on every
+    /// tick of that clock - the field covers the whole page, so each of its steps draws
+    /// the page again, and dots this slow do not need the display's own rate. Not watched
+    /// - the page is hidden, the window is minimised or in the tray, or the game is running: a look
+    /// a few times a second to see whether that changed, and nothing drawn.
     /// </summary>
-    private void Schedule()
+    private void Run(bool fast)
     {
+        FrameClock.Frame -= OnFrame;
+        FrameClock.Check -= OnCheck;
+        _fast = fast && _attached;
+
         if (!_attached)
         {
             return;
         }
 
-        var window = _topLevel as Window;
-        var shown = IsActive && IsEffectivelyVisible && window?.WindowState != WindowState.Minimized;
-
-        if (!shown)
+        if (fast)
         {
-            _timer.Interval = TimeSpan.FromMilliseconds(500);
-            _timer.Start();
+            FrameClock.Frame += OnFrame;
+        }
+        else
+        {
+            FrameClock.Check += OnCheck;
+        }
+    }
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+
+        // Switched on, or given its place on the page: no reason to wait for the next look.
+        if (_attached && !_fast && (change.Property == IsActiveProperty || change.Property == BoundsProperty))
+        {
+            _lastMs = _clock.Elapsed.TotalMilliseconds;
+            Run(true);
+        }
+    }
+
+    private bool IsWatched(out bool behind)
+    {
+        var watching = IsActive ? FrameClock.Of(this) : FrameClock.Watching.NotAtAll;
+        behind = watching == FrameClock.Watching.Behind;
+        return watching != FrameClock.Watching.NotAtAll;
+    }
+
+    private void OnFrame()
+    {
+        if (!IsWatched(out var behind))
+        {
+            Run(false);
             return;
         }
 
-        if (window is { IsActive: false })
+        if (behind && ++_ticks % BehindEvery != 0)
         {
-            _timer.Interval = TimeSpan.FromMilliseconds(100);
-            _timer.Start();
             return;
         }
 
-        _topLevel?.RequestAnimationFrame(_ =>
-        {
-            if (_clock.Elapsed.TotalMilliseconds - _lastDrawMs >= MinFrameMs - 2)
-            {
-                _lastDrawMs = _clock.Elapsed.TotalMilliseconds;
-                Step();
-            }
+        Step();
+    }
 
-            Schedule();
-        });
+    private void OnCheck()
+    {
+        if (IsWatched(out _))
+        {
+            // Time stood still for the embers while nobody looked; they go on from where they were.
+            _lastMs = _clock.Elapsed.TotalMilliseconds;
+            Run(true);
+        }
     }
 
     private void Step()
@@ -193,9 +216,7 @@ public sealed class EmberField : Control
         var dt = Math.Min(now - _lastMs, 250) / 1000;
         _lastMs = now;
 
-        // A hidden page costs nothing: no drift, no redraw.
-        if (!IsActive || !IsEffectivelyVisible || Bounds.Width < 1 || Bounds.Height < 1 ||
-            _topLevel is Window { WindowState: WindowState.Minimized })
+        if (Bounds.Width < 1 || Bounds.Height < 1)
         {
             return;
         }

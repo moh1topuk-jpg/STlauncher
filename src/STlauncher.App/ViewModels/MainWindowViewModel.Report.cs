@@ -161,6 +161,7 @@ public partial class MainWindowViewModel
             using (var zip = ZipFile.Open(zipPath, ZipArchiveMode.Create))
             {
                 AddText(zip, "summary.txt", BuildSupportSummary());
+                FlushLauncherLogFromAnyThread();
                 AddTail(zip, LauncherLogPath, "launcher.log");
                 AddTail(zip, LauncherLogPath + ".old", "launcher.old.log");
                 AddTail(zip, LastGameLogPath, "game.log");

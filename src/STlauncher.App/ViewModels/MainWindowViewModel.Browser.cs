@@ -282,7 +282,12 @@ public partial class MainWindowViewModel
         // Categories differ per kind ("16x" is not a mod category), and so does the page.
         _categoriesLoaded = false;
         CloseProject();
-        _ = LoadCategoriesAsync();
+
+        if (IsCatalogOnScreen)
+        {
+            _ = LoadCategoriesAsync();
+        }
+
         ScheduleBrowserReload();
     }
 
@@ -389,6 +394,67 @@ public partial class MainWindowViewModel
     private readonly Core.Diagnostics.SupersedingCancellation _browserDebounce = new();
     private bool _categoriesLoaded;
 
+    /// <summary>
+    /// True when what the catalog would show is not what it holds: the build, its version
+    /// or a filter changed while the catalog was not on screen. Nothing is fetched for a
+    /// page nobody is looking at; the catalog catches up when it is opened.
+    /// </summary>
+    /// <remarks>
+    /// Every start used to load the categories, search a page of twenty mods, download
+    /// their logos and send their descriptions to be translated - some sixty requests for
+    /// a tab most starts never open - and again on every change of build, version or loader.
+    /// </remarks>
+    private bool _browserStale = true;
+
+    /// <summary>Set while the category and sort lists are rebuilt, so putting the same choice back is not taken for a new one.</summary>
+    private bool _restoringBrowserFilters;
+
+    private bool IsCatalogOnScreen => Section == ShellSection.Builds && BuildTab == BuildTab.Catalog;
+
+    /// <summary>The catalog has to be asked again before it is next shown.</summary>
+    private void MarkBrowserStale()
+    {
+        if (ModSortOptions.Count == 0)
+        {
+            // The sort labels need no network; they are there before the catalog is opened.
+            _restoringBrowserFilters = true;
+
+            try
+            {
+                LoadSortOptions();
+            }
+            finally
+            {
+                _restoringBrowserFilters = false;
+            }
+        }
+
+        ScheduleBrowserReload();
+    }
+
+    /// <summary>The catalog came on screen: what was put off while it was away is done now.</summary>
+    private void OnCatalogShown()
+    {
+        if (!_categoriesLoaded)
+        {
+            _ = LoadCategoriesAsync();
+        }
+
+        if (_browserStale)
+        {
+            // What is left from before was found for another build, version or filter:
+            // the page stands empty for the moment the new answer takes, not wrong.
+            if (!IsBrowserBusy)
+            {
+                ModBrowserItems.Clear();
+                BrowserSummary = string.Empty;
+                IsBrowserEmpty = false;
+            }
+
+            ScheduleBrowserReload(delayMs: 0);
+        }
+    }
+
     public async Task LoadCategoriesAsync()
     {
         if (_categoriesLoaded)
@@ -400,7 +466,16 @@ public partial class MainWindowViewModel
         {
             var categories = await LoadSourceCategoriesAsync();
 
-            LoadSortOptions();
+            _restoringBrowserFilters = true;
+
+            try
+            {
+                LoadSortOptions();
+            }
+            finally
+            {
+                _restoringBrowserFilters = false;
+            }
 
             var previous = SelectedCategory?.Name ?? string.Empty;
 
@@ -417,7 +492,21 @@ public partial class MainWindowViewModel
             }
 
             _categoriesLoaded = true;
-            SelectedCategory = ModCategories.FirstOrDefault(c => c.Name == previous) ?? ModCategories[0];
+
+            var restored = ModCategories.FirstOrDefault(c => c.Name == previous) ?? ModCategories[0];
+
+            // The same category under a new object is not a new filter: the page that is
+            // loading, or loaded, was already asked for with it.
+            _restoringBrowserFilters = restored.Name == previous;
+
+            try
+            {
+                SelectedCategory = restored;
+            }
+            finally
+            {
+                _restoringBrowserFilters = false;
+            }
         }
         catch (Exception ex)
         {
@@ -445,7 +534,28 @@ public partial class MainWindowViewModel
     public void ReloadLocalizedBrowserOptions()
     {
         _categoriesLoaded = false;
-        _ = LoadCategoriesAsync();
+
+        if (IsCatalogOnScreen)
+        {
+            _ = LoadCategoriesAsync();
+            return;
+        }
+
+        // Away from the catalog only the labels that need no network are redone; the
+        // categories are asked for when it is opened.
+        if (ModSortOptions.Count > 0)
+        {
+            _restoringBrowserFilters = true;
+
+            try
+            {
+                LoadSortOptions();
+            }
+            finally
+            {
+                _restoringBrowserFilters = false;
+            }
+        }
     }
 
     [RelayCommand]
@@ -469,6 +579,11 @@ public partial class MainWindowViewModel
         {
             return;
         }
+
+        // This load answers whatever was waiting: the catalog is up to date with the
+        // filters as they are now, and a reload still counting down would only repeat it.
+        _browserStale = false;
+        _browserDebounce.Next();
 
         if (!IsBuildConfigured)
         {
@@ -576,7 +691,7 @@ public partial class MainWindowViewModel
         => target.Instance is null ? SelectedInstance is null : IsSelectedBuild(target.Instance);
 
     /// <summary>Re-runs the browser after the build or the filters change, with a short delay.</summary>
-    private void ScheduleBrowserReload()
+    private void ScheduleBrowserReload(int delayMs = 350)
     {
         // Filters change from the interface and, during start and build sync, from pool
         // threads. Cancelling and disposing the previous source by hand let two such calls
@@ -584,11 +699,18 @@ public partial class MainWindowViewModel
         // ObjectDisposedException ended up in a task nobody watched.
         var token = _browserDebounce.Next();
 
+        // Not on screen: remembered, and done when the catalog is opened.
+        if (!IsCatalogOnScreen)
+        {
+            _browserStale = true;
+            return;
+        }
+
         _ = Task.Run(async () =>
         {
             try
             {
-                await Task.Delay(350, token);
+                await Task.Delay(delayMs, token);
 
                 // A newer request may have arrived while this one waited.
                 if (token.IsCancellationRequested)
@@ -609,7 +731,17 @@ public partial class MainWindowViewModel
                     return;
                 }
 
-                await Dispatcher.UIThread.InvokeAsync(async () => await LoadBrowserPageAsync(1));
+                await Dispatcher.UIThread.InvokeAsync(async () =>
+                {
+                    // Left while this was counting down: it waits for the next opening.
+                    if (!IsCatalogOnScreen)
+                    {
+                        _browserStale = true;
+                        return;
+                    }
+
+                    await LoadBrowserPageAsync(1);
+                });
             }
             catch (OperationCanceledException)
             {
@@ -630,10 +762,19 @@ public partial class MainWindowViewModel
             category.IsSelected = ReferenceEquals(category, value);
         }
 
-        ScheduleBrowserReload();
+        if (!_restoringBrowserFilters)
+        {
+            ScheduleBrowserReload();
+        }
     }
 
-    partial void OnSelectedModSortChanged(ModSortOption? value) => ScheduleBrowserReload();
+    partial void OnSelectedModSortChanged(ModSortOption? value)
+    {
+        if (!_restoringBrowserFilters)
+        {
+            ScheduleBrowserReload();
+        }
+    }
 
     [RelayCommand]
     private async Task InstallBrowserItemAsync(ModBrowserItem? item)
@@ -843,14 +984,15 @@ public partial class MainWindowViewModel
     }
 
     /// <summary>Drops records whose file is no longer on disk.</summary>
-    private void ReconcileInstalledMods()
+    /// <param name="mods">The mods folder as just listed, when the caller has it; read here otherwise.</param>
+    private void ReconcileInstalledMods(IReadOnlyList<InstalledMod>? mods = null)
     {
         if (SelectedInstance is null)
         {
             return;
         }
 
-        var present = _mods.ListMods(InstanceDirectory)
+        var present = (mods ?? _mods.ListMods(InstanceDirectory))
             .Concat(_mods.ListPacks(InstanceDirectory, CatalogPlacement.ResourcePacksFolder))
             .Concat(_mods.ListPacks(InstanceDirectory, CatalogPlacement.ShaderPacksFolder))
             .Select(m => m.Folder + "/" + m.FileName)

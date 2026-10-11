@@ -128,6 +128,11 @@ public partial class MainWindowViewModel : ViewModelBase
         _discord = discord;
         _usage = usage;
 
+        // Settings are written a moment after they are asked for, off this thread; a write
+        // that fails there is told the same way a failed save always was.
+        _settings.SaveFailed += ex => Dispatcher.UIThread.Post(
+            () => Status = Localize("Error_SaveSettings", "Could not save settings: {0}", ex.Message));
+
         // My server: see MainWindowViewModel.Host.cs.
         AttachHosting(hosting);
 
@@ -400,9 +405,25 @@ public partial class MainWindowViewModel : ViewModelBase
             lastMark = now;
         }
 
+        try
+        {
+            // The part the lines below cannot see: from the process starting to the window being up.
+            var sinceStart = DateTime.Now - System.Diagnostics.Process.GetCurrentProcess().StartTime;
+            AppendConsole($"[startup] window up {sinceStart.TotalMilliseconds:F0} ms after the process started");
+        }
+        catch (Exception)
+        {
+            // A number for the log only.
+        }
+
         // Read before anything below saves: the first save is what ends "first run".
         var isFirstRun = !_settings.Exists;
         var settings = _settings.Load();
+
+        // Nothing is saved while the stored values are being copied in below, and what
+        // is asked for during the rest of the start is written once, at its end: see the flags.
+        _settingsLoading = true;
+        _settingsHeld = true;
 
         // A shared "Player" default means several people on the server end up with one
         // skin and one offline UUID, so a fresh installation gets a name of its own.
@@ -436,6 +457,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _backupDirectoryOverride = settings.BackupsDirectory ?? string.Empty;
 
         ImportSuggestionDismissed = settings.ImportSuggestionDismissed;
+        _importScanEmptyAt = settings.ImportScanEmptyAt;
         AnimatedBackground = settings.AnimatedBackground;
         UiScale = NormalizeUiScale(settings.UiScale);
         PreferDiscreteGpu = settings.PreferDiscreteGpu;
@@ -473,6 +495,8 @@ public partial class MainWindowViewModel : ViewModelBase
             // request it also starts is superseded by the one the username triggers.
             SelectedSkinSource = skinSource;
         }
+
+        _settingsLoading = false;
 
         var javaChoices = LoadJavaChoicesAsync();
         LoadAfterLaunchOptions();
@@ -556,9 +580,18 @@ public partial class MainWindowViewModel : ViewModelBase
                                     ?? SelectedLoaderVersion;
         }
 
-        StartServerMonitoring();
+        Trace("loader pick");
 
-        RefreshMods();
+        StartServerMonitoring();
+        Trace("server monitoring");
+
+        // Selecting the build has listed its mods already; only a start that selected
+        // nothing (no builds at all) still has the empty state to put up.
+        if (!ReferenceEquals(_modsListedFor, SelectedInstance) || SelectedInstance is null)
+        {
+            RefreshMods();
+        }
+
         Trace("mods");
 
         // A safe-mode launch that took the launcher down with the game left the player's
@@ -567,16 +600,20 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             RestoreSafeMode();
         }
-        await LoadCategoriesAsync();
-        ScheduleBrowserReload();
-        Trace("catalog categories");
+
+        // The mod catalog is not asked for here any more: categories, a page of twenty
+        // mods, their logos and translations are fetched when the catalog is opened.
+        MarkBrowserStale();
         await javaChoices;
         Trace("java scan");
         AppendConsole($"[mem] managed {GC.GetTotalMemory(false) / 1024 / 1024} MB, working set {Environment.WorkingSet / 1024 / 1024} MB");
 
         // A nickname generated a moment ago only becomes this installation's identity
         // once it is on disk; without this it would be regenerated on the next start.
-        PersistSettings();
+        // It is also the one write for everything the start itself asked to be saved.
+        _settingsHeld = false;
+        _settingsOwed = false;
+        PersistSettings(now: true);
 
         // The tour, for a brand-new installation only. It sits over the window while the
         // build syncs and the versions load underneath, so nothing waits for it.
@@ -655,6 +692,7 @@ public partial class MainWindowViewModel : ViewModelBase
             }
 
             _instances.Delete(SelectedInstance.Id);
+            _modFileCounts.Remove(SelectedInstance.Id);
             _allInstances.RemoveAll(i => i.Id == SelectedInstance.Id);
             ApplyBuildFilter();
             SelectedInstance = Instances.FirstOrDefault();
@@ -789,7 +827,10 @@ public partial class MainWindowViewModel : ViewModelBase
             await MaybeBackupAsync(BackupTrigger.BeforeLaunch);
 
             var account = OfflineAuth.Login(Username);
-            PersistSettings();
+
+            // On disk before the game starts: the launcher may be closed, hidden or
+            // killed with the game from here on.
+            PersistSettings(now: true);
 
             var versionId = string.IsNullOrWhiteSpace(profileId) ? SelectedVersion!.Id : profileId!;
 
@@ -1053,12 +1094,7 @@ public partial class MainWindowViewModel : ViewModelBase
         RaisePresetState(buildChanged: true);
         RaiseBoostState(buildChanged: true);
         RefreshOtherInstances();
-        ScreenshotCount = Core.Screenshots.ScreenshotFolder.List(InstanceDirectory).Count;
-
-        if (BuildTab == BuildTab.Screenshots)
-        {
-            RefreshScreenshots();
-        }
+        OnScreenshotsBuildChanged();
 
         OnWorldsBuildChanged();
 
@@ -1066,7 +1102,10 @@ public partial class MainWindowViewModel : ViewModelBase
 
         _ = LoadLoaderVersionsAsync();
         ForgetModUpdates();
-        RefreshMods();
+
+        // The packs are read off this thread: a build is selected while the window is
+        // being put up, and opening every pack's archive there held the first frame.
+        RefreshModList(PackRefresh.Background);
         RefreshBrowserInstallState();
         OnPropertyChanged(nameof(IsBuildConfigured));
         ScheduleBrowserReload();
@@ -1328,9 +1367,22 @@ public partial class MainWindowViewModel : ViewModelBase
     public void ReportStartupFailure(Exception ex)
     {
         IsStartupReady = true;
+
+        // The start will not reach its own save; what was asked for meanwhile is written
+        // now - unless it failed while the stored values were still being copied in, when
+        // a save would be of half of them.
+        _settingsHeld = false;
+
+        if (_settingsLoading)
+        {
+            _settingsLoading = false;
+            _settingsOwed = false;
+        }
+
+        FlushSettings();
         Status = Localize("Error_Startup", "Startup failed: {0}", ex.Message);
         AppendConsole($"[startup] {ex}");
-        FlushConsole();
+        FlushLauncherLog();
     }
 
     /// <summary>Reports a failure from a view event handler that has no other channel.</summary>
@@ -1340,12 +1392,64 @@ public partial class MainWindowViewModel : ViewModelBase
         AppendConsole($"[ui] {ex}");
     }
 
-    private void PersistSettings()
+    /// <summary>
+    /// True while <see cref="InitializeAsync"/> is copying the stored settings into the
+    /// properties. Every property that differs from its default asks for a save as it is
+    /// set, and each of those saves used to write a file that was only half the player's:
+    /// the fields not yet copied went out as defaults.
+    /// </summary>
+    private bool _settingsLoading;
+
+    /// <summary>
+    /// Puts a save that is still waiting on disk. Called where the launcher may not get
+    /// another chance: on exit, on hiding to the tray, before the game is started.
+    /// </summary>
+    public void FlushSettings()
+    {
+        if (_settingsOwed)
+        {
+            // Asked for while the start was still holding its saves, and the launcher is
+            // leaving, hiding or starting the game before the start got to its own.
+            _settingsOwed = false;
+            PersistSettings(now: true);
+            return;
+        }
+
+        try
+        {
+            _settings.Flush();
+        }
+        catch (Exception ex)
+        {
+            Status = Localize("Error_SaveSettings", "Could not save settings: {0}", ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// True from the first line of <see cref="InitializeAsync"/> to its last save. A start
+    /// selects a build, loads the version list, picks a loader - each asks for a save, and
+    /// each save in between is of a launcher that is not done starting: the version it
+    /// would write is not known yet. They are owed instead (<see cref="_settingsOwed"/>)
+    /// and paid by the one save the start ends with, or by <see cref="FlushSettings"/> if
+    /// the launcher is closed, hidden or sent to start the game before that.
+    /// </summary>
+    private bool _settingsHeld;
+
+    private bool _settingsOwed;
+
+    /// <param name="now">Write before returning, instead of shortly and together with the saves that follow.</param>
+    private void PersistSettings(bool now = false)
     {
         // The data has been moved and this process is about to restart: a save now
         // would recreate settings.json in the abandoned folder.
-        if (_dataMoved)
+        if (_dataMoved || _settingsLoading)
         {
+            return;
+        }
+
+        if (_settingsHeld && !now)
+        {
+            _settingsOwed = true;
             return;
         }
 
@@ -1363,6 +1467,7 @@ public partial class MainWindowViewModel : ViewModelBase
             Nicknames = Nicknames.ToList(),
             DismissedBuildIds = _dismissedBuildIds.ToList(),
             ImportSuggestionDismissed = ImportSuggestionDismissed,
+            ImportScanEmptyAt = _importScanEmptyAt,
             AnimatedBackground = AnimatedBackground,
             UiScale = UiScale,
             PreferDiscreteGpu = PreferDiscreteGpu,
@@ -1405,7 +1510,14 @@ public partial class MainWindowViewModel : ViewModelBase
 
         try
         {
-            _settings.Save(settings);
+            // One write for a burst of changes, off this thread: a build switch alone
+            // asks for a save from half a dozen handlers.
+            _settings.SaveSoon(settings);
+
+            if (now)
+            {
+                _settings.Flush();
+            }
         }
         catch (Exception ex)
         {

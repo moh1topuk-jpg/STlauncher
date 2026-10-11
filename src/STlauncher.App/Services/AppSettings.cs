@@ -77,6 +77,13 @@ public sealed class AppSettings
     /// </summary>
     public bool ImportSuggestionDismissed { get; set; }
 
+    /// <summary>
+    /// When the look for other launchers' builds at start last found nothing to bring
+    /// over. The start does not look again for a week after that; the button in the
+    /// import dialog always does. Null when the last look found something, or none was made.
+    /// </summary>
+    public System.DateTimeOffset? ImportScanEmptyAt { get; set; }
+
     /// <summary>The drifting embers behind the main screen.</summary>
     public bool AnimatedBackground { get; set; } = true;
 

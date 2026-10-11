@@ -70,12 +70,32 @@ public partial class App : Application
 
             // The window icon follows the server artwork: the launcher PNG when present,
             // otherwise the icon the server reports.
-            viewModel.PropertyChanged += (_, e) =>
+            // Made off the interface thread: turning the picture into an icon means encoding
+            // it, and for the thousand-pixel launcher logo that took four tenths of a
+            // second - of every start, in the middle of the splash, with the window frozen.
+            var iconRequest = 0;
+
+            viewModel.PropertyChanged += async (_, e) =>
             {
                 if (e.PropertyName == nameof(MainWindowViewModel.ServerIcon) &&
                     viewModel.ServerIcon is { } icon)
                 {
-                    window.Icon = new WindowIcon(icon);
+                    var request = ++iconRequest;
+
+                    try
+                    {
+                        var windowIcon = await System.Threading.Tasks.Task.Run(() => new WindowIcon(icon));
+
+                        // The newest picture wins: the server's own may arrive while the logo is still being made.
+                        if (request == iconRequest)
+                        {
+                            window.Icon = windowIcon;
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        // The window keeps the icon it has.
+                    }
                 }
             };
 
@@ -89,6 +109,9 @@ public partial class App : Application
                 window.Show();
                 window.WindowState = WindowState.Normal;
                 window.Activate();
+
+                // What was let go of while the launcher hid for the game comes back with the window.
+                viewModel.RestoreAfterGame();
             }
 
             // My server: a running server lives inside the launcher, so every way out of it
@@ -130,6 +153,12 @@ public partial class App : Application
                 RefreshTrayMenu(tray, ShowWindow, Quit);
                 tray.IsVisible = true;
                 window.Hide();
+
+                // Hidden because the game has started: settings go to disk now, pictures
+                // nobody can see are let go of, and the memory is handed back to the
+                // system a moment later. The game is what the machine is for from here on.
+                viewModel.ReleaseMemoryForGame();
+                MemoryRelief.AfterHiding(viewModel.Note);
             }
 
             viewModel.RequestHideLauncher += HideToTray;
@@ -177,6 +206,16 @@ public partial class App : Application
                 };
                 smoke.Start();
             }
+
+            // A settings change waits a moment to be written together with the ones that
+            // follow it; leaving is where that wait ends. The same for the log. The
+            // process-exit hook is for the ways out that do not pass through the lifetime.
+            desktop.Exit += (_, _) =>
+            {
+                viewModel.FlushSettings();
+                viewModel.FlushOnExit();
+            };
+            AppDomain.CurrentDomain.ProcessExit += (_, _) => viewModel.FlushOnExit();
 
             // Discord shows the last presence until the client says goodbye.
             desktop.Exit += (_, _) => _services.GetRequiredService<DiscordPresenceService>().Dispose();

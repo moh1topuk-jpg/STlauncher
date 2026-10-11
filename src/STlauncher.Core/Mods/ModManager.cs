@@ -9,7 +9,15 @@ using STlauncher.Core.Http;
 namespace STlauncher.Core.Mods;
 
 /// <param name="Folder">"mods", "resourcepacks" or "shaderpacks": where the file lives.</param>
-public sealed record InstalledMod(string FileName, string DisplayName, string Path, bool Enabled, long Size, string Folder = ModManager.ModsFolderName);
+public sealed record InstalledMod(string FileName, string DisplayName, string Path, bool Enabled, long Size, string Folder = ModManager.ModsFolderName)
+{
+    /// <summary>
+    /// When the file landed in the folder: its creation time, which a copy or a download
+    /// sets to now. Read together with the size, so a list of two hundred mods is two
+    /// hundred looks at the disk and not four hundred. Unset for packs.
+    /// </summary>
+    public DateTime CreatedUtc { get; init; }
+}
 
 public sealed class ModManager
 {
@@ -55,7 +63,9 @@ public sealed class ModManager
                     ? Path.GetFileNameWithoutExtension(fileName)
                     : Path.GetFileNameWithoutExtension(fileName[..^DisabledSuffix.Length]);
 
-                return new InstalledMod(fileName, display, path, enabled, new FileInfo(path).Length);
+                var info = new FileInfo(path);
+
+                return new InstalledMod(fileName, display, path, enabled, info.Length) { CreatedUtc = info.CreationTimeUtc };
             })
             .OrderByDescending(m => m.Enabled)
             .ThenBy(m => m.DisplayName, StringComparer.OrdinalIgnoreCase)

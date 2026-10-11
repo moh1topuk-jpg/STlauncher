@@ -49,17 +49,48 @@ public partial class ResourcePackItem : ObservableObject
             CompatibilityLabel = MainWindowViewModel.Localize("Packs_Mismatch", "made for another version — may look off");
         }
 
+        Preview = PreviewOf(info.Icon);
+    }
+
+    /// <summary>
+    /// Decoded pack.png pictures, by the bytes they were decoded from. The pack list is
+    /// rebuilt whenever anything in the build changes, and every rebuild decoded every
+    /// picture anew; the same bytes now give the same picture, for as long as they live.
+    /// </summary>
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<byte[], Bitmap> Previews = new();
+
+    /// <summary>The picture for a pack's icon bytes, or null. Safe to call off the interface thread, to have it ready.</summary>
+    public static Bitmap? PreviewOf(byte[]? icon)
+    {
+        if (icon is not { Length: > 0 })
+        {
+            return null;
+        }
+
+        if (Previews.TryGetValue(icon, out var known))
+        {
+            return known;
+        }
+
         try
         {
-            if (info.Icon is { Length: > 0 })
+            using var stream = new MemoryStream(icon);
+            var decoded = new Bitmap(stream);
+
+            // Two threads may decode the same icon at once; both end up with one picture.
+            var kept = Previews.GetValue(icon, _ => decoded);
+
+            if (!ReferenceEquals(kept, decoded))
             {
-                using var stream = new MemoryStream(info.Icon);
-                Preview = new Bitmap(stream);
+                decoded.Dispose();
             }
+
+            return kept;
         }
         catch (Exception)
         {
             // A broken pack.png is not worth a broken row.
+            return null;
         }
     }
 
@@ -244,6 +275,11 @@ public partial class MainWindowViewModel
     private int? _packFormat;
     private string? _packFormatVersion;
 
+    /// <summary>What each pack said about itself, kept while the pack is the same file: see the class.</summary>
+    private readonly ResourcePackCache _packCache = new();
+
+    private int _packsRun;
+
     partial void OnSelectedResourcePackChanged(ResourcePackItem? oldValue, ResourcePackItem? newValue)
     {
         if (oldValue is not null)
@@ -265,11 +301,14 @@ public partial class MainWindowViewModel
     /// </summary>
     private void RefreshPacks()
     {
+        // Whatever a background read was about to deliver is older than this.
+        _packsRun++;
+
         try
         {
             var selected = SelectedResourcePack?.FileName;
             var gameFormat = ResolvePackFormat();
-            var packs = ResourcePackInspector.ListPacks(System.IO.Path.Combine(InstanceDirectory, CatalogPlacement.ResourcePacksFolder));
+            var packs = _packCache.ListPacks(System.IO.Path.Combine(InstanceDirectory, CatalogPlacement.ResourcePacksFolder));
             var order = ResourcePackOrder.ReadEnabled(InstanceDirectory);
 
             var items = packs
@@ -318,6 +357,71 @@ public partial class MainWindowViewModel
         OnPropertyChanged(nameof(ModsTabLabel));
         OnPropertyChanged(nameof(ResourcePacksTabLabel));
         OnPropertyChanged(nameof(ShadersTabLabel));
+    }
+
+    /// <summary>
+    /// The same refresh for a build that has just been selected, with the reading done
+    /// off the interface thread: opening each archive, decoding each pack.png, adding up
+    /// every file of an unpacked pack and reading the game jar for its pack format. A
+    /// build is selected while the window is being put up, and all of that used to stand
+    /// between the player and the first frame. The lists are emptied at once - they are
+    /// another build's - and filled when the reading is done.
+    /// </summary>
+    private void RefreshPacksInBackground()
+    {
+        var run = ++_packsRun;
+        var instance = SelectedInstance;
+        var directory = InstanceDirectory;
+        var version = instance?.VersionId;
+        var jar = string.IsNullOrEmpty(version) ? null : _paths.VersionJarPath(version);
+        var formatKnown = _packFormatVersion == version;
+
+        EnabledResourcePacks.Clear();
+        DisabledResourcePacks.Clear();
+        SelectedResourcePack = null;
+
+        // Cheap, and the shaders tab reads the mod list that is already here.
+        RefreshShaders();
+
+        _ = Task.Run(() =>
+        {
+            int? format = null;
+
+            try
+            {
+                var packs = _packCache.ListPacks(System.IO.Path.Combine(directory, CatalogPlacement.ResourcePacksFolder), recountFolders: true);
+
+                foreach (var pack in packs)
+                {
+                    ResourcePackItem.PreviewOf(pack.Icon);
+                }
+
+                if (!formatKnown && jar is not null)
+                {
+                    format = GamePackFormat.ReadResourceFormat(jar);
+                }
+            }
+            catch (Exception)
+            {
+                // The refresh below reads again and reports what it cannot.
+            }
+
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                if (run != _packsRun || !ReferenceEquals(SelectedInstance, instance))
+                {
+                    return;
+                }
+
+                if (!formatKnown && jar is not null && SelectedInstance?.VersionId == version)
+                {
+                    _packFormatVersion = version;
+                    _packFormat = format;
+                }
+
+                RefreshPacks();
+            });
+        });
     }
 
     private void RefreshShaders()

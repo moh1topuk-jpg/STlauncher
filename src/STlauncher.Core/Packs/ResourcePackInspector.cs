@@ -61,8 +61,15 @@ public static class ResourcePackInspector
             return Array.Empty<ResourcePackInfo>();
         }
 
-        var result = new List<ResourcePackInfo>();
+        return EnumeratePacks(packsDirectory)
+            .Select(Inspect)
+            .OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
 
+    /// <summary>The paths in the folder that are packs: archives and folders, hidden entries left out.</summary>
+    public static IEnumerable<string> EnumeratePacks(string packsDirectory)
+    {
         foreach (var entry in Directory.EnumerateFileSystemEntries(packsDirectory))
         {
             var name = Path.GetFileName(entry);
@@ -74,13 +81,9 @@ public static class ResourcePackInspector
 
             if (Directory.Exists(entry) || entry.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
             {
-                result.Add(Inspect(entry));
+                yield return entry;
             }
         }
-
-        return result
-            .OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
-            .ToList();
     }
 
     public static ResourcePackInfo Inspect(string path)

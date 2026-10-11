@@ -28,9 +28,16 @@ public partial class MainWindowViewModel
 
     partial void OnBuildFilterChanged(string value) => ApplyBuildFilter();
 
+    /// <summary>
+    /// Mod files per build, by build id, counted once. The filter runs on every letter
+    /// typed into the search box, and used to list every build's mods folder for each of
+    /// them. The selected build's number is kept current by the mod list itself.
+    /// </summary>
+    private readonly Dictionary<string, int> _modFileCounts = new(StringComparer.OrdinalIgnoreCase);
+
     private void ApplyBuildFilter()
     {
-        var selectedId = SelectedInstance?.Id;
+        var selected = SelectedInstance;
         var filter = (BuildFilter ?? string.Empty).Trim();
 
         var filtered = filter.Length == 0
@@ -40,14 +47,52 @@ public partial class MainWindowViewModel
                             || (i.VersionId?.Contains(filter, StringComparison.OrdinalIgnoreCase) ?? false))
                 .ToList();
 
-        Instances.Clear();
         foreach (var instance in filtered)
         {
-            instance.DetectedModCount = CountModFiles(instance);
-            Instances.Add(instance);
+            if (!_modFileCounts.TryGetValue(instance.Id, out var count))
+            {
+                count = CountModFiles(instance);
+                _modFileCounts[instance.Id] = count;
+            }
+
+            instance.DetectedModCount = count;
         }
 
-        if (selectedId is not null && Instances.All(i => i.Id != selectedId))
+        // The same builds in the same order: nothing to rebuild. Emptying the list and
+        // filling it again dropped the selection on the way, and putting it back ran
+        // everything a real change of build runs - the mod list was read a second time
+        // at every start because of it.
+        if (Instances.SequenceEqual(filtered))
+        {
+            return;
+        }
+
+        // The list box lets go of its selection while the list is rebuilt and writes that
+        // into SelectedInstance; with the build still in the list it is put straight
+        // back, and neither write is a change of build.
+        _refreshingListItem = true;
+
+        try
+        {
+            Instances.Clear();
+
+            foreach (var instance in filtered)
+            {
+                Instances.Add(instance);
+            }
+
+            if (selected is not null && Instances.Contains(selected) && !ReferenceEquals(SelectedInstance, selected))
+            {
+                SelectedInstance = selected;
+            }
+        }
+        finally
+        {
+            _refreshingListItem = false;
+        }
+
+        // Filtered out, or deleted: the first build left takes its place - a real change.
+        if (selected is not null && Instances.All(i => i.Id != selected.Id))
         {
             SelectedInstance = Instances.FirstOrDefault();
         }
