@@ -117,6 +117,9 @@ public partial class SettingsPage : UserControl
 
         var matched = Controls.SettingsSearch.Filter(root, box.Text);
 
+        // Found rows stand alone in their panels: no hairline under what may be the only one.
+        root.Classes.Set("searching", matched >= 0);
+
         if (this.FindControl<Control>("SearchEmpty") is { } empty)
         {
             empty.IsVisible = matched == 0;
