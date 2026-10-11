@@ -1664,6 +1664,10 @@
     <x:String x:Key="Host_RemoveMenu">Убрать из списка…</x:String>
     <x:String x:Key="Host_FolderTitle">Папка сервера</x:String>
     <x:String x:Key="Host_WhitelistShort">Сервер пускает только ники из списка. Ник не пароль: давайте адрес только тем, кому доверяете.</x:String>
+    <x:String x:Key="Host_JoinEmptyTitle">Серверов друзей пока нет</x:String>
+    <x:String x:Key="Host_JoinEmptyText">Вставьте код из приглашения в поле выше. Сервер останется в этом списке, и в следующий раз хватит одной кнопки «Зайти».</x:String>
+    <x:String x:Key="Host_EmptyStep1">Создайте и запустите сервер</x:String>
+    <x:String x:Key="Host_EmptyStep3Note">Друг вставит код у себя в разделе «Друзья», и моды из вашей сборки поставятся у него сами.</x:String>
 
     <!-- My server: the server's mods and their settings -->
     <x:String x:Key="HostMods_Installed">Стоит на сервере · {0}</x:String>
