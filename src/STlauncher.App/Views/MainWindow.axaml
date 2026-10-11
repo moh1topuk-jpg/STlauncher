@@ -35,8 +35,9 @@
     <Grid ColumnDefinitions="76,*">
 
         <!-- ============ Rail ============
-             76 px, the full height of the window: the mark, the sections, and at the foot
-             the version, settings and the player. Its empty parts drag the window. -->
+             76 px, the full height of the window: the mark, the sections (settings the
+             last of them), and at the foot the version and the player. Its empty parts
+             drag the window. -->
         <Border Grid.Column="0" Background="Transparent"
                 BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="0,0,1,0"
                 PointerPressed="OnTitleBarPressed">
@@ -47,54 +48,84 @@
                     <Image Source="/Assets/server-logo.png" Stretch="UniformToFill"/>
                 </Border>
 
-                <StackPanel Grid.Row="1" Spacing="6" HorizontalAlignment="Center">
-                    <Button Classes="rail" Classes.active="{Binding IsGameSection}"
-                            Command="{Binding SelectSectionCommand}" CommandParameter="Game">
-                        <StackPanel Spacing="4" HorizontalAlignment="Center">
-                            <PathIcon Data="{StaticResource IconHome}"/>
-                            <TextBlock Text="{DynamicResource Nav_Game}" HorizontalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
-                    <Button Classes="rail" Classes.active="{Binding IsBuildsSection}"
-                            Command="{Binding SelectSectionCommand}" CommandParameter="Builds">
-                        <StackPanel Spacing="4" HorizontalAlignment="Center">
-                            <PathIcon Data="{StaticResource IconBuilds}"/>
-                            <TextBlock Text="{DynamicResource Nav_Builds}" HorizontalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
+                <!-- The sections, top down; settings is the last of them, where the hand
+                     expects it. Each is a pill with a bar of the accent at the rail's edge
+                     while the player is in it (Border.rail-mark). -->
+                <StackPanel Grid.Row="1" Spacing="6">
+                    <Panel>
+                        <Border Classes="rail-mark" Classes.active="{Binding IsGameSection}"/>
+                        <Button Classes="rail" Classes.active="{Binding IsGameSection}" HorizontalAlignment="Center"
+                                Command="{Binding SelectSectionCommand}" CommandParameter="Game">
+                            <StackPanel Spacing="4" HorizontalAlignment="Center">
+                                <PathIcon Data="{StaticResource IconHome}"/>
+                                <TextBlock Text="{DynamicResource Nav_Game}" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </Panel>
+                    <Panel>
+                        <Border Classes="rail-mark" Classes.active="{Binding IsBuildsSection}"/>
+                        <Button Classes="rail" Classes.active="{Binding IsBuildsSection}" HorizontalAlignment="Center"
+                                Command="{Binding SelectSectionCommand}" CommandParameter="Builds">
+                            <StackPanel Spacing="4" HorizontalAlignment="Center">
+                                <PathIcon Data="{StaticResource IconBuilds}"/>
+                                <TextBlock Text="{DynamicResource Nav_Builds}" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </Panel>
                     <!-- Skins: the library and the editor. -->
-                    <Button Classes="rail" Classes.active="{Binding IsSkinsSection}"
-                            Command="{Binding SelectSectionCommand}" CommandParameter="Skins">
-                        <StackPanel Spacing="4" HorizontalAlignment="Center">
-                            <PathIcon Data="{StaticResource IconSkins}"/>
-                            <TextBlock Text="{DynamicResource Nav_Skins}" HorizontalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
+                    <Panel>
+                        <Border Classes="rail-mark" Classes.active="{Binding IsSkinsSection}"/>
+                        <Button Classes="rail" Classes.active="{Binding IsSkinsSection}" HorizontalAlignment="Center"
+                                Command="{Binding SelectSectionCommand}" CommandParameter="Skins">
+                            <StackPanel Spacing="4" HorizontalAlignment="Center">
+                                <PathIcon Data="{StaticResource IconSkins}"/>
+                                <TextBlock Text="{DynamicResource Nav_Skins}" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </Panel>
                     <!-- Friends: the player's own server for friends, and the servers friends invited them to. -->
-                    <Button Classes="rail" Classes.active="{Binding IsHostSection}"
-                            Command="{Binding SelectSectionCommand}" CommandParameter="Host">
-                        <StackPanel Spacing="4" HorizontalAlignment="Center">
-                            <PathIcon Data="{StaticResource IconHost}"/>
-                            <TextBlock Text="{DynamicResource Nav_Host}" HorizontalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
-                    <Button Classes="rail" Classes.active="{Binding IsServerSection}"
-                            Command="{Binding SelectSectionCommand}" CommandParameter="Server">
-                        <StackPanel Spacing="4" HorizontalAlignment="Center">
-                            <PathIcon Data="{StaticResource IconStar}"/>
-                            <!-- The server has a name; the tab wears it. -->
-                            <TextBlock Text="{Binding ServerName}" HorizontalAlignment="Center"
-                                       MaxWidth="56" TextTrimming="CharacterEllipsis"/>
-                        </StackPanel>
-                    </Button>
-                    <Button Classes="rail" Classes.active="{Binding IsConsoleSection}"
-                            IsVisible="{Binding ShowDeveloperConsole}"
-                            Command="{Binding SelectSectionCommand}" CommandParameter="Console">
-                        <StackPanel Spacing="4" HorizontalAlignment="Center">
-                            <PathIcon Data="{StaticResource IconConsole}"/>
-                            <TextBlock Text="{DynamicResource Nav_Console}" HorizontalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
+                    <Panel>
+                        <Border Classes="rail-mark" Classes.active="{Binding IsHostSection}"/>
+                        <Button Classes="rail" Classes.active="{Binding IsHostSection}" HorizontalAlignment="Center"
+                                Command="{Binding SelectSectionCommand}" CommandParameter="Host">
+                            <StackPanel Spacing="4" HorizontalAlignment="Center">
+                                <PathIcon Data="{StaticResource IconHost}"/>
+                                <TextBlock Text="{DynamicResource Nav_Host}" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </Panel>
+                    <Panel>
+                        <Border Classes="rail-mark" Classes.active="{Binding IsServerSection}"/>
+                        <Button Classes="rail" Classes.active="{Binding IsServerSection}" HorizontalAlignment="Center"
+                                Command="{Binding SelectSectionCommand}" CommandParameter="Server">
+                            <StackPanel Spacing="4" HorizontalAlignment="Center">
+                                <PathIcon Data="{StaticResource IconStar}"/>
+                                <!-- The server has a name; the tab wears it. -->
+                                <TextBlock Text="{Binding ServerName}" HorizontalAlignment="Center"
+                                           MaxWidth="58" TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                        </Button>
+                    </Panel>
+                    <Panel>
+                        <Border Classes="rail-mark" Classes.active="{Binding IsSettingsSection}"/>
+                        <Button Classes="rail" Classes.active="{Binding IsSettingsSection}" HorizontalAlignment="Center"
+                                Command="{Binding SelectSectionCommand}" CommandParameter="Settings">
+                            <StackPanel Spacing="4" HorizontalAlignment="Center">
+                                <PathIcon Data="{StaticResource IconSettings}"/>
+                                <TextBlock Text="{DynamicResource Nav_Settings}" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </Panel>
+                    <Panel IsVisible="{Binding ShowDeveloperConsole}">
+                        <Border Classes="rail-mark" Classes.active="{Binding IsConsoleSection}"/>
+                        <Button Classes="rail" Classes.active="{Binding IsConsoleSection}" HorizontalAlignment="Center"
+                                Command="{Binding SelectSectionCommand}" CommandParameter="Console">
+                            <StackPanel Spacing="4" HorizontalAlignment="Center">
+                                <PathIcon Data="{StaticResource IconConsole}"/>
+                                <TextBlock Text="{DynamicResource Nav_Console}" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </Panel>
                 </StackPanel>
 
                 <StackPanel Grid.Row="2" Spacing="6" HorizontalAlignment="Center">
@@ -117,14 +148,6 @@
                             Command="{Binding OpenReleasesPageCommand}"
                             ToolTip.Tip="{DynamicResource Update_DownloadManually}">
                         <PathIcon Data="{StaticResource IconOpenExternal}"/>
-                    </Button>
-
-                    <Button Classes="rail" Classes.active="{Binding IsSettingsSection}"
-                            Command="{Binding SelectSectionCommand}" CommandParameter="Settings">
-                        <StackPanel Spacing="4" HorizontalAlignment="Center">
-                            <PathIcon Data="{StaticResource IconSettings}"/>
-                            <TextBlock Text="{DynamicResource Nav_Settings}" HorizontalAlignment="Center"/>
-                        </StackPanel>
                     </Button>
 
                     <!-- The player: the face opens the model, the name and saved names. -->
@@ -200,7 +223,9 @@
                                 <PathIcon Data="{StaticResource IconSearch}" VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="1" Text="{DynamicResource Search_Entry}" VerticalAlignment="Center"
                                            TextTrimming="CharacterEllipsis"/>
-                                <TextBlock Grid.Column="2" Classes="kbd" Text="Ctrl K" VerticalAlignment="Center"/>
+                                <Border Grid.Column="2" Classes="keycap">
+                                    <TextBlock Classes="kbd" Text="Ctrl K"/>
+                                </Border>
                             </Grid>
                         </Button>
                     </Panel>
@@ -220,16 +245,18 @@
             </Border>
 
             <!-- ============ Update notification ============
-                 A raised line under the strip. Gold says "there is something new"; the
-                 button is a quiet one, the accent stays with the page's own main action. -->
+                 A panel under the strip with a gold edge: gold says "there is something
+                 new". The button is the panel's main action, so it is accent-soft; the
+                 filled accent stays with the page's own main action. -->
             <Border Grid.Row="1" IsVisible="{Binding IsUpdateBannerVisible}"
                     Background="{DynamicResource UpdateBannerBrush}" CornerRadius="12"
-                    Margin="28,0,28,10" Padding="14,8,8,8">
+                    BorderBrush="{DynamicResource GoldMutedBrush}" BorderThickness="1"
+                    Margin="28,0,28,10" Padding="14,7,7,7">
                 <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
                     <PathIcon Data="{StaticResource IconDownload}" Classes="gold" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" VerticalAlignment="Center"
                                Text="{Binding UpdateBannerText}" TextWrapping="Wrap"/>
-                    <Button Grid.Column="2" Classes="small"
+                    <Button Grid.Column="2" Classes="small accent-soft"
                             Content="{Binding UpdateBannerAction}"
                             Command="{Binding InstallUpdateCommand}"
                             IsEnabled="{Binding !IsUpdateBusy}"/>
@@ -258,7 +285,7 @@
             <Border Grid.Row="3" Padding="28,0" Height="28">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                     <TextBlock Text="{Binding Status}" VerticalAlignment="Center"
-                               Classes="faint" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                               Classes="muted" FontSize="12" TextTrimming="CharacterEllipsis"/>
                     <ProgressBar Grid.Column="1" Value="{Binding Progress}" Minimum="0" Maximum="100" Width="160"
                                  VerticalAlignment="Center" IsVisible="{Binding ShowLaunchProgress}"/>
                 </Grid>

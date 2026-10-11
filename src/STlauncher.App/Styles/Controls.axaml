@@ -2,22 +2,78 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!-- =====================================================================================
-         THE VOCABULARY OF THE QUIET LOOK
-         Every page is built from the classes below. One loud thing per screen: the accent
-         fills only the screen's main action. Lists are rows with a hairline, not cards.
-         Rare actions hide until the row is aimed at, and live in the "..." menu as well.
+         THE VOCABULARY OF THE LOOK
+         Every page is built from the classes below.
+
+         The rules, after the correction:
+           * A page is a few PANELS on the ground (the build list, the content, a group of
+             settings, each column of a two-column page). The ground shows between them.
+             Rows inside a panel stay rows with hairlines: no frame around every item.
+           * Everything pressable looks pressable: a fill AND a 1 px edge. Text-only buttons
+             (ghost, plain, link) are for tertiary things inside a panel next to a real
+             button, never for the way to somewhere.
+           * One FILLED accent button per screen ("primary"). The accent also guides: the
+             main action of a panel is "accent-soft"; the active tab, the chosen row, the
+             active rail item, key numbers and the focus ring are in the accent.
+           * Gold marks what is new or needs a look. Green / amber / grey dots are state.
+           * Rare actions still hide until the row is aimed at, and live in the "..." menu.
+
+         SURFACES (Border)
+           panel                a step lighter than the ground (white on the tinted ground
+                                in the light theme), radius 16, a faint edge, padding 18.
+                                No shadow.
+                                  <Border Classes="panel">
+                                      <StackPanel Spacing="12">
+                                          <controls:Caption Text="{DynamicResource Home_Continue}"/>
+                                          ...rows, settings, buttons...
+                                      </StackPanel>
+                                  </Border>
+           panel flush          for a list that runs edge to edge: padding 6, which is what
+                                lets a row's 10 px corner sit inside the panel's 16 px one.
+                                A heading inside it takes Margin="12,10,12,6".
+                                  <Border Classes="panel flush">
+                                      <DockPanel>
+                                          <controls:Caption DockPanel.Dock="Top" Margin="12,10,12,6" Text="Builds"/>
+                                          <ListBox Classes="rows" .../>
+                                      </DockPanel>
+                                  </Border>
+           panel tint           the page's lead panel: a faint wash of the accent from the
+                                top left corner. One per page at most.
+                                  <Border Classes="panel tint">...</Border>
+           panel inset          a notice, a question, a consent text inside another panel:
+                                it steps DOWN (radius 12). A "panel" nested in a "panel"
+                                becomes this by itself.
+                                  <Border Classes="panel inset" Padding="14,12">...</Border>
+           card                 the older name of "panel" (padding 20). Use "panel".
+           tile                 one figure with its caption; several make a row of metrics.
+           Tones, bottom up: GroundBrush, FieldBrush (inputs), PanelBrush, RaisedBrush
+           (menus), RowHoverBrush, ControlBrush (buttons). Edges: PanelEdgeBrush,
+           FieldEdgeBrush, ControlEdgeBrush / ControlEdgeHoverBrush, HairlineBrush (rows).
+           Accent: AccentBrush (fills), AccentHoverBrush (marks: bars, underlines, icons),
+           AccentTextBrush (the accent as ink: readable on a panel), AccentSoftBrush +
+           AccentEdgeBrush (a wash and its edge), RowSelectedBrush + SelectedRowShadow.
 
          BUTTONS (Button)
-           (no class) / quiet   a grey raised button: every ordinary action.
+           (no class) / quiet   every ordinary action: a raised fill with a 1 px edge; both
+                                lighten under the pointer, the fill drops when pressed.
+                                Reads on the ground and on a panel, in both themes.
                                   <Button Content="Open"/>
-           primary              THE crimson one. At most one per screen.
+           primary              THE filled crimson one. At most one per screen.
                                   <Button Classes="primary" Content="Create server"/>
-           ghost                text only, a background on hover: "Other build", "Cancel".
-                                  <Button Classes="ghost" Content="Pose"/>
-           plain                a ghost with tight padding, for a bare icon or word in a line.
-           link                 muted text over a hairline: "Mods and settings", "What changed".
+           accent-soft          the main action of a panel when the screen's filled button
+                                is elsewhere: an accent wash, an accent edge, accent ink.
+                                  <Button Classes="accent-soft" Content="Add mods"/>
+                                  <Button Classes="accent-soft"><StackPanel Orientation="Horizontal" Spacing="8"><PathIcon Data="{StaticResource IconPlus}" Classes="small"/><TextBlock Text="Add mods"/></StackPanel></Button>
+           ghost                no fill at rest, primary ink; an edge and a fill under the
+                                pointer. Tertiary only: "Cancel" beside a real button.
+                                  <Button Classes="ghost" Content="Cancel"/>
+           plain                a ghost with tight padding and no edge, for a bare icon or
+                                a word inside a line (the close cross of a notice).
+           link                 primary ink, underlined; the accent under the pointer. For
+                                "What changed", "Open the trash" inside a panel.
                                   <Button Classes="link" Content="Open the trash"/>
-           icon                 30x30, one icon, a background on hover. Give it a ToolTip.Tip.
+           icon                 30x30, one icon, the quiet button's fill and edge at rest.
+                                Give it a ToolTip.Tip.
                                   <Button Classes="icon" ToolTip.Tip="Show file"><PathIcon Data="{StaticResource IconFolder}"/></Button>
            icon more            the "..." of a row or header; it carries a MenuFlyout.
                                   <Button Classes="icon more" ToolTip.Tip="More">
@@ -30,21 +86,32 @@
                                   </Button>
            hero                 the big play button of the home screen (56 high).
                                   <Button Classes="primary hero"><StackPanel Orientation="Horizontal" Spacing="10"><PathIcon Data="{StaticResource IconPlay}"/><TextBlock Text="Play"/></StackPanel></Button>
+           hero-side            its square companion (56x52, quiet).
            play                 "Play" in a header (44 high), the accent as well.
-           small                modifier: 30 high. danger: modifier, red text on the quiet fill.
-           chip                 a filter chip that can be chosen: <Button Classes="chip" Classes.active="{Binding ...}"/>
+           small                modifier: about 30 high.
+           danger               modifier: red words on the quiet fill, a red edge on hover.
+           chip                 a filter chip that can be chosen; it has an edge, the chosen
+                                one wears the accent wash and edge.
+                                  <Button Classes="chip" Classes.active="{Binding ...}" Content="Maps"/>
+           Sizes: the 1 px edge is inside the padding (15,9 + 1), so a button is as large
+           as before. A TextBlock or PathIcon written inside a button takes the page's
+           colours: for primary / accent-soft the styles below put the button's ink back
+           for the shapes Button > TextBlock, Button > PathIcon and Button > StackPanel > those.
+           Keyboard focus is a 2 px ring of the accent drawn by the button itself.
 
          ROWS
-           Border.row           one item of a list: padding 11,12, radius 10, a hairline above,
-                                a tone under the pointer. Put a Grid inside.
+           Border.row           one item of a list: padding 12,11, radius 10, a hairline
+                                above, a tone under the pointer (visible on a panel too).
+                                Put a Grid inside.
                .reveal          any child (usually a StackPanel of icon buttons): hidden until the
                                 row is under the pointer, or until Tab moves focus into it.
                                 Hidden also means it cannot be clicked. Never the ONLY way to an
                                 action: mirror it in the "..." menu and the context menu.
                .first           modifier: no hairline (the first row of a StackPanel loses its
                                 line by itself; say "first" when the row sits in an ItemsControl).
-               .selected        modifier: the chosen row keeps the hover tone.
-               .flat            modifier: no hairline at all (a sidebar list, padding 9,12).
+               .selected        modifier: the chosen row: a wash of the accent and a thin
+                                ring of it.
+               .flat            modifier: no hairline at all (a sidebar list, padding 12,9).
                .off             modifier: a switched-off item, dimmed.
                                   <Border Classes="row">
                                       <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="14">
@@ -61,35 +128,51 @@
                                       </Grid>
                                   </Border>
            ListBox.rows         the same row when the list is a ListBox (stays virtualised): the
-                                item container is the row, "reveal" works inside it.
+                                item container is the row, "reveal" works inside it; the
+                                selected item is the chosen row (accent wash and ring).
            :is(Control).reveal-host   any other container whose .reveal children show on hover
                                 (a world's picture with actions over it).
 
          TABS, PICKERS, SWITCHES
-           Border.tabs + Button.tab   underlined tabs; the active one: Classes.active.
+           Border.tabs + Button.tab   underlined tabs: secondary ink at rest, the active one
+                                (Classes.active) primary with an accent underline; its
+                                count turns accent.
                                   <Border Classes="tabs"><StackPanel Orientation="Horizontal" Spacing="22">
                                       <Button Classes="tab" Classes.active="{Binding IsModsTab}" Command="...">
                                           <StackPanel Orientation="Horizontal" Spacing="6"><TextBlock Text="Mods"/><TextBlock Classes="count" Text="27"/></StackPanel>
                                       </Button>
                                   </StackPanel></Border>
-           Border.segments + Button.segment   the segmented picker (one of a few values).
+           Border.segments + Button.segment   the segmented picker (one of a few values): a
+                                field-coloured track with an edge; the chosen segment is a
+                                raised slab in it.
                                   <Border Classes="segments"><StackPanel Orientation="Horizontal">
                                       <Button Classes="segment" Classes.active="{Binding IsDark}" Content="Dark"/> ...
                                   </StackPanel></Border>
-           ToggleSwitch         the switch, 34x20, no words beside it. Nothing to add: <ToggleSwitch IsChecked="{Binding X}"/>
+           Button.index         an entry of a page's own index (the settings sections);
+                                Classes.active marks the current one like a chosen row.
+           ToggleSwitch         the switch, 34x20, no words beside it. Off is a grey track
+                                with an edge and a light knob; on is the accent.
+                                  <ToggleSwitch IsChecked="{Binding X}"/>
+           TextBox, ComboBox, NumericUpDown need no class: a field fill with a visible
+           edge, the accent edge on focus.
 
          SMALL THINGS
-           Border.chip          a fact in a pill: <Border Classes="chip"><TextBlock Text="Boost is on"/></Border>
-           Border.chip.warn     the same in the warning colour ("3 updates"); put an icon in a StackPanel beside the text.
-           Border.field + TextBox.bare   the search field:
+           Border.chip          a fact in a pill with an edge: <Border Classes="chip"><TextBlock Text="Boost is on"/></Border>
+           Border.chip.warn     the same in gold ("3 updates"); put an icon in a StackPanel beside the text.
+           Border.chip.accent   a key fact in the accent ("matches the server").
+           Border.field + TextBox.bare   the search field (an edge, the accent on focus):
                                   <Border Classes="field" Width="260"><Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-                                      <PathIcon Data="{StaticResource IconSearch}" Classes="small muted"/>
+                                      <PathIcon Data="{StaticResource IconSearch}" Classes="small"/>
                                       <TextBox Grid.Column="1" Classes="bare" Watermark="Search" Text="{Binding Query}"/>
                                   </Grid></Border>
            controls:Caption     a section caption: mono, UPPERCASE (it uppercases the text itself), muted.
                                   <controls:Caption Text="{DynamicResource Home_Continue}"/>    (xmlns:controls="using:STlauncher.App.Controls")
            TextBlock.caption    the same look for text that is already uppercase; TextBlock.label is its older, lowercase sibling.
            TextBlock.strong     a row's or a setting's title (bold). TextBlock.sub: the one muted line under it.
+           TextBlock.muted      secondary ink at 12.5 (8:1 on a panel); TextBlock.faint is the
+                                faintest level that may carry words (5.5:1 on a panel).
+           TextBlock.accent     a key number or word in the accent ink (AccentTextBrush).
+           TextBlock.gold       something new or needing a look.
            TextBlock.mono       a version or a loader: mono, secondary colour.
            TextBlock.tag        "there is 0.8.13": mono, the warning colour.
            TextBlock.kbd        the name of a key beside what it does ("Ctrl K", "Esc"): mono, muted.
@@ -97,16 +180,32 @@
            Border.icon-tile     the 34x34 coloured square with a letter or an icon.
            Border.hairline      a 1 px line across.
 
+         EMPTY STATE
+           StackPanel.empty     nothing here yet: an icon in a soft round tile, a title, one
+                                sentence, the next-step button. It centres itself in the
+                                panel (or Grid cell) it stands in. Every part is optional
+                                but the sentence; put two buttons in a horizontal StackPanel.
+                                  <StackPanel Classes="empty" IsVisible="{Binding HasNoMods}">
+                                      <Border Classes="empty-icon"><PathIcon Data="{StaticResource IconBuilds}"/></Border>
+                                      <TextBlock Classes="strong" Text="No mods yet"/>
+                                      <TextBlock Classes="sub" Text="Pick some from the catalog or drop .jar files here."/>
+                                      <Button Classes="accent-soft" Content="Open the catalog" Command="..."/>
+                                  </StackPanel>
+
          SETTINGS
            Border.setting       one setting: the name and one muted line on the left, the control
-                                on the right, a hairline below.
-                                  <Border Classes="setting"><Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
-                                      <StackPanel VerticalAlignment="Center">
-                                          <TextBlock Classes="strong" Text="Memory for the game"/>
-                                          <TextBlock Classes="sub" Text="2048 MB, recommended for this build"/>
-                                      </StackPanel>
-                                      <Slider Grid.Column="1" Width="220"/>
-                                  </Grid></Border>
+                                on the right, a hairline below. A group of them goes in a panel.
+                                  <Border Classes="panel"><StackPanel>
+                                      <TextBlock Classes="group" Text="Game"/>
+                                      <Border Classes="setting"><Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                                          <StackPanel VerticalAlignment="Center">
+                                              <TextBlock Classes="strong" Text="Memory for the game"/>
+                                              <TextBlock Classes="sub" Text="2048 MB, recommended for this build"/>
+                                          </StackPanel>
+                                          <Slider Grid.Column="1" Width="220"/>
+                                      </Grid></Border>
+                                      <Border Classes="setting last">...</Border>     (last: no hairline under the group's final setting)
+                                  </StackPanel></Border>
            TextBlock.group      the heading of a group of settings (17, extra bold).
 
          PAGE HEADER
@@ -117,12 +216,14 @@
                                   <StackPanel Classes="meta"><TextBlock Classes="mono" Text="Fabric 0.17.2"/><Ellipse/><TextBlock Text="27 mods"/><Ellipse/><TextBlock Text="1.4 GB"/></StackPanel>
            The 52 px strip above every page belongs to the shell (MainWindow.axaml): its left
            holds the page's context label, one TextBlock per section; its right is the search.
+           The rail belongs to the shell too: sections top down, settings last among them,
+           the version and the player at the foot.
 
          OVER THE PAGE
            Border.scrim + Border.dialog   an in-window dialog:
                                   <Border Classes="scrim" IsVisible="{Binding IsOpen}"><Border Classes="dialog" Width="480">...</Border></Border>
-           ToolTip, ContextMenu, MenuFlyout, Flyout, scroll bars need no class: they are quiet
-           already. MenuItem.danger marks a destructive item.
+           ToolTip, ContextMenu, MenuFlyout, Flyout, scroll bars need no class.
+           MenuItem.danger marks a destructive item.
          ===================================================================================== -->
 
     <!-- ===================== Typography =====================
@@ -186,8 +287,9 @@
         <Setter Property="FontSize" Value="12.5"/>
     </Style>
 
-    <!-- A section caption: mono, spaced, muted. The text has to be uppercase already;
-         controls:Caption does that for a string from the language file. -->
+    <!-- A section caption: mono, spaced, muted (5.5:1 on a panel since the correction).
+         The text has to be uppercase already; controls:Caption does that for a string
+         from the language file. -->
     <Style Selector="TextBlock.caption">
         <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
         <Setter Property="FontSize" Value="11"/>
@@ -276,8 +378,9 @@
         <Setter Property="FontWeight" Value="Normal"/>
     </Style>
 
+    <!-- The accent as ink: AccentBrush is a fill and too dark for words on a dark panel. -->
     <Style Selector="TextBlock.accent">
-        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}"/>
     </Style>
 
     <Style Selector="TextBlock.gold">
@@ -314,21 +417,42 @@
     </Style>
 
     <!-- ===================== Surfaces =====================
-         Depth comes from tone, not from lines. A card and a panel are what is left of the
-         older look: a new page uses rows on the ground instead, and keeps a frame only for
-         a thing that really is a separate object. -->
-
-    <Style Selector="Border.card">
-        <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
-        <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="CornerRadius" Value="14"/>
-        <Setter Property="Padding" Value="20"/>
-    </Style>
+         A page is a few panels on the ground: the build list, the content, a group of
+         settings. A panel is one step lighter than the ground (white on the tinted ground
+         in the light theme) with a faint edge and no shadow. Rows inside it stay rows with
+         hairlines: a panel groups, it does not frame every item. -->
 
     <Style Selector="Border.panel">
-        <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
-        <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="CornerRadius" Value="10"/>
+        <Setter Property="Background" Value="{DynamicResource PanelBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource PanelEdgeBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="16"/>
+        <Setter Property="Padding" Value="18"/>
+    </Style>
+    <!-- For a list that runs from edge to edge: 6 px is what lets a row's 10 px corner
+         sit inside the panel's 16 px one. Headings inside take Margin="12,10". -->
+    <Style Selector="Border.panel.flush">
+        <Setter Property="Padding" Value="6"/>
+    </Style>
+    <!-- The lead panel of a page: a faint wash of the accent from its top left corner. -->
+    <Style Selector="Border.panel.tint">
+        <Setter Property="Background" Value="{DynamicResource PanelTintBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource PanelTintEdgeBrush}"/>
+    </Style>
+    <!-- A panel inside a panel (a notice, a question, a consent text) steps down instead
+         of up, or it would be the same tone as what it lies on. "inset" says so outright. -->
+    <Style Selector="Border.panel Border.panel, Border.panel.inset">
+        <Setter Property="Background" Value="{DynamicResource InsetBrush}"/>
+        <Setter Property="CornerRadius" Value="12"/>
+    </Style>
+
+    <!-- The older name of a panel; the same surface. -->
+    <Style Selector="Border.card">
+        <Setter Property="Background" Value="{DynamicResource PanelBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource PanelEdgeBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="16"/>
+        <Setter Property="Padding" Value="20"/>
     </Style>
 
     <!-- One figure with its caption; several of them make a row of metrics. -->
@@ -387,29 +511,35 @@
         <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}"/>
     </Style>
 
-    <!-- A chip that can be chosen: a category, a filter. The chosen one is told apart by
-         tone and ink, not by the accent: that is kept for the screen's one main action. -->
+    <!-- A chip that can be chosen: a category, a filter. An edge says it can be pressed;
+         the chosen one wears the accent's wash and edge. -->
     <Style Selector="Button.chip">
-        <Setter Property="Padding" Value="12,6"/>
+        <Setter Property="Padding" Value="11,5"/>
         <Setter Property="CornerRadius" Value="15"/>
         <Setter Property="FontSize" Value="12.5"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Background" Value="{DynamicResource FieldBrush}"/>
-        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
     </Style>
     <Style Selector="Button.chip /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource FieldBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource FieldEdgeBrush}"/>
     </Style>
     <Style Selector="Button.chip:pointerover /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource ControlBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlEdgeHoverBrush}"/>
+    </Style>
+    <Style Selector="Button.chip:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
     </Style>
     <Style Selector="Button.chip.active">
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
         <Setter Property="FontWeight" Value="Bold"/>
     </Style>
     <Style Selector="Button.chip.active /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentEdgeBrush}"/>
     </Style>
 
     <!-- Full-window scrim behind a lightbox: dark, flat, and a button so a click closes. -->
@@ -527,19 +657,30 @@
     </Style>
 
     <!-- ===================== Buttons =====================
-         A button with no class is the quiet grey one. The accent belongs to "primary",
-         and a screen has one of those. -->
+         A button with no class is the quiet one: a fill AND a 1 px edge, so it reads as a
+         button on the ground and on a panel. Under the pointer both get lighter; pressed,
+         the fill drops below its resting tone. The filled accent belongs to "primary" (one
+         per screen); "accent-soft" is the main action of a panel.
+
+         The edge is the button's own BorderBrush, so a class changes it either there
+         (Button.x) or on the template's root (Button.x /template/ Border#PART_Root), which
+         wins. The 1 px is inside the padding: 15,9 + 1 is the old 16,10. -->
 
     <Style Selector="Button">
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
-        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlEdgeBrush}"/>
         <Setter Property="CornerRadius" Value="10"/>
-        <Setter Property="Padding" Value="16,10"/>
+        <Setter Property="Padding" Value="15,9"/>
         <Setter Property="FontSize" Value="13.5"/>
         <Setter Property="HorizontalContentAlignment" Value="Center"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Background" Value="{DynamicResource ControlBrush}"/>
+    </Style>
+
+    <Style Selector="Button:pointerover">
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlEdgeHoverBrush}"/>
     </Style>
 
     <Style Selector="Button:pointerover /template/ Border#PART_Root">
@@ -570,20 +711,49 @@
 
     <Style Selector="Button.primary /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}"/>
     </Style>
 
     <Style Selector="Button.primary:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}"/>
     </Style>
 
     <Style Selector="Button.primary:pressed /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource AccentPressedBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentPressedBrush}"/>
+    </Style>
+
+    <!-- The main action of a panel, when the screen's one filled button is elsewhere: a
+         wash of the accent, its edge, and the accent as ink. As many per screen as there
+         are panels that need one; never two side by side. -->
+    <Style Selector="Button.accent-soft">
+        <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}"/>
+    </Style>
+    <Style Selector="Button.accent-soft /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentEdgeBrush}"/>
+    </Style>
+    <Style Selector="Button.accent-soft:pointerover /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource AccentSoftHoverBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}"/>
+    </Style>
+    <Style Selector="Button.accent-soft:pressed /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource AccentSoftPressedBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}"/>
+    </Style>
+    <Style Selector="Button.accent-soft > StackPanel > TextBlock, Button.accent-soft > TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}"/>
+    </Style>
+    <Style Selector="Button.accent-soft > StackPanel > PathIcon, Button.accent-soft > PathIcon">
+        <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}"/>
     </Style>
 
     <!-- The one big button of the main screen. -->
     <!-- The big play button of the home screen: with "primary" it is the accent, flat,
          with a quiet glow that deepens under the pointer. -->
     <Style Selector="Button.hero">
+        <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Height" Value="56"/>
         <Setter Property="FontSize" Value="17"/>
         <Setter Property="CornerRadius" Value="14"/>
@@ -622,30 +792,34 @@
         <Setter Property="Width" Value="52"/>
         <Setter Property="CornerRadius" Value="14"/>
         <Setter Property="Padding" Value="0"/>
-        <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
     </Style>
 
     <Style Selector="Button.hero-side /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource ControlBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlEdgeBrush}"/>
     </Style>
 
     <!-- A class style outranks the plain :pointerover rule, so the side button needs its own. -->
     <Style Selector="Button.hero-side:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlEdgeHoverBrush}"/>
     </Style>
 
     <!-- ===================== Navigation rail =====================
-         Icon over label in a 76 px rail. The active item is a pill of the hover tone with
-         its icon in the accent; nothing else in the rail has colour. -->
+         Icon over label in a 76 px rail. The labels are the secondary ink, not the
+         faintest. The section the player is in cannot be missed: a pill washed with the
+         accent, the icon in the accent, the label bold, and a bar of the accent at the
+         rail's edge (Border.rail-mark, the button's neighbour in MainWindow.axaml). -->
 
     <Style Selector="Button.rail">
-        <Setter Property="Width" Value="60"/>
+        <Setter Property="Width" Value="62"/>
         <Setter Property="Padding" Value="0,9,0,7"/>
         <Setter Property="CornerRadius" Value="12"/>
         <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
         <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
         <Setter Property="FontSize" Value="10.5"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Cursor" Value="Hand"/>
@@ -656,13 +830,13 @@
     </Style>
 
     <Style Selector="Button.rail TextBlock">
-        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
     </Style>
 
     <Style Selector="Button.rail PathIcon">
         <Setter Property="Width" Value="20"/>
         <Setter Property="Height" Value="20"/>
-        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
         <Setter Property="Transitions">
             <Transitions>
                 <BrushTransition Property="Foreground" Duration="0:0:0.16"/>
@@ -674,15 +848,16 @@
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
     </Style>
     <Style Selector="Button.rail:pointerover PathIcon">
-        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
     </Style>
 
     <Style Selector="Button.rail:pointerover /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource ControlBrush}"/>
     </Style>
 
     <Style Selector="Button.rail.active TextBlock">
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        <Setter Property="FontWeight" Value="Bold"/>
     </Style>
 
     <Style Selector="Button.rail.active PathIcon">
@@ -690,7 +865,21 @@
     </Style>
 
     <Style Selector="Button.rail.active /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource RowHoverBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource RowSelectedBrush}"/>
+    </Style>
+
+    <!-- The bar at the rail's left edge beside the section the player is in. -->
+    <Style Selector="Border.rail-mark">
+        <Setter Property="Width" Value="3"/>
+        <Setter Property="Height" Value="26"/>
+        <Setter Property="CornerRadius" Value="0,2,2,0"/>
+        <Setter Property="HorizontalAlignment" Value="Left"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
+        <Setter Property="IsHitTestVisible" Value="False"/>
+    </Style>
+    <Style Selector="Border.rail-mark.active">
+        <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}"/>
     </Style>
 
     <!-- The version at the foot of the rail: muted while current; gold, with an arrow,
@@ -704,7 +893,11 @@
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
         <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
-        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource GhostBrush}"/>
+    </Style>
+    <Style Selector="Button.version-pill:pointerover">
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlEdgeBrush}"/>
     </Style>
     <Style Selector="Button.version-pill TextBlock">
         <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
@@ -715,7 +908,7 @@
     </Style>
 
     <Style Selector="Button.version-pill:pointerover /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource ControlBrush}"/>
     </Style>
 
     <Style Selector="Button.version-pill.available TextBlock">
@@ -727,6 +920,7 @@
 
     <Style Selector="Button.version-pill.available /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource ControlBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource GoldMutedBrush}"/>
     </Style>
 
     <Style Selector="Button.version-pill.available:pointerover /template/ Border#PART_Root">
@@ -771,15 +965,20 @@
     </Style>
 
     <Style Selector="Button.index:pointerover /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource RowHoverBrush}"/>
     </Style>
-
-    <!-- The section the page is on. -->
-    <Style Selector="Button.index.active">
+    <Style Selector="Button.index:pointerover /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
     </Style>
+
+    <!-- The section the page is on: the chosen row's wash and ring. -->
+    <Style Selector="Button.index.active">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+    </Style>
     <Style Selector="Button.index.active /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource RowHoverBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource RowSelectedBrush}"/>
+        <Setter Property="BoxShadow" Value="{DynamicResource SelectedRowShadow}"/>
     </Style>
 
     <!-- The selected build in the list carries an accent bar on its left edge. -->
@@ -795,31 +994,39 @@
         <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}"/>
     </Style>
 
-    <!-- Ghost: text only. No fill, no outline; a tone appears under the pointer. -->
+    <!-- Ghost: no fill at rest, but the ink is the primary one and an edge and a fill come
+         under the pointer. For a tertiary action beside a real button ("Cancel"), never
+         for the way to somewhere. Its 1 px edge is there, transparent, so it is the same
+         height as the button it stands next to. -->
     <Style Selector="Button.ghost">
-        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
-        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
     </Style>
 
     <Style Selector="Button.ghost /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource GhostBrush}"/>
     </Style>
 
     <Style Selector="Button.ghost:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource ControlBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlEdgeHoverBrush}"/>
     </Style>
     <Style Selector="Button.ghost:pointerover /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
     </Style>
     <Style Selector="Button.ghost:pressed /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource ControlPressedBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlEdgeHoverBrush}"/>
     </Style>
 
-    <!-- Bare: only text or an icon, a background appears on hover. -->
+    <!-- Plain: a ghost with tight padding, for a bare icon or a word inside a line of
+         text. The secondary ink at rest, the primary one and a fill under the pointer. -->
     <Style Selector="Button.plain">
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
         <Setter Property="Padding" Value="8,6"/>
         <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="BorderThickness" Value="0"/>
     </Style>
 
     <Style Selector="Button.plain /template/ Border#PART_Root">
@@ -827,64 +1034,91 @@
     </Style>
 
     <Style Selector="Button.plain:pointerover /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource ControlBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}"/>
+    </Style>
+    <Style Selector="Button.plain:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+    </Style>
+    <Style Selector="Button.plain > PathIcon">
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+    </Style>
+    <Style Selector="Button.plain:pointerover > PathIcon">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
     </Style>
 
-    <!-- A link: muted words over a hairline, for the way to something further. -->
+    <!-- A link: the primary ink, underlined; the accent under the pointer. For the way to
+         something further inside a panel ("What changed"), next to real buttons. -->
     <Style Selector="Button.link">
         <Setter Property="Padding" Value="0,2"/>
         <Setter Property="CornerRadius" Value="0"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
-        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
         <Setter Property="BorderThickness" Value="0,0,0,1"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushSubtle}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource TextMutedBrush}"/>
+        <Setter Property="FocusAdorner">
+            <FocusAdornerTemplate>
+                <Border BorderBrush="{DynamicResource AccentHoverBrush}" BorderThickness="2" CornerRadius="4" Margin="-4,-2"/>
+            </FocusAdornerTemplate>
+        </Setter>
     </Style>
     <Style Selector="Button.link /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushSubtle}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource TextMutedBrush}"/>
+    </Style>
+    <Style Selector="Button.link:focus-visible /template/ Border#PART_Root">
+        <Setter Property="BoxShadow" Value="{DynamicResource NoShadow}"/>
     </Style>
     <Style Selector="Button.link:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource TextSecondaryBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentTextBrush}"/>
     </Style>
     <Style Selector="Button.link:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}"/>
+    </Style>
+    <Style Selector="Button.link:pressed /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
     </Style>
     <Style Selector="Button.link:pressed">
         <Setter Property="RenderTransform" Value="scale(1)"/>
     </Style>
 
-    <!-- A square button with one icon: the actions of a row or a header. -->
+    <!-- A square button with one icon: the actions of a row or a header. It has the quiet
+         button's fill and edge at rest: a bare glyph does not say it can be pressed. -->
     <Style Selector="Button.icon">
         <Setter Property="Width" Value="30"/>
         <Setter Property="Height" Value="30"/>
         <Setter Property="Padding" Value="0"/>
         <Setter Property="CornerRadius" Value="8"/>
-        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
     </Style>
     <Style Selector="Button.icon > PathIcon">
-        <Setter Property="Width" Value="16"/>
-        <Setter Property="Height" Value="16"/>
+        <Setter Property="Width" Value="15"/>
+        <Setter Property="Height" Value="15"/>
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
     </Style>
     <Style Selector="Button.icon:pointerover > PathIcon">
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
     </Style>
     <Style Selector="Button.icon /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource ControlBrush}"/>
     </Style>
     <Style Selector="Button.icon:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}"/>
     </Style>
+    <Style Selector="Button.icon:pressed /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource ControlPressedBrush}"/>
+    </Style>
     <!-- A menu is open from it: it stays lit, so the menu has an owner. -->
+    <Style Selector="Button.icon:flyout-open">
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlEdgeHoverBrush}"/>
+    </Style>
     <Style Selector="Button.icon:flyout-open /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}"/>
     </Style>
 
-    <!-- Destructive, but not shouting: red words on the quiet fill, no outline. -->
+    <!-- Destructive, but not shouting: red words on the quiet fill and edge. -->
     <Style Selector="Button.danger">
         <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
-        <Setter Property="BorderThickness" Value="0"/>
     </Style>
 
     <Style Selector="Button.danger /template/ Border#PART_Root">
@@ -892,10 +1126,11 @@
     </Style>
     <Style Selector="Button.danger:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}"/>
     </Style>
 
     <Style Selector="Button.small">
-        <Setter Property="Padding" Value="12,6"/>
+        <Setter Property="Padding" Value="11,5"/>
         <Setter Property="FontSize" Value="12.5"/>
         <Setter Property="CornerRadius" Value="8"/>
     </Style>
@@ -905,15 +1140,16 @@
 
     <!-- A quiet remove button that only turns red when aimed at. -->
     <Style Selector="Button.icon-danger">
-        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
         <Setter Property="MinWidth" Value="30"/>
-        <Setter Property="Padding" Value="8,4"/>
+        <Setter Property="Padding" Value="7,3"/>
     </Style>
     <Style Selector="Button.icon-danger /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource ControlBrush}"/>
     </Style>
     <Style Selector="Button.icon-danger:pointerover /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource ControlBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}"/>
     </Style>
     <Style Selector="Button.icon-danger:pointerover /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
@@ -927,10 +1163,10 @@
         <Setter Property="CornerRadius" Value="10"/>
     </Style>
     <Style Selector="Button.link-tile /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource ControlBrush}"/>
     </Style>
     <Style Selector="Button.link-tile:pointerover /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource ElevatedBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}"/>
     </Style>
 
     <!-- Accent swatches: a circle of the colour, a ring when chosen. -->
@@ -981,7 +1217,7 @@
     </Style>
 
     <Style Selector="Button.nav:pointerover /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource RowHoverBrush}"/>
     </Style>
 
     <Style Selector="Button.nav.active">
@@ -994,11 +1230,8 @@
     </Style>
 
     <Style Selector="Button.nav.active /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource ElevatedBrush}"/>
-    </Style>
-
-    <Style Selector="Button.nav.active:pointerover /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource RowSelectedBrush}"/>
+        <Setter Property="BoxShadow" Value="{DynamicResource SelectedRowShadow}"/>
     </Style>
 
     <!-- ===================== Segmented switcher ===================== -->
@@ -1020,22 +1253,28 @@
     </Style>
 
     <Style Selector="Button.segment:pointerover /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource RowHoverBrush}"/>
+    </Style>
+    <Style Selector="Button.segment:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
     </Style>
 
     <Style Selector="Button.segment.active">
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        <Setter Property="FontWeight" Value="Bold"/>
     </Style>
 
+    <!-- The chosen segment is a small quiet button lying in the track. -->
     <Style Selector="Button.segment.active /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource ElevatedBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}"/>
+        <Setter Property="BoxShadow" Value="{DynamicResource SegmentActiveShadow}"/>
     </Style>
     <Style Selector="Button.segment:pressed">
         <Setter Property="RenderTransform" Value="scale(1)"/>
     </Style>
 
     <Style Selector="Button.segment.active:pointerover /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}"/>
     </Style>
 
     <!-- Update row: quiet while there is nothing to do, accented the moment there is.
@@ -1136,17 +1375,20 @@
     </Style>
 
     <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource RowHoverBrush}"/>
         <Setter Property="CornerRadius" Value="10"/>
     </Style>
 
+    <!-- The chosen item: a wash of the accent and a thin ring of it. -->
     <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource RowHoverBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource RowSelectedBrush}"/>
+        <Setter Property="BoxShadow" Value="{DynamicResource SelectedRowShadow}"/>
         <Setter Property="CornerRadius" Value="10"/>
     </Style>
 
     <Style Selector="ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource RowHoverBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource RowSelectedBrush}"/>
+        <Setter Property="BoxShadow" Value="{DynamicResource SelectedRowShadow}"/>
         <Setter Property="CornerRadius" Value="10"/>
     </Style>
 
@@ -1155,7 +1397,7 @@
     <Style Selector="ProgressBar">
         <Setter Property="Height" Value="4"/>
         <Setter Property="CornerRadius" Value="2"/>
-        <Setter Property="Background" Value="{DynamicResource HairlineBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource ControlEdgeBrush}"/>
         <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
     </Style>
 
@@ -1214,10 +1456,21 @@
 
     <!-- A fact in a pill: "Boost is on". With "warn" it is something to look at: "3 updates". -->
     <Style Selector="Border.chip">
-        <Setter Property="Padding" Value="12,6"/>
+        <Setter Property="Padding" Value="11,5"/>
         <Setter Property="CornerRadius" Value="15"/>
         <Setter Property="Background" Value="{DynamicResource FieldBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource FieldEdgeBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+    <!-- Gold is for what is new or needs a look: the chip takes its edge too. -->
+    <Style Selector="Border.chip.warn">
+        <Setter Property="BorderBrush" Value="{DynamicResource GoldMutedBrush}"/>
+    </Style>
+    <!-- A key fact in the accent: "matches the server", "selected". -->
+    <Style Selector="Border.chip.accent">
+        <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentEdgeBrush}"/>
     </Style>
     <Style Selector="Border.chip > TextBlock, Border.chip > StackPanel > TextBlock">
         <Setter Property="FontSize" Value="12.5"/>
@@ -1236,6 +1489,12 @@
     </Style>
     <Style Selector="Border.chip.warn > StackPanel > PathIcon">
         <Setter Property="Foreground" Value="{DynamicResource WarningBrush}"/>
+    </Style>
+    <Style Selector="Border.chip.accent > TextBlock, Border.chip.accent > StackPanel > TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}"/>
+    </Style>
+    <Style Selector="Border.chip.accent > StackPanel > PathIcon">
+        <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}"/>
     </Style>
 
     <!-- A rounded note floating over the stage or beside a heading. -->
@@ -1376,10 +1635,11 @@
 
     <!-- The track a row of segments sits in: the build's tabs, the catalog's source. -->
     <Style Selector="Border.segments">
-        <Setter Property="Padding" Value="3"/>
+        <Setter Property="Padding" Value="2"/>
         <Setter Property="CornerRadius" Value="10"/>
         <Setter Property="Background" Value="{DynamicResource FieldBrush}"/>
-        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource FieldEdgeBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="HorizontalAlignment" Value="Left"/>
     </Style>
     <Style Selector="Border.segments Button.segment">
@@ -1388,10 +1648,10 @@
         <Setter Property="FontSize" Value="12.5"/>
     </Style>
     <Style Selector="Border.segments Button.segment:pointerover /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource RowHoverBrush}"/>
     </Style>
     <Style Selector="Border.segments Button.segment.active /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}"/>
     </Style>
 
     <!-- A TextBlock or an icon written out inside a button takes the page's colours, not
@@ -1431,8 +1691,14 @@
         <Setter Property="Padding" Value="12,0"/>
         <Setter Property="CornerRadius" Value="10"/>
         <Setter Property="Background" Value="{DynamicResource FieldBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource FieldEdgeBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+    <Style Selector="Border.field:pointerover">
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlEdgeHoverBrush}"/>
+    </Style>
+    <Style Selector="Border.field > Grid > PathIcon, Border.field > PathIcon">
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
     </Style>
     <Style Selector="Border.field:focus-within">
         <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}"/>
@@ -1469,7 +1735,8 @@
         <Setter Property="Background" Value="{DynamicResource RowHoverBrush}"/>
     </Style>
     <Style Selector="Border.mod-line.selected">
-        <Setter Property="Background" Value="{DynamicResource RowHoverBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource RowSelectedBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentEdgeBrush}"/>
     </Style>
     <!-- Switched off: still in the list, visibly off. -->
     <Style Selector="Border.mod-line.off">
@@ -1549,6 +1816,7 @@
 
     <!-- "Play" in a build's header: the home screen's big button, at a size a header holds. -->
     <Style Selector="Button.play">
+        <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Height" Value="44"/>
         <Setter Property="Padding" Value="24,0"/>
         <Setter Property="CornerRadius" Value="12"/>
@@ -1625,6 +1893,7 @@
 
     <!-- A colour to draw with. The colour itself is a plate inside, so hovering cannot repaint it. -->
     <Style Selector="Button.colour">
+        <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Padding" Value="2"/>
         <Setter Property="CornerRadius" Value="10"/>
     </Style>
@@ -1643,8 +1912,10 @@
          ===================================================================================== -->
 
     <!-- ===================== Rows =====================
-         One item of a list. No frame, no fill: a hairline above, a tone under the pointer.
-         The hairline is a shadow without blur, so a list of hundreds costs no extra elements. -->
+         One item of a list. No frame, no fill: a hairline above, a tone under the pointer
+         that can be seen on the ground and on a panel. The chosen row is washed with the
+         accent and ringed with it. Hairline and ring are shadows without blur, so a list
+         of hundreds costs no extra elements. -->
     <Style Selector="Border.row">
         <Setter Property="Padding" Value="12,11"/>
         <Setter Property="CornerRadius" Value="10"/>
@@ -1656,8 +1927,8 @@
         <Setter Property="BoxShadow" Value="{DynamicResource NoShadow}"/>
     </Style>
     <Style Selector="Border.row.selected">
-        <Setter Property="Background" Value="{DynamicResource RowHoverBrush}"/>
-        <Setter Property="BoxShadow" Value="{DynamicResource NoShadow}"/>
+        <Setter Property="Background" Value="{DynamicResource RowSelectedBrush}"/>
+        <Setter Property="BoxShadow" Value="{DynamicResource SelectedRowShadow}"/>
     </Style>
     <!-- The first row has nothing above it to be divided from. -->
     <Style Selector="StackPanel > Border.row:nth-child(1)">
@@ -1669,6 +1940,9 @@
     <Style Selector="Border.row.flat">
         <Setter Property="Padding" Value="12,9"/>
         <Setter Property="BoxShadow" Value="{DynamicResource NoShadow}"/>
+    </Style>
+    <Style Selector="Border.row.flat.selected">
+        <Setter Property="BoxShadow" Value="{DynamicResource SelectedRowShadow}"/>
     </Style>
     <Style Selector="Border.row.off">
         <Setter Property="Opacity" Value="0.55"/>
@@ -1693,8 +1967,8 @@
         <Setter Property="BoxShadow" Value="{DynamicResource NoShadow}"/>
     </Style>
     <Style Selector="ListBox.rows ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource RowHoverBrush}"/>
-        <Setter Property="BoxShadow" Value="{DynamicResource NoShadow}"/>
+        <Setter Property="Background" Value="{DynamicResource RowSelectedBrush}"/>
+        <Setter Property="BoxShadow" Value="{DynamicResource SelectedRowShadow}"/>
     </Style>
 
     <!-- Revealed on hover: the rare actions of a row. Hidden means unseen AND out of the
@@ -1752,7 +2026,7 @@
     <!-- ===================== Tabs =====================
          Words on a hairline; the one the page is on is underlined in the accent. -->
     <Style Selector="Border.tabs">
-        <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource PanelEdgeBrush}"/>
         <Setter Property="BorderThickness" Value="0,0,0,1"/>
     </Style>
     <Style Selector="Button.tab">
@@ -1761,20 +2035,25 @@
         <Setter Property="CornerRadius" Value="0"/>
         <Setter Property="BorderThickness" Value="0,0,0,2"/>
         <Setter Property="BorderBrush" Value="{DynamicResource GhostBrush}"/>
-        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+        <Setter Property="FontSize" Value="14"/>
     </Style>
     <Style Selector="Button.tab /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource GhostBrush}"/>
     </Style>
     <Style Selector="Button.tab > StackPanel > TextBlock, Button.tab > TextBlock">
-        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+    </Style>
+    <Style Selector="Button.tab:pointerover /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource GhostBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlEdgeHoverBrush}"/>
     </Style>
     <Style Selector="Button.tab:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
     </Style>
     <Style Selector="Button.tab:pointerover > StackPanel > TextBlock, Button.tab:pointerover > TextBlock">
-        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
     </Style>
     <Style Selector="Button.tab.active">
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
@@ -1784,6 +2063,10 @@
     </Style>
     <Style Selector="Button.tab.active > StackPanel > TextBlock, Button.tab.active > TextBlock">
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+    </Style>
+    <!-- The number beside the chosen tab is a key number: the accent. -->
+    <Style Selector="Button.tab.active > StackPanel > TextBlock.count">
+        <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}"/>
     </Style>
     <Style Selector="Button.tab.active /template/ Border#PART_Root">
         <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}"/>
@@ -1798,6 +2081,9 @@
         <Setter Property="Padding" Value="0,15"/>
         <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}"/>
         <Setter Property="BorderThickness" Value="0,0,0,1"/>
+    </Style>
+    <Style Selector="Border.setting.last">
+        <Setter Property="BorderThickness" Value="0"/>
     </Style>
     <Style Selector="Border.setting TextBlock.sub">
         <Setter Property="TextWrapping" Value="Wrap"/>
@@ -1823,7 +2109,7 @@
 
     <!-- The label in the strip above a page: where the player is. -->
     <Style Selector="TextBlock.context">
-        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
         <Setter Property="FontSize" Value="12.5"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
     </Style>
@@ -1831,7 +2117,7 @@
     <!-- The search entry in that strip: a button dressed as a field, 300 wide; "compact"
          leaves only its icon when the strip has no room for the words. -->
     <Style Selector="Button.search-entry">
-        <Setter Property="Width" Value="300"/>
+        <Setter Property="Width" Value="330"/>
         <Setter Property="Height" Value="32"/>
         <Setter Property="Padding" Value="12,0"/>
         <Setter Property="CornerRadius" Value="9"/>
@@ -1840,24 +2126,40 @@
         <Setter Property="FontWeight" Value="Medium"/>
         <Setter Property="FontSize" Value="13"/>
     </Style>
+    <!-- It has to read as a field: the field's fill, the field's edge, a placeholder in
+         the secondary ink. Under the pointer the edge takes the accent, as a field's does
+         on focus. -->
     <Style Selector="Button.search-entry /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource FieldBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource FieldEdgeBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
     </Style>
     <Style Selector="Button.search-entry:pointerover /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource FieldBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}"/>
     </Style>
     <Style Selector="Button.search-entry TextBlock">
-        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
     </Style>
     <Style Selector="Button.search-entry PathIcon">
         <Setter Property="Width" Value="15"/>
         <Setter Property="Height" Value="15"/>
-        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
     </Style>
     <Style Selector="Button.search-entry:pointerover PathIcon">
-        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+    </Style>
+    <!-- "Ctrl K" as a keycap. -->
+    <Style Selector="Button.search-entry Border.keycap">
+        <Setter Property="Background" Value="{DynamicResource ControlBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlEdgeBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="5"/>
+        <Setter Property="Padding" Value="5,1"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+    <Style Selector="Button.search-entry.compact Border.keycap">
+        <Setter Property="IsVisible" Value="False"/>
     </Style>
     <Style Selector="Button.search-entry:pressed">
         <Setter Property="RenderTransform" Value="scale(1)"/>
@@ -1885,6 +2187,51 @@
     <!-- Red stays red under the pointer, whatever else the button is. -->
     <Style Selector="Button.danger:pointerover /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
+    </Style>
+
+    <!-- ===================== Empty state =====================
+         Nothing here yet: an icon in a soft round tile, a title, one sentence, and the
+         button that does something about it. Centred in the panel it stands in. -->
+    <Style Selector="StackPanel.empty">
+        <Setter Property="Spacing" Value="6"/>
+        <Setter Property="Margin" Value="24,28"/>
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+    <Style Selector="StackPanel.empty > Border.empty-icon">
+        <Setter Property="Width" Value="56"/>
+        <Setter Property="Height" Value="56"/>
+        <Setter Property="CornerRadius" Value="28"/>
+        <Setter Property="Margin" Value="0,0,0,8"/>
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource PanelTintEdgeBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+    <Style Selector="StackPanel.empty > Border.empty-icon > PathIcon">
+        <Setter Property="Width" Value="22"/>
+        <Setter Property="Height" Value="22"/>
+        <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}"/>
+    </Style>
+    <Style Selector="StackPanel.empty > TextBlock.strong">
+        <Setter Property="FontSize" Value="16"/>
+        <Setter Property="FontWeight" Value="ExtraBold"/>
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="TextAlignment" Value="Center"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+    <Style Selector="StackPanel.empty > TextBlock.sub">
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="LineHeight" Value="19"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+        <Setter Property="MaxWidth" Value="380"/>
+        <Setter Property="Margin" Value="0,0,0,10"/>
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="TextAlignment" Value="Center"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+    <Style Selector="StackPanel.empty > Button, StackPanel.empty > StackPanel">
+        <Setter Property="HorizontalAlignment" Value="Center"/>
     </Style>
 
     <!-- The theme's own radio button keeps its dark-theme words and ring in the light theme. -->

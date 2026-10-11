@@ -20,7 +20,7 @@ namespace STlauncher.App.Views;
 public partial class MainWindow
 {
     /// <summary>The entry's full width and the air it wants around it.</summary>
-    private const double SearchEntryRoom = 300 + 24;
+    private const double SearchEntryRoom = 330 + 24;
 
     private MainWindowViewModel? _searchSource;
 
