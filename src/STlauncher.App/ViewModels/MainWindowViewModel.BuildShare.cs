@@ -78,6 +78,10 @@ public partial class MainWindowViewModel
 
     public bool HasBuildShareDetail => BuildShareDetail.Length > 0;
 
+    /// <summary>Some of the build's files could not go into the code: a .mrpack carries them all.</summary>
+    [ObservableProperty]
+    private bool _buildShareHasMissing;
+
     private bool BuildShareIsHere
         => BuildSharePanel != BuildSharePanel.None &&
            SelectedInstance is { } instance &&
@@ -235,7 +239,12 @@ public partial class MainWindowViewModel
             _buildShareInstanceId = instance.Id;
             ShowBuildShare(BuildSharePanel.Working, Localize("Share_Making", "Reading the build's files and making its code…"));
 
+            BuildShareHasMissing = false;
+
             var (code, files, missing) = await MakeBuildCodeAsync(instance, gameVersion!);
+
+            // The strip then offers the file that carries everything (see the page).
+            BuildShareHasMissing = missing.Count > 0;
 
             var relay = RelayLocation.Resolve(_loadedCatalog);
             string? shortCode = null;
@@ -406,7 +415,11 @@ public partial class MainWindowViewModel
         FriendInviteEntry = text;
     }
 
-    /// <summary>A build code was pasted into the invite box: the player says yes to a build here, and it is added over there.</summary>
+    /// <summary>
+    /// A build code was pasted into the invite box. The build is shown right here, over
+    /// the page; the code stays in the box until "Add the build", so "Cancel" leaves
+    /// everything as it was.
+    /// </summary>
     [RelayCommand]
     private async Task AddBuildFromFriendNoteAsync()
     {
@@ -415,11 +428,11 @@ public partial class MainWindowViewModel
             return;
         }
 
-        var text = _misplacedCode;
+        await AddBuildFromTextAsync(_misplacedCode);
 
-        FriendInviteEntry = string.Empty;
-        Section = ShellSection.Builds;
-
-        await AddBuildFromTextAsync(text);
+        if (IsBuildPreviewReady)
+        {
+            _buildPreviewFromFriendBox = true;
+        }
     }
 }

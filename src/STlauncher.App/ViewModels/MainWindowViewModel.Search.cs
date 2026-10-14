@@ -121,7 +121,7 @@ public partial class MainWindowViewModel
     private void OpenSearch()
     {
         // Under the first-run stage or a question that waits for an answer there is nothing to search yet.
-        if (IsSearchOpen || !IsStartupReady || IsOnboardingOpen || IsHostCloseOpen || IsLightboxOpen)
+        if (IsSearchOpen || !IsStartupReady || IsOnboardingOpen || IsHostCloseOpen || IsLightboxOpen || IsBuildPreviewOpen)
         {
             return;
         }

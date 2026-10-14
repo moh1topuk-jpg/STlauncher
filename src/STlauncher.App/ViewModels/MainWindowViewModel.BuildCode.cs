@@ -13,9 +13,10 @@ namespace STlauncher.App.ViewModels;
 
 /// <summary>
 /// A build handed over as one line of text. "Copy the build code" puts it in the
-/// clipboard; the other player picks "From a build code" and the build appears with
-/// its mods downloaded. No file to attach, no server between them; what Modrinth does
-/// not host is named so nobody wonders where it went.
+/// clipboard; the other player picks "From a build code", is shown what the build is
+/// and what it downloads, and on "Add the build" it appears with its mods. No file to
+/// attach, no server between them; what Modrinth does not host is named so nobody
+/// wonders where it went.
 /// </summary>
 public partial class MainWindowViewModel
 {
@@ -68,8 +69,8 @@ public partial class MainWindowViewModel
     }
 
     /// <summary>
-    /// Reads a code from the clipboard: a build code makes a new build out of it, an
-    /// invite to a friend's server is shown first and waits for the player's answer.
+    /// Reads a code from the clipboard. A build code and an invite to a friend's server
+    /// are both shown first and wait for the player's answer.
     /// </summary>
     [RelayCommand]
     private async Task AddBuildFromCodeAsync()
@@ -97,8 +98,9 @@ public partial class MainWindowViewModel
     /// <summary>
     /// What a code leads to, wherever the text came from: the clipboard ("Code from the
     /// clipboard" on the home screen, "From a build code" on the builds page) or the box
-    /// on the "Join a friend" tab. True when the code was understood - an invite is on
-    /// screen, or a build was added; otherwise the status line says why not.
+    /// on the "Join a friend" tab. True when the code was understood - an invite or a
+    /// build is on screen, waiting for the player's answer; otherwise the status line
+    /// says why not. Nothing is created or downloaded from here.
     /// </summary>
     private async Task<bool> AddFromCodeTextAsync(string? text, CodeOrigin origin)
     {
@@ -125,34 +127,65 @@ public partial class MainWindowViewModel
 
         // A short build code is only a name too, but one the relay keeps on disk: the
         // friend who shared it need not be online.
+        var shownBuildCode = string.Empty;
+
+        if (kind is PastedCodeKind.Build or PastedCodeKind.ShortBuild && IsBuildPreviewOpen)
+        {
+            // One build at a time is on screen waiting for its answer.
+            return false;
+        }
+
         if (kind == PastedCodeKind.ShortBuild)
         {
             var shown = BuildShare.Format(shortCode);
+            var failedTitle = Localize("Code_PreviewFailedTitle", "The build could not be fetched by the code");
+
+            shownBuildCode = shown;
+            BuildPreviewCode = shown;
 
             if (RelayLocation.Resolve(_loadedCatalog) is not { } shareRelay)
             {
                 Status = Localize("Share_FetchNoRelay", "This is a short build code, and the launcher does not know the server that keeps them yet. Ask the friend for the long code, or try again later.");
+                ShowBuildPreviewProblem(failedTitle, Status);
                 return false;
             }
 
             Status = Localize("Share_Fetching", "Asking for the build {0}…", shown);
 
-            if (origin == CodeOrigin.Builds)
+            // The wait is on screen, with a way out of it: nothing exists yet either way.
+            var fetchToken = BeginBuildPreviewFetch(shown);
+
+            string? longCode;
+            BuildShareFailure shareFailure;
+
+            try
             {
-                BuildCodeNote = Status;
+                (longCode, shareFailure) = await Task.Run(() => BuildShare.FetchAsync(shareRelay, shortCode, fetchToken), fetchToken);
+            }
+            catch (OperationCanceledException)
+            {
+                longCode = null;
+                shareFailure = BuildShareFailure.None;
             }
 
-            var (longCode, shareFailure) = await Task.Run(() => BuildShare.FetchAsync(shareRelay, shortCode));
+            if (fetchToken.IsCancellationRequested)
+            {
+                // "Cancel" has closed the dialog already; an answer that came anyway is dropped.
+                Status = Localize("Code_PreviewFetchCancelled", "The request was cancelled. Nothing was added.");
+                return false;
+            }
 
             if (longCode is null)
             {
                 Status = ShareFetchFailureText(shareFailure, shown);
+                ShowBuildPreviewProblem(failedTitle, Status);
                 return false;
             }
 
             if (!BuildCode.TryDecode(longCode, out _))
             {
                 Status = Localize("Share_FetchUnreadable", "The code {0} was found, but this launcher cannot read the build under it. The friend's launcher may be newer: update yours and try again.", shown);
+                ShowBuildPreviewProblem(failedTitle, Status);
                 return false;
             }
 
@@ -189,19 +222,11 @@ public partial class MainWindowViewModel
                 ShowFriendInvite(invite);
                 return true;
 
-            case SharedCodeKind.Build when payload is not null:
-                var instance = await AddBuildFromPayloadAsync(payload, showBuild: true);
-
-                if (instance is null)
-                {
-                    return false;
-                }
-
-                Status = payload.Missing.Count > 0
-                    ? Localize("Code_AddedPartial", "Build “{0}” added. Not in the code, add by hand: {1}", instance.Name, string.Join(", ", payload.Missing))
-                    : Localize("Code_Added", "Build “{0}” added from the code", instance.Name);
-
-                return true;
+            // Nothing is added yet here either: the build goes on screen (see
+            // MainWindowViewModel.BuildPreview.cs) and "Add the build" there makes it. A
+            // code the safety checks stop is refused in the same dialog, with the reason.
+            case SharedCodeKind.Build when payload is not null && OpenBuildPreview(text, shownBuildCode) is var verdict && verdict != BuildCodeVerdict.NotACode:
+                return verdict == BuildCodeVerdict.Ready;
 
             default:
                 Status = origin switch
