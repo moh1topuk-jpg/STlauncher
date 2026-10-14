@@ -1882,6 +1882,8 @@
     <x:String x:Key="Skins_TakenOff">Фигурка снова показывает скин, найденный по нику. Скин остался в библиотеке.</x:String>
     <x:String x:Key="Skins_Edit">Редактировать</x:String>
     <x:String x:Key="Skins_Duplicate">Дублировать</x:String>
+    <x:String x:Key="Skins_ShowFile">Папка с файлом</x:String>
+    <x:String x:Key="Skins_ShowFileHint">Откроет папку библиотеки с PNG этого скина: его можно открыть в своём редакторе или забрать.</x:String>
     <x:String x:Key="Skins_CopyName">{0} — копия</x:String>
     <x:String x:Key="Skins_Delete">Удалить</x:String>
     <x:String x:Key="Skins_DeleteAsk">Удалить этот скин из библиотеки? Его файл будет удалён с диска.</x:String>

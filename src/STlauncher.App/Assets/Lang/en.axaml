@@ -1882,6 +1882,8 @@
     <x:String x:Key="Skins_TakenOff">The figure shows the skin found by your nickname again. The skin stays in the library.</x:String>
     <x:String x:Key="Skins_Edit">Edit</x:String>
     <x:String x:Key="Skins_Duplicate">Duplicate</x:String>
+    <x:String x:Key="Skins_ShowFile">Show the file</x:String>
+    <x:String x:Key="Skins_ShowFileHint">Opens the library folder with this skin's PNG selected: open it in your own editor or take it.</x:String>
     <x:String x:Key="Skins_CopyName">{0} - copy</x:String>
     <x:String x:Key="Skins_Delete">Delete</x:String>
     <x:String x:Key="Skins_DeleteAsk">Delete this skin from the library? Its file will be removed from the disk.</x:String>

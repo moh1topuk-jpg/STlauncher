@@ -534,6 +534,35 @@ public partial class MainWindowViewModel
 
     // ===================== Duplicate, rename, delete =====================
 
+    /// <summary>
+    /// Opens the library folder with the skin's PNG selected: for those who draw in their
+    /// own editor and want the file itself.
+    /// </summary>
+    [RelayCommand]
+    private void ShowSkinFile(SkinItem? item)
+    {
+        item ??= SelectedLibrarySkin;
+
+        if (item is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var path = _skins.Library.PathOf(item.Id);
+
+            if (System.IO.File.Exists(path))
+            {
+                RevealInFileManager(path);
+            }
+        }
+        catch (Exception ex)
+        {
+            ReportUiFailure(ex);
+        }
+    }
+
     [RelayCommand]
     private void DuplicateSkin(SkinItem? item)
     {

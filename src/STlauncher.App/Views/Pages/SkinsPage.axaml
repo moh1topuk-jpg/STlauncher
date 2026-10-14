@@ -260,6 +260,7 @@
                                                         <MenuItem Header="{DynamicResource Skins_Edit}" Click="OnSkinMenuClick" Tag="edit"/>
                                                         <MenuItem Header="{DynamicResource Skins_Duplicate}" Click="OnSkinMenuClick" Tag="duplicate"/>
                                                         <MenuItem Header="{DynamicResource Skins_Rename}" Click="OnSkinMenuClick" Tag="rename"/>
+                                                        <MenuItem Header="{DynamicResource Skins_ShowFile}" Click="OnSkinMenuClick" Tag="file"/>
                                                         <Separator/>
                                                         <MenuItem Classes="danger" Header="{DynamicResource Skins_Delete}" Click="OnSkinMenuClick" Tag="delete"/>
                                                     </MenuFlyout>
@@ -507,6 +508,15 @@
                                     <PathIcon Data="{StaticResource IconSkinDelete}"/>
                                 </Button>
                             </Grid>
+
+                            <Button HorizontalAlignment="Stretch" Height="38"
+                                    ToolTip.Tip="{DynamicResource Skins_ShowFileHint}"
+                                    Command="{Binding ShowSkinFileCommand}" CommandParameter="{Binding SelectedLibrarySkin}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <PathIcon Data="{StaticResource IconFolder}" Classes="small"/>
+                                    <TextBlock Text="{DynamicResource Skins_ShowFile}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
 
                             <!-- Delete asks once, right here; the answer is the second click. -->
                             <Border Classes="panel inset" Padding="14,12" IsVisible="{Binding IsConfirmingSkinDelete}">

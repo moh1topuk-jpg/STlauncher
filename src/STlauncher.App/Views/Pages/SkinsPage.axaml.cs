@@ -174,6 +174,9 @@ public partial class SkinsPage : UserControl
             case "duplicate":
                 viewModel.DuplicateSkinCommand.Execute(item);
                 break;
+            case "file":
+                viewModel.ShowSkinFileCommand.Execute(item);
+                break;
             case "rename":
                 viewModel.SelectLibrarySkinCommand.Execute(item);
                 viewModel.BeginRenameSkinCommand.Execute(null);
