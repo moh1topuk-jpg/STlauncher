@@ -235,7 +235,14 @@
                                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                                         <PathIcon Data="{StaticResource IconWarning}" Foreground="{DynamicResource WarningBrush}"
                                                   VerticalAlignment="Top" Margin="0,2,0,0"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding FriendInviteNote}" TextWrapping="Wrap" LineHeight="19"/>
+                                        <StackPanel Grid.Column="1" Spacing="8">
+                                            <TextBlock Text="{Binding FriendInviteNote}" TextWrapping="Wrap" LineHeight="19"/>
+                                            <!-- A build code was pasted here: one press adds it where builds live. -->
+                                            <Button Classes="accent-soft small" HorizontalAlignment="Left"
+                                                    Content="{DynamicResource Share_IsBuildGo}"
+                                                    Command="{Binding AddBuildFromFriendNoteCommand}"
+                                                    IsVisible="{Binding FriendInviteNoteIsBuild}"/>
+                                        </StackPanel>
                                     </Grid>
                                 </Border>
                             </StackPanel>

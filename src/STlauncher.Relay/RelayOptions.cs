@@ -82,6 +82,36 @@ public sealed class RelayOptions
     /// <summary>How many ports after <see cref="PublicPortFrom"/> may be handed out.</summary>
     public int PublicPortCount { get; set; } = 100;
 
+    /// <summary>
+    /// Where shared builds are kept, one file per code. Null turns the feature off: SHARE
+    /// and GETSHARE are then answered ERR NOSHARE and nothing is ever written to disk.
+    /// </summary>
+    public string? ShareDirectory { get; set; }
+
+    /// <summary>The longest build code that may be left, in bytes.</summary>
+    public int ShareMaxBytes { get; set; } = 256 * 1024;
+
+    /// <summary>Builds one address may leave per hour.</summary>
+    public int SharesPerHour { get; set; } = 20;
+
+    /// <summary>Lookups of a shared build one address may make per hour, misses included.</summary>
+    public int ShareFetchesPerHour { get; set; } = 240;
+
+    /// <summary>
+    /// How long an unknown code waits for its answer. With the hourly limit this is what
+    /// makes guessing codes pointless; a real code is answered at once.
+    /// </summary>
+    public TimeSpan ShareMissDelay { get; set; } = TimeSpan.FromSeconds(1);
+
+    /// <summary>All shared builds together may take this much disk.</summary>
+    public long ShareMaxTotalBytes { get; set; } = 2048L * 1024 * 1024;
+
+    /// <summary>How many shared builds are kept at most.</summary>
+    public int ShareMaxCount { get; set; } = 200_000;
+
+    /// <summary>A shared build is forgotten this long after it was last left or asked for.</summary>
+    public TimeSpan ShareLife { get; set; } = TimeSpan.FromDays(180);
+
     /// <summary>How often the counters are printed. Zero turns that off.</summary>
     public TimeSpan StatsInterval { get; set; } = TimeSpan.FromMinutes(10);
 
@@ -106,6 +136,13 @@ public sealed class RelayOptions
         new("public-port-from", 0, 65535, "first port given out as a public address, 0 for none (25600)", (o, v) => o.PublicPortFrom = v),
         new("public-port-count", 1, 10_000, "how many public ports may be given out (100)", (o, v) => o.PublicPortCount = v),
         new("probe-timeout", 1, 30, "seconds PROBE tries to connect back (3)", (o, v) => o.ProbeTimeout = TimeSpan.FromSeconds(v)),
+        new("share-max-kb", 1, 4096, "longest shared build in KB (256)", (o, v) => o.ShareMaxBytes = v * 1024),
+        new("shares-per-hour", 1, 1_000_000, "builds one address may share per hour (20)", (o, v) => o.SharesPerHour = v),
+        new("share-fetches-per-hour", 1, 1_000_000, "shared builds one address may ask for per hour (240)", (o, v) => o.ShareFetchesPerHour = v),
+        new("share-miss-delay-ms", 0, 60_000, "milliseconds an unknown share code waits for its answer (1000)", (o, v) => o.ShareMissDelay = TimeSpan.FromMilliseconds(v)),
+        new("share-max-mb", 1, 1_000_000, "disk all shared builds may take, in MB (2048)", (o, v) => o.ShareMaxTotalBytes = v * 1024L * 1024L),
+        new("share-max-count", 1, 10_000_000, "shared builds kept at most (200000)", (o, v) => o.ShareMaxCount = v),
+        new("share-days", 1, 3650, "days a shared build lives after it was last shared or fetched (180)", (o, v) => o.ShareLife = TimeSpan.FromDays(v)),
         new("stats-minutes", 0, 1440, "minutes between counter lines, 0 for none (10)", (o, v) => o.StatsInterval = TimeSpan.FromMinutes(v))
     };
 
@@ -134,6 +171,13 @@ public sealed class RelayOptions
         if (!string.IsNullOrWhiteSpace(bind) && !ApplyBind(options, bind, out error))
         {
             return false;
+        }
+
+        var shareDirectory = environment(EnvironmentName("share-dir"));
+
+        if (!string.IsNullOrWhiteSpace(shareDirectory))
+        {
+            options.ShareDirectory = shareDirectory.Trim();
         }
 
         for (var i = 0; i < args.Length; i++)
@@ -176,6 +220,18 @@ public sealed class RelayOptions
                 continue;
             }
 
+            if (name == "share-dir")
+            {
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    error = "--share-dir needs a directory.";
+                    return false;
+                }
+
+                options.ShareDirectory = value.Trim();
+                continue;
+            }
+
             var setting = Array.Find(Settings, s => s.Name == name);
 
             if (setting is null)
@@ -200,6 +256,7 @@ public sealed class RelayOptions
         text.AppendLine();
         text.AppendLine("Options (each also reads STRELAY_<NAME>, the command line wins):");
         text.AppendLine("  --bind <address>".PadRight(30) + "address to listen on (every interface)");
+        text.AppendLine("  --share-dir <directory>".PadRight(30) + "where shared builds are kept; without it sharing is off");
 
         foreach (var setting in Settings)
         {
