@@ -1,0 +1,234 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:STlauncher.App.ViewModels"
+             xmlns:controls="using:STlauncher.App.Controls"
+             x:Class="STlauncher.App.Views.BuildCodePreviewView"
+             x:DataType="vm:MainWindowViewModel">
+
+    <!-- A build from a code, shown before it exists: what it is called, what it downloads
+         and from where, what the code could not carry. It stands above every page, because
+         a code can be handed over on three of them. Nothing is created until "Add the
+         build"; "Cancel", the cross and Esc leave no trace. -->
+
+    <UserControl.Styles>
+        <Style Selector="TextBlock.field-name">
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+            <Setter Property="FontSize" Value="12.5"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="TextBlock.consent">
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+            <Setter Property="FontSize" Value="12.5"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="LineHeight" Value="18"/>
+        </Style>
+        <!-- Where a file comes from: a small mono tag at the right of its row. -->
+        <Style Selector="Border.source">
+            <Setter Property="Background" Value="{DynamicResource ControlBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlEdgeBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="5"/>
+            <Setter Property="Padding" Value="6,1"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Border.source > TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource MonoFont}"/>
+            <Setter Property="FontSize" Value="10.5"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+        </Style>
+        <!-- What needs a look, in gold: the files the code does not carry. -->
+        <Style Selector="Border.gold-box">
+            <Setter Property="BorderBrush" Value="{DynamicResource GoldMutedBrush}"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Border Classes="scrim" IsVisible="{Binding IsBuildPreviewOpen}" controls:Reveal.OnVisible="True">
+        <Border Classes="dialog" Width="640" MaxHeight="700" Margin="20" Padding="24,22,24,20">
+            <Panel>
+
+                <!-- ============ The server is being asked what a short code stands for ============ -->
+                <StackPanel Spacing="14" IsVisible="{Binding IsBuildPreviewFetching}">
+                    <controls:Caption Text="{DynamicResource Code_PreviewCaption}"/>
+                    <TextBlock Text="{Binding BuildPreviewBusyText}" Classes="group" TextWrapping="Wrap"/>
+                    <ProgressBar IsIndeterminate="True" Height="3"/>
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <TextBlock Text="{DynamicResource Code_PreviewNothingYet}" Classes="consent" VerticalAlignment="Center"/>
+                        <Button Grid.Column="1" Name="FetchCancel" Content="{DynamicResource Common_Cancel}"
+                                Command="{Binding CancelBuildPreviewCommand}"/>
+                    </Grid>
+                </StackPanel>
+
+                <!-- ============ No build came of the code: why, and that nothing was done ============ -->
+                <StackPanel Spacing="14" IsVisible="{Binding IsBuildPreviewProblem}">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                        <PathIcon Data="{StaticResource IconWarning}" Foreground="{DynamicResource WarningBrush}"
+                                  VerticalAlignment="Top" Margin="0,4,0,0"/>
+                        <StackPanel Grid.Column="1" Spacing="6">
+                            <TextBlock Text="{Binding BuildPreviewProblemTitle}" Classes="group" TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding BuildPreviewProblemText}" TextWrapping="Wrap" LineHeight="20"/>
+                        </StackPanel>
+                    </Grid>
+                    <Border Classes="panel inset gold-box" Padding="14,10" IsVisible="{Binding HasBuildPreviewProblemLines}">
+                        <ItemsControl ItemsSource="{Binding BuildPreviewProblemLines}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="x:String">
+                                    <TextBlock Text="{Binding}" TextWrapping="Wrap" FontSize="12.5" LineHeight="19" Margin="0,2"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Border>
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <Border Classes="chip" Padding="10,4" HorizontalAlignment="Left" VerticalAlignment="Center"
+                                IsVisible="{Binding HasBuildPreviewCode}">
+                            <TextBlock Text="{Binding BuildPreviewCode}" FontFamily="{StaticResource MonoFont}"/>
+                        </Border>
+                        <Button Grid.Column="1" Name="ProblemClose" Content="{DynamicResource Share_Close}"
+                                Command="{Binding CancelBuildPreviewCommand}"/>
+                    </Grid>
+                </StackPanel>
+
+                <!-- ============ The build, before it exists ============ -->
+                <Grid RowDefinitions="Auto,Auto,*,Auto,Auto,Auto" RowSpacing="12" IsVisible="{Binding IsBuildPreviewReady}">
+
+                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+                        <StackPanel Spacing="3">
+                            <controls:Caption Text="{DynamicResource Code_PreviewCaption}"/>
+                            <TextBlock Text="{DynamicResource Code_PreviewTitle}" Classes="group"/>
+                        </StackPanel>
+                        <Border Grid.Column="1" Classes="chip" Padding="10,4" VerticalAlignment="Center"
+                                IsVisible="{Binding HasBuildPreviewCode}">
+                            <TextBlock Text="{Binding BuildPreviewCode}" FontFamily="{StaticResource MonoFont}"/>
+                        </Border>
+                        <Button Grid.Column="2" Classes="icon" VerticalAlignment="Center"
+                                ToolTip.Tip="{DynamicResource Common_Cancel}" Command="{Binding CancelBuildPreviewCommand}">
+                            <PathIcon Data="{StaticResource IconClose}"/>
+                        </Button>
+                    </Grid>
+
+                    <!-- The name (the player's to change), then the game, the loader and the weight of it all. -->
+                    <StackPanel Grid.Row="1" Spacing="8">
+                        <TextBlock Text="{DynamicResource Code_PreviewName}" Classes="field-name"/>
+                        <TextBox Name="NameBox" Text="{Binding BuildPreviewName}" MaxLength="64"
+                                 Watermark="{DynamicResource Game_InstanceNameHint}"/>
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" IsVisible="{Binding HasBuildPreviewNameNote}">
+                            <Ellipse Classes="dot warn" VerticalAlignment="Top" Margin="2,6,0,0"/>
+                            <TextBlock Grid.Column="1" Text="{Binding BuildPreviewNameNote}" Classes="consent"/>
+                        </Grid>
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" IsVisible="{Binding HasBuildPreviewSameNote}">
+                            <Ellipse Classes="dot warn" VerticalAlignment="Top" Margin="2,6,0,0"/>
+                            <TextBlock Grid.Column="1" Text="{Binding BuildPreviewSameNote}" Classes="consent"/>
+                        </Grid>
+                        <WrapPanel ItemSpacing="6" LineSpacing="6" Margin="0,2,0,0">
+                            <Border Classes="chip" Padding="10,4">
+                                <TextBlock Text="{Binding BuildPreviewVersion}"/>
+                            </Border>
+                            <Border Classes="chip" Padding="10,4">
+                                <TextBlock Text="{Binding BuildPreviewLoader}"/>
+                            </Border>
+                            <Border Classes="chip accent" Padding="10,4">
+                                <TextBlock Text="{Binding BuildPreviewTotals}"/>
+                            </Border>
+                        </WrapPanel>
+                    </StackPanel>
+
+                    <!-- Every file that would be downloaded, by kind. Only the rows on screen
+                         exist: a build of three hundred mods costs what one of twelve does. -->
+                    <Border Grid.Row="2" Classes="panel inset" Padding="6" MinHeight="92">
+                        <Panel>
+                            <TextBlock Text="{DynamicResource Code_PreviewNoFiles}" Classes="consent" Margin="10,8"
+                                       VerticalAlignment="Center" IsVisible="{Binding !HasBuildPreviewRows}"/>
+                            <ScrollViewer Name="FilesScroll" IsVisible="{Binding HasBuildPreviewRows}">
+                                <ItemsControl Name="FilesItems" ItemsSource="{Binding BuildPreviewRows}" VerticalAlignment="Top">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <VirtualizingStackPanel/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:BuildPreviewRow">
+                                            <Panel>
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" Margin="10,10,12,4"
+                                                      IsVisible="{Binding IsHeader}">
+                                                    <controls:Caption Text="{Binding Title}" Foreground="{DynamicResource AccentTextBrush}"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding Detail}" Classes="sub"/>
+                                                </Grid>
+                                                <Border BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="0,1,0,0"
+                                                        Padding="10,6,12,6" IsVisible="{Binding IsFile}">
+                                                    <Grid ColumnDefinitions="*,Auto,58" ColumnSpacing="10">
+                                                        <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis"
+                                                                   VerticalAlignment="Center" ToolTip.Tip="{Binding Title}"/>
+                                                        <Border Grid.Column="1" Classes="source" IsVisible="{Binding HasSource}">
+                                                            <TextBlock Text="{Binding Source}"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="2" Text="{Binding Detail}" Classes="muted"
+                                                                   HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                                    </Grid>
+                                                </Border>
+                                            </Panel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </Panel>
+                    </Border>
+
+                    <!-- What the code names but does not carry: gold, because it needs the player's own doing. -->
+                    <Border Grid.Row="3" Classes="panel inset gold-box" Padding="14,10" IsVisible="{Binding HasBuildPreviewMissing}">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                            <PathIcon Data="{StaticResource IconWarning}" Classes="gold" VerticalAlignment="Top" Margin="0,2,0,0"/>
+                            <StackPanel Grid.Column="1" Spacing="6">
+                                <TextBlock Text="{DynamicResource Code_PreviewMissingTitle}" Classes="gold" FontWeight="SemiBold"
+                                           TextWrapping="Wrap"/>
+                                <ScrollViewer MaxHeight="62">
+                                    <ItemsControl ItemsSource="{Binding BuildPreviewMissing}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel ItemSpacing="14" LineSpacing="3"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="x:String">
+                                                <TextBlock Text="{Binding}" FontFamily="{StaticResource MonoFont}" FontSize="12"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- The game, the loader, Java: here already, or still to come - as far as the folders tell. -->
+                    <ItemsControl Grid.Row="4" ItemsSource="{Binding BuildPreviewNeeds}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:BuildPreviewNeed">
+                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" Margin="2,1">
+                                    <Panel VerticalAlignment="Top" Margin="0,6,0,0">
+                                        <Ellipse Classes="dot" IsVisible="{Binding IsPresent}"/>
+                                        <Ellipse Classes="dot warn" IsVisible="{Binding IsAbsent}"/>
+                                        <Ellipse Classes="dot off" IsVisible="{Binding IsUnknown}"/>
+                                    </Panel>
+                                    <TextBlock Grid.Column="1" Text="{Binding Text}" Classes="consent"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <StackPanel Grid.Row="5" Spacing="8">
+                        <TextBlock Text="{Binding BuildPreviewNote}" TextWrapping="Wrap" FontSize="12.5"
+                                   Foreground="{DynamicResource WarningBrush}" IsVisible="{Binding HasBuildPreviewNote}"/>
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                            <TextBlock Classes="consent" VerticalAlignment="Center">
+                                <Run Text="{DynamicResource Code_PreviewNothingYet}"/>
+                                <Run Text="{DynamicResource Code_PreviewAfterAdd}"/>
+                            </TextBlock>
+                            <Button Grid.Column="1" Classes="ghost" Content="{DynamicResource Common_Cancel}"
+                                    Command="{Binding CancelBuildPreviewCommand}"/>
+                            <Button Grid.Column="2" Classes="primary" Content="{DynamicResource Code_PreviewAdd}"
+                                    Command="{Binding ConfirmBuildPreviewCommand}"/>
+                        </Grid>
+                    </StackPanel>
+                </Grid>
+            </Panel>
+        </Border>
+    </Border>
+</UserControl>

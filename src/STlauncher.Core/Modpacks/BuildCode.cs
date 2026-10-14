@@ -26,6 +26,22 @@ public sealed record BuildCodePayload(
     IReadOnlyList<BuildCodeFile> Files,
     IReadOnlyList<string> Missing);
 
+/// <summary>Why an entry of a code was not taken into the payload.</summary>
+public enum BuildCodeRejection
+{
+    /// <summary>Not an entry at all: a part is missing, or the size is not a number.</summary>
+    Broken,
+
+    /// <summary>The path leaves the build's folder.</summary>
+    UnsafePath,
+
+    /// <summary>The address is not https on a host a code may name.</summary>
+    HostNotAllowed
+}
+
+/// <summary>An entry of a code that the reading left out.</summary>
+public sealed record BuildCodeRejectedEntry(string Path, string Url, BuildCodeRejection Reason);
+
 /// <summary>
 /// "STB1." followed by a deflated, base64url JSON. A build of two dozen mods is about
 /// two kilobytes: it fits in a chat message, which is the whole point - no file, no
@@ -87,8 +103,20 @@ public static class BuildCode
 
     /// <summary>Reads a code out of whatever was pasted: surrounding text and line breaks are ignored.</summary>
     public static bool TryDecode(string? text, out BuildCodePayload? payload)
+        => TryDecode(text, out payload, out _);
+
+    /// <summary>
+    /// The same reading, which also says what it left out. An entry that names a host a
+    /// code may not send the launcher to, or a place outside the build, never reaches the
+    /// payload; the caller that shows the build before adding it has to know there was one.
+    /// </summary>
+    /// <param name="rejected">The entries that were not taken, each with the reason.</param>
+    public static bool TryDecode(string? text, out BuildCodePayload? payload, out IReadOnlyList<BuildCodeRejectedEntry> rejected)
     {
         payload = null;
+
+        var dropped = new List<BuildCodeRejectedEntry>();
+        rejected = dropped;
 
         if (string.IsNullOrWhiteSpace(text))
         {
@@ -140,8 +168,15 @@ public static class BuildCode
 
             foreach (var entry in dto.F ?? new List<string[]>())
             {
-                if (entry.Length < 4 || !RelativePath.IsSafe(entry[0]) || !long.TryParse(entry[3], out var size))
+                if (entry is null || entry.Length < 4 || entry.Take(4).Any(part => part is null) || !long.TryParse(entry[3], out var size))
                 {
+                    dropped.Add(new BuildCodeRejectedEntry(entry is { Length: > 0 } ? entry[0] ?? string.Empty : string.Empty, string.Empty, BuildCodeRejection.Broken));
+                    continue;
+                }
+
+                if (!RelativePath.IsSafe(entry[0]))
+                {
+                    dropped.Add(new BuildCodeRejectedEntry(entry[0], Expand(entry[1]), BuildCodeRejection.UnsafePath));
                     continue;
                 }
 
@@ -149,6 +184,7 @@ public static class BuildCode
 
                 if (!IsAllowedDownload(url))
                 {
+                    dropped.Add(new BuildCodeRejectedEntry(entry[0], url, BuildCodeRejection.HostNotAllowed));
                     continue;
                 }
 

@@ -353,6 +353,10 @@
         </Border>
     </Border>
 
+    <!-- A build from a code, shown before anything is created. Above every page: the
+         code can be handed over on the home screen, among the builds and among friends. -->
+    <views:BuildCodePreviewView/>
+
     <!-- The search for everything (Ctrl+K). Empty until it is first opened: the window's
          code puts a SearchPalette in it then, so a search nobody uses costs nothing. -->
     <ContentControl Name="SearchHost" IsVisible="{Binding IsSearchOpen}"/>

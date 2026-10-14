@@ -616,6 +616,16 @@
                                     <TextBlock Classes="sub" Text="{DynamicResource Share_Kept}" TextWrapping="Wrap"/>
                                     <TextBlock Classes="sub" Text="{Binding BuildShareDetail}" TextWrapping="Wrap"
                                                IsVisible="{Binding HasBuildShareDetail}"/>
+                                    <!-- Some files could not go into the code: the file that carries
+                                         them all is one press away. The same export as in the menu. -->
+                                    <Button Classes="small" HorizontalAlignment="Left" Margin="0,5,0,0"
+                                            Click="OnExportModpackClick" IsVisible="{Binding BuildShareHasMissing}">
+                                        <!-- A grid, so the words wrap in a narrow window instead of running off. -->
+                                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                                            <PathIcon Data="{StaticResource IconDownload}" Classes="small" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="{DynamicResource Code_ShareAsFile}" TextWrapping="Wrap"/>
+                                        </Grid>
+                                    </Button>
                                 </StackPanel>
                                 <Button Grid.Column="3" Classes="plain" VerticalAlignment="Top"
                                         ToolTip.Tip="{DynamicResource Share_Close}" Command="{Binding CloseBuildShareCommand}">
@@ -631,6 +641,13 @@
                                     <TextBlock Text="{Binding BuildShareText}" TextWrapping="Wrap"/>
                                     <TextBlock Classes="sub" Text="{Binding BuildShareDetail}" TextWrapping="Wrap"
                                                IsVisible="{Binding HasBuildShareDetail}"/>
+                                    <Button Classes="small" HorizontalAlignment="Left" Margin="0,5,0,0"
+                                            Click="OnExportModpackClick" IsVisible="{Binding BuildShareHasMissing}">
+                                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                                            <PathIcon Data="{StaticResource IconDownload}" Classes="small" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="{DynamicResource Code_ShareAsFile}" TextWrapping="Wrap"/>
+                                        </Grid>
+                                    </Button>
                                 </StackPanel>
                                 <Button Grid.Column="2" Classes="plain" VerticalAlignment="Top"
                                         ToolTip.Tip="{DynamicResource Share_Close}" Command="{Binding CloseBuildShareCommand}">

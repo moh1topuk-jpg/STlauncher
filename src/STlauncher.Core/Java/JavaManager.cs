@@ -36,7 +36,10 @@ public sealed partial class JavaManager
         _logger = logger;
     }
 
-    public string RuntimeDirectory(int majorVersion) => Path.Combine(_paths.Runtime, $"java-{majorVersion}");
+    public string RuntimeDirectory(int majorVersion) => RuntimeDirectory(_paths, majorVersion);
+
+    /// <summary>Where the launcher's own Java of a version lives, for a look that needs no manager.</summary>
+    public static string RuntimeDirectory(LauncherPaths paths, int majorVersion) => Path.Combine(paths.Runtime, $"java-{majorVersion}");
 
     /// <summary>
     /// The Java version of the launcher's own runtime this executable belongs to, or null
