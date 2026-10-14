@@ -78,6 +78,13 @@ public sealed class AppSettings
     public bool ImportSuggestionDismissed { get; set; }
 
     /// <summary>
+    /// The player has been told, once, that sharing a build by a short code keeps the
+    /// build's name and list of mods on the launcher's server for half a year, and
+    /// shared it. Until then "Share" shows that sentence first and sends nothing.
+    /// </summary>
+    public bool BuildShareAccepted { get; set; }
+
+    /// <summary>
     /// When the look for other launchers' builds at start last found nothing to bring
     /// over. The start does not look again for a week after that; the button in the
     /// import dialog always does. Null when the last look found something, or none was made.

@@ -19,49 +19,10 @@ namespace STlauncher.App.ViewModels;
 /// </summary>
 public partial class MainWindowViewModel
 {
-    [RelayCommand]
-    private async Task CopyBuildCodeAsync()
-    {
-        if (SelectedInstance is not { } instance || IsModsBusy)
-        {
-            return;
-        }
-
-        var gameVersion = instance.VersionId ?? SelectedVersion?.Id;
-
-        if (string.IsNullOrWhiteSpace(gameVersion))
-        {
-            Status = Localize("Export_NoVersion", "Pick the game version in the build settings first: a modpack has to name it");
-            return;
-        }
-
-        try
-        {
-            IsModsBusy = true;
-
-            var (code, files, missing) = await MakeBuildCodeAsync(instance, gameVersion!);
-
-            await CopyToClipboardAsync(code);
-            AppendConsole($"[code] {instance.Name}: {files} file(s) by address, {missing.Count} not on Modrinth, {code.Length} characters");
-
-            Status = missing.Count == 0
-                ? Localize("Code_Copied", "Build code copied: {0} file(s), {1} characters. Paste it to a friend.", files, code.Length)
-                : Localize("Code_CopiedPartial", "Build code copied: {0} file(s). Not on Modrinth, so not in the code: {1}", files, string.Join(", ", missing));
-        }
-        catch (Exception ex)
-        {
-            Status = Localize("Code_Failed", "Could not make the build code: {0}", ex.Message);
-            AppendConsole($"[code] failed: {ex}");
-        }
-        finally
-        {
-            IsModsBusy = false;
-        }
-    }
-
     /// <summary>
     /// The code of a build: every file Modrinth hosts by address and hash, the rest by
-    /// name. Shared by "Copy the build code" and by the invite to a server made from a build.
+    /// name. Shared by "Share" (see MainWindowViewModel.BuildShare.cs), by "Copy the long
+    /// code" and by the invite to a server made from a build.
     /// </summary>
     private async Task<(string Code, int Files, List<string> Missing)> MakeBuildCodeAsync(Instance instance, string gameVersion)
     {
@@ -130,18 +91,76 @@ public partial class MainWindowViewModel
             return;
         }
 
-        await AddFromCodeTextAsync(text, fromClipboard: true);
+        await AddFromCodeTextAsync(text, CodeOrigin.Anywhere);
     }
 
     /// <summary>
-    /// What a code leads to, wherever the text came from: the clipboard ("A friend's
-    /// build") or the box on the "Join a friend" tab. True when the code was understood -
-    /// an invite is on screen, or a build was added; otherwise the status line says why not.
+    /// What a code leads to, wherever the text came from: the clipboard ("Code from the
+    /// clipboard" on the home screen, "From a build code" on the builds page) or the box
+    /// on the "Join a friend" tab. True when the code was understood - an invite is on
+    /// screen, or a build was added; otherwise the status line says why not.
     /// </summary>
-    private async Task<bool> AddFromCodeTextAsync(string? text, bool fromClipboard)
+    private async Task<bool> AddFromCodeTextAsync(string? text, CodeOrigin origin)
     {
+        var kind = PastedCode.Classify(text, out var shortCode);
+
+        // A code of the other kind is not acted on from here: the player asked this
+        // place for a build (or for a server) and gets told where the other one goes,
+        // with a button that takes it there.
+        if (origin == CodeOrigin.Builds && kind is PastedCodeKind.Invite or PastedCodeKind.ShortInvite)
+        {
+            _misplacedCode = kind == PastedCodeKind.ShortInvite ? RelayKeys.FormatInviteCode(shortCode) : (text ?? string.Empty).Trim();
+            BuildCodeNoteIsInvite = true;
+            Status = Localize("Share_IsInvite", "This is an invite to a server, not a build code. Paste it into “Friends → Join a friend”.");
+            return false;
+        }
+
+        if (origin == CodeOrigin.FriendsBox && kind is PastedCodeKind.Build or PastedCodeKind.ShortBuild)
+        {
+            _misplacedCode = kind == PastedCodeKind.ShortBuild ? BuildShare.Format(shortCode) : (text ?? string.Empty).Trim();
+            FriendInviteNoteIsBuild = true;
+            Status = Localize("Share_IsBuild", "This is a build code, not an invite to a server. Its place is “Builds → From a build code”.");
+            return false;
+        }
+
+        // A short build code is only a name too, but one the relay keeps on disk: the
+        // friend who shared it need not be online.
+        if (kind == PastedCodeKind.ShortBuild)
+        {
+            var shown = BuildShare.Format(shortCode);
+
+            if (RelayLocation.Resolve(_loadedCatalog) is not { } shareRelay)
+            {
+                Status = Localize("Share_FetchNoRelay", "This is a short build code, and the launcher does not know the server that keeps them yet. Ask the friend for the long code, or try again later.");
+                return false;
+            }
+
+            Status = Localize("Share_Fetching", "Asking for the build {0}…", shown);
+
+            if (origin == CodeOrigin.Builds)
+            {
+                BuildCodeNote = Status;
+            }
+
+            var (longCode, shareFailure) = await Task.Run(() => BuildShare.FetchAsync(shareRelay, shortCode));
+
+            if (longCode is null)
+            {
+                Status = ShareFetchFailureText(shareFailure, shown);
+                return false;
+            }
+
+            if (!BuildCode.TryDecode(longCode, out _))
+            {
+                Status = Localize("Share_FetchUnreadable", "The code {0} was found, but this launcher cannot read the build under it. The friend's launcher may be newer: update yours and try again.", shown);
+                return false;
+            }
+
+            text = longCode;
+        }
+
         // A short invite is only a name: the relay holds what it stands for.
-        if (SharedCode.Detect(text) == SharedCodeKind.None && RelayKeys.TryFindInviteCode(text, out var shortCode))
+        if (kind == PastedCodeKind.ShortInvite)
         {
             if (RelayLocation.Resolve(_loadedCatalog) is not { } relay)
             {
@@ -185,9 +204,12 @@ public partial class MainWindowViewModel
                 return true;
 
             default:
-                Status = fromClipboard
-                    ? Localize("Friends_ClipboardEmpty", "The clipboard holds neither a build code nor an invite. Copy the invite (ST-XXXXX-XXXXX) or the line that starts with STB1. or STS1. and try again.")
-                    : Localize("Friends_BoxUnknown", "This does not look like an invite. A code looks like ST-XXXXX-XXXXX; the long line starts with STS1.");
+                Status = origin switch
+                {
+                    CodeOrigin.Builds => Localize("Share_ClipboardNoBuild", "The clipboard holds no build code. Copy a code like SB-XXXXX-XXXXX, or the long line that starts with STB1., and press the button again."),
+                    CodeOrigin.FriendsBox => Localize("Friends_BoxUnknown", "This does not look like an invite. A code looks like ST-XXXXX-XXXXX; the long line starts with STS1."),
+                    _ => Localize("Friends_ClipboardEmpty", "The clipboard holds neither a build code nor an invite. Copy a build code (SB-XXXXX-XXXXX or the line that starts with STB1.) or an invite (ST-XXXXX-XXXXX) and try again.")
+                };
                 return false;
         }
     }

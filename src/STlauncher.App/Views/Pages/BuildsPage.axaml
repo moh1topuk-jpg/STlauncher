@@ -351,7 +351,7 @@
                                         </MenuItem.Styles>
                                     </MenuItem>
                                     <MenuItem Header="{DynamicResource Builds_FromCode}"
-                                              Command="{Binding AddBuildFromCodeCommand}"/>
+                                              Command="{Binding PasteBuildCodeCommand}"/>
                                     <MenuItem Header="{DynamicResource Import_Open}"
                                               Command="{Binding OpenImportCommand}"/>
                                     <Separator/>
@@ -418,9 +418,28 @@
                             </StackPanel>
                         </Border>
 
+                        <!-- What "From a build code" found, or did not: next to the button it is about. -->
+                        <Border Classes="panel inset" Padding="12,10" IsVisible="{Binding HasBuildCodeNote}">
+                            <StackPanel Spacing="8">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                    <TextBlock Text="{Binding BuildCodeNote}" TextWrapping="Wrap" FontSize="12.5" LineHeight="18"/>
+                                    <Button Grid.Column="1" Classes="plain" VerticalAlignment="Top"
+                                            ToolTip.Tip="{DynamicResource Share_Close}" Command="{Binding CloseBuildCodeNoteCommand}"
+                                            IsVisible="{Binding !IsBuildCodeLooking}">
+                                        <PathIcon Data="{StaticResource IconClose}" Classes="small"/>
+                                    </Button>
+                                </Grid>
+                                <ProgressBar IsIndeterminate="True" Height="3" IsVisible="{Binding IsBuildCodeLooking}"/>
+                                <Button Classes="accent-soft small" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                        Content="{DynamicResource Share_IsInviteGo}"
+                                        Command="{Binding OpenInviteFromBuildNoteCommand}"
+                                        IsVisible="{Binding BuildCodeNoteIsInvite}"/>
+                            </StackPanel>
+                        </Border>
+
                         <!-- Always here: the menu alone was not found by everyone. -->
                         <Button Classes="small" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="8,7"
-                                Command="{Binding AddBuildFromCodeCommand}"
+                                Command="{Binding PasteBuildCodeCommand}"
                                 ToolTip.Tip="{DynamicResource Builds_FromCode}">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <PathIcon Data="{StaticResource IconCopy}" Classes="small"/>
@@ -460,6 +479,7 @@
 
                 <!-- What it is, and the way into the game. -->
                 <Border Classes="panel tint" Padding="18,15">
+                    <StackPanel Spacing="12">
                     <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16">
                         <Border Classes="icon-tile wide-only" Width="54" Height="54" CornerRadius="15"
                                 Background="{Binding SelectedInstance.Id, Converter={x:Static conv:TintBrushConverter.Instance}}">
@@ -508,7 +528,7 @@
                                 <PathIcon Data="{StaticResource IconSettings}"/>
                             </Button>
                             <!-- The build as one line of text for a friend. -->
-                            <Button Classes="icon lead" Command="{Binding CopyBuildCodeCommand}"
+                            <Button Classes="icon lead" Command="{Binding ShareBuildCommand}"
                                     ToolTip.Tip="{DynamicResource Builds_ShareHint}">
                                 <PathIcon Data="{StaticResource IconShare}"/>
                             </Button>
@@ -529,8 +549,12 @@
                                         <MenuItem Header="{DynamicResource Builds_AddCopy}"
                                                   Command="{Binding DuplicateInstanceCommand}"/>
                                         <MenuItem Header="{DynamicResource Builds_Export}" Click="OnExportModpackClick"/>
-                                        <MenuItem Header="{DynamicResource Builds_CopyCode}"
-                                                  Command="{Binding CopyBuildCodeCommand}"/>
+                                        <MenuItem Header="{DynamicResource Share_Menu}"
+                                                  Command="{Binding ShareBuildCommand}"/>
+                                        <!-- The long code on purpose: no server, and launchers
+                                             from before short codes read it. -->
+                                        <MenuItem Header="{DynamicResource Share_MenuLong}"
+                                                  Command="{Binding CopyLongBuildCodeCommand}"/>
                                         <Separator/>
                                         <MenuItem Classes="danger" Header="{DynamicResource Game_DeleteInstance}"
                                                   Command="{Binding DeleteInstanceCommand}"/>
@@ -547,6 +571,75 @@
                             </Button>
                         </StackPanel>
                     </Grid>
+
+                    <!-- ======== Sharing: said and shown under the button that was pressed ======== -->
+                    <Border Classes="panel inset" Padding="14,12" IsVisible="{Binding IsBuildShareShown}">
+                        <Panel>
+                            <!-- Before the first share: what will be kept on the server. Nothing has been sent yet. -->
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" IsVisible="{Binding IsBuildShareConsent}">
+                                <PathIcon Data="{StaticResource IconShare}" Classes="small" VerticalAlignment="Top" Margin="0,3,0,0"
+                                          Foreground="{DynamicResource AccentTextBrush}"/>
+                                <StackPanel Grid.Column="1" Spacing="10">
+                                    <TextBlock Text="{DynamicResource Share_Consent}" TextWrapping="Wrap" LineHeight="20"/>
+                                    <WrapPanel ItemSpacing="8" LineSpacing="6">
+                                        <Button Classes="accent-soft small" Content="{DynamicResource Share_ConsentYes}"
+                                                Command="{Binding ConfirmBuildShareCommand}"/>
+                                        <Button Classes="small" Content="{DynamicResource Share_ConsentLong}"
+                                                ToolTip.Tip="{DynamicResource Share_MenuLong}"
+                                                Command="{Binding CopyLongBuildCodeCommand}"/>
+                                    </WrapPanel>
+                                </StackPanel>
+                                <Button Grid.Column="2" Classes="plain" VerticalAlignment="Top"
+                                        ToolTip.Tip="{DynamicResource Share_Close}" Command="{Binding CloseBuildShareCommand}">
+                                    <PathIcon Data="{StaticResource IconClose}" Classes="small"/>
+                                </Button>
+                            </Grid>
+
+                            <!-- The code is on its way. -->
+                            <StackPanel Spacing="8" IsVisible="{Binding IsBuildShareWorking}">
+                                <TextBlock Classes="muted" Text="{Binding BuildShareText}" TextWrapping="Wrap"/>
+                                <ProgressBar IsIndeterminate="True" Height="3"/>
+                            </StackPanel>
+
+                            <!-- The short code: what was copied, readable and copyable again. -->
+                            <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="10" IsVisible="{Binding IsBuildShareShort}">
+                                <Border Classes="chip accent" Padding="12,6" VerticalAlignment="Top">
+                                    <SelectableTextBlock Text="{Binding BuildShareCode}" FontFamily="{StaticResource MonoFont}"
+                                                         FontSize="15" FontWeight="Bold" LetterSpacing="0.5"/>
+                                </Border>
+                                <Button Grid.Column="1" Classes="icon" VerticalAlignment="Top"
+                                        ToolTip.Tip="{DynamicResource Share_CopyAgain}" Command="{Binding CopyBuildShareCodeCommand}">
+                                    <PathIcon Data="{StaticResource IconCopy}"/>
+                                </Button>
+                                <StackPanel Grid.Column="2" Spacing="3" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding BuildShareText}" TextWrapping="Wrap"/>
+                                    <TextBlock Classes="sub" Text="{DynamicResource Share_Kept}" TextWrapping="Wrap"/>
+                                    <TextBlock Classes="sub" Text="{Binding BuildShareDetail}" TextWrapping="Wrap"
+                                               IsVisible="{Binding HasBuildShareDetail}"/>
+                                </StackPanel>
+                                <Button Grid.Column="3" Classes="plain" VerticalAlignment="Top"
+                                        ToolTip.Tip="{DynamicResource Share_Close}" Command="{Binding CloseBuildShareCommand}">
+                                    <PathIcon Data="{StaticResource IconClose}" Classes="small"/>
+                                </Button>
+                            </Grid>
+
+                            <!-- No short code this time: why, and that the long one is in the clipboard. -->
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" IsVisible="{Binding IsBuildShareLong}">
+                                <PathIcon Data="{StaticResource IconWarning}" Foreground="{DynamicResource WarningBrush}"
+                                          VerticalAlignment="Top" Margin="0,2,0,0"/>
+                                <StackPanel Grid.Column="1" Spacing="3">
+                                    <TextBlock Text="{Binding BuildShareText}" TextWrapping="Wrap"/>
+                                    <TextBlock Classes="sub" Text="{Binding BuildShareDetail}" TextWrapping="Wrap"
+                                               IsVisible="{Binding HasBuildShareDetail}"/>
+                                </StackPanel>
+                                <Button Grid.Column="2" Classes="plain" VerticalAlignment="Top"
+                                        ToolTip.Tip="{DynamicResource Share_Close}" Command="{Binding CloseBuildShareCommand}">
+                                    <PathIcon Data="{StaticResource IconClose}" Classes="small"/>
+                                </Button>
+                            </Grid>
+                        </Panel>
+                    </Border>
+                    </StackPanel>
                 </Border>
 
                 <!-- What the build holds: one panel, the tabs across its top. The catalog is the

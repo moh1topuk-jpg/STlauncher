@@ -1,6 +1,6 @@
 # Политика конфиденциальности STlauncher / Privacy Policy
 
-*Обновлено: 23 сентября 2026. English version below.*
+*Обновлено: 14 октября 2026. English version below.*
 
 STlauncher — лаунчер Minecraft для сервера mc.showtime.su с открытым исходным кодом
 ([github.com/moh1topuk-jpg/STlauncher](https://github.com/moh1topuk-jpg/STlauncher)).
@@ -28,6 +28,17 @@ STlauncher — лаунчер Minecraft для сервера mc.showtime.su с 
 
 **Как отключить:** Настройки → «Анонимная статистика запусков». После этого лаунчер
 не отправляет ничего из перечисленного.
+
+**Сборка, которой вы поделились коротким кодом.** Когда вы нажимаете «Поделиться» у
+сборки, лаунчер отправляет на свой сервер её название и список модов: версию игры,
+загрузчик, для каждого файла — его место в сборке, адрес скачивания, хэш и размер, а для
+файлов, которых нет на Modrinth, — только имя файла. Взамен сервер выдаёт короткий код
+(`SB-XXXXX-XXXXX`), по которому друг получает этот список. Ник, пути на диске и сами
+файлы не отправляются. Список хранится на сервере 180 дней с последнего раза, когда им
+поделились или получили его по коду, после чего удаляется; сервер не записывает, кто и с
+какого адреса поделился сборкой. Перед первой отправкой лаунчер говорит об этом и ждёт
+вашего согласия. Если сервер не нужен, в меню сборки есть «Скопировать длинный код»: он
+содержит то же самое, но никуда не отправляется.
 
 ## Сторонние сервисы
 
@@ -75,7 +86,7 @@ STlauncher — лаунчер Minecraft для сервера mc.showtime.su с 
 
 # Privacy Policy (English)
 
-*Last updated: September 23, 2026.*
+*Last updated: October 14, 2026.*
 
 STlauncher is an open-source Minecraft launcher for the mc.showtime.su server
 ([github.com/moh1topuk-jpg/STlauncher](https://github.com/moh1topuk-jpg/STlauncher)).
@@ -103,6 +114,17 @@ weekly counters) and is neither sold nor shared with third parties.
 
 **Opting out:** Settings → "Anonymous launch statistics". After that the launcher sends
 nothing listed above.
+
+**A build you shared by a short code.** When you press "Share" on a build, the launcher
+sends its name and list of mods to the launcher's own server: the game version, the mod
+loader, and for each file its place in the build, download address, hash and size; for
+files that are not on Modrinth, the file name only. In return the server gives a short
+code (`SB-XXXXX-XXXXX`) by which a friend gets that list. Your nickname, paths on disk
+and the files themselves are not sent. The list is kept on the server for 180 days after
+it was last shared or fetched by its code and is then deleted; the server does not record
+who shared a build or from which address. Before the first upload the launcher says so
+and waits for your consent. If you would rather not use the server, the build's menu has
+"Copy the long code": it holds the same and is sent nowhere.
 
 ## Third-party services
 

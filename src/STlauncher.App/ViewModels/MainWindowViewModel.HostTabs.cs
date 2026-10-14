@@ -259,7 +259,11 @@ public partial class MainWindowViewModel
     [ObservableProperty]
     private bool _isFriendInviteLooking;
 
-    partial void OnFriendInviteEntryChanged(string value) => FriendInviteNote = string.Empty;
+    partial void OnFriendInviteEntryChanged(string value)
+    {
+        FriendInviteNote = string.Empty;
+        FriendInviteNoteIsBuild = false;
+    }
 
     /// <summary>Puts the clipboard's text into the box. Nothing is looked up until "Find the server" is pressed.</summary>
     [RelayCommand]
@@ -310,8 +314,9 @@ public partial class MainWindowViewModel
         {
             IsFriendInviteLooking = true;
             FriendInviteNote = string.Empty;
+            FriendInviteNoteIsBuild = false;
 
-            if (await AddFromCodeTextAsync(text, fromClipboard: false))
+            if (await AddFromCodeTextAsync(text, CodeOrigin.FriendsBox))
             {
                 FriendInviteEntry = string.Empty;
             }

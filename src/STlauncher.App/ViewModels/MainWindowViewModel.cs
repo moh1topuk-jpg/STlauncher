@@ -457,6 +457,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _backupDirectoryOverride = settings.BackupsDirectory ?? string.Empty;
 
         ImportSuggestionDismissed = settings.ImportSuggestionDismissed;
+        _buildShareAccepted = settings.BuildShareAccepted;
         _importScanEmptyAt = settings.ImportScanEmptyAt;
         AnimatedBackground = settings.AnimatedBackground;
         AnimationFps = NormalizeAnimationFps(settings.AnimationFps);
@@ -1054,6 +1055,7 @@ public partial class MainWindowViewModel : ViewModelBase
     partial void OnSelectedInstanceChanged(Instance? value)
     {
         OnPropertyChanged(nameof(GameSettingsScopeLabel));
+        RefreshBuildSharePanel();
         if (value is null || _refreshingListItem)
         {
             return;
@@ -1469,6 +1471,7 @@ public partial class MainWindowViewModel : ViewModelBase
             Nicknames = Nicknames.ToList(),
             DismissedBuildIds = _dismissedBuildIds.ToList(),
             ImportSuggestionDismissed = ImportSuggestionDismissed,
+            BuildShareAccepted = _buildShareAccepted,
             ImportScanEmptyAt = _importScanEmptyAt,
             AnimatedBackground = AnimatedBackground,
             AnimationFps = AnimationFps,
