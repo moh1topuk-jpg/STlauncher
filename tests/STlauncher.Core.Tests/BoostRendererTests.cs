@@ -152,7 +152,8 @@ public class BoostRendererTests : IDisposable
         Assert.Equal(2, record.Jars.Count);
 
         var issue = Assert.Single(BuildChecker.Check(_game, LoaderKind.Fabric, null), i => i.Kind == BuildIssueKind.TwoRenderers);
-        Assert.True(issue.IsBlocking);
+        // The launcher's own knowledge, not the loader's refusal: a warning, never "will not start".
+        Assert.False(issue.IsBlocking);
         Assert.False(issue.FixableBySwitch);
         Assert.Equal(new[] { "embeddium-1.0.11.jar", "sodium-fabric-0.6.13.jar" }, new[] { issue.FileName, issue.OtherFileName }.OrderBy(f => f));
     }
@@ -179,7 +180,7 @@ public class BoostRendererTests : IDisposable
     }
 
     [Fact]
-    public void Check_TwoRenderers_SaidOnce_InsteadOfTheirOwnConflictLine()
+    public void Check_TwoRenderers_DeclaredBreaks_IsSaidOnce_AsTheLoadersRefusal()
     {
         FabricJar("sodium-0.6.jar", "sodium", ", \"breaks\": { \"embeddium\": \"*\" }");
         FabricJar("embeddium-1.0.jar", "embeddium");
@@ -187,8 +188,9 @@ public class BoostRendererTests : IDisposable
 
         var issues = BuildChecker.Check(_game, LoaderKind.Fabric, null);
 
-        Assert.Single(issues, i => i.Kind == BuildIssueKind.TwoRenderers);
-        Assert.DoesNotContain(issues, i => i.Kind is BuildIssueKind.Incompatible or BuildIssueKind.Discouraged);
+        // Sodium's own "breaks" stops the game: that line stays, the softer renderer line goes.
+        Assert.True(Assert.Single(issues, i => i.Kind == BuildIssueKind.Incompatible).IsBlocking);
+        Assert.DoesNotContain(issues, i => i.Kind is BuildIssueKind.TwoRenderers or BuildIssueKind.Discouraged);
     }
 
     [Fact]

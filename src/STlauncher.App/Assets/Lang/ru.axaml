@@ -865,7 +865,7 @@
     <x:String x:Key="BuildChange_WillUpdate">Обновится: {0}</x:String>
     <x:String x:Key="BuildChange_WillRestore">Вернутся недостающие файлы: {0}</x:String>
     <x:String x:Key="BuildChange_WillRemove">Уберётся: {0}</x:String>
-    <x:String x:Key="Builds_SyncDeclined">Сборка оставлена как есть. Спрошу снова при следующем запуске.</x:String>
+    <x:String x:Key="Builds_SyncDeclined">Сборка оставлена как есть. Эти изменения больше не предложу — их можно взять в меню сборки: «Синхронизировать с каталогом».</x:String>
     <x:String x:Key="Settings_UsageStats">Анонимная статистика запусков</x:String>
     <x:String x:Key="Settings_UsageStatsHint">Раз за запуск лаунчер отправляет на сборщик статистики случайный идентификатор установки, версию, язык, ОС, исход проверки обновлений и число зависаний лаунчера за неделю (только число); если игра упала — причину падения, версию игры и загрузчик. Ник, файлы, пути и адрес не передаются. Так владелец сервера видит, сколько людей пользуются лаунчером и что у них ломается.</x:String>
     <x:String x:Key="Settings_UsageNumbers">Пользователей лаунчера: {0} за сутки · {1} за 7 дней · запусков за сутки: {2}</x:String>
@@ -946,7 +946,7 @@
     <x:String x:Key="Check_Missing">«{0}» требует «{1}», а его нет в сборке</x:String>
     <x:String x:Key="Check_Duplicate">«{0}» в сборке дважды: {1} и {2}</x:String>
     <x:String x:Key="Check_WrongLoader">«{0}» сделан для {1} и здесь не загрузится</x:String>
-    <x:String x:Key="Check_WrongVersion">«{0}» сделан для {1}, а не для этой версии игры</x:String>
+    <x:String x:Key="Check_WrongVersion">«{0}» сделан для другой версии игры: Minecraft {1}</x:String>
     <x:String x:Key="Check_FixEnable">Включить</x:String>
     <x:String x:Key="Check_FixFind">Найти в каталоге</x:String>
     <x:String x:Key="Check_FixDisableOld">Выключить старый</x:String>
@@ -958,6 +958,25 @@
     <x:String x:Key="Check_ProblemsMany">{0} проблем</x:String>
     <x:String x:Key="Check_OpenMods">К списку модов</x:String>
     <x:String x:Key="Check_FixAll">Исправить всё</x:String>
+    <x:String x:Key="Check_SummarySoft">Может работать неправильно: {0}</x:String>
+    <x:String x:Key="Check_NotesOne">{0} замечание</x:String>
+    <x:String x:Key="Check_NotesFew">{0} замечания</x:String>
+    <x:String x:Key="Check_NotesMany">{0} замечаний</x:String>
+    <x:String x:Key="Check_WrongDependencyVersion">«{0}» требует «{1}» {2}, а в сборке {3}</x:String>
+    <x:String x:Key="Check_DismissForMod">Не показывать для этого мода</x:String>
+    <x:String x:Key="Check_Or">или</x:String>
+    <x:String x:Key="Check_PlayAnyway">Запустить всё равно</x:String>
+    <x:String x:Key="Check_HardHint">Это проверка самого загрузчика модов: с этим он игру не запустит. Запуск не заблокирован — исправьте или запустите всё равно.</x:String>
+    <x:String x:Key="Mods_UpdateNotice">Есть обновления для ваших модов: {0}</x:String>
+    <x:String x:Key="Mods_UpdateNoticeOpen">К модам</x:String>
+    <x:String x:Key="Mods_SkipVersion">Пропустить эту версию</x:String>
+    <x:String x:Key="Mods_SkippedVersion">{0}: версию {1} больше не предлагаю</x:String>
+    <x:String x:Key="Settings_ModUpdateOffers">Предлагать обновления модов</x:String>
+    <x:String x:Key="Settings_ModUpdateOffersHint">Только для модов, которые вы добавили сами; моды сервера идут за сервером. Проверка — не чаще раза в день.</x:String>
+    <x:String x:Key="Settings_ModUpdateOffersAlways">Всегда</x:String>
+    <x:String x:Key="Settings_ModUpdateOffersDaily">Раз в день</x:String>
+    <x:String x:Key="Settings_ModUpdateOffersWeekly">Раз в неделю</x:String>
+    <x:String x:Key="Settings_ModUpdateOffersNever">Никогда</x:String>
     <!-- Settings and builds, restructured -->
     <x:String x:Key="Settings_SectionLook">Оформление</x:String>
     <x:String x:Key="Settings_SectionMore">Дополнительно</x:String>
@@ -1189,7 +1208,7 @@
     <x:String x:Key="Boost_Opt_graphicsMode">Качество графики</x:String>
     <x:String x:Key="Boost_Opt_screenEffectScale">Эффекты искажения</x:String>
     <x:String x:Key="Boost_RendererSteppedAside">В сборке теперь есть {0} из каталога, поэтому {1} от «Ускорения» отключён: два рендерера вместе роняют игру. Файл остался в папке модов.</x:String>
-    <x:String x:Key="Check_TwoRenderers">Два мода-рендерера сразу: «{0}» и «{1}». Вместе они роняют игру — оставьте один.</x:String>
+    <x:String x:Key="Check_TwoRenderers">Два мода-рендерера сразу: «{0}» и «{1}». Обычно они мешают друг другу — лучше оставить один.</x:String>
     <x:String x:Key="Check_FixDisableNamed">Выключить {0}</x:String>
     <!-- "Ускорение": the per-build switch that can be switched back off -->
     <x:String x:Key="Boost_Title">Ускорение</x:String>

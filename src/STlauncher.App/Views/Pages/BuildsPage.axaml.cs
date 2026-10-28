@@ -173,6 +173,7 @@ public partial class BuildsPage : UserControl
         System.Windows.Input.ICommand? command = (item, action) switch
         {
             (InstalledModItem, "update") => viewModel.UpdateModCommand,
+            (InstalledModItem, "skip") => viewModel.SkipModVersionCommand,
             (InstalledModItem, "page") => viewModel.OpenModPageCommand,
             (InstalledModItem, "delete") => viewModel.UninstallModCommand,
             (ResourcePackItem, "update") => viewModel.UpdateResourcePackCommand,

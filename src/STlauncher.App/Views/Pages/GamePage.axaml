@@ -365,7 +365,7 @@
                                     <Border.IsVisible>
                                         <MultiBinding Converter="{x:Static BoolConverters.And}">
                                             <Binding Path="CanUseSafeMode"/>
-                                            <Binding Path="!HasBuildIssues"/>
+                                            <Binding Path="!HasHardBuildIssues"/>
                                         </MultiBinding>
                                     </Border.IsVisible>
                                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
@@ -374,6 +374,64 @@
                                                 Content="{DynamicResource Game_PlaySafe}"/>
                                         <TextBlock Grid.Column="1" Text="{DynamicResource Game_PlaySafeHint}" Classes="muted"
                                                    VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                    </Grid>
+                                </Border>
+
+                                <!-- "May work incorrectly": the mods' own soft warnings, a quiet line
+                                     each. Never a question, never in the way of Play; each can be put
+                                     away for its mod until that file changes. -->
+                                <Border Classes="under">
+                                    <!-- While something stops the game, that panel has the room; the
+                                         soft lines wait on the Builds page. -->
+                                    <Border.IsVisible>
+                                        <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                            <Binding Path="HasSoftBuildIssues"/>
+                                            <Binding Path="!HasHardBuildIssues"/>
+                                        </MultiBinding>
+                                    </Border.IsVisible>
+                                    <StackPanel Spacing="6">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <PathIcon Data="{StaticResource IconWarning}" Classes="small gold" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding SoftBuildCheckSummary}" Classes="muted" FontWeight="SemiBold"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                        <ItemsControl ItemsSource="{Binding SoftBuildIssues}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <StackPanel Spacing="2"/>
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:BuildIssueItem">
+                                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" Margin="24,0,0,0">
+                                                        <TextBlock Text="{Binding Title}" Classes="muted" FontSize="12.5" TextWrapping="Wrap"
+                                                                   VerticalAlignment="Center"/>
+                                                        <Button Grid.Column="1" Classes="link" FontSize="12" VerticalAlignment="Center"
+                                                                Content="{Binding DismissLabel}"
+                                                                Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).DismissBuildWarningCommand}"
+                                                                CommandParameter="{Binding}"/>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Updates for the player's own mods: one line, at most as often as
+                                     the setting says. The mods page has the rest. -->
+                                <Border Classes="under" IsVisible="{Binding HasModUpdateNotice}">
+                                    <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
+                                        <PathIcon Data="{StaticResource IconArrowUp}" Classes="small gold" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding ModUpdateNoticeText}" Classes="muted"
+                                                   VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                        <Button Grid.Column="2" Classes="small" VerticalAlignment="Center"
+                                                Content="{DynamicResource Mods_UpdateNoticeOpen}"
+                                                Command="{Binding OpenModUpdatesCommand}"/>
+                                        <Button Grid.Column="3" Classes="plain" VerticalAlignment="Center"
+                                                ToolTip.Tip="{DynamicResource WhatsNew_Close}"
+                                                Command="{Binding DismissModUpdateNoticeCommand}">
+                                            <PathIcon Data="{StaticResource IconClose}" Width="10" Height="10"/>
+                                        </Button>
                                     </Grid>
                                 </Border>
                             </StackPanel>
@@ -467,12 +525,13 @@
 
                         <!-- What the jars say before the game is asked: the same verdicts the crash
                              analyser gives afterwards, offered while there is still time to act. -->
-                        <Border Classes="panel" IsVisible="{Binding HasBuildIssues}" controls:Reveal.OnVisible="True">
+                        <Border Classes="panel" IsVisible="{Binding HasHardBuildIssues}" controls:Reveal.OnVisible="True">
                             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                                <PathIcon Classes="lead" Data="{StaticResource IconWarning}" Foreground="{DynamicResource GoldBrush}"/>
+                                <PathIcon Classes="lead" Data="{StaticResource IconWarning}" Foreground="{DynamicResource DangerBrush}"/>
                                 <StackPanel Grid.Column="1" Spacing="8">
                                     <TextBlock Text="{Binding BuildCheckSummary}" Classes="strong" FontSize="15" TextWrapping="Wrap"/>
-                                    <ItemsControl ItemsSource="{Binding BuildIssues}">
+                                    <TextBlock Text="{DynamicResource Check_HardHint}" Classes="muted" FontSize="12.5" TextWrapping="Wrap"/>
+                                    <ItemsControl ItemsSource="{Binding HardBuildIssues}">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
                                                 <StackPanel Spacing="5"/>
@@ -505,6 +564,8 @@
                                         <Button Classes="small"
                                                 Content="{DynamicResource Check_OpenMods}"
                                                 Command="{Binding OpenBuildIssuesCommand}"/>
+                                        <Button Classes="small" Content="{DynamicResource Check_PlayAnyway}"
+                                                Command="{Binding PlayCommand}" IsEnabled="{Binding !IsBusy}"/>
                                     </WrapPanel>
                                 </StackPanel>
                             </Grid>

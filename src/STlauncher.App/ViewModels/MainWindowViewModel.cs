@@ -460,6 +460,9 @@ public partial class MainWindowViewModel : ViewModelBase
         _buildShareAccepted = settings.BuildShareAccepted;
         _importScanEmptyAt = settings.ImportScanEmptyAt;
         AnimatedBackground = settings.AnimatedBackground;
+        ModUpdateOffers = Enum.TryParse<STlauncher.Core.Mods.ModUpdateFrequency>(settings.ModUpdateOffers, true, out var offers)
+            ? offers
+            : STlauncher.Core.Mods.ModUpdateFrequency.Daily;
         AnimationFps = NormalizeAnimationFps(settings.AnimationFps);
         Controls.SkinViewer.FrameCap = AnimationFps;
         UiScale = NormalizeUiScale(settings.UiScale);
@@ -1474,6 +1477,7 @@ public partial class MainWindowViewModel : ViewModelBase
             BuildShareAccepted = _buildShareAccepted,
             ImportScanEmptyAt = _importScanEmptyAt,
             AnimatedBackground = AnimatedBackground,
+            ModUpdateOffers = ModUpdateOffers.ToString(),
             AnimationFps = AnimationFps,
             UiScale = UiScale,
             PreferDiscreteGpu = PreferDiscreteGpu,

@@ -82,6 +82,9 @@ public class BuildCheckerTests
         var wrongLoader = Assert.Single(issues, i => i.Kind == BuildIssueKind.WrongLoader);
         Assert.Equal("jei-forge.jar", wrongLoader.FileName);
 
+        // Fabric skips a jar it cannot read; the game starts without it.
+        Assert.False(wrongLoader.IsBlocking);
+
         var missing = Assert.Single(issues, i => i.Kind == BuildIssueKind.MissingDependency);
         Assert.Equal("Fresh Animations", missing.Subject);
         Assert.Equal("entity_model_features", missing.Detail);
@@ -89,7 +92,9 @@ public class BuildCheckerTests
 
         var version = Assert.Single(issues, i => i.Kind == BuildIssueKind.WrongGameVersion);
         Assert.Equal("iris-old.jar", version.FileName);
-        Assert.False(version.IsBlocking);
+
+        // "depends": { "minecraft": "1.20.x" } on 1.21.4: Fabric Loader refuses to start.
+        Assert.True(version.IsBlocking);
     }
 
     [Fact]

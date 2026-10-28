@@ -11,7 +11,7 @@ namespace STlauncher.Core.Mods;
 /// with "||") and Forge's Maven ranges ("[1.21,1.22)", "[1.21.1]"). Anything it cannot
 /// parse counts as satisfied: a false alarm before launch is worse than a missed one.
 /// </summary>
-public static class VersionRange
+public static partial class VersionRange
 {
     private static readonly Regex Comparator = new(@"^(?<op>>=|<=|>|<|=|~|\^)?\s*(?<ver>[0-9][0-9A-Za-z.\-+]*|\*|x)$", RegexOptions.Compiled);
 

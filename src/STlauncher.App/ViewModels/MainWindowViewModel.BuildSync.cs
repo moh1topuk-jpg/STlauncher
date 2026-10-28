@@ -119,6 +119,7 @@ public partial class MainWindowViewModel
             _pendingServerLine = serverChanged
                 ? Localize("BuildChange_Server", "Server: {0} → {1}", instance.ServerAddress ?? "-", preview.ServerAddress ?? "-")
                 : null;
+            _pendingDefinition = $"{preview.VersionId}|{preview.Loader}|{preview.LoaderVersion}|{preview.ServerAddress}|{preview.ServerName}";
         }
 
         return instance;
@@ -184,7 +185,19 @@ public partial class MainWindowViewModel
                 return;
             }
 
+            // "Not now" to these very changes is remembered: the same catalog revision is
+            // not brought up again on every start. A new one is.
+            var offerKey = CatalogOfferKeyFor(instance, plan);
+
+            if (!ModUpdatePolicy.ShouldOfferCatalog(offerKey, instance.DeclinedCatalogOffer))
+            {
+                AppendConsole($"[build] '{instance.Name}': catalog changes {offerKey} were declined before, not offered again");
+                ClearPendingBuildSync();
+                return;
+            }
+
             OfferBuildSync(instance, plan);
+            _pendingOfferKey = offerKey;
         }
         catch (Exception ex)
         {
@@ -221,7 +234,27 @@ public partial class MainWindowViewModel
     private CatalogBuild? _pendingCatalogBuild;
     private BuildChangeNotice? _pendingCatalogNotice;
     private string? _pendingServerLine;
+    private string? _pendingDefinition;
+    private string? _pendingOfferKey;
     private Instance? _pendingSyncInstance;
+
+    /// <summary>What the offer would change, as a fingerprint that does not depend on the language.</summary>
+    private string CatalogOfferKeyFor(Instance instance, BuildSyncPlan plan)
+    {
+        var parts = new List<string>();
+
+        if (_pendingCatalogBuild is not null)
+        {
+            parts.Add("def:" + _pendingDefinition);
+            parts.AddRange(_pendingCatalogNotice?.Added.Select(a => "+" + a) ?? Enumerable.Empty<string>());
+            parts.AddRange(_pendingCatalogNotice?.Removed.Select(r => "-" + r) ?? Enumerable.Empty<string>());
+        }
+
+        parts.AddRange(plan.Pending.Select(p => "get:" + p.Id + "@" + p.Source.Version));
+        parts.AddRange(plan.Removed.Select(r => "del:" + (r.Id ?? r.FileName)));
+
+        return ModUpdatePolicy.CatalogOfferKey(instance.CatalogBuildId, parts);
+    }
 
     /// <summary>True while the main screen shows catalog changes waiting for a yes or no.</summary>
     [ObservableProperty]
@@ -327,6 +360,7 @@ public partial class MainWindowViewModel
             return;
         }
 
+        instance.DeclinedCatalogOffer = null;
         ClearPendingBuildSync();
         _buildSync = ApplyOfferedBuildSyncAsync(instance, build);
         await _buildSync;
@@ -373,7 +407,11 @@ public partial class MainWindowViewModel
         }
     }
 
-    /// <summary>The player said not now: nothing changes, and the question returns on the next start.</summary>
+    /// <summary>
+    /// The player said not now: nothing changes, and these same changes are not offered
+    /// again. A newer catalog revision is; "Sync with the catalog" in the build's menu
+    /// takes them any time.
+    /// </summary>
     [RelayCommand]
     private void DeclinePendingBuildSync()
     {
@@ -382,10 +420,18 @@ public partial class MainWindowViewModel
             return;
         }
 
-        var name = _pendingSyncInstance?.Name;
+        var instance = _pendingSyncInstance;
+        var key = _pendingOfferKey;
         ClearPendingBuildSync();
-        Status = Localize("Builds_SyncDeclined", "The build is left as it is. You will be asked again on the next start.");
-        AppendConsole($"[build] '{name}': catalog changes declined for this session");
+
+        if (instance is not null && key is not null)
+        {
+            instance.DeclinedCatalogOffer = key;
+            _instances.Save(instance);
+        }
+
+        Status = Localize("Builds_SyncDeclined", "The build is left as it is. These changes will not be offered again; \"Sync with the catalog\" in the build's menu takes them any time.");
+        AppendConsole($"[build] '{instance?.Name}': catalog changes {key} declined, remembered");
     }
 
     private void ClearPendingBuildSync()
@@ -394,6 +440,8 @@ public partial class MainWindowViewModel
         _pendingCatalogBuild = null;
         _pendingCatalogNotice = null;
         _pendingServerLine = null;
+        _pendingDefinition = null;
+        _pendingOfferKey = null;
         HasPendingBuildSync = false;
         BuildChangeLines.Clear();
         BuildChangeTitle = string.Empty;

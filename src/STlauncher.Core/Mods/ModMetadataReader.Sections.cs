@@ -23,7 +23,7 @@ public static partial class ModMetadataReader
     /// answers are kept between launches (<see cref="ModMetadataCache"/>); a new number
     /// makes every kept answer stale at once.
     /// </summary>
-    public const int ParserRevision = 2;
+    public const int ParserRevision = 3;
 
     /// <summary>Jars inside jars inside jars: three levels is one more than anything published needs.</summary>
     private const int MaxNestedDepth = 3;
@@ -208,7 +208,10 @@ public static partial class ModMetadataReader
         bundled.AddRange(StringsOf(root, "provides").Select(alias => new ProvidedMod(alias, version)));
         CollectNested(archive, FabricJarPaths(root), fabricFamily: true, depth: 1, budget, bundled);
 
-        return Build(fileName, id, name, version, LoaderKind.Fabric, deps, minecraft, conflicts, bundled);
+        return Build(fileName, id, name, version, LoaderKind.Fabric, deps, minecraft, conflicts, bundled) with
+        {
+            ServerOnly = string.Equals(TextOf(root, "environment"), "server", StringComparison.OrdinalIgnoreCase)
+        };
     }
 
     private static IEnumerable<(string Id, string? Range)> FabricRelations(JsonElement root, string key)
@@ -305,7 +308,10 @@ public static partial class ModMetadataReader
 
         CollectNested(archive, StringsOf(loader, "jars"), fabricFamily: true, depth: 1, budget, bundled);
 
-        return Build(fileName, id, name, version, LoaderKind.Quilt, deps, minecraft, conflicts, bundled);
+        var serverOnly = doc.RootElement.TryGetProperty("minecraft", out var game) && game.ValueKind == JsonValueKind.Object &&
+                         string.Equals(TextOf(game, "environment"), "dedicated_server", StringComparison.OrdinalIgnoreCase);
+
+        return Build(fileName, id, name, version, LoaderKind.Quilt, deps, minecraft, conflicts, bundled) with { ServerOnly = serverOnly };
     }
 
     private readonly record struct QuiltRelation(string Id, string? Range, bool Optional, bool Unclear);
