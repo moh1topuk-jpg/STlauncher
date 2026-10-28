@@ -69,7 +69,27 @@ public enum CrashCause
     JavaNotStarted,
 
     /// <summary>Windows ended the process. Subject is the status code as hex.</summary>
-    WindowsError
+    WindowsError,
+
+    // Read from the JVM's fatal error banner and the graphics library's own errors.
+
+    /// <summary>
+    /// The game died inside the graphics driver: the JVM's "Problematic frame" is in the
+    /// driver's library. Subject is the vendor: AMD, NVIDIA or Intel.
+    /// </summary>
+    GraphicsDriverCrash,
+
+    /// <summary>
+    /// The game died inside a program that draws over it (RivaTuner, Discord, OBS, Steam).
+    /// Subject is that program's name.
+    /// </summary>
+    OverlayCrash,
+
+    /// <summary>
+    /// Windows offers the game no OpenGL at all: no graphics driver is installed, only
+    /// Windows' basic display adapter ("GLFW error 65542", "Pixel format not accelerated").
+    /// </summary>
+    NoOpenGl
 }
 
 /// <param name="Subject">The mod, file or number the message is about, when there is one.</param>
@@ -143,6 +163,16 @@ public static class CrashAnalyzer
         @"\[(ig\d+icd|igd|nvoglv|nvd3dum|atio|amdvlk|atiu|vulkan-1)[^\]]*\]",
         Options | RegexOptions.IgnoreCase);
 
+    // "# C  [atio6axx.dll+0x1b5e10]": the native library the JVM died in.
+    private static readonly Regex NativeProblematicFrame = new(
+        @"^\s*#\s+C\s+\[(?<module>[^\]+\s]+)",
+        Options);
+
+    // "# C:\Users\...\hs_err_pid1234.log" under "An error report file with more information is saved as:".
+    private static readonly Regex JvmErrorReportLine = new(
+        @"(?<path>(?:[A-Za-z]:\\|/)[^\r\n]*hs_err_pid\d+\.log)",
+        Options);
+
     private static readonly Regex CrashReportLine = new(
         @"Crash report saved to:\s*(?:#@!@#\s*)?(?<path>[^\r\n]+\.txt)",
         Options);
@@ -157,6 +187,27 @@ public static class CrashAnalyzer
         foreach (var line in lines)
         {
             var match = CrashReportLine.Match(line);
+
+            if (match.Success)
+            {
+                return match.Groups["path"].Value.Trim();
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>Path of the JVM's own fatal error report (hs_err_pid*.log), if the log mentions one.</summary>
+    public static string? FindJvmErrorReportPath(IEnumerable<string> lines)
+    {
+        foreach (var line in lines)
+        {
+            if (!line.Contains("hs_err_pid", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var match = JvmErrorReportLine.Match(line);
 
             if (match.Success)
             {
@@ -323,6 +374,35 @@ public static class CrashAnalyzer
             return;
         }
 
+        // No driver at all: Windows' basic display adapter has no OpenGL to give. GLFW says
+        // 65542 (WGL: The driver does not appear to support OpenGL); LWJGL 2 on old versions
+        // says "Pixel format not accelerated".
+        if (line.Contains("GLFW error 65542", StringComparison.Ordinal) ||
+            line.Contains("does not appear to support OpenGL", StringComparison.Ordinal) ||
+            line.Contains("Pixel format not accelerated", StringComparison.Ordinal))
+        {
+            findings.Add(new CrashDiagnosis(CrashCause.NoOpenGl, null, null, line.Trim()));
+            return;
+        }
+
+        // The JVM died in native code: whose library it was decides who can fix it.
+        if (NativeProblematicFrame.Match(line) is { Success: true } native)
+        {
+            var module = native.Groups["module"].Value;
+
+            if (NativeModules.DriverVendor(module) is { } vendor)
+            {
+                findings.Add(new CrashDiagnosis(CrashCause.GraphicsDriverCrash, vendor, module, line.Trim()));
+                return;
+            }
+
+            if (NativeModules.OverlayName(module) is { } overlay)
+            {
+                findings.Add(new CrashDiagnosis(CrashCause.OverlayCrash, overlay, module, line.Trim()));
+                return;
+            }
+        }
+
         if (line.Contains("GLFW error 6554", StringComparison.Ordinal) ||
             line.Contains("does not appear to support OpenGL", StringComparison.Ordinal) ||
             line.Contains("Pixel format not accepted", StringComparison.Ordinal) ||
@@ -400,8 +480,11 @@ public static class CrashAnalyzer
         CrashCause.OutOfMemory => 5,
         CrashCause.DiskFull => 6,
         CrashCause.MixinFailure => 7,
-        CrashCause.Graphics => 8,
-        CrashCause.BrokenInstallation => 9,
+        CrashCause.NoOpenGl => 8,
+        CrashCause.GraphicsDriverCrash => 8,
+        CrashCause.OverlayCrash => 8,
+        CrashCause.Graphics => 9,
+        CrashCause.BrokenInstallation => 10,
         _ => 100
     };
 }

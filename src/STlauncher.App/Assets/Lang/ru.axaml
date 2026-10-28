@@ -586,6 +586,14 @@
     <x:String x:Key="Crash_JavaTooOldAdvice">Пусть лаунчер выберет Java сам — он скачает нужную.</x:String>
     <x:String x:Key="Crash_Graphics">Видеодрайвер не смог открыть окно игры</x:String>
     <x:String x:Key="Crash_GraphicsAdvice">Обновите драйвер видеокарты. На ноутбуке запускайте игру на дискретной карте.</x:String>
+    <x:String x:Key="Crash_GraphicsDriverCrash">Игра упала внутри видеодрайвера {0}</x:String>
+    <x:String x:Key="Crash_GraphicsDriverCrashAdvice">Поставьте свежий драйвер с сайта {0}: тот, что приносит Центр обновления Windows, часто старый. Выключите оверлеи (Discord, MSI Afterburner, OBS), а если повторится — играйте без шейдеров.</x:String>
+    <x:String x:Key="Crash_OverlayCrash">Игра упала внутри оверлея {0}</x:String>
+    <x:String x:Key="Crash_OverlayCrashAdvice">Выключите оверлей {0} для Minecraft (javaw.exe) или закройте {0}, пока играете.</x:String>
+    <x:String x:Key="Crash_NoOpenGl">На компьютере нет видеодрайвера, с которым может работать игра</x:String>
+    <x:String x:Key="Crash_NoOpenGlAdvice">Windows работает на базовом видеоадаптере, а у него нет OpenGL. Установите драйвер с сайта AMD, NVIDIA или Intel (на ноутбуке — для обеих видеокарт) и перезагрузите компьютер.</x:String>
+    <x:String x:Key="Crash_FixDiscreteGpu">Запускать на дискретной карте</x:String>
+    <x:String x:Key="Crash_DiscreteGpuApplied">Игра будет запускаться на дискретной видеокарте — попробуйте снова</x:String>
     <x:String x:Key="Crash_BrokenInstallation">Файл игры отсутствует или повреждён</x:String>
     <x:String x:Key="Crash_BrokenInstallationAdvice">Скачайте файлы игры заново: лаунчер проверит каждый и заменит битые.</x:String>
     <x:String x:Key="Crash_DiskFull">Диск заполнен</x:String>

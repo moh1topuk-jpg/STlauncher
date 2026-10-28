@@ -586,6 +586,14 @@
     <x:String x:Key="Crash_JavaTooOldAdvice">Let the launcher pick Java itself: it downloads the right one.</x:String>
     <x:String x:Key="Crash_Graphics">The graphics driver could not open the game window</x:String>
     <x:String x:Key="Crash_GraphicsAdvice">Update the graphics driver. On a laptop, run the game on the discrete card.</x:String>
+    <x:String x:Key="Crash_GraphicsDriverCrash">The game crashed inside the {0} graphics driver</x:String>
+    <x:String x:Key="Crash_GraphicsDriverCrashAdvice">Install the newest driver from the {0} website: the one Windows Update brings is often old. Switch overlays off (Discord, MSI Afterburner, OBS), and if it repeats, play without shaders.</x:String>
+    <x:String x:Key="Crash_OverlayCrash">The game crashed inside the {0} overlay</x:String>
+    <x:String x:Key="Crash_OverlayCrashAdvice">Switch the {0} overlay off for Minecraft (javaw.exe), or close {0} while you play.</x:String>
+    <x:String x:Key="Crash_NoOpenGl">The computer has no graphics driver the game can use</x:String>
+    <x:String x:Key="Crash_NoOpenGlAdvice">Windows is running on its basic display adapter, which has no OpenGL. Install the driver from the AMD, NVIDIA or Intel website (on a laptop, for both cards) and restart the computer.</x:String>
+    <x:String x:Key="Crash_FixDiscreteGpu">Run the game on the discrete card</x:String>
+    <x:String x:Key="Crash_DiscreteGpuApplied">The game will run on the discrete graphics card - try again</x:String>
     <x:String x:Key="Crash_BrokenInstallation">A game file is missing or damaged</x:String>
     <x:String x:Key="Crash_BrokenInstallationAdvice">Re-download the game files: the launcher checks every file and replaces the bad ones.</x:String>
     <x:String x:Key="Crash_DiskFull">The disk is full</x:String>

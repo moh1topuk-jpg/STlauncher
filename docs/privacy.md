@@ -1,6 +1,6 @@
 # Политика конфиденциальности STlauncher / Privacy Policy
 
-*Обновлено: 14 октября 2026. English version below.*
+*Обновлено: 29 октября 2026. English version below.*
 
 STlauncher — лаунчер Minecraft для сервера mc.showtime.su с открытым исходным кодом
 ([github.com/moh1topuk-jpg/STlauncher](https://github.com/moh1topuk-jpg/STlauncher)).
@@ -17,10 +17,30 @@ STlauncher — лаунчер Minecraft для сервера mc.showtime.su с 
 - как прошла проверка обновлений (например, «успешно через зеркало»);
 - сколько раз интерфейс лаунчера зависал за последнюю неделю — только число; сами отчёты
   о зависаниях остаются на компьютере;
-- если игра закрылась с ошибкой — причину падения, версию игры и загрузчик модов.
+- если игра закрылась с ошибкой — отдельное сообщение о падении (см. ниже).
+
+**Сообщение о падении игры** содержит ровно это:
+
+- тот же случайный идентификатор установки, версию лаунчера и ОС;
+- причину падения одним словом из списка лаунчера (например, `MissingDependency`,
+  `GraphicsDriverCrash`, `Unknown`);
+- версию игры и загрузчик модов (например, `1.21.4 Fabric`);
+- код, с которым закрылась игра (число);
+- уточнение, если оно есть: название мода-виновника; для падения, которое остановила
+  Windows, — её код ошибки и его вид (`0xC0000005 AccessViolation`); для падения в
+  видеодрайвере — только производителя (AMD, NVIDIA, Intel); для падения в оверлее —
+  название программы (Discord, OBS, Steam, MSI Afterburner);
+- «сигнатуру» падения, если уточнения нет (например, причина не определена) или игру остановила Windows: имя класса ошибки Java
+  (`java.lang.NullPointerException`) и id мода из стека вызовов, если это мод вашей
+  сборки (`@sodium`), либо вид нативной ошибки и тип библиотеки, где она случилась
+  (`EXCEPTION_ACCESS_VIOLATION in amd-driver`). Не длиннее 120 символов.
+
+Из логов и отчётов о падении **не передаётся** ничего, кроме перечисленного: ни текст
+ошибок, ни строки стека вызовов, ни пути, ни имена файлов, ни ник, ни адреса серверов.
+Сборщик дополнительно отбрасывает сигнатуру, если она не похожа на имя класса с id мода.
 
 **Не отправляются:** ник, пароли, файлы, пути на диске, содержимое папок, IP-адрес
-в явном виде, история игры. У мода-виновника падения передаётся только его название.
+в явном виде, история игры.
 
 Статистика нужна владельцу сервера, чтобы видеть, сколько людей пользуются лаунчером,
 доходят ли до них обновления и что ломается. Данные хранятся в агрегированном виде
@@ -86,7 +106,7 @@ STlauncher — лаунчер Minecraft для сервера mc.showtime.su с 
 
 # Privacy Policy (English)
 
-*Last updated: October 14, 2026.*
+*Last updated: October 29, 2026.*
 
 STlauncher is an open-source Minecraft launcher for the mc.showtime.su server
 ([github.com/moh1topuk-jpg/STlauncher](https://github.com/moh1topuk-jpg/STlauncher)).
@@ -103,10 +123,29 @@ server owner's statistics collector (a Cloudflare Worker):
 - how the update check went (for example "ok via mirror");
 - how many times the launcher's interface froze over the last week: the number only; the
   freeze reports themselves stay on the computer;
-- if the game crashed: the crash cause, game version and mod loader.
+- if the game crashed: a separate crash message (see below).
+
+**The crash message** carries exactly this:
+
+- the same random install identifier, launcher version and OS;
+- the crash cause as one word from the launcher's list (for example `MissingDependency`,
+  `GraphicsDriverCrash`, `Unknown`);
+- the game version and mod loader (for example `1.21.4 Fabric`);
+- the code the game exited with (a number);
+- a detail, when there is one: the name of the mod at fault; for a crash Windows stopped,
+  its error code and kind (`0xC0000005 AccessViolation`); for a crash in the graphics
+  driver, only the vendor (AMD, NVIDIA, Intel); for a crash in an overlay, the program's
+  name (Discord, OBS, Steam, MSI Afterburner);
+- a crash "signature" when there is no detail (for example, the cause is not known) or Windows stopped the game: the Java error's class name
+  (`java.lang.NullPointerException`) and the id of the mod in the call stack if it is a
+  mod of your build (`@sodium`), or the kind of native error and the type of library it
+  happened in (`EXCEPTION_ACCESS_VIOLATION in amd-driver`). At most 120 characters.
+
+Nothing else from logs and crash reports **is sent**: no error text, no stack lines, no
+paths, no file names, no nickname, no server addresses. The collector also drops a
+signature that does not look like a class name with a mod id.
 
 **Never sent:** nickname, passwords, files, paths on disk, folder contents, play history.
-For a mod that caused a crash only its name is sent.
 
 The statistics let the server owner see how many people use the launcher, whether
 updates reach them and what breaks. The data is kept in aggregated form (daily and

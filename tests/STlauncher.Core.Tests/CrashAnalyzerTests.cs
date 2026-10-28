@@ -105,15 +105,27 @@ public class CrashAnalyzerTests
     [Fact]
     public void GraphicsDriver_IsRecognised()
     {
+        // 65542 is no driver at all, not a driver that failed: its own cause and its own advice.
         var log = new[] { "[main/ERROR]: GLFW error 65542: WGL: The driver does not appear to support OpenGL" };
 
-        Assert.Equal(CrashCause.Graphics, CrashAnalyzer.Analyze(log).Cause);
+        Assert.Equal(CrashCause.NoOpenGl, CrashAnalyzer.Analyze(log).Cause);
     }
 
     [Fact]
     public void GraphicsDriver_NativeCrashFrame()
     {
         var log = new[] { "# Problematic frame:", "# C  [ig9icd64.dll+0x1a2b3c]" };
+
+        var result = CrashAnalyzer.Analyze(log);
+
+        Assert.Equal(CrashCause.GraphicsDriverCrash, result.Cause);
+        Assert.Equal("Intel", result.Subject);
+    }
+
+    [Fact]
+    public void GraphicsWindow_OtherGlfwError_StaysGraphics()
+    {
+        var log = new[] { "[Render thread/ERROR]: GLFW error 65543: WGL: OpenGL profile requested but WGL_ARB_create_context_profile is unavailable" };
 
         Assert.Equal(CrashCause.Graphics, CrashAnalyzer.Analyze(log).Cause);
     }
