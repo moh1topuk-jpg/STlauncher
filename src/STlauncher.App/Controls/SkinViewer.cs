@@ -547,13 +547,15 @@ public sealed class SkinViewer : Control
         (_sinYaw, _cosYaw) = Math.SinCos(_yaw);
         (_sinPitch, _cosPitch) = Math.SinCos(_pitch);
 
-        // Painter's algorithm by body part, not by face. The parts are convex boxes that
-        // never intersect, so ordering them by depth is exact enough; ordering single
-        // faces was not - at an oblique angle the inner side of an arm, a long thin face,
-        // averaged out "behind" the front of the body and was painted over it. Within a
-        // part the visible faces cannot overlap, and an outer layer is drawn right after
-        // the part it wraps. The halves of a bent part are parts of their own here: a
-        // forearm can be in front of the chest while the upper arm is beside it.
+        // Painter's algorithm by body part, not by face: ordering single faces fails - at
+        // an oblique angle the inner side of an arm, a long thin face, averaged out
+        // "behind" the front of the body and was painted over it. Within a part the
+        // visible faces of a convex box cannot overlap, and an outer layer is drawn right
+        // after the part it wraps. The halves of a bent part are parts of their own here:
+        // a forearm can be in front of the chest while the upper arm is beside it. Which
+        // part goes first is decided by the plane between them (see Order), not by
+        // their middles: the middles misjudge boxes of different sizes side by side, and
+        // the pumpkin, as big as a head and a half, was painted under a shoulder.
         _pieces.Clear();
 
         foreach (var part in Model(skin, pose))
@@ -572,13 +574,14 @@ public sealed class SkinViewer : Control
             }
         }
 
-        _pieces.Sort(BackToFront);
-
         var texture = skin.Enlarged;
         var pumpkin = HeadDecoration == HeadDecoration.Pumpkin ? PumpkinTexture.Get() : null;
+        var count = Order(pumpkin is not null, pose);
 
-        foreach (var piece in _pieces)
+        for (var n = 0; n < count; n++)
         {
+            var piece = _pieces[_drawOrder[n]];
+
             // The pumpkin is the head's own part with a bigger box and another texture: it
             // turns with the neck, leans with the chest and follows every pose and emote,
             // and it wraps the head and the hat, so neither is drawn under it.
@@ -595,6 +598,309 @@ public sealed class SkinViewer : Control
                 DrawBox(context, skin, texture, piece.Part, overlay, outer: true, pose, scale, centre);
             }
         }
+    }
+
+    // ===================== Which part goes first =====================
+
+    /// <summary>More parts than a figure with every limb and the chest bent can have.</summary>
+    private const int MaxPieces = 32;
+
+    /// <summary>
+    /// How deep two neighbours may cut into each other and still be told apart by the
+    /// plane between them, in model pixels: an arm hanging out turns its shoulder a hair
+    /// into the chest, a bent elbow's halves meet at a slant, a head tipped forward dips
+    /// its chin into the neck. Deeper than this the two really cross, and their middles decide.
+    /// </summary>
+    private const double PlaneTolerance = 1.5;
+
+    // Kept between frames, so ordering a frame makes nothing new.
+    private readonly Vector3[] _corners = new Vector3[MaxPieces * 8];
+    private readonly Vector3[] _normals = new Vector3[MaxPieces * 3];
+    private readonly Rect[] _shadows = new Rect[MaxPieces];
+    private readonly bool[] _below = new bool[MaxPieces * MaxPieces];
+    private readonly int[] _waiting = new int[MaxPieces];
+    private readonly bool[] _placed = new bool[MaxPieces];
+    private readonly int[] _byDepth = new int[MaxPieces];
+    private readonly int[] _drawOrder = new int[MaxPieces];
+
+    /// <summary>
+    /// Puts the parts of this frame in the order they are painted, back to front, into
+    /// <see cref="_drawOrder"/>, and returns how many there are.
+    /// </summary>
+    /// <remarks>
+    /// Two convex boxes that do not cross each other are always parted by a plane, and
+    /// for boxes side by side one of their own faces is that plane: the chest's side for
+    /// an arm, the hips' top for the legs under it. Whichever box lies on the side of
+    /// that plane that the camera is on is the nearer one, whatever their middles say.
+    /// Only pairs that cover each other on the screen are compared; the order is then the
+    /// one that keeps every such pair right, the nearer middle breaking ties and the rare
+    /// circle. The slice that fills a joint goes just before the first of its two halves.
+    /// </remarks>
+    private int Order(bool pumpkin, in Pose pose)
+    {
+        var count = _pieces.Count;
+
+        if (count > MaxPieces)
+        {
+            // Never happens with this model; if it did, the old order by middles.
+            _pieces.Sort(BackToFront);
+
+            for (var i = 0; i < count && i < MaxPieces; i++)
+            {
+                _drawOrder[i] = i;
+            }
+
+            return Math.Min(count, MaxPieces);
+        }
+
+        for (var i = 0; i < count; i++)
+        {
+            var part = _pieces[i].Part;
+            Corners(i, pumpkin && part.Kind == PartKind.Head ? PumpkinBox : part.Base, part, pose);
+            _byDepth[i] = i;
+            _placed[i] = false;
+            _waiting[i] = 0;
+        }
+
+        // Far to near by the middles: the tie-breaker below.
+        for (var i = 1; i < count; i++)
+        {
+            var index = _byDepth[i];
+            var j = i - 1;
+
+            while (j >= 0 && Compare(_byDepth[j], index) > 0)
+            {
+                _byDepth[j + 1] = _byDepth[j];
+                j--;
+            }
+
+            _byDepth[j + 1] = index;
+        }
+
+        for (var a = 0; a < count; a++)
+        {
+            for (var b = 0; b < count; b++)
+            {
+                _below[a * MaxPieces + b] = false;
+            }
+        }
+
+        for (var a = 0; a < count; a++)
+        {
+            if (_pieces[a].Part.FillsJoint)
+            {
+                continue;
+            }
+
+            for (var b = a + 1; b < count; b++)
+            {
+                if (_pieces[b].Part.FillsJoint || !_shadows[a].Intersects(_shadows[b]))
+                {
+                    continue;
+                }
+
+                var nearer = Nearer(a, b);
+
+                if (nearer == 0)
+                {
+                    continue;
+                }
+
+                // _below[x, y]: x is painted before y.
+                var (back, front) = nearer > 0 ? (b, a) : (a, b);
+                _below[back * MaxPieces + front] = true;
+                _waiting[front]++;
+            }
+        }
+
+        var placed = 0;
+
+        while (true)
+        {
+            // The farthest part with nothing left to wait for; in a circle, the farthest of all.
+            var next = -1;
+            var fallback = -1;
+
+            for (var k = 0; k < count; k++)
+            {
+                var i = _byDepth[k];
+
+                if (_placed[i] || _pieces[i].Part.FillsJoint)
+                {
+                    continue;
+                }
+
+                if (fallback < 0)
+                {
+                    fallback = i;
+                }
+
+                if (_waiting[i] == 0)
+                {
+                    next = i;
+                    break;
+                }
+            }
+
+            if (next < 0)
+            {
+                next = fallback;
+            }
+
+            if (next < 0)
+            {
+                break;
+            }
+
+            _placed[next] = true;
+
+            for (var i = 0; i < count; i++)
+            {
+                if (_below[next * MaxPieces + i])
+                {
+                    _waiting[i]--;
+                }
+            }
+
+            // A joint's slice goes down right before the first of its halves.
+            if (next > 0 && _pieces[next - 1].Part.FillsJoint && !_placed[next - 1])
+            {
+                _placed[next - 1] = true;
+                _drawOrder[placed++] = next - 1;
+            }
+            else if (next > 1 && _pieces[next - 2].Part.FillsJoint && !_placed[next - 2])
+            {
+                _placed[next - 2] = true;
+                _drawOrder[placed++] = next - 2;
+            }
+
+            _drawOrder[placed++] = next;
+        }
+
+        return placed;
+    }
+
+    private int Compare(int a, int b) => BackToFront(_pieces[a], _pieces[b]);
+
+    /// <summary>
+    /// The eight corners of a part's box as the camera sees it, the directions of its three
+    /// edges and what it covers on the screen. Corner k has x from bit 0, y from bit 1, z from bit 2.
+    /// </summary>
+    private void Corners(int index, Box box, Part part, in Pose pose)
+    {
+        var fromRow = box.FromRow ?? 0;
+        var toRow = box.ToRow ?? box.Height;
+        var x0 = box.X - box.Inflate;
+        var x1 = box.X + box.Width + box.Inflate;
+        var y0 = box.ToRow is null ? box.Y - box.Inflate : box.Y + box.Height - toRow;
+        var y1 = box.FromRow is null ? box.Y + box.Height + box.Inflate : box.Y + box.Height - fromRow;
+        var z0 = box.Z - box.Inflate;
+        var z1 = box.Z + box.Depth + box.Inflate;
+
+        var minX = double.MaxValue;
+        var maxX = double.MinValue;
+        var minY = double.MaxValue;
+        var maxY = double.MinValue;
+
+        for (var k = 0; k < 8; k++)
+        {
+            var v = Rotate(Place(new Vector3((k & 1) == 0 ? x0 : x1, (k & 2) == 0 ? y0 : y1, (k & 4) == 0 ? z0 : z1), part, pose));
+            _corners[index * 8 + k] = v;
+            minX = Math.Min(minX, v.X);
+            maxX = Math.Max(maxX, v.X);
+            minY = Math.Min(minY, v.Y);
+            maxY = Math.Max(maxY, v.Y);
+        }
+
+        // With the outer layer's half pixel around it, so boxes whose layers touch on the screen are compared.
+        _shadows[index] = new Rect(minX - 0.6, minY - 0.6, maxX - minX + 1.2, maxY - minY + 1.2);
+
+        var c = index * 8;
+        var ex = Minus(_corners[c + 1], _corners[c]);
+        var ey = Minus(_corners[c + 2], _corners[c]);
+        var ez = Minus(_corners[c + 4], _corners[c]);
+
+        // A box squashed to nothing along an edge has no direction there; its planes are skipped.
+        _normals[index * 3] = Outward(Cross(ey, ez), ex);
+        _normals[index * 3 + 1] = Outward(Cross(ez, ex), ey);
+        _normals[index * 3 + 2] = Outward(Cross(ex, ey), ez);
+    }
+
+    /// <summary>
+    /// Which of two boxes is nearer the camera: 1 for the first, -1 for the second, 0 when
+    /// the planes cannot say (they cross, or meet edge-on to the camera) and the middles decide.
+    /// </summary>
+    private int Nearer(int a, int b)
+    {
+        var best = double.MaxValue;
+        var facing = 0.0;
+        var outerIsA = false;
+
+        // The faces of each box, tried as the plane between them: the one the other box
+        // cuts into least. A face whose outer side the other lies on parts them.
+        for (var owner = 0; owner < 2; owner++)
+        {
+            var box = owner == 0 ? a : b;
+            var other = owner == 0 ? b : a;
+
+            for (var axis = 0; axis < 3; axis++)
+            {
+                var normal = _normals[box * 3 + axis];
+
+                if (normal == default)
+                {
+                    continue;
+                }
+
+                for (var side = 0; side < 2; side++)
+                {
+                    var n = side == 0 ? normal : new Vector3(-normal.X, -normal.Y, -normal.Z);
+                    var on = _corners[box * 8 + (side == 0 ? 1 << axis : 0)];
+                    var offset = Dot(n, on);
+                    var deepest = 0.0;
+
+                    for (var k = 0; k < 8; k++)
+                    {
+                        deepest = Math.Max(deepest, offset - Dot(n, _corners[other * 8 + k]));
+                    }
+
+                    if (deepest < best)
+                    {
+                        best = deepest;
+                        facing = n.Z;
+                        outerIsA = owner == 1;
+                    }
+                }
+            }
+        }
+
+        if (best > PlaneTolerance || Math.Abs(facing) < 1e-3)
+        {
+            return 0;
+        }
+
+        // The box on the plane's outer side is nearer when that side looks at the camera.
+        var outerNearer = facing > 0;
+        return outerNearer == outerIsA ? 1 : -1;
+    }
+
+    private static Vector3 Minus(Vector3 a, Vector3 b) => new(a.X - b.X, a.Y - b.Y, a.Z - b.Z);
+
+    private static Vector3 Cross(Vector3 a, Vector3 b)
+        => new(a.Y * b.Z - a.Z * b.Y, a.Z * b.X - a.X * b.Z, a.X * b.Y - a.Y * b.X);
+
+    /// <summary>The unit normal, turned to point along the box's edge; zero for a flat box.</summary>
+    private static Vector3 Outward(Vector3 normal, Vector3 along)
+    {
+        var length = Math.Sqrt(Dot(normal, normal));
+
+        if (length < 1e-9)
+        {
+            return default;
+        }
+
+        var sign = Dot(normal, along) < 0 ? -1 : 1;
+        return new Vector3(normal.X / length * sign, normal.Y / length * sign, normal.Z / length * sign);
     }
 
     /// <summary>
@@ -1364,11 +1670,13 @@ public sealed class SkinViewer : Control
     }
 
     /// <summary>
-    /// The pumpkin worn on the head: a block a pixel larger than the head on every side, as
-    /// the game draws one, its faces laid out in <see cref="PumpkinTexture"/> where a head's
-    /// are in a skin. One box for every frame, so its faces come from the cache.
+    /// The pumpkin worn on the head: a block a pixel larger than the head each way, as the
+    /// game draws one, its faces laid out in <see cref="PumpkinTexture"/> where a head's are
+    /// in a skin. Raised a pixel so that it sits on the shoulders instead of sinking into
+    /// them: a box that cuts into the arms has no plane to be ordered by. One box for every
+    /// frame, so its faces come from the cache.
     /// </summary>
-    private static readonly Box PumpkinBox = new(-4, 24, -4, 8, 8, 8, 0, 0, Inflate: 1);
+    private static readonly Box PumpkinBox = new(-4, 25, -4, 8, 8, 8, 0, 0, Inflate: 1);
 
     /// <summary>The four figures there are: classic or slim arms, modern or pre-1.8 texture. Each is built once.</summary>
     private static readonly Part[]?[] Models = new Part[]?[4];
