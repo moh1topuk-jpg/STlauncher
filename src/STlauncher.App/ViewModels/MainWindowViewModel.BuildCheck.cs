@@ -33,8 +33,12 @@ public sealed class BuildIssueItem
                     issue.Subject, issue.Detail, issue.OtherVersion, issue.Range),
             BuildIssueKind.Incompatible => MainWindowViewModel.Localize("Check_Incompatible", "“{0}” does not work together with “{1}”", issue.Subject, issue.Detail),
             BuildIssueKind.Discouraged => MainWindowViewModel.Localize("Check_Discouraged", "“{0}” may misbehave together with “{1}”", issue.Subject, issue.Detail),
-            BuildIssueKind.TwoRenderers => MainWindowViewModel.Localize("Check_TwoRenderers", "Two renderer mods at once: “{0}” and “{1}”. Together they crash the game - keep one.", issue.Detail, issue.Subject),
-            _ =>MainWindowViewModel.Localize("Check_WrongVersion", "“{0}” was made for {1}, not this game version", issue.Subject, issue.Detail)
+            BuildIssueKind.TwoRenderers => MainWindowViewModel.Localize("Check_TwoRenderers", "Two renderer mods at once: “{0}” and “{1}”. They usually get in each other's way - better keep one.", issue.Detail, issue.Subject),
+            BuildIssueKind.WrongDependencyVersion => MainWindowViewModel.Localize(
+                "Check_WrongDependencyVersion",
+                "“{0}” needs “{1}” {2}, the build has {3}",
+                issue.Subject, issue.Detail, issue.Range ?? "*", issue.OtherVersion ?? "?"),
+            _ => MainWindowViewModel.Localize("Check_WrongVersion", "“{0}” is made for another game version: Minecraft {1}", issue.Subject, Readable(issue.Detail))
         };
 
         FixLabel = issue.Kind switch
@@ -51,6 +55,10 @@ public sealed class BuildIssueItem
 
     public BuildIssue Issue { get; }
 
+    /// <summary>"&gt;=26.3- &lt;=26.3 || ~26.3" reads as "&gt;=26.3 &lt;=26.3 or ~26.3".</summary>
+    private static string? Readable(string? range)
+        => range?.Replace(" || ", " " + MainWindowViewModel.Localize("Check_Or", "or") + " ").Replace("- ", " ").TrimEnd('-');
+
     public string Title { get; }
 
     public string FixLabel { get; }
@@ -64,18 +72,39 @@ public sealed class BuildIssueItem
 
     /// <summary>True when the fix is a switch on a file, not a trip to the catalog.</summary>
     public bool CanFixBySwitch => Issue.FixableBySwitch;
+
+    /// <summary>"Do not show for this mod": only a soft warning can be put away.</summary>
+    public bool CanDismiss => !Issue.IsBlocking;
+
+    public string DismissLabel => MainWindowViewModel.Localize("Check_DismissForMod", "Do not show for this mod");
 }
 
 /// <summary>
 /// The pre-launch check and safe mode. The check reads the jars' own metadata after every
-/// change to the mods folder and says what would stop the game before Play is pressed:
-/// the same verdicts the crash analyser gives after the fact, minus the crash. Safe mode
+/// change to the mods folder and says, before Play is pressed, what the loader will
+/// refuse ("the game will not start") and, quietly, what may work incorrectly. Play is
+/// never held back by it: the player can always start the game as it is. Safe mode
 /// starts the game with only the server's mods, so a player can tell "my mod" from "the
 /// game" in one launch.
 /// </summary>
 public partial class MainWindowViewModel
 {
+    /// <summary>Everything the check says that is on screen: what stops the game, then the soft warnings not put away.</summary>
     public ObservableCollection<BuildIssueItem> BuildIssues { get; } = new();
+
+    /// <summary>"The game will not start": only what the loader itself refuses.</summary>
+    public ObservableCollection<BuildIssueItem> HardBuildIssues { get; } = new();
+
+    /// <summary>"May work incorrectly": a quiet line each, never a question, never in the way of Play.</summary>
+    public ObservableCollection<BuildIssueItem> SoftBuildIssues { get; } = new();
+
+    public bool HasHardBuildIssues => HardBuildIssues.Count > 0;
+
+    public bool HasSoftBuildIssues => SoftBuildIssues.Count > 0;
+
+    /// <summary>"May work incorrectly: 2 mods".</summary>
+    [ObservableProperty]
+    private string _softBuildCheckSummary = string.Empty;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasBuildIssues))]
@@ -94,13 +123,13 @@ public partial class MainWindowViewModel
 
     public bool HasBuildIssues => BuildIssueCount > 0;
 
-    public bool HasBlockingBuildIssues => BuildIssues.Any(i => i.IsBlocking);
+    public bool HasBlockingBuildIssues => HardBuildIssues.Count > 0;
 
     /// <summary>Two or more problems that a switch can settle: one button does them all.</summary>
-    public bool HasBulkBuildFix => BuildIssues.Count(i => i.CanFixBySwitch) >= 2;
+    public bool HasBulkBuildFix => HardBuildIssues.Count(i => i.CanFixBySwitch) >= 2;
 
     /// <summary>Two or more doubled mods: one button keeps every older file instead.</summary>
-    public bool HasBulkKeepOld => BuildIssues.Count(i => i.HasAltFix) >= 2;
+    public bool HasBulkKeepOld => HardBuildIssues.Count(i => i.HasAltFix) >= 2;
 
     /// <summary>Safe mode only makes sense when there is something of the player's own to leave out.</summary>
     public bool CanUseSafeMode => IsCatalogInstance && InstalledMods.Any(m => m.IsMod && m.Enabled && !m.IsCatalog);
@@ -138,16 +167,32 @@ public partial class MainWindowViewModel
         var version = SelectedInstance?.VersionId;
         var loaderVersion = SelectedInstance?.LoaderVersion;
         var cache = MetadataCacheFor(SelectedInstance);
+        var instance = SelectedInstance;
+        var dismissed = instance?.DismissedWarnings?.ToList() ?? new List<DismissedBuildWarning>();
 
         IsCheckingBuild = true;
 
         _ = Task.Run(() =>
         {
             IReadOnlyList<BuildIssue> issues;
+            var stale = new List<DismissedBuildWarning>();
+            var hidden = 0;
 
             try
             {
                 issues = BuildChecker.Check(directory, loader, version, loaderVersion, cache);
+
+                // A warning the player put away stays away while its file is the same one.
+                var modsDirectory = ModManager.ModsDirectory(directory);
+                STlauncher.Core.Mods.ModFileStamp? StampOf(string fileName) => STlauncher.Core.Mods.ModFileStamp.Of(System.IO.Path.Combine(modsDirectory, fileName));
+
+                var kept = dismissed.ToList();
+                BuildWarningDismissals.Prune(kept, StampOf);
+                stale = dismissed.Except(kept).ToList();
+
+                var visible = issues.Where(i => !BuildWarningDismissals.IsDismissed(kept, i, StampOf)).ToList();
+                hidden = issues.Count - visible.Count;
+                issues = visible;
             }
             catch (Exception ex)
             {
@@ -172,29 +217,87 @@ public partial class MainWindowViewModel
                     return;
                 }
 
-                BuildIssues.Clear();
-
-                foreach (var issue in issues)
+                // A file that changed since it was put away is looked at again.
+                if (stale.Count > 0 && instance?.DismissedWarnings is { } stored)
                 {
-                    BuildIssues.Add(new BuildIssueItem(issue));
+                    stored.RemoveAll(d => stale.Contains(d));
+                    _instances.Save(instance);
                 }
 
-                BuildIssueCount = BuildIssues.Count;
+                ShowBuildIssues(issues);
                 IsCheckingBuild = false;
 
-                var blocking = BuildIssues.Count(i => i.IsBlocking);
-                BuildCheckSummary = BuildIssues.Count == 0
-                    ? string.Empty
-                    : blocking > 0
-                        ? Localize("Check_SummaryBlocking", "The game will not start: {0}", Plural(blocking, "Check_Problems"))
-                        : Localize("Check_SummaryWarnings", "May not start: {0}", Plural(BuildIssues.Count, "Check_Problems"));
-
-                OnPropertyChanged(nameof(HasBlockingBuildIssues));
-                OnPropertyChanged(nameof(HasBulkBuildFix));
-                OnPropertyChanged(nameof(HasBulkKeepOld));
-                OnPropertyChanged(nameof(CanUseSafeMode));
+                if (hidden > 0)
+                {
+                    AppendConsole($"[check] {hidden} warning(s) put away by the player are not shown");
+                }
             });
         });
+    }
+
+    /// <summary>Fills the three lists from one check and words the two headings.</summary>
+    private void ShowBuildIssues(IReadOnlyList<BuildIssue> issues)
+    {
+        BuildIssues.Clear();
+        HardBuildIssues.Clear();
+        SoftBuildIssues.Clear();
+
+        foreach (var issue in issues.OrderBy(i => i.Severity))
+        {
+            var item = new BuildIssueItem(issue);
+            BuildIssues.Add(item);
+            (issue.IsBlocking ? HardBuildIssues : SoftBuildIssues).Add(item);
+        }
+
+        BuildIssueCount = BuildIssues.Count;
+
+        BuildCheckSummary = HardBuildIssues.Count == 0
+            ? string.Empty
+            : Localize("Check_SummaryBlocking", "The game will not start: {0}", Plural(HardBuildIssues.Count, "Check_Problems"));
+
+        SoftBuildCheckSummary = SoftBuildIssues.Count == 0
+            ? string.Empty
+            : Localize("Check_SummarySoft", "May work incorrectly: {0}", Plural(SoftBuildIssues.Count, "Check_Notes"));
+
+        OnPropertyChanged(nameof(HasHardBuildIssues));
+        OnPropertyChanged(nameof(HasSoftBuildIssues));
+        OnPropertyChanged(nameof(HasBlockingBuildIssues));
+        OnPropertyChanged(nameof(HasBulkBuildFix));
+        OnPropertyChanged(nameof(HasBulkKeepOld));
+        OnPropertyChanged(nameof(CanUseSafeMode));
+    }
+
+    /// <summary>
+    /// "Do not show for this mod": the soft warnings about this file go away for this
+    /// build, and come back by themselves when the file changes (an update, another copy).
+    /// Kept in the build's own data.
+    /// </summary>
+    [RelayCommand]
+    private void DismissBuildWarning(BuildIssueItem? item)
+    {
+        if (item is null || !item.CanDismiss || SelectedInstance is not { } instance)
+        {
+            return;
+        }
+
+        var path = System.IO.Path.Combine(ModManager.ModsDirectory(InstanceDirectory), item.Issue.FileName);
+
+        if (STlauncher.Core.Mods.ModFileStamp.Of(path) is not { } stamp)
+        {
+            return;
+        }
+
+        instance.DismissedWarnings ??= new List<DismissedBuildWarning>();
+        BuildWarningDismissals.Dismiss(instance.DismissedWarnings, item.Issue.FileName, stamp);
+        _instances.Save(instance);
+
+        AppendConsole($"[check] warnings about {item.Issue.FileName} put away until the file changes");
+
+        var name = BuildWarningDismissals.Normalize(item.Issue.FileName);
+        ShowBuildIssues(BuildIssues
+            .Select(i => i.Issue)
+            .Where(i => i.IsBlocking || !string.Equals(BuildWarningDismissals.Normalize(i.FileName), name, StringComparison.OrdinalIgnoreCase))
+            .ToList());
     }
 
     private static string Plural(int count, string keyBase)
@@ -238,6 +341,7 @@ public partial class MainWindowViewModel
                 case BuildIssueKind.Incompatible:
                 case BuildIssueKind.Discouraged:
                 case BuildIssueKind.TwoRenderers:
+                case BuildIssueKind.WrongDependencyVersion:
                     // For a conflict this is the mod that declared it, and only on the
                     // row's own button: "fix everything" leaves that choice to the player.
                     ToggleModByFileName(issue.FileName);
@@ -258,7 +362,7 @@ public partial class MainWindowViewModel
     [RelayCommand]
     private void ApplyAllBuildFixes()
     {
-        var fixes = BuildIssues.Where(i => i.CanFixBySwitch).Select(i => i.Issue).ToList();
+        var fixes = HardBuildIssues.Where(i => i.CanFixBySwitch).Select(i => i.Issue).ToList();
         var done = ApplySwitchFixes(fixes);
 
         AppendConsole($"[check] {done} of {fixes.Count} problem(s) fixed with one click");
@@ -313,7 +417,7 @@ public partial class MainWindowViewModel
     [RelayCommand]
     private void KeepOlderVersions()
     {
-        var pairs = BuildIssues.Where(i => i.HasAltFix && i.Issue.Detail is not null).Select(i => i.Issue).ToList();
+        var pairs = HardBuildIssues.Where(i => i.HasAltFix && i.Issue.Detail is not null).Select(i => i.Issue).ToList();
         var done = 0;
 
         foreach (var issue in pairs)

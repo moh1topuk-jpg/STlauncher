@@ -124,6 +124,8 @@
                     <ContextMenu>
                         <MenuItem Header="{DynamicResource Mods_UpdateMenu}" IsVisible="{Binding HasUpdate}"
                                   Tag="update" Click="OnRowMenuClick"/>
+                        <MenuItem Header="{DynamicResource Mods_SkipVersion}" IsVisible="{Binding HasUpdate}"
+                                  Tag="skip" Click="OnRowMenuClick"/>
                         <MenuItem Header="{DynamicResource Mods_ShowFile}" Tag="file" Click="OnRowMenuClick"/>
                         <MenuItem Header="{Binding PreviousLabel}"
                                   IsEnabled="{Binding HasPrevious}"
@@ -859,13 +861,15 @@
                                     <!-- The pre-launch check, in full. -->
                                     <Border Classes="panel inset" Padding="14,10" IsVisible="{Binding HasBuildIssues}">
                                         <StackPanel Spacing="8">
-                                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <PathIcon Data="{StaticResource IconWarning}" Classes="small gold" VerticalAlignment="Center"/>
-                                                <TextBlock Text="{Binding BuildCheckSummary}" Classes="strong" Foreground="{DynamicResource WarningBrush}"/>
+                                            <!-- What the loader refuses: red, with the fix beside each line. -->
+                                            <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding HasHardBuildIssues}">
+                                                <PathIcon Data="{StaticResource IconWarning}" Classes="small" VerticalAlignment="Center"
+                                                          Foreground="{DynamicResource DangerBrush}"/>
+                                                <TextBlock Text="{Binding BuildCheckSummary}" Classes="strong" Foreground="{DynamicResource DangerBrush}"/>
                                             </StackPanel>
                                             <!-- A build can have dozens: they scroll here and leave the mod list its room. -->
-                                            <ScrollViewer MaxHeight="104">
-                                            <ItemsControl ItemsSource="{Binding BuildIssues}" Margin="0,0,12,0">
+                                            <ScrollViewer MaxHeight="104" IsVisible="{Binding HasHardBuildIssues}">
+                                            <ItemsControl ItemsSource="{Binding HardBuildIssues}" Margin="0,0,12,0">
                                                 <ItemsControl.ItemsPanel>
                                                     <ItemsPanelTemplate>
                                                         <StackPanel Spacing="4"/>
@@ -894,6 +898,33 @@
                                                 <Button Classes="small" IsVisible="{Binding HasBulkKeepOld}"
                                                         Content="{DynamicResource Check_KeepOld}" Command="{Binding KeepOlderVersionsCommand}"/>
                                             </WrapPanel>
+
+                                            <!-- What may work incorrectly: quiet lines, each can be put away for its mod. -->
+                                            <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding HasSoftBuildIssues}">
+                                                <PathIcon Data="{StaticResource IconWarning}" Classes="small gold" VerticalAlignment="Center"/>
+                                                <TextBlock Text="{Binding SoftBuildCheckSummary}" Classes="muted" FontWeight="SemiBold"/>
+                                            </StackPanel>
+                                            <ScrollViewer MaxHeight="80" IsVisible="{Binding HasSoftBuildIssues}">
+                                                <ItemsControl ItemsSource="{Binding SoftBuildIssues}" Margin="0,0,12,0">
+                                                    <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate>
+                                                            <StackPanel Spacing="2"/>
+                                                        </ItemsPanelTemplate>
+                                                    </ItemsControl.ItemsPanel>
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate x:DataType="vm:BuildIssueItem">
+                                                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                                <TextBlock Text="{Binding Title}" Foreground="{DynamicResource TextSecondaryBrush}"
+                                                                           FontSize="12.5" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                                                                <Button Grid.Column="1" Classes="link" FontSize="12" VerticalAlignment="Center"
+                                                                        Content="{Binding DismissLabel}"
+                                                                        Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).DismissBuildWarningCommand}"
+                                                                        CommandParameter="{Binding}"/>
+                                                            </Grid>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </ScrollViewer>
                                         </StackPanel>
                                     </Border>
 

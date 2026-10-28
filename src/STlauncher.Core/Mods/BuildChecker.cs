@@ -8,21 +8,21 @@ namespace STlauncher.Core.Mods;
 
 public enum BuildIssueKind
 {
-    /// <summary>A mod asks for another mod that is not in the build, or is switched off.</summary>
+    /// <summary>A mod requires another mod that is not in the build, or is switched off.</summary>
     MissingDependency,
 
-    /// <summary>Two enabled jars declare the same mod id; the game refuses to start.</summary>
+    /// <summary>Two enabled jars declare the same mod id; the loader refuses to start.</summary>
     DuplicateMod,
 
-    /// <summary>A jar built for another loader: a Forge mod in a Fabric build.</summary>
+    /// <summary>A jar built for another loader: a Forge mod in a Fabric build. The loader skips it.</summary>
     WrongLoader,
 
-    /// <summary>The mod says it was made for other game versions. Often still works; sometimes not.</summary>
+    /// <summary>The mod declares game versions this build is not.</summary>
     WrongGameVersion,
 
     /// <summary>
     /// A mod says it does not run with the version of another mod that is in the build
-    /// (Fabric "breaks", Forge "incompatible"). The loader stops the game.
+    /// (Fabric and Quilt "breaks", Forge and NeoForge "incompatible"). The loader stops the game.
     /// </summary>
     Incompatible,
 
@@ -31,10 +31,31 @@ public enum BuildIssueKind
 
     /// <summary>
     /// Two mods that both replace the game's renderer (Sodium, Embeddium, Rubidium) are
-    /// switched on. They rarely declare each other, so the loader lets them through and
-    /// the game crashes while it starts.
+    /// switched on. The launcher's own knowledge, not something the jars declare.
     /// </summary>
-    TwoRenderers
+    TwoRenderers,
+
+    /// <summary>
+    /// A required mod - or the loader itself - is in the build, but in a version outside
+    /// the range the mod declares. The loader refuses to start.
+    /// </summary>
+    WrongDependencyVersion
+}
+
+/// <summary>How sure the launcher is, and what it says.</summary>
+public enum BuildIssueSeverity
+{
+    /// <summary>
+    /// "The game will not start": the loader itself refuses, by the jars' own declarations
+    /// read the way the loader reads them. Nothing the launcher guesses lands here.
+    /// </summary>
+    WontStart,
+
+    /// <summary>
+    /// "May work incorrectly": the loader starts the game, and there is a real reason to
+    /// look - a mod's own soft warning, a jar it will skip, two renderers at once.
+    /// </summary>
+    MayMisbehave
 }
 
 /// <summary>What is wrong, which file, and what would fix it.</summary>
@@ -49,27 +70,30 @@ public sealed record BuildIssue(
     string? Detail,
     string? DisabledFileName = null)
 {
-    /// <summary>For a conflict: the versions of the other mod this one does not run with; null for all of them.</summary>
+    /// <summary>For a conflict or a version requirement: the versions named; null for all of them.</summary>
     public string? Range { get; init; }
 
-    /// <summary>For a conflict: the version of the other mod that is in the build.</summary>
+    /// <summary>For a conflict or a version requirement: the version of the other mod that is in the build.</summary>
     public string? OtherVersion { get; init; }
 
     /// <summary>For a conflict: the jar the other mod came in.</summary>
     public string? OtherFileName { get; init; }
 
-    /// <summary>True for issues the game will not start with. Version mismatches and soft conflicts are a warning.</summary>
-    public bool IsBlocking => Kind is not (BuildIssueKind.WrongGameVersion or BuildIssueKind.Discouraged);
+    public BuildIssueSeverity Severity { get; init; } = BuildIssueSeverity.WontStart;
+
+    /// <summary>True only for what the loader really refuses to start with.</summary>
+    public bool IsBlocking => Severity == BuildIssueSeverity.WontStart;
 
     /// <summary>
     /// True when flipping one file's switch is the obvious fix, safe to do for the player
-    /// in bulk. A conflict is not: which of the two mods goes, or whether one of them is
-    /// updated instead, is the player's call.
+    /// in bulk ("fix everything", the repair). Only for what stops the game: a soft
+    /// warning is never acted on by itself. A conflict is not either: which of the two
+    /// mods goes, or whether one of them is updated instead, is the player's call.
     /// </summary>
-    public bool FixableBySwitch => Kind switch
+    public bool FixableBySwitch => IsBlocking && Kind switch
     {
         BuildIssueKind.MissingDependency => DisabledFileName is not null,
-        BuildIssueKind.Incompatible or BuildIssueKind.Discouraged or BuildIssueKind.TwoRenderers => false,
+        BuildIssueKind.Incompatible or BuildIssueKind.Discouraged or BuildIssueKind.TwoRenderers or BuildIssueKind.WrongDependencyVersion => false,
         _ => true
     };
 }
@@ -78,10 +102,24 @@ public sealed record BuildIssue(
 public sealed record BuildJar(string FileName, bool Enabled, IReadOnlyList<ModMetadata> Sections);
 
 /// <summary>
-/// Reads every jar in mods/ and reports what would stop the game before it is started:
-/// the same checks the crash analyser makes afterwards, only from the metadata instead
-/// of the log. Nothing here touches the network.
+/// Reads every jar in mods/ and reports what would stop the game before it is started,
+/// from the jars' own declarations read the way the loader reads them. Two levels:
+/// "will not start" only for what the loader itself refuses (a missing or wrong-version
+/// required mod, a "breaks", the same mod twice, a game version outside the mod's
+/// required range); "may work incorrectly" for the loader's own soft warnings and the
+/// few things the launcher knows for sure. Nothing here touches the network.
 /// </summary>
+/// <remarks>
+/// The inventory, by loader:
+/// Fabric - depends: missing or outside range stops the game (minecraft, fabricloader
+/// included); breaks: stops it; recommends / suggests / conflicts: a line in the log.
+/// A mod with "environment": "server" is not loaded on a client at all.
+/// Quilt - depends without "optional": as Fabric's; breaks: stops it.
+/// Forge / NeoForge - a mandatory / "required" dependency missing stops the game; a
+/// dependency that is present, optional or not, outside its range stops it;
+/// "incompatible": stops it; "discouraged": a warning screen with "proceed".
+/// A bare Maven version ("1.20.1") is a recommendation, any version satisfies it.
+/// </remarks>
 public static class BuildChecker
 {
     /// <summary>
@@ -146,6 +184,7 @@ public static class BuildChecker
         }
 
         var issues = new List<BuildIssue>();
+        var dialect = loader is LoaderKind.Forge or LoaderKind.NeoForge ? RangeDialect.Maven : RangeDialect.Fabric;
 
         // One record per jar: the section this loader reads. A jar built for several
         // loaders states its requirements once for each, and only the running loader's
@@ -156,26 +195,38 @@ public static class BuildChecker
         {
             if (ModMetadataReader.SectionFor(jar.Sections, loader, gameVersion) is { } section)
             {
-                active.Add(section);
+                // A server-only mod is skipped by the loader on a client: nothing it asks for counts.
+                if (!section.ServerOnly)
+                {
+                    active.Add(section);
+                }
             }
             else
             {
+                // The loader does not read this jar at all: the mod will simply not be there.
                 var first = jar.Sections[0];
-                issues.Add(new BuildIssue(BuildIssueKind.WrongLoader, first.Name, first.FileName, first.Loader.ToString()));
+                issues.Add(new BuildIssue(BuildIssueKind.WrongLoader, first.Name, first.FileName, first.Loader.ToString())
+                {
+                    Severity = BuildIssueSeverity.MayMisbehave
+                });
             }
         }
 
-        // Which ids the enabled jars provide, on this loader, and in which version.
-        var provided = new Dictionary<string, Provider>(StringComparer.OrdinalIgnoreCase);
+        // Which ids the enabled jars provide, on this loader, and in which version: a jar's
+        // own id, its "provides" aliases and every mod nested in it (jar-in-jar).
+        // Several jars can bring the same id (Voxy carries its own Sodium inside). Which one
+        // the loader picks is its business; a verdict is given only when every candidate
+        // leads to the same answer.
+        var provided = new Dictionary<string, List<Provider>>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var mod in active)
         {
-            Offer(provided, mod.Id, new Provider(mod.Name, mod.Version, mod.FileName));
+            Offer(provided, mod.Id, new Provider(mod.Name, mod.Version, mod.FileName, Root: true));
 
             foreach (var extra in mod.Provides)
             {
                 var version = mod.Bundled.FirstOrDefault(b => b.Id.Equals(extra, StringComparison.OrdinalIgnoreCase))?.Version;
-                Offer(provided, extra, new Provider(extra, version, mod.FileName));
+                Offer(provided, extra, new Provider(extra, version, mod.FileName, Root: false));
             }
         }
 
@@ -187,7 +238,7 @@ public static class BuildChecker
             .GroupBy(p => p.id, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(g => g.Key, g => g.First().FileName, StringComparer.OrdinalIgnoreCase);
 
-        // Duplicates: same id from two different files.
+        // Duplicates: the same declared id from two files in mods/. Every loader refuses.
         foreach (var group in active.GroupBy(m => m.Id, StringComparer.OrdinalIgnoreCase))
         {
             var files = group.Select(m => m.FileName).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
@@ -206,64 +257,179 @@ public static class BuildChecker
 
         foreach (var mod in active)
         {
-            // Missing dependencies.
-            foreach (var dependency in mod.Dependencies.Where(d => d.Required))
-            {
-                if (ModMetadataReader.IsLoaderProvided(dependency.Id, loader, loaderVersion) || provided.ContainsKey(dependency.Id))
-                {
-                    continue;
-                }
-
-                // Fabric API modules are "fabric-<name>-v<n>"; the umbrella jar counts even when
-                // its nested list could not be read.
-                if (dependency.Id.StartsWith("fabric-", StringComparison.OrdinalIgnoreCase) && provided.ContainsKey("fabric-api"))
-                {
-                    continue;
-                }
-
-                disabledIds.TryGetValue(dependency.Id, out var disabledFile);
-                issues.Add(new BuildIssue(BuildIssueKind.MissingDependency, mod.Name, mod.FileName, dependency.Id, disabledFile));
-            }
-
-            // Mods it says it does not run with - but only in the versions it names.
-            foreach (var conflict in mod.Conflicts)
-            {
-                if (ModMetadataReader.BuiltIn.Contains(conflict.Id) ||
-                    !provided.TryGetValue(conflict.Id, out var other) ||
-                    string.Equals(other.FileName, mod.FileName, StringComparison.OrdinalIgnoreCase) ||
-                    !VersionRange.DefinitelyMatches(conflict.VersionRange, other.Version))
-                {
-                    continue;
-                }
-
-                issues.Add(new BuildIssue(
-                    conflict.Breaks ? BuildIssueKind.Incompatible : BuildIssueKind.Discouraged,
-                    mod.Name,
-                    mod.FileName,
-                    other.Name)
-                {
-                    Range = string.IsNullOrWhiteSpace(conflict.VersionRange) || conflict.VersionRange.Trim() == "*" ? null : conflict.VersionRange.Trim(),
-                    OtherVersion = other.Version,
-                    OtherFileName = other.FileName
-                });
-            }
-
-            if (!string.IsNullOrEmpty(gameVersion) && mod.MinecraftRange is { Length: > 0 } range &&
-                !VersionRange.Satisfies(range, gameVersion))
-            {
-                issues.Add(new BuildIssue(BuildIssueKind.WrongGameVersion, mod.Name, mod.FileName, range));
-            }
+            CheckDependencies(mod, loader, dialect, gameVersion, loaderVersion, provided, disabledIds, issues);
+            CheckConflicts(mod, dialect, provided, issues);
         }
 
         AddTwoRenderers(issues, jars, loader, gameVersion);
 
         return issues
             .GroupBy(i => (i.Kind, i.FileName, i.Detail))
-            .Select(g => g.First())
-            .OrderBy(i => i.IsBlocking ? 0 : 1)
+            .Select(g => g.OrderBy(i => i.Severity).First())
+            .OrderBy(i => i.Severity)
             .ThenBy(i => i.Kind)
             .ThenBy(i => i.Subject, StringComparer.OrdinalIgnoreCase)
             .ToList();
+    }
+
+    private static void CheckDependencies(
+        ModMetadata mod,
+        LoaderKind loader,
+        RangeDialect dialect,
+        string? gameVersion,
+        string? loaderVersion,
+        Dictionary<string, List<Provider>> provided,
+        Dictionary<string, string> disabledIds,
+        List<BuildIssue> issues)
+    {
+        // Forge and NeoForge hold a present mod to its range whether the dependency is
+        // mandatory or optional; Fabric and Quilt only look at "depends".
+        var rangesEnforcedWhenPresent = dialect == RangeDialect.Maven;
+
+        foreach (var dependency in mod.Dependencies)
+        {
+            var id = dependency.Id;
+            var enforced = dependency.Required || rangesEnforcedWhenPresent;
+
+            // The game itself.
+            if (id.Equals("minecraft", StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.IsNullOrEmpty(gameVersion) || string.IsNullOrWhiteSpace(dependency.VersionRange) ||
+                    !VersionRange.DefinitelyOutside(dependency.VersionRange, gameVersion, dialect))
+                {
+                    continue;
+                }
+
+                // "recommends minecraft" outside the range is the mod's own warning, not a refusal.
+                issues.Add(new BuildIssue(BuildIssueKind.WrongGameVersion, mod.Name, mod.FileName, dependency.VersionRange!.Trim())
+                {
+                    Severity = enforced ? BuildIssueSeverity.WontStart : BuildIssueSeverity.MayMisbehave
+                });
+                continue;
+            }
+
+            // The loader itself: its version is known, so its range can be judged.
+            if (LoaderIdFor(loader) is { } loaderId && id.Equals(loaderId, StringComparison.OrdinalIgnoreCase))
+            {
+                if (enforced && LoaderVersionCore(loaderVersion) is { } running &&
+                    VersionRange.DefinitelyOutside(dependency.VersionRange, running, dialect))
+                {
+                    issues.Add(new BuildIssue(BuildIssueKind.WrongDependencyVersion, mod.Name, mod.FileName, LoaderName(loader))
+                    {
+                        Range = dependency.VersionRange?.Trim(),
+                        OtherVersion = running
+                    });
+                }
+
+                continue;
+            }
+
+            if (ModMetadataReader.IsLoaderProvided(id, loader, loaderVersion))
+            {
+                continue;
+            }
+
+            if (!provided.TryGetValue(id, out var candidates))
+            {
+                // Fabric API modules are "fabric-<name>-v<n>"; the umbrella jar counts even when
+                // its nested list could not be read.
+                if (id.StartsWith("fabric-", StringComparison.OrdinalIgnoreCase) && provided.ContainsKey("fabric-api"))
+                {
+                    continue;
+                }
+
+                if (dependency.Required)
+                {
+                    disabledIds.TryGetValue(id, out var disabledFile);
+                    issues.Add(new BuildIssue(BuildIssueKind.MissingDependency, mod.Name, mod.FileName, id, disabledFile));
+                }
+
+                continue;
+            }
+
+            var others = candidates.Where(c => !string.Equals(c.FileName, mod.FileName, StringComparison.OrdinalIgnoreCase)).ToList();
+
+            if (enforced && others.Count > 0 && others.Count == candidates.Count &&
+                others.All(c => VersionRange.DefinitelyOutside(dependency.VersionRange, c.Version, dialect)))
+            {
+                var present = Primary(others);
+
+                issues.Add(new BuildIssue(BuildIssueKind.WrongDependencyVersion, mod.Name, mod.FileName, present.Name)
+                {
+                    Range = dependency.VersionRange?.Trim(),
+                    OtherVersion = present.Version,
+                    OtherFileName = present.FileName
+                });
+            }
+        }
+    }
+
+    /// <summary>Mods it says it does not run with - but only in the versions it names, and only when that is certain.</summary>
+    private static void CheckConflicts(ModMetadata mod, RangeDialect dialect, Dictionary<string, List<Provider>> provided, List<BuildIssue> issues)
+    {
+        foreach (var conflict in mod.Conflicts)
+        {
+            if (ModMetadataReader.BuiltIn.Contains(conflict.Id) || !provided.TryGetValue(conflict.Id, out var candidates))
+            {
+                continue;
+            }
+
+            var others = candidates.Where(c => !string.Equals(c.FileName, mod.FileName, StringComparison.OrdinalIgnoreCase)).ToList();
+
+            if (others.Count == 0 || others.Count != candidates.Count ||
+                !others.All(c => VersionRange.DefinitelyInside(conflict.VersionRange, c.Version, dialect)))
+            {
+                continue;
+            }
+
+            var other = Primary(others);
+
+            issues.Add(new BuildIssue(
+                conflict.Breaks ? BuildIssueKind.Incompatible : BuildIssueKind.Discouraged,
+                mod.Name,
+                mod.FileName,
+                other.Name)
+            {
+                Range = string.IsNullOrWhiteSpace(conflict.VersionRange) || conflict.VersionRange.Trim() == "*" ? null : conflict.VersionRange.Trim(),
+                OtherVersion = other.Version,
+                OtherFileName = other.FileName,
+                Severity = conflict.Breaks ? BuildIssueSeverity.WontStart : BuildIssueSeverity.MayMisbehave
+            });
+        }
+    }
+
+    /// <summary>The id a mod names the running loader by.</summary>
+    private static string? LoaderIdFor(LoaderKind loader) => loader switch
+    {
+        LoaderKind.Fabric => "fabricloader",
+        LoaderKind.Forge => "forge",
+        LoaderKind.NeoForge => "neoforge",
+
+        // Quilt answers to "fabricloader" in a version of its own that the build does not record.
+        _ => null
+    };
+
+    private static string LoaderName(LoaderKind loader) => loader switch
+    {
+        LoaderKind.Fabric => "Fabric Loader",
+        LoaderKind.Forge => "Forge",
+        LoaderKind.NeoForge => "NeoForge",
+        _ => loader.ToString()
+    };
+
+    /// <summary>"1.20.1-47.2.0" is Forge 47.2.0; a plain number is taken as it is.</summary>
+    private static string? LoaderVersionCore(string? loaderVersion)
+    {
+        if (string.IsNullOrWhiteSpace(loaderVersion))
+        {
+            return null;
+        }
+
+        var text = loaderVersion.Trim();
+
+        // "1.20.1-47.2.0": a game version in front. "0.16.0-beta.1" keeps its tag.
+        var match = System.Text.RegularExpressions.Regex.Match(text, @"^1\.\d+(?:\.\d+)?-(?<loader>\d+\.\d+.*)$");
+        return match.Success ? match.Groups["loader"].Value : text;
     }
 
     /// <summary>
@@ -271,6 +437,7 @@ public static class BuildChecker
     /// the same recogniser the "Ускорение" switch fills its slot by. Two files of one and
     /// the same mod are left to the duplicate check; a conflict the two mods declare
     /// against each other is dropped, because this line already says it, and plainer.
+    /// This is the launcher's own knowledge, so it is never more than a warning.
     /// </summary>
     private static void AddTwoRenderers(List<BuildIssue> issues, IReadOnlyList<BuildJar> jars, LoaderKind loader, string? gameVersion)
     {
@@ -304,7 +471,8 @@ public static class BuildChecker
 
             issues.Add(new BuildIssue(BuildIssueKind.TwoRenderers, section?.Name ?? other.FileName, other.FileName, firstSection?.Name ?? first.FileName)
             {
-                OtherFileName = first.FileName
+                OtherFileName = first.FileName,
+                Severity = BuildIssueSeverity.MayMisbehave
             });
         }
 
@@ -313,22 +481,40 @@ public static class BuildChecker
             return;
         }
 
+        // A "breaks" between the two still stops the game: that line stays, and the
+        // softer renderer line beside it is enough said about the pair.
         var files = renderers.Select(r => r.FileName).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        issues.RemoveAll(i => i.Kind is BuildIssueKind.Incompatible or BuildIssueKind.Discouraged &&
+        issues.RemoveAll(i => i.Kind is BuildIssueKind.Discouraged &&
                               files.Contains(i.FileName) &&
                               i.OtherFileName is not null && files.Contains(i.OtherFileName));
+
+        var declared = issues
+            .Where(i => i.Kind == BuildIssueKind.Incompatible && files.Contains(i.FileName) && i.OtherFileName is not null && files.Contains(i.OtherFileName))
+            .SelectMany(i => new[] { i.FileName, i.OtherFileName! })
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        issues.RemoveAll(i => i.Kind == BuildIssueKind.TwoRenderers &&
+                              declared.Contains(i.FileName) && i.OtherFileName is not null && declared.Contains(i.OtherFileName));
     }
 
-    private sealed record Provider(string Name, string? Version, string FileName);
+    /// <param name="Root">True for a jar of its own in mods/, false for an alias or a jar nested in another.</param>
+    private sealed record Provider(string Name, string? Version, string FileName, bool Root);
 
-    /// <summary>The same id from several jars: the loader runs the newest, so that is the version to judge by.</summary>
-    private static void Offer(Dictionary<string, Provider> provided, string id, Provider candidate)
+    private static void Offer(Dictionary<string, List<Provider>> provided, string id, Provider candidate)
     {
-        if (!provided.TryGetValue(id, out var known) ||
-            (candidate.Version is not null && (known.Version is null || VersionRange.CompareVersions(candidate.Version, known.Version) > 0)))
+        if (!provided.TryGetValue(id, out var list))
         {
-            provided[id] = candidate;
+            provided[id] = list = new List<Provider>();
         }
+
+        list.Add(candidate);
     }
+
+    /// <summary>The candidate to name in a line: a jar of its own before a nested copy, then the newest.</summary>
+    private static Provider Primary(IReadOnlyList<Provider> candidates)
+        => candidates
+            .OrderByDescending(c => c.Root)
+            .ThenByDescending(c => c.Version ?? string.Empty, Comparer<string>.Create(VersionRange.CompareVersions))
+            .First();
 }

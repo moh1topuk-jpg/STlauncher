@@ -151,14 +151,71 @@ public partial class InstalledModItem : ObservableObject
 }
 
 /// <summary>
-/// Updates for the mods the player added. The launcher only ever tells: nothing is
-/// bumped by itself, because a mod update can break a world, and that is the player's
-/// call. Catalog mods are left out - the server catalog pins their versions.
+/// Updates for the mods the player added. The launcher only ever tells, and quietly: a
+/// chip on the Builds page and, at most as often as the setting says, one line on the
+/// home screen. No popup, no question at launch. A build is looked up at most once a
+/// day by itself. Mods the server catalog pins are never offered - their version is the
+/// server's, and moving it breaks the match with the server. "Skip this version" holds
+/// until a newer one appears. See <see cref="ModUpdatePolicy"/>.
 /// </summary>
 public partial class MainWindowViewModel
 {
     [ObservableProperty]
     private bool _isCheckingModUpdates;
+
+    /// <summary>"Offer mod updates": Always / Daily / Weekly / Never.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsModUpdateOffersAlways))]
+    [NotifyPropertyChangedFor(nameof(IsModUpdateOffersDaily))]
+    [NotifyPropertyChangedFor(nameof(IsModUpdateOffersWeekly))]
+    [NotifyPropertyChangedFor(nameof(IsModUpdateOffersNever))]
+    private ModUpdateFrequency _modUpdateOffers = ModUpdateFrequency.Daily;
+
+    public bool IsModUpdateOffersAlways => ModUpdateOffers == ModUpdateFrequency.Always;
+
+    public bool IsModUpdateOffersDaily => ModUpdateOffers == ModUpdateFrequency.Daily;
+
+    public bool IsModUpdateOffersWeekly => ModUpdateOffers == ModUpdateFrequency.Weekly;
+
+    public bool IsModUpdateOffersNever => ModUpdateOffers == ModUpdateFrequency.Never;
+
+    partial void OnModUpdateOffersChanged(ModUpdateFrequency value)
+    {
+        if (value == ModUpdateFrequency.Never)
+        {
+            HasModUpdateNotice = false;
+        }
+
+        PersistSettings();
+    }
+
+    [RelayCommand]
+    private void SelectModUpdateOffers(string? value)
+    {
+        if (Enum.TryParse<ModUpdateFrequency>(value, true, out var frequency))
+        {
+            ModUpdateOffers = frequency;
+        }
+    }
+
+    /// <summary>The one small line on the home screen: "updates for 3 of your mods".</summary>
+    [ObservableProperty]
+    private bool _hasModUpdateNotice;
+
+    [ObservableProperty]
+    private string _modUpdateNoticeText = string.Empty;
+
+    [RelayCommand]
+    private void DismissModUpdateNotice() => HasModUpdateNotice = false;
+
+    /// <summary>From the home line to the mods, where the chip and the skip are.</summary>
+    [RelayCommand]
+    private void OpenModUpdates()
+    {
+        HasModUpdateNotice = false;
+        Section = ShellSection.Builds;
+        BuildTab = BuildTab.Mods;
+    }
 
     /// <summary>"3 updates available" / "All mods are up to date", after a check.</summary>
     [ObservableProperty]
@@ -177,8 +234,34 @@ public partial class MainWindowViewModel
     private readonly Dictionary<string, (ModVersion Version, string? ProjectId)> _knownModUpdates =
         new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>The button: asked for by hand, so it runs whatever the setting says.</summary>
     [RelayCommand]
-    private async Task CheckModUpdatesAsync()
+    private Task CheckModUpdatesAsync() => RunModUpdateCheckAsync(manual: true);
+
+    /// <summary>
+    /// A mod the server's catalog decides the version of: recorded as a catalog mod, or
+    /// the same project as one of the catalog build's items.
+    /// </summary>
+    private bool IsPinnedByCatalog(InstalledModItem item)
+    {
+        if (item.IsCatalog)
+        {
+            return true;
+        }
+
+        if (!IsCatalogInstance || item.Record?.Id is not { Length: > 0 } id || _loadedCatalog is null)
+        {
+            return false;
+        }
+
+        return SelectedInstance!.EnabledCatalogItems
+            .Select(itemId => _loadedCatalog.FindItem(itemId))
+            .Any(c => c is not null &&
+                      (string.Equals(c.Id, id, StringComparison.OrdinalIgnoreCase) ||
+                       string.Equals(c.Source.Project, id, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    private async Task RunModUpdateCheckAsync(bool manual)
     {
         if (IsCheckingModUpdates || SelectedInstance is null)
         {
@@ -187,24 +270,38 @@ public partial class MainWindowViewModel
 
         if (!IsBuildConfigured)
         {
-            ModUpdatesSummary = Localize("Mods_UpdatesNeedBuild", "Pick the game version and loader first");
+            if (manual)
+            {
+                ModUpdatesSummary = Localize("Mods_UpdatesNeedBuild", "Pick the game version and loader first");
+            }
+
             return;
         }
 
-        var candidates = InstalledMods.Where(m => m.IsMod && !m.IsCatalog && m.Enabled).ToList();
+        var candidates = InstalledMods.Where(m => m.IsMod && m.Enabled && !IsPinnedByCatalog(m)).ToList();
 
         if (candidates.Count == 0)
         {
-            ModUpdatesSummary = InstalledMods.Count == 0
-                ? Localize("Mods_UpdatesNothing", "No mods to check")
-                : Localize("Mods_UpdatesOnlyCatalog", "All mods here come from the server catalog - the server updates them");
+            if (manual)
+            {
+                ModUpdatesSummary = InstalledMods.Count == 0
+                    ? Localize("Mods_UpdatesNothing", "No mods to check")
+                    : Localize("Mods_UpdatesOnlyCatalog", "All mods here come from the server catalog - the server updates them");
+            }
+
             return;
         }
+
+        var state = SelectedInstance.ModUpdates ??= new ModUpdateState();
 
         try
         {
             IsCheckingModUpdates = true;
-            ModUpdatesSummary = Localize("Mods_UpdatesChecking", "Checking {0} mod(s) on Modrinth…", candidates.Count);
+
+            if (manual)
+            {
+                ModUpdatesSummary = Localize("Mods_UpdatesChecking", "Checking {0} mod(s) on Modrinth…", candidates.Count);
+            }
 
             var gameVersion = SelectedVersion!.Id;
             var loader = SelectedLoader;
@@ -220,7 +317,9 @@ public partial class MainWindowViewModel
             var latest = await _modrinth.GetLatestVersionsAsync(hashes.Keys, gameVersion, loader);
 
             _knownModUpdates.Clear();
+            state.Found.Clear();
             var found = 0;
+            var skipped = 0;
 
             foreach (var (hash, item) in hashes)
             {
@@ -240,11 +339,25 @@ public partial class MainWindowViewModel
                     ? !string.Equals(newest.PrimaryFile?.FileName, item.FileName, StringComparison.OrdinalIgnoreCase)
                     : !string.Equals(newest.Id, installed.Id, StringComparison.Ordinal);
 
-                if (isNewer)
+                state.Skipped.TryGetValue(ModUpdatePolicy.SkipKey(item.ProjectId ?? newest.ProjectId, item.FileName), out var skippedId);
+
+                if (isNewer && !ModUpdatePolicy.IsOffered(pinnedByCatalog: false, newest.Id, skippedId))
+                {
+                    skipped++;
+                    item.Update = null;
+                }
+                else if (isNewer)
                 {
                     item.Update = newest;
                     item.ProjectId ??= newest.ProjectId;
                     _knownModUpdates[item.FileName] = (newest, item.ProjectId);
+                    state.Found.Add(new KnownModUpdate
+                    {
+                        FileName = item.FileName,
+                        VersionId = newest.Id,
+                        VersionNumber = newest.VersionNumber,
+                        ProjectId = item.ProjectId
+                    });
                     found++;
                 }
                 else
@@ -254,9 +367,21 @@ public partial class MainWindowViewModel
             }
 
             ModUpdateCount = found;
-            ModUpdatesSummary = found == 0
-                ? Localize("Mods_UpdatesNone", "All mods are up to date")
-                : Localize("Mods_UpdatesFound", "Updates available: {0}. Nothing is installed until you say so.", found);
+            state.LastCheckedAt = DateTimeOffset.Now;
+            _instances.Save(SelectedInstance!);
+
+            if (manual)
+            {
+                ModUpdatesSummary = found == 0
+                    ? Localize("Mods_UpdatesNone", "All mods are up to date")
+                    : Localize("Mods_UpdatesFound", "Updates available: {0}. Nothing is installed until you say so.", found);
+            }
+            else
+            {
+                MaybeShowModUpdateNotice();
+            }
+
+            AppendConsole($"[mods] update check ({(manual ? "asked for" : "daily")}): {found} offered, {skipped} skipped by the player");
 
             var unknown = hashes.Count - current.Count;
 
@@ -271,7 +396,11 @@ public partial class MainWindowViewModel
         }
         catch (Exception ex)
         {
-            ModUpdatesSummary = Localize("Mods_UpdatesFailed", "Could not check for updates: {0}", ex.Message);
+            if (manual)
+            {
+                ModUpdatesSummary = Localize("Mods_UpdatesFailed", "Could not check for updates: {0}", ex.Message);
+            }
+
             AppendConsole($"[mods] update check failed: {ex}");
         }
         finally
@@ -385,6 +514,13 @@ public partial class MainWindowViewModel
         var version = item.Update!;
         var oldFile = item.FileName;
         var instance = target.Instance!;
+
+        // Found on an earlier day and kept: the files are asked for now.
+        if (version.Files.Count == 0)
+        {
+            version = await _modrinth.GetVersionAsync(version.Id)
+                      ?? throw new InvalidOperationException(Localize("Status_NoCompatibleFile", "No compatible file for this version and loader"));
+        }
 
         var project = item.ProjectId is { Length: > 0 } id
             ? await _modrinth.GetProjectAsync(id)
@@ -503,6 +639,8 @@ public partial class MainWindowViewModel
         }
 
         _knownModUpdates.Remove(oldFile);
+        instance.ModUpdates?.Found.RemoveAll(f => string.Equals(f.FileName, oldFile, StringComparison.OrdinalIgnoreCase));
+        _instances.Save(instance);
         ModUpdateCount = Math.Max(0, ModUpdateCount - 1);
 
         if (IsSelectedBuild(target))
@@ -618,11 +756,118 @@ public partial class MainWindowViewModel
         }
     }
 
-    /// <summary>A build switch means a different folder: yesterday's check no longer applies.</summary>
+    /// <summary>
+    /// A build switch means a different folder: what this build's own last check found is
+    /// put back (no network), and the daily check is scheduled if it is due.
+    /// </summary>
     private void ForgetModUpdates()
     {
         _knownModUpdates.Clear();
         ModUpdateCount = 0;
         ModUpdatesSummary = string.Empty;
+        HasModUpdateNotice = false;
+
+        if (SelectedInstance is not { } instance)
+        {
+            return;
+        }
+
+        if (instance.ModUpdates is { Found.Count: > 0 } state)
+        {
+            var modsDirectory = ModManager.ModsDirectory(InstanceDirectory);
+
+            foreach (var known in state.Found.Where(f => System.IO.File.Exists(System.IO.Path.Combine(modsDirectory, f.FileName))))
+            {
+                var stub = new ModVersion(known.VersionId, known.VersionNumber, known.VersionNumber,
+                    Array.Empty<string>(), Array.Empty<string>(), Array.Empty<ModFile>())
+                {
+                    ProjectId = known.ProjectId
+                };
+
+                _knownModUpdates[known.FileName] = (stub, known.ProjectId);
+            }
+
+            ModUpdateCount = _knownModUpdates.Count;
+            MaybeShowModUpdateNotice();
+        }
+
+        ScheduleDailyModUpdateCheck(instance);
+    }
+
+    /// <summary>
+    /// The check by itself: at most once a day (a week) per build, and never in the
+    /// burst of a start - it waits a little and only runs if the same build is still open.
+    /// </summary>
+    private void ScheduleDailyModUpdateCheck(Instance instance)
+    {
+        if (!ModUpdatePolicy.ShouldCheck(ModUpdateOffers, instance.ModUpdates?.LastCheckedAt, DateTimeOffset.Now))
+        {
+            return;
+        }
+
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(TimeSpan.FromSeconds(20));
+
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                if (ReferenceEquals(SelectedInstance, instance) && !IsGameRunning &&
+                    ModUpdatePolicy.ShouldCheck(ModUpdateOffers, instance.ModUpdates?.LastCheckedAt, DateTimeOffset.Now))
+                {
+                    _ = RunModUpdateCheckAsync(manual: false);
+                }
+            });
+        });
+    }
+
+    /// <summary>The home line, when the setting allows it now; stamped so it is not repeated too soon.</summary>
+    private void MaybeShowModUpdateNotice()
+    {
+        if (SelectedInstance is not { } instance || ModUpdateCount == 0)
+        {
+            return;
+        }
+
+        var state = instance.ModUpdates ??= new ModUpdateState();
+
+        if (!ModUpdatePolicy.ShouldShowNotice(ModUpdateOffers, state.LastNoticeAt, DateTimeOffset.Now))
+        {
+            return;
+        }
+
+        ModUpdateNoticeText = Localize("Mods_UpdateNotice", "Updates for your mods: {0}", ModUpdateCount);
+        HasModUpdateNotice = true;
+        state.LastNoticeAt = DateTimeOffset.Now;
+        _instances.Save(instance);
+    }
+
+    /// <summary>
+    /// "Skip this version": the offer goes, and comes back only when a newer version than
+    /// this one is out. Kept in the build's own data.
+    /// </summary>
+    [RelayCommand]
+    private void SkipModVersion(InstalledModItem? item)
+    {
+        if (item?.Update is not { } update || SelectedInstance is not { } instance)
+        {
+            return;
+        }
+
+        var state = instance.ModUpdates ??= new ModUpdateState();
+        state.Skipped[ModUpdatePolicy.SkipKey(item.ProjectId ?? update.ProjectId, item.FileName)] = update.Id;
+        state.Found.RemoveAll(f => string.Equals(f.FileName, item.FileName, StringComparison.OrdinalIgnoreCase));
+        _instances.Save(instance);
+
+        _knownModUpdates.Remove(item.FileName);
+        item.Update = null;
+        ModUpdateCount = Math.Max(0, ModUpdateCount - 1);
+
+        if (ModUpdateCount == 0)
+        {
+            HasModUpdateNotice = false;
+        }
+
+        AppendConsole($"[mods] {item.FileName}: version {update.VersionNumber} skipped until a newer one appears");
+        Status = Localize("Mods_SkippedVersion", "{0}: version {1} will not be offered again", item.DisplayName, update.VersionNumber);
     }
 }

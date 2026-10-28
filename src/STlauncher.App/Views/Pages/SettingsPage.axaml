@@ -482,6 +482,27 @@
                             </Grid>
                         </Border>
 
+                        <Border Classes="setting" controls:SettingsSearch.Keywords="обновления модов предлагать напоминать проверять mod updates offer remind check">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Classes="strong" Text="{DynamicResource Settings_ModUpdateOffers}"/>
+                                    <TextBlock Classes="sub" Text="{DynamicResource Settings_ModUpdateOffersHint}" TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <Border Grid.Column="1" Classes="segments" VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Classes="segment" Classes.active="{Binding IsModUpdateOffersAlways}" Content="{DynamicResource Settings_ModUpdateOffersAlways}"
+                                                Command="{Binding SelectModUpdateOffersCommand}" CommandParameter="Always"/>
+                                        <Button Classes="segment" Classes.active="{Binding IsModUpdateOffersDaily}" Content="{DynamicResource Settings_ModUpdateOffersDaily}"
+                                                Command="{Binding SelectModUpdateOffersCommand}" CommandParameter="Daily"/>
+                                        <Button Classes="segment" Classes.active="{Binding IsModUpdateOffersWeekly}" Content="{DynamicResource Settings_ModUpdateOffersWeekly}"
+                                                Command="{Binding SelectModUpdateOffersCommand}" CommandParameter="Weekly"/>
+                                        <Button Classes="segment" Classes.active="{Binding IsModUpdateOffersNever}" Content="{DynamicResource Settings_ModUpdateOffersNever}"
+                                                Command="{Binding SelectModUpdateOffersCommand}" CommandParameter="Never"/>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </Border>
+
                         <Border Classes="setting" controls:SettingsSearch.Keywords="дискорд статус активность discord presence status rpc">
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
                                 <StackPanel VerticalAlignment="Center">

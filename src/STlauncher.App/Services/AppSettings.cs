@@ -97,6 +97,9 @@ public sealed class AppSettings
     /// <summary>The drifting embers behind the main screen.</summary>
     public bool AnimatedBackground { get; set; } = true;
 
+    /// <summary>"Offer mod updates": Always, Daily (the default), Weekly or Never.</summary>
+    public string ModUpdateOffers { get; set; } = "Daily";
+
     /// <summary>Interface size, 1.0 being the designed size. 0.9, 1.1 and 1.25 are the other choices.</summary>
     public double UiScale { get; set; } = 1.0;
 

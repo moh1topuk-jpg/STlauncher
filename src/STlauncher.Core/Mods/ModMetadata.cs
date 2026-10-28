@@ -47,6 +47,12 @@ public sealed record ModMetadata(
 
     /// <summary>The ids in <see cref="Provides"/> with the version each comes in, where the jar says.</summary>
     public IReadOnlyList<ProvidedMod> Bundled { get; init; } = Array.Empty<ProvidedMod>();
+
+    /// <summary>
+    /// The jar says it is for the dedicated server only (Fabric "environment": "server",
+    /// Quilt "dedicated_server"). The loader skips it on a client, requirements and all.
+    /// </summary>
+    public bool ServerOnly { get; init; }
 }
 
 /// <summary>The title, version and icon a jar carries for itself. Any of them may be missing.</summary>

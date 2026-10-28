@@ -857,7 +857,7 @@
     <x:String x:Key="BuildChange_WillUpdate">Will be updated: {0}</x:String>
     <x:String x:Key="BuildChange_WillRestore">Missing files will be brought back: {0}</x:String>
     <x:String x:Key="BuildChange_WillRemove">Will be removed: {0}</x:String>
-    <x:String x:Key="Builds_SyncDeclined">The build is left as it is. You will be asked again on the next start.</x:String>
+    <x:String x:Key="Builds_SyncDeclined">The build is left as it is. These changes will not be offered again; “Sync with the catalog” in the build's menu takes them any time.</x:String>
     <x:String x:Key="Settings_UsageStats">Anonymous launch statistics</x:String>
     <x:String x:Key="Settings_UsageStatsHint">Once per launch the launcher sends the statistics collector a random installation id, the version, the language, the OS, how the update check went and how many times the launcher froze over the week (the number only); after a game crash, the cause, game version and loader. No nickname, files, paths or address are sent. That is how the server owner sees how many people use the launcher and what breaks for them.</x:String>
     <x:String x:Key="Settings_UsageNumbers">Launcher users: {0} today · {1} over 7 days · launches today: {2}</x:String>
@@ -938,7 +938,7 @@
     <x:String x:Key="Check_Missing">“{0}” needs “{1}”, which is not in the build</x:String>
     <x:String x:Key="Check_Duplicate">“{0}” is in the build twice: {1} and {2}</x:String>
     <x:String x:Key="Check_WrongLoader">“{0}” is a {1} mod and will not load here</x:String>
-    <x:String x:Key="Check_WrongVersion">“{0}” was made for {1}, not this game version</x:String>
+    <x:String x:Key="Check_WrongVersion">“{0}” is made for another game version: Minecraft {1}</x:String>
     <x:String x:Key="Check_FixEnable">Switch on</x:String>
     <x:String x:Key="Check_FixFind">Find in the catalog</x:String>
     <x:String x:Key="Check_FixDisableOld">Switch off the older one</x:String>
@@ -950,6 +950,25 @@
     <x:String x:Key="Check_ProblemsMany">{0} problems</x:String>
     <x:String x:Key="Check_OpenMods">To the mod list</x:String>
     <x:String x:Key="Check_FixAll">Fix everything</x:String>
+    <x:String x:Key="Check_SummarySoft">May work incorrectly: {0}</x:String>
+    <x:String x:Key="Check_NotesOne">{0} note</x:String>
+    <x:String x:Key="Check_NotesFew">{0} notes</x:String>
+    <x:String x:Key="Check_NotesMany">{0} notes</x:String>
+    <x:String x:Key="Check_WrongDependencyVersion">“{0}” needs “{1}” {2}, the build has {3}</x:String>
+    <x:String x:Key="Check_DismissForMod">Do not show for this mod</x:String>
+    <x:String x:Key="Check_Or">or</x:String>
+    <x:String x:Key="Check_PlayAnyway">Play anyway</x:String>
+    <x:String x:Key="Check_HardHint">This is the mod loader's own check: it will not start the game like this. Play is not blocked - fix it, or start anyway and see.</x:String>
+    <x:String x:Key="Mods_UpdateNotice">Updates for your mods: {0}</x:String>
+    <x:String x:Key="Mods_UpdateNoticeOpen">To the mods</x:String>
+    <x:String x:Key="Mods_SkipVersion">Skip this version</x:String>
+    <x:String x:Key="Mods_SkippedVersion">{0}: version {1} will not be offered again</x:String>
+    <x:String x:Key="Settings_ModUpdateOffers">Offer mod updates</x:String>
+    <x:String x:Key="Settings_ModUpdateOffersHint">Only for mods you added yourself; the server's mods follow the server. Checked at most once a day.</x:String>
+    <x:String x:Key="Settings_ModUpdateOffersAlways">Always</x:String>
+    <x:String x:Key="Settings_ModUpdateOffersDaily">Once a day</x:String>
+    <x:String x:Key="Settings_ModUpdateOffersWeekly">Once a week</x:String>
+    <x:String x:Key="Settings_ModUpdateOffersNever">Never</x:String>
     <!-- Settings and builds, restructured -->
     <x:String x:Key="Settings_SectionLook">Appearance</x:String>
     <x:String x:Key="Settings_SectionMore">More</x:String>
@@ -1181,7 +1200,7 @@
     <x:String x:Key="Boost_Opt_graphicsMode">Graphics quality</x:String>
     <x:String x:Key="Boost_Opt_screenEffectScale">Distortion effects</x:String>
     <x:String x:Key="Boost_RendererSteppedAside">The build now has {0} from the catalog, so {1} added by “Speed-up” is switched off: two renderers together crash the game. Its file stays in the mods folder.</x:String>
-    <x:String x:Key="Check_TwoRenderers">Two renderer mods at once: “{0}” and “{1}”. Together they crash the game - keep one.</x:String>
+    <x:String x:Key="Check_TwoRenderers">Two renderer mods at once: “{0}” and “{1}”. They usually get in each other's way - better keep one.</x:String>
     <x:String x:Key="Check_FixDisableNamed">Switch off {0}</x:String>
     <!-- "Ускорение": the per-build switch that can be switched back off -->
     <x:String x:Key="Boost_Title">Speed-up</x:String>

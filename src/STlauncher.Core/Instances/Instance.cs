@@ -116,6 +116,28 @@ public sealed class Instance
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public STlauncher.Core.Boost.PresetRecord? Preset { get; set; }
 
+    /// <summary>
+    /// Soft warnings of the pre-launch check the player put away, one per mod file. Each
+    /// lapses when its file changes. Null until the first one.
+    /// </summary>
+    [JsonPropertyName("dismissedWarnings")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<STlauncher.Core.Mods.DismissedBuildWarning>? DismissedWarnings { get; set; }
+
+    /// <summary>When this build was last checked for mod updates, what was found, what was skipped.</summary>
+    [JsonPropertyName("modUpdates")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public STlauncher.Core.Mods.ModUpdateState? ModUpdates { get; set; }
+
+    /// <summary>
+    /// The catalog changes the player answered "not now" to (a fingerprint, see
+    /// <see cref="STlauncher.Core.Mods.ModUpdatePolicy.CatalogOfferKey"/>). The same
+    /// changes are not offered again; a new catalog revision is.
+    /// </summary>
+    [JsonPropertyName("declinedCatalogOffer")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? DeclinedCatalogOffer { get; set; }
+
     /// <summary>Last time this build was launched, for sorting and display.</summary>
     [JsonPropertyName("lastPlayedAt")]
     public DateTimeOffset? LastPlayedAt { get; set; }
