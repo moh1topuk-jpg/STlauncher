@@ -17,7 +17,7 @@
  *   Variable      SERVER_ID       server id on Top-Minecrafter (e.g. "6689")
  *   Variable      SERVER_ADDRESS  optional, used when the API reports no address
  *
- * Optional, for counting launcher users (see docs/monitoring.md):
+ * Optional, for counting launcher users (see docs/monitoring.md and workers/stats/README.md):
  *   Analytics Engine  USAGE           dataset "stlauncher_usage" - where launch pings land
  *   Variable          CF_ACCOUNT_ID   the Cloudflare account id
  *   Secret            CF_API_TOKEN    a token with "Account Analytics: Read", to query the dataset
@@ -126,6 +126,9 @@ const DASHBOARD_HTML = String.raw`<!doctype html>
   th { text-align: left; color: var(--muted); font-weight: 600; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 8px 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
   td { padding: 5px 8px; border-bottom: 1px solid var(--grid); vertical-align: top; white-space: nowrap; }
   td.wrap-cell { white-space: normal; min-width: 180px; }
+  td.sig { white-space: normal; min-width: 220px; overflow-wrap: anywhere; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  th.num { text-align: right; }
   td code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 12px; }
   tr.crash td { background: var(--bad-soft); }
   footer { color: var(--muted); font-size: 12.5px; }
@@ -163,8 +166,9 @@ const DASHBOARD_HTML = String.raw`<!doctype html>
   </div>
 
   <section class="card">
-    <div class="card-head"><h2>Падения игры</h2><span class="note">за 7 дней · причина, мод, версия</span></div>
-    <div class="rows" id="crashes"><div class="empty">…</div></div>
+    <div class="card-head"><h2>Падения игры</h2><span class="note">за 7 дней · топ-20 · причина, мод или код, сигнатура</span></div>
+    <div class="table-wrap"><table id="crashes"><tbody><tr><td class="empty">…</td></tr></tbody></table></div>
+    <div class="note">Сигнатура — класс исключения и мод из стека (<code>java.lang.NullPointerException @sodium</code>) или место нативного падения (<code>EXCEPTION_ACCESS_VIOLATION in amd-driver</code>). Приходит с версии, вышедшей после 0.6.2; у старых версий колонка пустая.</div>
   </section>
 
   <section class="card">
@@ -265,16 +269,36 @@ const DASHBOARD_HTML = String.raw`<!doctype html>
       function (o) { return '<code>' + esc(o.outcome) + '</code>'; });
   }
 
+  // Exit codes come as signed numbers; a Windows status code reads as 0xC0000005 everywhere else.
+  function fmtCode(c) {
+    if (c == null || c === '') return '—';
+    var n = Number(c);
+    if (!isFinite(n)) return esc(c);
+    var u = n >>> 0;
+    var top = u >>> 28;
+    return (top === 0xC || top === 0x8) ? '0x' + ('00000000' + u.toString(16).toUpperCase()).slice(-8) : String(n);
+  }
+
   function renderCrashes() {
     var L = data.launcher || {};
-    renderList('crashes', L.crashes, 'Падений не было, либо игроки ещё на версии без отчётов о падениях (нужна 0.3.5).',
-      function () { return { cls: 'fail', pill: '' }; },
-      function (o) {
-        var parts = ['<code>' + esc(o.cause || 'Unknown') + '</code>'];
-        if (o.subject) parts.push('<span class="detail">' + esc(o.subject) + '</span>');
-        if (o.game) parts.push('<span class="pill neutral">' + esc(o.game) + '</span>');
-        return parts.join('');
-      });
+    var list = (L.crashes || []).slice(0, 20);
+    var table = el('crashes');
+    if (!list.length) { table.innerHTML = '<tbody><tr><td class="empty">Падений не было, либо игроки ещё на версии без отчётов о падениях (нужна 0.3.5).</td></tr></tbody>'; return; }
+    var total = sum(L.crashes || []);
+    var hasInstalls = list.some(function (o) { return o.installs != null; });
+    var head = '<thead><tr><th>Причина</th><th>Мод / код</th><th>Сигнатура</th><th>Игра</th><th>Выход</th><th class="num">Падений</th>' +
+      (hasInstalls ? '<th class="num">Установок</th>' : '') + '</tr></thead>';
+    var body = list.map(function (o) {
+      var share = total ? Math.round(o.n / total * 100) : 0;
+      return '<tr><td><code>' + esc(o.cause || 'Unknown') + '</code></td>' +
+        '<td>' + (o.subject ? esc(o.subject) : '<span class="note">—</span>') + '</td>' +
+        '<td class="sig">' + (o.signature ? '<code>' + esc(o.signature) + '</code>' : '<span class="note">—</span>') + '</td>' +
+        '<td>' + (o.game ? esc(o.game) : '<span class="note">—</span>') + '</td>' +
+        '<td><code>' + fmtCode(o.code) + '</code></td>' +
+        '<td class="num">' + o.n + ' <span class="note">' + share + '%</span></td>' +
+        (hasInstalls ? '<td class="num">' + (o.installs == null ? '—' : o.installs) + '</td>' : '') + '</tr>';
+    }).join('');
+    table.innerHTML = head + '<tbody>' + body + '</tbody>';
   }
 
   // Launches as columns: by the hour over a day, by the day over a week.
@@ -400,7 +424,7 @@ const DASHBOARD_HTML = String.raw`<!doctype html>
     var body = list.map(function (e) {
       var crash = e.event === 'crash';
       var detail = crash
-        ? '<code>' + esc(e.cause || 'Unknown') + '</code>' + (e.subject ? ' · ' + esc(e.subject) : '') + (e.game ? ' · ' + esc(e.game) : '')
+        ? '<code>' + esc(e.cause || 'Unknown') + '</code>' + (e.subject ? ' · ' + esc(e.subject) : '') + (e.signature ? ' · <code>' + esc(e.signature) + '</code>' : '') + (e.game ? ' · ' + esc(e.game) : '') + (e.code != null && e.code !== '' ? ' · ' + fmtCode(e.code) : '')
         : (e.update ? '<code>' + esc(e.update) + '</code>' : '<span class="note">—</span>');
       return '<tr' + (crash ? ' class="crash"' : '') + '><td>' + esc(fmtTime(e.t, true)) + '</td>' +
         '<td><span class="pill ' + (crash ? 'fail' : 'neutral') + '">' + (crash ? 'падение' : 'запуск') + '</span></td>' +
@@ -579,7 +603,12 @@ async function recordPing(body, env) {
       indexes: [id],
       // blob1 installation id   blob2 launcher version   blob3 os   blob4 language
       // blob5 update outcome ("ok:mirror", "fail:github=Blocked;mirror=Timeout")
-      // blob6 event: launch | crash   blob7 crash cause   blob8 mod at fault   blob9 game version + loader
+      // blob6 event: launch | crash   blob7 crash cause
+      // blob8 subject: mod at fault, driver vendor, or for WindowsError "0xC0000005 AccessViolation"
+      // blob9 game version + loader
+      // blob10 crash signature: "java.lang.NullPointerException @sodium", "EXCEPTION_ACCESS_VIOLATION in amd-driver";
+      //        empty from launchers before it existed
+      // double1 the exit code for a crash, 1 for a launch
       blobs: [
         id,
         String(body?.v ?? '').slice(0, 32),
@@ -590,12 +619,23 @@ async function recordPing(body, env) {
         String(body?.cause ?? '').slice(0, 40),
         String(body?.subject ?? '').slice(0, 60),
         String(body?.game ?? '').slice(0, 40),
+        event === 'crash' ? signature(body?.signature) : '',
       ],
       doubles: [event === 'crash' ? Number(body?.code ?? 0) : 1],
     });
   } catch (error) {
     console.log(`ping ignored: ${error}`);
   }
+}
+
+/**
+ * The launcher sends only a class name, a mod id and fixed labels here. Anything else is
+ * dropped rather than stored, so a launcher with a bug cannot put a path or a nickname
+ * into the dataset: the shape below is all a signature can be.
+ */
+function signature(value) {
+  const text = String(value ?? '').slice(0, 120);
+  return /^[A-Za-z0-9_$.]+(?: @[a-z0-9_\-]+| in [a-z0-9\-]+)?$/.test(text) ? text : '';
 }
 
 /**
@@ -673,20 +713,31 @@ async function queryGrouped(env, column, where, interval) {
   return rows?.map(row => ({ outcome: String(row.value ?? ''), n: Number(row.n ?? 0) })) ?? null;
 }
 
-/** Game crashes by cause, with the mod at fault and the game version when they were reported. */
+/**
+ * Game crashes by cause, subject (mod, driver vendor, or the Windows status code),
+ * signature, game version and exit code, with how many installations each comes from.
+ * count(DISTINCT) is in Analytics Engine's SQL; should a query with it ever be refused,
+ * the crashes still come without that column rather than not at all.
+ */
 async function queryCrashes(env) {
-  const rows = await sqlQuery(env, `SELECT blob7 AS cause, blob8 AS subject, blob9 AS game, SUM(_sample_interval) AS n
+  const query = installs => `SELECT blob7 AS cause, blob8 AS subject, blob10 AS signature, blob9 AS game, double1 AS code,
+      SUM(_sample_interval) AS n${installs ? ', count(DISTINCT blob1) AS installs' : ''}
     FROM stlauncher_usage
     WHERE timestamp > NOW() - INTERVAL '7' DAY AND blob6 = 'crash'
-    GROUP BY cause, subject, game
+    GROUP BY cause, subject, signature, game, code
     ORDER BY n DESC
-    LIMIT 30`);
+    LIMIT 30`;
+
+  const rows = (await sqlQuery(env, query(true))) ?? (await sqlQuery(env, query(false)));
 
   return rows?.map(row => ({
     cause: String(row.cause ?? ''),
     subject: String(row.subject ?? ''),
+    signature: String(row.signature ?? ''),
     game: String(row.game ?? ''),
+    code: row.code == null ? null : Number(row.code),
     n: Number(row.n ?? 0),
+    installs: row.installs == null ? null : Number(row.installs),
   })) ?? null;
 }
 
@@ -704,7 +755,7 @@ async function queryTimeline(env, interval, step) {
 
 /** The last events, newest first. The id is cut to six characters: enough to spot a repeat. */
 async function queryRecent(env) {
-  const rows = await sqlQuery(env, `SELECT timestamp, blob1, blob2, blob3, blob5, blob6, blob7, blob8, blob9
+  const rows = await sqlQuery(env, `SELECT timestamp, blob1, blob2, blob3, blob5, blob6, blob7, blob8, blob9, blob10, double1
     FROM stlauncher_usage
     WHERE timestamp > NOW() - INTERVAL '7' DAY
     ORDER BY timestamp DESC
@@ -720,6 +771,8 @@ async function queryRecent(env) {
     cause: String(row.blob7 ?? ''),
     subject: String(row.blob8 ?? ''),
     game: String(row.blob9 ?? ''),
+    signature: String(row.blob10 ?? ''),
+    code: String(row.blob6 ?? '') === 'crash' && row.double1 != null ? Number(row.double1) : null,
   })) ?? null;
 }
 

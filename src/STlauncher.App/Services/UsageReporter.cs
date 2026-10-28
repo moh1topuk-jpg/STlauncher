@@ -66,6 +66,8 @@ public sealed class UsageReporter
     /// The game died: what the log said, in a form that names no one. The cause, the
     /// mod at fault when there is one, the game version and loader - so the owner sees
     /// "MissingDependency, 14 times, all on 1.21.11 Fabric" without a single log file.
+    /// <paramref name="signature"/> is <see cref="Core.Launch.CrashSignature"/>: an
+    /// exception class and a mod id, or a native failure and a library kind; never a message.
     /// </summary>
     public async Task ReportCrashAsync(
         string? statsUrl,
@@ -76,6 +78,7 @@ public sealed class UsageReporter
         string? gameVersion,
         string loader,
         int exitCode,
+        string? signature = null,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(statsUrl) || string.IsNullOrWhiteSpace(installId))
@@ -99,7 +102,8 @@ public sealed class UsageReporter
                 cause = cause,
                 subject = subject ?? string.Empty,
                 game = string.IsNullOrWhiteSpace(gameVersion) ? string.Empty : $"{gameVersion} {loader}",
-                code = exitCode
+                code = exitCode,
+                signature = signature ?? string.Empty
             }, timeout.Token).ConfigureAwait(false);
         }
         catch (Exception)

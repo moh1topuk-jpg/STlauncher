@@ -22,6 +22,9 @@ public partial class MainWindowViewModel
     /// <summary>When the game process was last started; a crash report older than this is not this crash.</summary>
     private DateTime _gameLaunchedAtUtc = DateTime.UtcNow;
     private IReadOnlyList<string> _crashReportLines = Array.Empty<string>();
+
+    /// <summary>The JVM's own fatal error report (hs_err_pid*.log), when the JVM itself died.</summary>
+    private IReadOnlyList<string> _jvmErrorLines = Array.Empty<string>();
     private int _crashExitCode;
 
     /// <summary>The cause in one sentence; empty when the log gave nothing away.</summary>
@@ -66,7 +69,12 @@ public partial class MainWindowViewModel
         CrashReportPath = CrashAnalyzer.FindCrashReportPath(_crashLogLines) ?? NewestCrashReport(gameDirectory, _gameLaunchedAtUtc);
         _crashReportLines = ReadLines(CrashReportPath, 400);
 
-        _crash = DiagnoseRun(result, CrashAnalyzer.Analyze(_crashReportLines.Concat(_crashLogLines)));
+        // A JVM that died in native code writes its own report next to the game; its head
+        // names the library it died in, which is the whole diagnosis for a driver crash.
+        var jvmErrorPath = CrashAnalyzer.FindJvmErrorReportPath(_crashLogLines) ?? NewestJvmErrorReport(gameDirectory, _gameLaunchedAtUtc);
+        _jvmErrorLines = IsFresh(jvmErrorPath, _gameLaunchedAtUtc) ? ReadLines(jvmErrorPath, 200) : Array.Empty<string>();
+
+        _crash = DiagnoseRun(result, CrashAnalyzer.Analyze(_crashReportLines.Concat(_jvmErrorLines).Concat(_crashLogLines)));
 
         CrashDiagnosisTitle = DiagnosisTitle(_crash);
         CrashDiagnosisAdvice = DiagnosisAdvice(_crash);
@@ -77,9 +85,11 @@ public partial class MainWindowViewModel
     }
 
     /// <summary>
-    /// Anonymous, like the launch ping, and with the same switch. Only a mod name goes
-    /// along as the subject: for a broken file the subject is a path, and a path has the
-    /// player's Windows user name in it.
+    /// Anonymous, like the launch ping, and with the same switch. Only a mod name, a
+    /// Windows status code or a driver vendor goes along as the subject: for a broken file
+    /// the subject is a path, and a path has the player's Windows user name in it. When
+    /// that says nothing, the signature does: the exception's class and the mod in its
+    /// stack, never its message - see <see cref="CrashSignature"/>.
     /// </summary>
     private void ReportCrash(int exitCode)
     {
@@ -88,20 +98,80 @@ public partial class MainWindowViewModel
             return;
         }
 
-        var subject = _crash.Cause is CrashCause.MissingDependency or CrashCause.ModForOtherVersion
-            or CrashCause.IncompatibleMods or CrashCause.DuplicateMod or CrashCause.MixinFailure
-            ? Truncate(_crash.Subject, 60)
-            : null;
+        var crash = _crash;
+        var subject = CrashPingSubject(crash, exitCode);
 
-        _ = _usage.ReportCrashAsync(
-            _stats.StatsUrl,
-            _installId,
-            _updates.CurrentVersion ?? "dev",
-            _crash.Cause.ToString(),
-            subject,
-            SelectedInstance?.VersionId,
-            SelectedInstance?.Loader.ToString() ?? "Vanilla",
-            exitCode);
+        // Taken on this thread; the jars' metadata is read on another.
+        var reportLines = _crashReportLines;
+        var logLines = _crashLogLines;
+        var jvmLines = _jvmErrorLines;
+        var jars = InstalledMods.Where(m => m.IsMod && m.Mod.Enabled).Select(m => m.Mod.Path).ToList();
+        var cache = MetadataCacheFor(SelectedInstance);
+        var statsUrl = _stats.StatsUrl;
+        var version = _updates.CurrentVersion ?? "dev";
+        var gameVersion = SelectedInstance?.VersionId;
+        var loader = SelectedInstance?.Loader.ToString() ?? "Vanilla";
+
+        _ = Task.Run(async () =>
+        {
+            string? signature = null;
+
+            if (subject is null || crash.Cause == CrashCause.WindowsError)
+            {
+                try
+                {
+                    signature = CrashSignature.Extract(reportLines, logLines, jvmLines, ReadCrashMods(jars, cache));
+                }
+                catch (Exception)
+                {
+                    // A signature is a nicety; the ping goes without it.
+                }
+            }
+
+            await _usage.ReportCrashAsync(statsUrl, _installId, version, crash.Cause.ToString(), subject, gameVersion, loader, exitCode, signature);
+        });
+    }
+
+    /// <summary>What may go as the subject of the crash ping: names a mod, a code or a vendor, never a path.</summary>
+    private static string? CrashPingSubject(CrashDiagnosis crash, int exitCode) => crash.Cause switch
+    {
+        CrashCause.MissingDependency or CrashCause.ModForOtherVersion or CrashCause.IncompatibleMods
+            or CrashCause.DuplicateMod or CrashCause.MixinFailure => Truncate(crash.Subject, 60),
+
+        // From the fixed tables in NativeModules: "AMD", "Discord".
+        CrashCause.GraphicsDriverCrash or CrashCause.OverlayCrash => Truncate(crash.Subject, 60),
+
+        // "0xC0000005 AccessViolation": the code, and the kind when the table knows it.
+        CrashCause.WindowsError => NtStatus.Classify(exitCode) is var kind and not NtStatusKind.Unknown
+            ? $"{NtStatus.Format(exitCode)} {kind}"
+            : NtStatus.Format(exitCode),
+
+        _ => null
+    };
+
+    /// <summary>The ids each enabled jar declares, from the build's metadata cache.</summary>
+    private static IReadOnlyList<CrashModInfo> ReadCrashMods(IReadOnlyList<string> jars, Core.Mods.ModMetadataCache? cache)
+    {
+        var mods = new List<CrashModInfo>(jars.Count);
+
+        foreach (var jar in jars)
+        {
+            try
+            {
+                var sections = cache is null ? Core.Mods.ModMetadataReader.Read(jar) : cache.Read(jar);
+                var ids = sections.SelectMany(s => s.Provides.Prepend(s.Id)).Where(id => !string.IsNullOrWhiteSpace(id)).ToList();
+
+                if (ids.Count > 0)
+                {
+                    mods.Add(new CrashModInfo(Path.GetFileName(jar), ids));
+                }
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        return mods;
     }
 
     private static string? Truncate(string? value, int max)
@@ -112,6 +182,7 @@ public partial class MainWindowViewModel
         _crash = CrashDiagnosis.None;
         _crashLogLines = Array.Empty<string>();
         _crashReportLines = Array.Empty<string>();
+        _jvmErrorLines = Array.Empty<string>();
         CrashReportPath = null;
         CrashDiagnosisTitle = string.Empty;
         CrashDiagnosisAdvice = string.Empty;
@@ -136,6 +207,9 @@ public partial class MainWindowViewModel
             ? Localize("Crash_JavaTooOldPlain", "The Java that ran the game is too old for it")
             : Localize("Crash_JavaTooOld", "The game needs Java {0}, an older one was used", d.Detail),
         CrashCause.Graphics => Localize("Crash_Graphics", "The graphics driver could not open the game window"),
+        CrashCause.GraphicsDriverCrash => Localize("Crash_GraphicsDriverCrash", "The game crashed inside the {0} graphics driver", d.Subject),
+        CrashCause.OverlayCrash => Localize("Crash_OverlayCrash", "The game crashed inside the {0} overlay", d.Subject),
+        CrashCause.NoOpenGl => Localize("Crash_NoOpenGl", "The computer has no graphics driver the game can use"),
         CrashCause.BrokenInstallation => Localize("Crash_BrokenInstallation", "A game file is missing or damaged"),
         CrashCause.DiskFull => Localize("Crash_DiskFull", "The disk is full"),
         _ => LaunchFailureTitle(d)
@@ -153,6 +227,9 @@ public partial class MainWindowViewModel
         CrashCause.LoaderTooOld => Localize("Crash_LoaderTooOldAdvice", "The build has {0}. Raise the loader version in the build's settings, or switch the mod off.", SelectedLoaderVersion?.Version ?? "?"),
         CrashCause.JavaTooOld => Localize("Crash_JavaTooOldAdvice", "Let the launcher pick Java itself: it downloads the right one."),
         CrashCause.Graphics => Localize("Crash_GraphicsAdvice", "Update the graphics driver. On a laptop, run the game on the discrete card."),
+        CrashCause.GraphicsDriverCrash => Localize("Crash_GraphicsDriverCrashAdvice", "Install the newest driver from the {0} website: the one Windows Update brings is often old. Switch overlays off (Discord, MSI Afterburner, OBS), and if it repeats, play without shaders.", d.Subject),
+        CrashCause.OverlayCrash => Localize("Crash_OverlayCrashAdvice", "Switch the {0} overlay off for Minecraft (javaw.exe), or close {0} while you play.", d.Subject),
+        CrashCause.NoOpenGl => Localize("Crash_NoOpenGlAdvice", "Windows is running on its basic display adapter, which has no OpenGL. Install the driver from the AMD, NVIDIA or Intel website (on a laptop, for both cards) and restart the computer."),
         CrashCause.BrokenInstallation => Localize("Crash_BrokenInstallationAdvice", "Re-download the game files: the launcher checks every file and replaces the bad ones."),
         CrashCause.DiskFull => Localize("Crash_DiskFullAdvice", "Free some space on the disk where the launcher keeps its files."),
         _ when LaunchFailureAdvice(d) is { } advice => advice,
@@ -169,6 +246,8 @@ public partial class MainWindowViewModel
         CrashCause.LoaderTooOld when LoaderForCrash() is { } loader => Localize("Crash_FixLoader", "Switch to {0} {1}", SelectedLoader, loader.Version),
         CrashCause.ModForOtherVersion or CrashCause.MixinFailure or CrashCause.IncompatibleMods or CrashCause.LoaderTooOld
             when CrashMod() is { Enabled: true } mod => Localize("Crash_FixDisableMod", "Switch off \"{0}\"", mod.DisplayName),
+        CrashCause.Graphics or CrashCause.GraphicsDriverCrash or CrashCause.NoOpenGl
+            when !PreferDiscreteGpu && OperatingSystem.IsWindows() => Localize("Crash_FixDiscreteGpu", "Run the game on the discrete card"),
         _ => LaunchFailureFixLabel(d)
     };
 
@@ -287,6 +366,12 @@ public partial class MainWindowViewModel
 
                 break;
 
+            case CrashCause.Graphics or CrashCause.GraphicsDriverCrash or CrashCause.NoOpenGl when !PreferDiscreteGpu:
+                // Written into Windows' graphics settings before the next launch.
+                PreferDiscreteGpu = true;
+                Status = Localize("Crash_DiscreteGpuApplied", "The game will run on the discrete graphics card - try again");
+                break;
+
             case CrashCause.MissingDependency:
                 Section = ShellSection.Builds;
                 BuildTab = BuildTab.Catalog;
@@ -391,6 +476,42 @@ public partial class MainWindowViewModel
         catch (Exception)
         {
             return Array.Empty<string>();
+        }
+    }
+
+    /// <summary>The JVM's fatal error report this run wrote in the game folder, if the log did not name one.</summary>
+    private static string? NewestJvmErrorReport(string gameDirectory, DateTime launchedAtUtc)
+    {
+        try
+        {
+            if (!Directory.Exists(gameDirectory))
+            {
+                return null;
+            }
+
+            var newest = new DirectoryInfo(gameDirectory)
+                .EnumerateFiles("hs_err_pid*.log")
+                .OrderByDescending(f => f.LastWriteTimeUtc)
+                .FirstOrDefault();
+
+            return newest is not null && newest.LastWriteTimeUtc >= launchedAtUtc.AddSeconds(-30) ? newest.FullName : null;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>The file was written by this run: an old hs_err file is an old crash.</summary>
+    private static bool IsFresh(string? path, DateTime launchedAtUtc)
+    {
+        try
+        {
+            return !string.IsNullOrWhiteSpace(path) && File.Exists(path) && File.GetLastWriteTimeUtc(path) >= launchedAtUtc.AddSeconds(-30);
+        }
+        catch (Exception)
+        {
+            return false;
         }
     }
 
