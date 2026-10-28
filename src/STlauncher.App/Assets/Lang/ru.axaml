@@ -391,6 +391,8 @@
     <x:String x:Key="Error_DependencyMissing">{0} требует {1}, а для этой сборки у него нет версии</x:String>
     <x:String x:Key="Game_SkinTap">нажмите — 3D</x:String>
     <x:String x:Key="Settings_AnimatedBackground">Живой фон на главном экране</x:String>
+    <x:String x:Key="Settings_SeasonalLook">Праздничное оформление</x:String>
+    <x:String x:Key="Settings_SeasonalLookSub">На праздники главный экран наряжается сам: на Хэллоуин - тыквы и летучие мыши. После праздника всё возвращается.</x:String>
     <x:String x:Key="Settings_AnimationFps">Плавность анимации персонажа</x:String>
     <x:String x:Key="Settings_AnimationFpsSub">«Как монитор» рисует каждый кадр экрана (60, 144 Гц и выше): плавнее всего, но нагружает процессор, пока окно лаунчера открыто. На слабом ПК выберите 60 или 30 кадров в секунду.</x:String>
     <x:String x:Key="Settings_AnimationFpsDisplay">Как монитор</x:String>
@@ -1420,6 +1422,8 @@
     <x:String x:Key="Home_MySkin">Мой скин</x:String>
     <x:String x:Key="Home_SkinFrom">Откуда брать скин</x:String>
     <x:String x:Key="Home_NextPose">Следующая поза</x:String>
+    <x:String x:Key="Home_HappyHalloween">С Хэллоуином!</x:String>
+    <x:String x:Key="Home_SeasonGreetingClose">Скрыть до следующего праздника</x:String>
     <x:String x:Key="Pose_Idle">Стоит</x:String>
     <x:String x:Key="Pose_Wave">Машет рукой</x:String>
     <x:String x:Key="Pose_Look">Осматривается</x:String>

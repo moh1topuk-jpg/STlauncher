@@ -14,6 +14,15 @@ using STlauncher.Core.Emotes;
 
 namespace STlauncher.App.Controls;
 
+/// <summary>Something the figure wears over its head for a season. Drawn by the viewer only: the skin is never touched.</summary>
+public enum HeadDecoration
+{
+    None,
+
+    /// <summary>A carved pumpkin, the way the game draws one on a player's head.</summary>
+    Pumpkin
+}
+
 /// <summary>
 /// The player model with the skin on it: turning slowly in the small preview, alive on
 /// the home screen - standing, waving, looking around, sitting down - and draggable with
@@ -57,6 +66,14 @@ public sealed class SkinViewer : Control
     /// <summary>The emotes of the build being played: the figure takes turns between these and its own poses.</summary>
     public static readonly StyledProperty<IReadOnlyList<Emote>?> EmotesProperty =
         AvaloniaProperty.Register<SkinViewer, IReadOnlyList<Emote>?>(nameof(Emotes));
+
+    /// <summary>
+    /// What the figure wears over its head: the home stage's seasonal pumpkin. Only the home
+    /// stage sets it; the skin library, the editor and anything saved or shared never do, and
+    /// the skin's texture is not changed by it - the block is drawn instead of the head.
+    /// </summary>
+    public static readonly StyledProperty<HeadDecoration> HeadDecorationProperty =
+        AvaloniaProperty.Register<SkinViewer, HeadDecoration>(nameof(HeadDecoration));
 
     private static readonly Vector3 Light = Normalize(new Vector3(-0.4, 0.8, 0.6));
 
@@ -130,7 +147,7 @@ public sealed class SkinViewer : Control
 
     static SkinViewer()
     {
-        AffectsRender<SkinViewer>(SkinProperty, AnimatedProperty);
+        AffectsRender<SkinViewer>(SkinProperty, AnimatedProperty, HeadDecorationProperty);
     }
 
     public SkinViewer()
@@ -318,6 +335,12 @@ public sealed class SkinViewer : Control
     {
         get => GetValue(EmotesProperty);
         set => SetValue(EmotesProperty, value);
+    }
+
+    public HeadDecoration HeadDecoration
+    {
+        get => GetValue(HeadDecorationProperty);
+        set => SetValue(HeadDecorationProperty, value);
     }
 
     /// <summary>The figure's own poses, standing first: the resource key of each name, and the name in English.</summary>
@@ -552,9 +575,19 @@ public sealed class SkinViewer : Control
         _pieces.Sort(BackToFront);
 
         var texture = skin.Enlarged;
+        var pumpkin = HeadDecoration == HeadDecoration.Pumpkin ? PumpkinTexture.Get() : null;
 
         foreach (var piece in _pieces)
         {
+            // The pumpkin is the head's own part with a bigger box and another texture: it
+            // turns with the neck, leans with the chest and follows every pose and emote,
+            // and it wraps the head and the hat, so neither is drawn under it.
+            if (pumpkin is not null && piece.Part.Kind == PartKind.Head)
+            {
+                DrawBox(context, skin, pumpkin, piece.Part, PumpkinBox, outer: false, pose, scale, centre);
+                continue;
+            }
+
             DrawBox(context, skin, texture, piece.Part, piece.Part.Base, outer: false, pose, scale, centre);
 
             if (piece.Part.Overlay is { } overlay)
@@ -1329,6 +1362,13 @@ public sealed class SkinViewer : Control
             };
         }
     }
+
+    /// <summary>
+    /// The pumpkin worn on the head: a block a pixel larger than the head on every side, as
+    /// the game draws one, its faces laid out in <see cref="PumpkinTexture"/> where a head's
+    /// are in a skin. One box for every frame, so its faces come from the cache.
+    /// </summary>
+    private static readonly Box PumpkinBox = new(-4, 24, -4, 8, 8, 8, 0, 0, Inflate: 1);
 
     /// <summary>The four figures there are: classic or slim arms, modern or pre-1.8 texture. Each is built once.</summary>
     private static readonly Part[]?[] Models = new Part[]?[4];

@@ -36,6 +36,7 @@ public static class SettingsSearchIndex
         new("Settings_UiScale", "Settings_SectionLook", "масштаб размер интерфейса шрифт мелко крупно 4k scale zoom font size dpi"),
         new("Settings_AnimationFps", "Settings_SectionLook", "плавность анимация персонаж фигурка скин кадры fps фпс герц 60 144 smooth animation frames hz"),
         new("Settings_AnimatedBackground", "Settings_SectionLook", "фон анимация искры живой background animation embers"),
+        new("Settings_SeasonalLook", "Settings_SectionLook", "хэллоуин праздник тыква новый год сезон halloween holiday season"),
 
         // Launcher
         new("Settings_AfterLaunch", "Settings_SectionLauncher", "после запуска закрывать сворачивать скрывать трей after launch close hide minimize tray"),

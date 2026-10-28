@@ -97,6 +97,12 @@ public sealed class AppSettings
     /// <summary>The drifting embers behind the main screen.</summary>
     public bool AnimatedBackground { get; set; } = true;
 
+    /// <summary>The holiday look of the home screen (Halloween now, New Year later) while its dates last.</summary>
+    public bool SeasonalLook { get; set; } = true;
+
+    /// <summary>The season whose greeting the player closed, "halloween-2026": closed for that season of that year only.</summary>
+    public string? SeasonGreetingClosed { get; set; }
+
     /// <summary>Interface size, 1.0 being the designed size. 0.9, 1.1 and 1.25 are the other choices.</summary>
     public double UiScale { get; set; } = 1.0;
 

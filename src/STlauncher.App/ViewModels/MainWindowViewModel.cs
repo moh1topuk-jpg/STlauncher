@@ -460,6 +460,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _buildShareAccepted = settings.BuildShareAccepted;
         _importScanEmptyAt = settings.ImportScanEmptyAt;
         AnimatedBackground = settings.AnimatedBackground;
+        LoadSeason(settings.SeasonalLook, settings.SeasonGreetingClosed);
         AnimationFps = NormalizeAnimationFps(settings.AnimationFps);
         Controls.SkinViewer.FrameCap = AnimationFps;
         UiScale = NormalizeUiScale(settings.UiScale);
@@ -1474,6 +1475,8 @@ public partial class MainWindowViewModel : ViewModelBase
             BuildShareAccepted = _buildShareAccepted,
             ImportScanEmptyAt = _importScanEmptyAt,
             AnimatedBackground = AnimatedBackground,
+            SeasonalLook = SeasonalLook,
+            SeasonGreetingClosed = _seasonGreetingClosed,
             AnimationFps = AnimationFps,
             UiScale = UiScale,
             PreferDiscreteGpu = PreferDiscreteGpu,
