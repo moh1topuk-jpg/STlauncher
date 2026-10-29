@@ -228,6 +228,7 @@
 
     <!-- Status messages -->
     <x:String x:Key="Status_Ready">Готово</x:String>
+    <x:String x:Key="Status_CdnFallback">{0} недоступен напрямую, файлы идут через запасной путь</x:String>
     <x:String x:Key="Status_LoadingVersions">Загрузка списка версий…</x:String>
     <x:String x:Key="Status_VersionsLoaded">Загружено версий: {0}</x:String>
     <x:String x:Key="Status_NoVersions">Версий не найдено</x:String>

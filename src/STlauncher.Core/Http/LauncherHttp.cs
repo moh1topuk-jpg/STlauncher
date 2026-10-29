@@ -27,6 +27,12 @@ public static class LauncherHttp
             // for the full five minutes before the launcher tries the next address.
             ConnectTimeout = TimeSpan.FromSeconds(15),
 
+            // Modrinth's version lists are JSON of up to several megabytes that compress
+            // five to one; asked for compressed, a fresh Showtime build moves ~15 MB less,
+            // which also matters when it goes through the owner's server (docs/mirror.md).
+            // Files are unpacked before anything sees them, so the hash checks are unchanged.
+            AutomaticDecompression = DecompressionMethods.All,
+
             // Asked on every request, see SystemProxyFollower for why the default is not enough.
             UseProxy = true,
             Proxy = proxy ?? new SystemProxyFollower(),

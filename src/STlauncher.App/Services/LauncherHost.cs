@@ -41,11 +41,20 @@ public static class LauncherHost
             builder.SetMinimumLevel(LogLevel.Information);
         });
 
-        services.AddSingleton(_ =>
+        // Mod files from Modrinth and CurseForge through the owner's server when the direct
+        // route is blocked; nothing else ever goes that way. See docs/mirror.md.
+        services.AddSingleton(provider => new CdnFallback(
+            AppSettings.SecondMirrorUrl,
+            provider.GetService<ILogger<CdnFallback>>()));
+
+        services.AddSingleton(provider =>
         {
             // Follows the system proxy as it changes, recycles connections, trusts what
             // Windows trusts: all of it lives in one place with its reasons.
-            var handler = LauncherHttp.CreateHandler();
+            var handler = new CdnFallbackHandler(provider.GetRequiredService<CdnFallback>())
+            {
+                InnerHandler = LauncherHttp.CreateHandler()
+            };
 
             // Long enough for a large asset download, short enough that a stalled API
             // request cannot hang the UI for half an hour.
