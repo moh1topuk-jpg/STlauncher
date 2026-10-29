@@ -228,6 +228,7 @@
 
     <!-- Status messages -->
     <x:String x:Key="Status_Ready">Ready</x:String>
+    <x:String x:Key="Status_CdnFallback">{0} is not reachable directly; files come through the backup route</x:String>
     <x:String x:Key="Status_LoadingVersions">Loading version list…</x:String>
     <x:String x:Key="Status_VersionsLoaded">{0} versions loaded</x:String>
     <x:String x:Key="Status_NoVersions">No versions found</x:String>

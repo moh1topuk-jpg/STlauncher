@@ -60,6 +60,7 @@ public partial class App : Application
             _services.GetRequiredService<LocalizationService>().Apply(settings.Language);
 
             var viewModel = _services.GetRequiredService<MainWindowViewModel>();
+            viewModel.WatchCdnFallback(_services.GetRequiredService<STlauncher.Core.Http.CdnFallback>());
 
             var window = new MainWindow { DataContext = viewModel };
 

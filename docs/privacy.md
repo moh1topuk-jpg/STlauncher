@@ -71,6 +71,7 @@ STlauncher — лаунчер Minecraft для сервера mc.showtime.su с 
 | Fabric, Quilt, Forge, NeoForge | Скачать загрузчик модов | Только запросы файлов |
 | Adoptium (`api.adoptium.net`) | Скачать Java | Только запросы файлов |
 | Modrinth (`api.modrinth.com`) | Каталог модов, ресурспаков и шейдеров; проверка обновлений модов | Поисковые запросы; хэши файлов модов при проверке обновлений |
+| Сервер владельца (`2.26.80.201`) — запасной путь к Modrinth и CurseForge | Только если прямой путь к ним не работает (блокировка у провайдера): файлы модов и запросы к каталогу Modrinth идут через него, см. [mirror.md](mirror.md) | Адрес файла или запрос каталога — то же, что ушло бы напрямую; ваш IP виден серверу владельца, как и любому сайту |
 | GitHub и зеркало на Cloudflare | Обновления лаунчера и каталог сервера | Версия лаунчера |
 | Mojang, TLauncher, ely.by, mc-heads.net, minotar.net | Показать скин по нику | Ник, который вы ввели |
 | mc.showtime.su | Онлайн сервера на главном экране | Обычный запрос статуса Minecraft |
@@ -176,6 +177,7 @@ they see your IP address:
 | Fabric, Quilt, Forge, NeoForge | Download the mod loader | File requests only |
 | Adoptium (`api.adoptium.net`) | Download Java | File requests only |
 | Modrinth (`api.modrinth.com`) | Catalog of mods, resource packs and shaders; mod update checks | Search queries; SHA-1 hashes of mod files during update checks |
+| The owner's server (`2.26.80.201`) as a backup route to Modrinth and CurseForge | Only when the direct route to them fails (blocked by the provider): mod files and Modrinth catalog requests go through it, see [mirror.md](mirror.md) | The file address or catalog query, the same as would go directly; your IP is visible to the owner's server, as to any site |
 | GitHub and a Cloudflare mirror | Launcher updates and the server catalog | Launcher version |
 | Mojang, TLauncher, ely.by, mc-heads.net, minotar.net | Show the skin for a nickname | The nickname you typed |
 | mc.showtime.su | Server status on the main screen | A regular Minecraft status ping |

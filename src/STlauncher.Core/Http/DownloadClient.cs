@@ -24,14 +24,23 @@ public sealed class DownloadClient
         ILogger<DownloadClient>? logger = null,
         int maxAttempts = 3,
         VerifiedFileCache? cache = null,
-        SharedFileStore? sharedFiles = null)
+        SharedFileStore? sharedFiles = null,
+        CdnFallback? fallback = null)
     {
         _http = http ?? throw new ArgumentNullException(nameof(http));
         _logger = logger;
         _maxAttempts = Math.Max(1, maxAttempts);
         _cache = cache ?? new VerifiedFileCache();
         SharedFiles = sharedFiles;
+        _fallback = fallback;
     }
+
+    /// <summary>
+    /// The second way to Modrinth and CurseForge. The handler in front of the client does
+    /// the switching; this class only tells it about a file whose body stopped coming,
+    /// which happens after the handler has already handed the answer over.
+    /// </summary>
+    private readonly CdnFallback? _fallback;
 
     /// <summary>
     /// One copy on disk for the mods and packs several builds have in common. Every
@@ -303,10 +312,13 @@ public sealed class DownloadClient
             }
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
             {
+                NoteBrokenBody(url, response, "no data for " + StallTimeout.TotalSeconds.ToString("0") + " s");
                 throw new TimeoutException($"No data for {StallTimeout.TotalSeconds:0} seconds.");
             }
             catch (IOException ex)
             {
+                NoteBrokenBody(url, response, "the download was cut");
+
                 // Marked as the network's: the file side throws IOException too.
                 throw new HttpRequestException("The download was interrupted.", ex);
             }
@@ -318,6 +330,34 @@ public sealed class DownloadClient
 
             // Never under the stall clock: a slow disk is not a silent server.
             await target.WriteAsync(buffer.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// A file from Modrinth or CurseForge that started and then stopped coming: what a
+    /// provider that slows foreign sites to a halt looks like. The next attempt goes the
+    /// second way. Nothing is marked when the body came through the mirror already.
+    /// </summary>
+    private void NoteBrokenBody(string url, HttpResponseMessage response, string reason)
+    {
+        if (_fallback is null || !Uri.TryCreate(url, UriKind.Absolute, out var asked) || CdnFallback.SourceOf(asked) is null)
+        {
+            return;
+        }
+
+        var landed = response.RequestMessage?.RequestUri;
+
+        if (landed is not null && CdnFallback.SourceOf(landed) is null)
+        {
+            // The answer came from elsewhere: the mirror, already.
+            return;
+        }
+
+        _fallback.MarkBlocked(asked, reason);
+
+        if (landed is not null && !string.Equals(landed.Host, asked.Host, StringComparison.OrdinalIgnoreCase))
+        {
+            _fallback.MarkBlocked(landed, reason);
         }
     }
 
