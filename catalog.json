@@ -42,7 +42,22 @@
         { "id": "xaeros-minimap", "type": "mod", "name": "Xaero's Minimap", "description": "Миникарта с метками и путевыми точками.", "required": true, "source": { "kind": "modrinth", "project": "xaeros-minimap", "version": "fabric-1.21.11-25.3.12" } },
         { "id": "xaeros-world-map", "type": "mod", "name": "Xaero's World Map", "description": "Полноценная карта мира.", "required": true, "source": { "kind": "modrinth", "project": "xaeros-world-map", "version": "fabric-1.21.11-1.40.16" } },
         { "id": "female-gender", "type": "mod", "name": "Female Gender Mod", "description": "Косметические модели и настройки внешнего вида игрока.", "required": true, "source": { "kind": "modrinth", "project": "female-gender", "version": "5.0.0-Beta.3+1.21.11" } },
-        { "id": "patpat", "type": "mod", "name": "PatPat", "description": "Можно гладить игроков и мобов.", "required": true, "source": { "kind": "modrinth", "project": "patpat", "version": "1.3.1+1.21.11+fabric" } }
+        { "id": "patpat", "type": "mod", "name": "PatPat", "description": "Можно гладить игроков и мобов.", "required": true, "source": { "kind": "modrinth", "project": "patpat", "version": "1.3.1+1.21.11+fabric" } },
+        { "id": "entitytexturefeatures", "type": "mod", "name": "Entity Texture Features", "description": "Случайные и анимированные текстуры мобов из ресурспаков.", "required": true, "source": { "kind": "modrinth", "project": "entitytexturefeatures", "version": "7.2.6-fabric-1.21.11" } },
+        { "id": "entity-model-features", "type": "mod", "name": "Entity Model Features", "description": "Модели мобов из ресурспаков: нужен для Fresh Animations.", "required": true, "source": { "kind": "modrinth", "project": "entity-model-features", "version": "3.3.12-fabric-1.21.11" } }
+      ]
+    },
+    {
+      "id": "server-looks",
+      "title": "Рекомендует сервер",
+      "description": "Ресурспаки и шейдеры по желанию",
+      "items": [
+        { "id": "fresh-animations", "type": "resourcepack", "name": "Fresh Animations", "description": "Живые анимации мобов: моргают, оглядываются, дышат.", "required": false, "source": { "kind": "modrinth", "project": "fresh-animations", "version": "aQjwvDfY" } },
+        { "id": "low-on-fire", "type": "resourcepack", "name": "Low On Fire", "description": "Огонь не закрывает пол-экрана.", "required": false, "source": { "kind": "modrinth", "project": "low-on-fire", "version": "vWFpZjNP" } },
+        { "id": "better-leaves", "type": "resourcepack", "name": "Better Leaves", "description": "Пышная листва почти без потери FPS.", "required": false, "source": { "kind": "modrinth", "project": "better-leaves", "version": "w4ReEpuG" } },
+        { "id": "fast-better-grass", "type": "resourcepack", "name": "Fast Better Grass", "description": "Трава на боках блоков: склоны выглядят цельно.", "required": false, "source": { "kind": "modrinth", "project": "fast-better-grass", "version": "xteFNcow" } },
+        { "id": "complementary-reimagined", "type": "shader", "name": "Complementary Reimagined", "description": "Красивые шейдеры, бережные к видеокарте.", "required": false, "source": { "kind": "modrinth", "project": "complementary-reimagined", "version": "Bqen1mJX" } },
+        { "id": "makeup-ultra-fast", "type": "shader", "name": "MakeUp — Ultra Fast", "description": "Для слабых ноутбуков: свет и тени почти даром.", "required": false, "source": { "kind": "modrinth", "project": "makeup-ultra-fast-shaders", "version": "t4YRxQug" } }
       ]
     }
   ],
@@ -84,7 +99,17 @@
         "xaeros-minimap",
         "xaeros-world-map",
         "female-gender",
-        "patpat"
+        "patpat",
+        "entitytexturefeatures",
+        "entity-model-features"
+      ],
+      "recommends": [
+        "fresh-animations",
+        "low-on-fire",
+        "better-leaves",
+        "fast-better-grass",
+        "complementary-reimagined",
+        "makeup-ultra-fast"
       ]
     }
   ]
