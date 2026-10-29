@@ -195,6 +195,16 @@ public sealed class CatalogBuild
     /// </summary>
     [JsonPropertyName("recommended")]
     public bool Recommended { get; set; }
+
+    /// <summary>
+    /// Catalog item ids of resource packs and shaders the server suggests for this build.
+    /// Never installed by the sync and never part of <see cref="Items"/>: the player picks
+    /// them on the build's packs and shaders tabs. A separate list on purpose - launchers
+    /// up to 0.6.2 install everything in <see cref="Items"/> and do not know this field,
+    /// so they skip it without a word.
+    /// </summary>
+    [JsonPropertyName("recommends")]
+    public List<string> Recommends { get; set; } = new();
 }
 
 public sealed class CatalogSection

@@ -286,7 +286,12 @@ public sealed class ContentCatalogService
             AllowTrailingCommas = true
         };
 
-        options.Converters.Add(new TolerantEnumConverter<CatalogItemType>(CatalogItemType.Other));
+        // "shader" is how the catalog spells it (Modrinth's own project type); a launcher up
+        // to 0.6.2 reads it as Other and, the item being in no build's "items", never acts on it.
+        options.Converters.Add(new TolerantEnumConverter<CatalogItemType>(
+            CatalogItemType.Other,
+            ("shader", CatalogItemType.ShaderPack),
+            ("shaders", CatalogItemType.ShaderPack)));
         options.Converters.Add(new TolerantEnumConverter<CatalogSourceKind>(CatalogSourceKind.Unknown));
         options.Converters.Add(new TolerantEnumConverter<LoaderKind>(LoaderKind.Vanilla));
         return options;

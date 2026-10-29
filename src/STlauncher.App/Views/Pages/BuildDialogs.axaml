@@ -387,7 +387,45 @@
                                             </ComboBox.ItemTemplate>
                                         </ComboBox>
                                         <Button Grid.Column="1" Classes="raised" Content="{DynamicResource Transfer_Copy}"
-                                                Command="{Binding CopyGameSettingsCommand}" IsEnabled="{Binding !IsGameRunning}"/>
+                                                Command="{Binding ReviewControlsTransferCommand}" IsEnabled="{Binding !IsGameRunning}"/>
+                                    </Grid>
+
+                                    <!-- Every value that changes, before anything is written. -->
+                                    <Border Classes="panel inset scroll-to" Padding="14,12" IsVisible="{Binding IsControlsReviewOpen}">
+                                        <StackPanel Spacing="8">
+                                            <TextBlock Text="{Binding ControlsReviewTitle}" Classes="strong" TextWrapping="Wrap"/>
+                                            <ItemsControl ItemsSource="{Binding ControlsDiffLines}" IsVisible="{Binding HasControlsChanges}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="vm:ControlsDiffLine">
+                                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" Margin="0,3">
+                                                            <StackPanel>
+                                                                <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis"/>
+                                                                <TextBlock Text="{Binding Group}" Classes="sub"/>
+                                                            </StackPanel>
+                                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                                <TextBlock Text="{Binding From}" Classes="sub" MaxWidth="120" TextTrimming="CharacterEllipsis"/>
+                                                                <TextBlock Text="→" Classes="sub"/>
+                                                                <TextBlock Text="{Binding To}" Classes="strong" MaxWidth="120" TextTrimming="CharacterEllipsis"/>
+                                                            </StackPanel>
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                            <TextBlock Text="{Binding ControlsReviewNote}" Classes="warn" IsVisible="{Binding HasControlsReviewNote}"/>
+                                            <TextBlock Text="{DynamicResource Transfer_Consent}" Classes="consent" IsVisible="{Binding HasControlsChanges}"/>
+                                            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                                                <Button Classes="ghost" Content="{DynamicResource Common_Cancel}" Command="{Binding CloseControlsReviewCommand}"/>
+                                                <Button Classes="accent-soft" Content="{DynamicResource Transfer_Apply}" IsVisible="{Binding HasControlsChanges}"
+                                                        Command="{Binding ApplyControlsTransferCommand}" IsEnabled="{Binding !IsGameRunning}"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- The way back, for as long as the record is there. -->
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" IsVisible="{Binding HasControlsTransferRecord}">
+                                        <TextBlock Text="{Binding ControlsTransferRecordLabel}" Classes="sub" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                                        <Button Grid.Column="1" Classes="raised" Content="{DynamicResource Transfer_Revert}"
+                                                Command="{Binding RevertControlsTransferCommand}" IsEnabled="{Binding !IsGameRunning}"/>
                                     </Grid>
                                 </StackPanel>
                             </Border>

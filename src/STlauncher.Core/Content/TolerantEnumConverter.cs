@@ -14,10 +14,13 @@ public sealed class TolerantEnumConverter<TEnum> : JsonConverter<TEnum>
     where TEnum : struct, Enum
 {
     private readonly TEnum _fallback;
+    private readonly (string Alias, TEnum Value)[] _aliases;
 
-    public TolerantEnumConverter(TEnum fallback)
+    /// <param name="aliases">Other spellings of a member, such as "shader" for ShaderPack.</param>
+    public TolerantEnumConverter(TEnum fallback, params (string Alias, TEnum Value)[] aliases)
     {
         _fallback = fallback;
+        _aliases = aliases.Select(a => (Normalize(a.Alias), a.Value)).ToArray();
     }
 
     public override TEnum Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
@@ -26,6 +29,14 @@ public sealed class TolerantEnumConverter<TEnum> : JsonConverter<TEnum>
         {
             case JsonTokenType.String:
                 var normalized = Normalize(reader.GetString());
+
+                foreach (var (alias, value) in _aliases)
+                {
+                    if (alias == normalized)
+                    {
+                        return value;
+                    }
+                }
 
                 foreach (var name in Enum.GetNames<TEnum>())
                 {

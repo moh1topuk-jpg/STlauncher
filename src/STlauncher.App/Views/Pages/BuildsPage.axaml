@@ -207,6 +207,135 @@
             </Border>
         </DataTemplate>
 
+        <!-- One pack or shader the server recommends: what it is, its size, where it stands in
+             the build, and the one button that is the next step (install, switch on, or take the
+             server's version). -->
+        <DataTemplate x:Key="ServerPickRow" x:DataType="vm:ServerPickItem">
+            <Border Classes="row" Padding="10,8">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                    <Border Classes="icon-tile" Background="{DynamicResource FieldBrush}" VerticalAlignment="Center">
+                        <Panel>
+                            <PathIcon Data="{StaticResource IconPalette}" Classes="small" Foreground="{DynamicResource TextSecondaryBrush}"
+                                      IsVisible="{Binding !IsShader}"/>
+                            <PathIcon Data="{StaticResource IconStar}" Classes="small" Foreground="{DynamicResource TextSecondaryBrush}"
+                                      IsVisible="{Binding IsShader}"/>
+                        </Panel>
+                    </Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                        <TextBlock Classes="strong" Text="{Binding Name}" TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Classes="sub" Text="{Binding Description}" TextTrimming="CharacterEllipsis"
+                                   IsVisible="{Binding HasDescription}" ToolTip.Tip="{Binding Description}"/>
+                        <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding HasMetaLabel}">
+                            <Ellipse Classes="dot" Classes.off="{Binding !IsOn}" VerticalAlignment="Center" IsVisible="{Binding IsCurrent}"/>
+                            <Ellipse Classes="dot warn" VerticalAlignment="Center" IsVisible="{Binding IsOtherVersion}"/>
+                            <TextBlock Classes="sub" Text="{Binding MetaLabel}" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <ProgressBar IsIndeterminate="True" Width="40" Height="3" VerticalAlignment="Center" IsVisible="{Binding IsBusy}"/>
+                        <Button Classes="accent-soft small" Content="{DynamicResource ServerPicks_Install}"
+                                IsVisible="{Binding IsMissing}"
+                                IsEnabled="{Binding !$parent[UserControl].((vm:MainWindowViewModel)DataContext).IsServerPicksBusy}"
+                                Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).InstallServerPickCommand}"
+                                CommandParameter="{Binding}"/>
+                        <Button Classes="small" Content="{DynamicResource ServerPicks_TakeVersion}"
+                                IsVisible="{Binding IsOtherVersion}"
+                                IsEnabled="{Binding !$parent[UserControl].((vm:MainWindowViewModel)DataContext).IsServerPicksBusy}"
+                                Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).InstallServerPickCommand}"
+                                CommandParameter="{Binding}"/>
+                        <Button Classes="small" Content="{DynamicResource ServerPicks_Enable}"
+                                IsVisible="{Binding CanEnable}"
+                                IsEnabled="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).CanEditPacks}"
+                                Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).EnableServerPickCommand}"
+                                CommandParameter="{Binding}"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </DataTemplate>
+
+        <!-- "Рекомендует сервер" on the resource packs tab: offered, never installed by itself. It heads the
+             pack list and scrolls with it, so a small window still shows the player's own packs. -->
+        <DataTemplate x:Key="ServerPacksPanel" x:DataType="vm:MainWindowViewModel">
+            <Border Classes="panel inset" Padding="14,10,14,8" IsVisible="{Binding HasServerPacks}">
+                <StackPanel Spacing="4">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                        <PathIcon Data="{StaticResource IconStar}" Classes="small accent" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Classes="strong" Text="{DynamicResource ServerPicks_Title}"/>
+                            <TextBlock Classes="sub" Text="{DynamicResource ServerPicks_PacksHint}" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <Button Grid.Column="2" Classes="accent-soft small" VerticalAlignment="Center"
+                                Content="{Binding InstallAllServerPacksLabel}"
+                                IsVisible="{Binding CanInstallAllServerPacks}" IsEnabled="{Binding !IsServerPicksBusy}"
+                                Command="{Binding InstallAllServerPacksCommand}"/>
+                    </Grid>
+                    <ItemsControl ItemsSource="{Binding ServerPacks}" ItemTemplate="{StaticResource ServerPickRow}"/>
+                    <!-- The question before anything is downloaded: every file, its size and its folder. -->
+                    <Border Classes="scroll-to" BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="0,1,0,0" Padding="0,10,0,2"
+                            IsVisible="{Binding IsServerPacksConsentOpen}">
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="strong" Text="{Binding ServerPicksConsentTitle}" TextWrapping="Wrap"/>
+                            <ItemsControl ItemsSource="{Binding ServerPicksConsentLines}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="x:String">
+                                        <TextBlock Classes="sub" Text="{Binding}" TextWrapping="Wrap" Margin="10,1,0,1"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Classes="sub" Text="{Binding ServerPicksConsentNote}" TextWrapping="Wrap"
+                                       IsVisible="{Binding HasServerPicksConsentNote}"/>
+                            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                                <Button Classes="ghost small" Content="{DynamicResource Common_Cancel}" Command="{Binding CancelServerPicksCommand}"/>
+                                <Button Classes="accent-soft small" Content="{Binding ServerPicksConfirmLabel}" Command="{Binding ConfirmServerPicksCommand}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
+        <!-- The same panel on the shaders tab, with the word about a missing shader loader. -->
+        <DataTemplate x:Key="ServerShadersPanel" x:DataType="vm:MainWindowViewModel">
+            <Border Classes="panel inset" Padding="14,10,14,8" IsVisible="{Binding HasServerShaders}">
+                <StackPanel Spacing="4">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                        <PathIcon Data="{StaticResource IconStar}" Classes="small accent" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Classes="strong" Text="{DynamicResource ServerPicks_Title}"/>
+                            <TextBlock Classes="sub" Text="{DynamicResource ServerPicks_ShadersHint}" TextWrapping="Wrap"
+                                       IsVisible="{Binding HasShaderLoader}"/>
+                            <TextBlock Classes="gold" FontSize="12.5" Text="{Binding ServerShadersLoaderNote}" TextWrapping="Wrap"
+                                       IsVisible="{Binding !HasShaderLoader}"/>
+                        </StackPanel>
+                        <Button Grid.Column="2" Classes="accent-soft small" VerticalAlignment="Center"
+                                Content="{Binding InstallAllServerShadersLabel}"
+                                IsVisible="{Binding CanInstallAllServerShaders}" IsEnabled="{Binding !IsServerPicksBusy}"
+                                Command="{Binding InstallAllServerShadersCommand}"/>
+                    </Grid>
+                    <ItemsControl ItemsSource="{Binding ServerShaders}" ItemTemplate="{StaticResource ServerPickRow}"/>
+                    <Border Classes="scroll-to" BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="0,1,0,0" Padding="0,10,0,2"
+                            IsVisible="{Binding IsServerShadersConsentOpen}">
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="strong" Text="{Binding ServerPicksConsentTitle}" TextWrapping="Wrap"/>
+                            <ItemsControl ItemsSource="{Binding ServerPicksConsentLines}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="x:String">
+                                        <TextBlock Classes="sub" Text="{Binding}" TextWrapping="Wrap" Margin="10,1,0,1"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Classes="sub" Text="{Binding ServerPicksConsentNote}" TextWrapping="Wrap"
+                                       IsVisible="{Binding HasServerPicksConsentNote}"/>
+                            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                                <Button Classes="ghost small" Content="{DynamicResource Common_Cancel}" Command="{Binding CancelServerPicksCommand}"/>
+                                <Button Classes="accent-soft small" Content="{Binding ServerPicksConfirmLabel}" Command="{Binding ConfirmServerPicksCommand}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
         <!-- One resource pack. The switched-on and the switched-off lists show the same row.
              A click on the row picks the pack: what it says about itself stands in the card
              beside the list, or under the row when the window has no room for the card. -->
@@ -1128,20 +1257,28 @@
                                     </Grid>
                                 </StackPanel>
 
-                                <StackPanel Grid.Row="1" Classes="empty" IsVisible="{Binding HasNoResourcePacks}">
-                                    <Border Classes="empty-icon"><PathIcon Data="{StaticResource IconPalette}"/></Border>
-                                    <TextBlock Classes="sub" Text="{DynamicResource Packs_Empty}"/>
-                                    <Button Classes="accent-soft" Command="{Binding AddResourcePacksCommand}">
-                                        <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <PathIcon Data="{StaticResource IconPlus}" Width="12" Height="12"/>
-                                            <TextBlock Text="{DynamicResource Packs_AddButton}" FontWeight="Bold"/>
+                                <!-- With nothing here yet the server's panel stands above the empty state, and both scroll;
+                                     otherwise the panel heads the list. -->
+                                <ScrollViewer Grid.Row="1" IsVisible="{Binding HasNoResourcePacks}">
+                                    <StackPanel>
+                                        <ContentControl Margin="18,10,18,0" Content="{Binding}" ContentTemplate="{StaticResource ServerPacksPanel}"/>
+                                        <StackPanel Classes="empty">
+                                            <Border Classes="empty-icon"><PathIcon Data="{StaticResource IconPalette}"/></Border>
+                                            <TextBlock Classes="sub" Text="{DynamicResource Packs_Empty}"/>
+                                            <Button Classes="accent-soft" Command="{Binding AddResourcePacksCommand}">
+                                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                                    <PathIcon Data="{StaticResource IconPlus}" Width="12" Height="12"/>
+                                                    <TextBlock Text="{DynamicResource Packs_AddButton}" FontWeight="Bold"/>
+                                                </StackPanel>
+                                            </Button>
                                         </StackPanel>
-                                    </Button>
-                                </StackPanel>
+                                    </StackPanel>
+                                </ScrollViewer>
 
                                 <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="6,8,6,6" IsVisible="{Binding !HasNoResourcePacks}">
                                     <ScrollViewer>
                                         <StackPanel>
+                                            <ContentControl Margin="6,0,6,6" Content="{Binding}" ContentTemplate="{StaticResource ServerPacksPanel}"/>
                                             <controls:Caption Text="{Binding EnabledPacksHeader}" Margin="12,6,0,6"/>
                                             <ItemsControl ItemsSource="{Binding EnabledResourcePacks}"
                                                           ItemTemplate="{StaticResource ResourcePackRow}"/>
@@ -1281,19 +1418,27 @@
                                     </Border>
                                 </StackPanel>
 
-                                <StackPanel Grid.Row="1" Classes="empty" IsVisible="{Binding HasNoShaderPacks}">
-                                    <Border Classes="empty-icon"><PathIcon Data="{StaticResource IconStar}"/></Border>
-                                    <TextBlock Classes="sub" Text="{DynamicResource Shaders_Empty}"/>
-                                    <Button Classes="accent-soft" Command="{Binding AddShadersCommand}">
-                                        <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <PathIcon Data="{StaticResource IconPlus}" Width="12" Height="12"/>
-                                            <TextBlock Text="{DynamicResource Shaders_AddButton}" FontWeight="Bold"/>
+                                <!-- With nothing here yet the server's panel stands above the empty state, and both scroll;
+                                     otherwise the panel heads the list. -->
+                                <ScrollViewer Grid.Row="1" IsVisible="{Binding HasNoShaderPacks}">
+                                    <StackPanel>
+                                        <ContentControl Margin="18,10,18,0" Content="{Binding}" ContentTemplate="{StaticResource ServerShadersPanel}"/>
+                                        <StackPanel Classes="empty">
+                                            <Border Classes="empty-icon"><PathIcon Data="{StaticResource IconStar}"/></Border>
+                                            <TextBlock Classes="sub" Text="{DynamicResource Shaders_Empty}"/>
+                                            <Button Classes="accent-soft" Command="{Binding AddShadersCommand}">
+                                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                                    <PathIcon Data="{StaticResource IconPlus}" Width="12" Height="12"/>
+                                                    <TextBlock Text="{DynamicResource Shaders_AddButton}" FontWeight="Bold"/>
+                                                </StackPanel>
+                                            </Button>
                                         </StackPanel>
-                                    </Button>
-                                </StackPanel>
+                                    </StackPanel>
+                                </ScrollViewer>
 
                                 <ScrollViewer Grid.Row="1" Margin="6,8,6,6" IsVisible="{Binding !HasNoShaderPacks}">
                                     <StackPanel>
+                                        <ContentControl Margin="6,0,6,8" Content="{Binding}" ContentTemplate="{StaticResource ServerShadersPanel}"/>
                                         <!-- "No shaders" is a row like the others, so the choice reads as one list.
                                              The one the game will load is marked; any other has the button that
                                              makes it the one. -->

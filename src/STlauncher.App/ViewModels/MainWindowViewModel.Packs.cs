@@ -342,6 +342,7 @@ public partial class MainWindowViewModel
                                    ?? EnabledResourcePacks.FirstOrDefault()
                                    ?? DisabledResourcePacks.FirstOrDefault();
 
+            RefreshServerPacks();
             RefreshShaders();
         }
         catch (Exception ex)
@@ -446,6 +447,7 @@ public partial class MainWindowViewModel
         ShaderPackCount = ShaderPacks.Count;
         ActiveShaderName = ShaderPacks.FirstOrDefault(s => s.IsActive)?.Name ?? string.Empty;
         RestoreKnownPackUpdates();
+        RefreshServerShaders();
         OnPropertyChanged(nameof(ExpectedShaderLoader));
         OnPropertyChanged(nameof(ShaderLoaderMissingText));
         OnPropertyChanged(nameof(FindShaderLoaderLabel));

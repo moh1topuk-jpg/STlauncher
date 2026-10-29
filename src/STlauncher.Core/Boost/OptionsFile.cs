@@ -115,6 +115,32 @@ public sealed class OptionsFile
         return Bytes.GetString(line, colon + 1, line.Length - EndingLength(line) - colon - 1);
     }
 
+    /// <summary>Every key in the file once, in the order of their first lines.</summary>
+    public IReadOnlyList<string> Keys()
+    {
+        var keys = new List<string>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var line in _lines)
+        {
+            var colon = Array.IndexOf(line, (byte)':');
+
+            if (colon <= 0)
+            {
+                continue;
+            }
+
+            var key = Bytes.GetString(line, 0, colon);
+
+            if (seen.Add(key))
+            {
+                keys.Add(key);
+            }
+        }
+
+        return keys;
+    }
+
     /// <summary>Sets a key, in place when the file has it and as a new last line when it does not.</summary>
     public void Set(string key, string value)
     {
