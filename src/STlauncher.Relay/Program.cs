@@ -2,6 +2,12 @@ using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using STlauncher.Relay;
 
+// The developer reading crash reports over SSH: a command, not a second relay.
+if (ReportCommand.IsReportCommand(args))
+{
+    return ReportCommand.Run(args, Environment.GetEnvironmentVariable, Console.Out, Console.Error);
+}
+
 if (args.Contains("--help") || args.Contains("-h"))
 {
     Console.WriteLine(RelayOptions.Usage());

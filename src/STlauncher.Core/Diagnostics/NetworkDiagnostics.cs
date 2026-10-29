@@ -40,6 +40,9 @@ public sealed class NetworkDiagnostics
         _http = http;
     }
 
+    /// <summary>The launcher's own client (its proxy, its trust), for the other checks to share.</summary>
+    public HttpClient Client => _http;
+
     public async Task<IReadOnlyList<NetworkCheckResult>> RunAsync(
         IEnumerable<NetworkTarget> targets,
         IProgress<NetworkCheckResult>? progress = null,

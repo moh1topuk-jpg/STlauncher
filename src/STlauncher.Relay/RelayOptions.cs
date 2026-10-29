@@ -112,6 +112,25 @@ public sealed class RelayOptions
     /// <summary>A shared build is forgotten this long after it was last left or asked for.</summary>
     public TimeSpan ShareLife { get; set; } = TimeSpan.FromDays(180);
 
+    /// <summary>
+    /// Where crash reports are kept, one text file each, for the developer to read over
+    /// SSH. Null turns the feature off: REPORT is answered ERR NOREPORT and nothing is
+    /// written. Reports are never served back over the network.
+    /// </summary>
+    public string? ReportDirectory { get; set; }
+
+    /// <summary>The longest report, in bytes of UTF-8 text. The launcher cuts its logs to fit.</summary>
+    public int ReportMaxBytes { get; set; } = 1024 * 1024;
+
+    /// <summary>Reports one address may leave per hour.</summary>
+    public int ReportsPerHour { get; set; } = 10;
+
+    /// <summary>All reports together may take this much disk.</summary>
+    public long ReportMaxTotalBytes { get; set; } = 2048L * 1024 * 1024;
+
+    /// <summary>A report is removed this long after it came.</summary>
+    public TimeSpan ReportLife { get; set; } = TimeSpan.FromDays(30);
+
     /// <summary>How often the counters are printed. Zero turns that off.</summary>
     public TimeSpan StatsInterval { get; set; } = TimeSpan.FromMinutes(10);
 
@@ -143,6 +162,10 @@ public sealed class RelayOptions
         new("share-max-mb", 1, 1_000_000, "disk all shared builds may take, in MB (2048)", (o, v) => o.ShareMaxTotalBytes = v * 1024L * 1024L),
         new("share-max-count", 1, 10_000_000, "shared builds kept at most (200000)", (o, v) => o.ShareMaxCount = v),
         new("share-days", 1, 3650, "days a shared build lives after it was last shared or fetched (180)", (o, v) => o.ShareLife = TimeSpan.FromDays(v)),
+        new("report-max-kb", 1, 16_384, "longest crash report in KB (1024)", (o, v) => o.ReportMaxBytes = v * 1024),
+        new("reports-per-hour", 1, 1_000_000, "crash reports one address may leave per hour (10)", (o, v) => o.ReportsPerHour = v),
+        new("report-max-mb", 1, 1_000_000, "disk all crash reports may take, in MB (2048)", (o, v) => o.ReportMaxTotalBytes = v * 1024L * 1024L),
+        new("report-days", 1, 3650, "days a crash report is kept (30)", (o, v) => o.ReportLife = TimeSpan.FromDays(v)),
         new("stats-minutes", 0, 1440, "minutes between counter lines, 0 for none (10)", (o, v) => o.StatsInterval = TimeSpan.FromMinutes(v))
     };
 
@@ -178,6 +201,13 @@ public sealed class RelayOptions
         if (!string.IsNullOrWhiteSpace(shareDirectory))
         {
             options.ShareDirectory = shareDirectory.Trim();
+        }
+
+        var reportDirectory = environment(EnvironmentName("report-dir"));
+
+        if (!string.IsNullOrWhiteSpace(reportDirectory))
+        {
+            options.ReportDirectory = reportDirectory.Trim();
         }
 
         for (var i = 0; i < args.Length; i++)
@@ -232,6 +262,18 @@ public sealed class RelayOptions
                 continue;
             }
 
+            if (name == "report-dir")
+            {
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    error = "--report-dir needs a directory.";
+                    return false;
+                }
+
+                options.ReportDirectory = value.Trim();
+                continue;
+            }
+
             var setting = Array.Find(Settings, s => s.Name == name);
 
             if (setting is null)
@@ -257,11 +299,18 @@ public sealed class RelayOptions
         text.AppendLine("Options (each also reads STRELAY_<NAME>, the command line wins):");
         text.AppendLine("  --bind <address>".PadRight(30) + "address to listen on (every interface)");
         text.AppendLine("  --share-dir <directory>".PadRight(30) + "where shared builds are kept; without it sharing is off");
+        text.AppendLine("  --report-dir <directory>".PadRight(30) + "where crash reports are kept; without it reports are refused");
 
         foreach (var setting in Settings)
         {
             text.AppendLine(("  --" + setting.Name + " <n>").PadRight(30) + setting.Help);
         }
+
+        text.AppendLine();
+        text.AppendLine("Reading crash reports on the server (the same --report-dir, or STRELAY_REPORT_DIR):");
+        text.AppendLine("  stlauncher-relay reports list".PadRight(42) + "every kept report, newest first");
+        text.AppendLine("  stlauncher-relay reports show R-XXXXX".PadRight(42) + "one report, as text");
+        text.AppendLine("  stlauncher-relay reports sweep".PadRight(42) + "remove the reports older than --report-days");
 
         return text.ToString();
     }

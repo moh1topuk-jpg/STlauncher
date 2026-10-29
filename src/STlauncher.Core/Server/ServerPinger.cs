@@ -74,6 +74,90 @@ public static class ServerPinger
         }
     }
 
+    /// <summary>
+    /// The status and how far away the server is: after the status the client sends the
+    /// protocol's ping packet and times the pong, exactly as the game's server list does
+    /// for its bars. A server that answers the status but not the ping is timed by the
+    /// status itself. Null milliseconds: no answer at all.
+    /// </summary>
+    public static async Task<(ServerStatus? Status, int? Milliseconds)> MeasureAsync(
+        string host,
+        int port = DefaultPort,
+        TimeSpan? timeout = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(host))
+        {
+            return (null, null);
+        }
+
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        linked.CancelAfter(timeout ?? TimeSpan.FromSeconds(5));
+        var token = linked.Token;
+
+        try
+        {
+            using var client = new TcpClient { NoDelay = true };
+            await client.ConnectAsync(host, port, token).ConfigureAwait(false);
+            using var stream = client.GetStream();
+
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            await WriteHandshakeAsync(stream, host, port, token).ConfigureAwait(false);
+            await stream.WriteAsync(new byte[] { 0x01, 0x00 }, token).ConfigureAwait(false);
+            await stream.FlushAsync(token).ConfigureAwait(false);
+
+            var json = await ReadStatusJsonAsync(stream, token).ConfigureAwait(false);
+            var statusMs = (int)watch.ElapsedMilliseconds;
+
+            if (json is null)
+            {
+                return (null, null);
+            }
+
+            var status = Parse(json);
+
+            try
+            {
+                // Ping: length 9, id 0x01, eight bytes the server sends back unchanged.
+                var ping = new byte[10];
+                ping[0] = 0x09;
+                ping[1] = 0x01;
+                BinaryPrimitives.WriteInt64BigEndian(ping.AsSpan(2), Environment.TickCount64);
+
+                watch.Restart();
+                await stream.WriteAsync(ping, token).ConfigureAwait(false);
+                await stream.FlushAsync(token).ConfigureAwait(false);
+
+                var pong = new byte[10];
+                var read = 0;
+
+                while (read < pong.Length)
+                {
+                    var chunk = await stream.ReadAsync(pong.AsMemory(read), token).ConfigureAwait(false);
+
+                    if (chunk == 0)
+                    {
+                        return (status, statusMs);
+                    }
+
+                    read += chunk;
+                }
+
+                return pong[0] == 0x09 && pong[1] == 0x01 && pong.AsSpan(2).SequenceEqual(ping.AsSpan(2))
+                    ? (status, (int)watch.ElapsedMilliseconds)
+                    : (status, statusMs);
+            }
+            catch (Exception) when (!cancellationToken.IsCancellationRequested)
+            {
+                return (status, statusMs);
+            }
+        }
+        catch (Exception) when (!cancellationToken.IsCancellationRequested)
+        {
+            return (null, null);
+        }
+    }
+
     private static async Task WriteHandshakeAsync(
         Stream stream,
         string host,

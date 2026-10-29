@@ -1121,6 +1121,34 @@
     <x:String x:Key="Mods_OwnDisabled">Ваших модов выключено: {0}</x:String>
     <x:String x:Key="Settings_NetworkCheck">Проверка сети</x:String>
     <x:String x:Key="Settings_NetworkCheckHint">Если ничего не скачивается: проверит, отвечают ли GitHub, зеркало, Modrinth, Mojang и сервер.</x:String>
+    <!-- Why does it lag: the connection check -->
+    <x:String x:Key="Lag_Title">Почему лагает?</x:String>
+    <x:String x:Key="Lag_Hint">Измерит, как быстро отвечают сервер Showtime, сервер лаунчера, зеркала и Modrinth, и скажет, где задержка. Ничего никуда не отправляется.</x:String>
+    <x:String x:Key="Lag_Run">Проверить</x:String>
+    <x:String x:Key="Lag_Again">Ещё раз</x:String>
+    <x:String x:Key="Lag_Running">Измеряю…</x:String>
+    <x:String x:Key="Lag_Copy">Скопировать результат</x:String>
+    <x:String x:Key="Lag_Copied">Результат проверки в буфере обмена</x:String>
+    <x:String x:Key="Lag_Measuring">измеряю…</x:String>
+    <x:String x:Key="Lag_Ms">{0} мс</x:String>
+    <x:String x:Key="Lag_NoAnswer">нет ответа</x:String>
+    <x:String x:Key="Lag_Server">Сервер Showtime</x:String>
+    <x:String x:Key="Lag_Dns">Поиск адреса (DNS)</x:String>
+    <x:String x:Key="Lag_Relay">Сервер лаунчера</x:String>
+    <x:String x:Key="Lag_Mirror">Зеркало обновлений</x:String>
+    <x:String x:Key="Lag_Modrinth">Modrinth (моды)</x:String>
+    <x:String x:Key="Lag_CurseForge">CurseForge (через зеркало)</x:String>
+    <x:String x:Key="Lag_Error">Сама проверка не удалась: {0}</x:String>
+    <x:String x:Key="Lag_VerdictGood">До сервера Showtime {0} мс, остальные узлы отвечают быстро: с подключением всё в порядке. Если игра всё равно лагает, дело в самом сервере или в компьютере, а не в сети.</x:String>
+    <x:String x:Key="Lag_VerdictGoodNoServer">Все узлы отвечают быстро: с подключением всё в порядке.</x:String>
+    <x:String x:Key="Lag_VerdictServerPath">До сервера Showtime {0} мс, а до других узлов {1} мс: задержка на пути к игровому серверу, не у вас.</x:String>
+    <x:String x:Key="Lag_VerdictAllSlow">Все узлы отвечают медленно: проблема в вашем подключении или Wi-Fi. Помогает кабель вместо Wi-Fi или пауза для загрузок и стримов.</x:String>
+    <x:String x:Key="Lag_VerdictServerDown">Сервер Showtime не отвечает, остальное в порядке: сервер выключен или перегружен.</x:String>
+    <x:String x:Key="Lag_VerdictModrinth">Modrinth не открывается, остальное работает: провайдер мешает Modrinth, моды пойдут через запасной путь.</x:String>
+    <x:String x:Key="Lag_VerdictBlocked">До сервера Showtime {0} мс, игре это не мешает. Не открываются: {1}; если что-то не скачивается, причина в этом.</x:String>
+    <x:String x:Key="Lag_VerdictBlockedNoServer">Не открываются: {0}; если что-то не скачивается, причина в этом.</x:String>
+    <x:String x:Key="Lag_VerdictDns">Адрес {0} не находится: не отвечает DNS провайдера. Поможет DNS 1.1.1.1 или 8.8.8.8 в настройках Windows.</x:String>
+    <x:String x:Key="Lag_VerdictOffline">Почти ничего не отвечает: нет интернета, или его перекрывает файрвол, антивирус или VPN.</x:String>
     <x:String x:Key="Settings_NetworkRun">Проверить</x:String>
     <x:String x:Key="Settings_NetworkCopy">Скопировать отчёт</x:String>
     <x:String x:Key="Net_Ok">отвечает · {0} мс</x:String>
@@ -1574,6 +1602,15 @@
     <x:String x:Key="Report_Sending">Отправляю отчёт…</x:String>
     <x:String x:Key="Report_Sent">Отчёт отправлен. Администратор его получил; копия осталась в папке reports.</x:String>
     <x:String x:Key="Report_SendFailed">Не удалось отправить отчёт ({0}). Нажмите «Собрать отчёт» и перешлите файл вручную.</x:String>
+    <!-- The copy the relay keeps for the developer, and the number to quote -->
+    <x:String x:Key="Report_RelayNote">Отчёт (без вашего имени пользователя Windows и путей к папкам) также хранится 30 дней на сервере лаунчера, чтобы разработчик нашёл причину.</x:String>
+    <x:String x:Key="Report_SentRelayOnly">В Telegram администратора отчёт не дошёл, но он сохранён на сервере лаунчера: назовите его номер.</x:String>
+    <x:String x:Key="Report_SentId">Номер отчёта: {0}</x:String>
+    <x:String x:Key="Report_SentIdLabel">Номер отчёта:</x:String>
+    <x:String x:Key="Report_SentIdCopy">Скопировать номер</x:String>
+    <x:String x:Key="Report_SentIdCopied">Номер отчёта {0} скопирован</x:String>
+    <x:String x:Key="Report_SentIdHint">Назовите этот номер администратору или разработчику: по нему найдут ваш отчёт.</x:String>
+    <x:String x:Key="Report_SentClose">Готово</x:String>
     <!-- The launcher noticing it is unwell: the question after a start that never opened -->
     <x:String x:Key="SelfRepair_Question">В прошлый раз лаунчер не смог открыться. Проверить и переустановить его файлы?</x:String>
     <x:String x:Key="SelfRepair_QuestionAgain">Лаунчер снова не смог открыться. Файлы этой версии уже переустанавливались один раз. Переустановить их ещё раз?</x:String>

@@ -91,15 +91,59 @@ public partial class MainWindowViewModel
         "The admin will get: launcher and game logs, the crash report, the launcher's freeze reports, the build's mod list, launcher settings, and what this machine is. Your nickname: {0}. Nothing else.",
         Username);
 
+    /// <summary>
+    /// The one sentence of consent for the copy the relay keeps. Shown only when the
+    /// launcher knows its relay, because only then does that copy go anywhere.
+    /// </summary>
+    public bool HasReportRelayNote => STlauncher.Core.Friends.RelayLocation.Resolve(_loadedCatalog) is not null;
+
+    /// <summary>The id the relay gave the last report, "R-7KQ2M"; empty before one is sent or when only Telegram took it.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasReportSentId))]
+    [NotifyPropertyChangedFor(nameof(ReportSentIdText))]
+    private string _reportSentId = string.Empty;
+
+    public bool HasReportSentId => ReportSentId.Length > 0;
+
+    public string ReportSentIdText => Localize("Report_SentId", "Report number: {0}", ReportSentId);
+
+    /// <summary>True once the report is away: the card then says so, with the number, instead of the form.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsReportFormShown))]
+    private bool _isReportSent;
+
+    public bool IsReportFormShown => !IsReportSent;
+
+    /// <summary>What the sent card says above the number: who got the report.</summary>
+    [ObservableProperty]
+    private string _reportSentText = string.Empty;
+
     [RelayCommand]
     private void OpenReportSend()
     {
         OnPropertyChanged(nameof(ReportSendSummary));
+        OnPropertyChanged(nameof(HasReportRelayNote));
+        IsReportSent = false;
+        ReportSentId = string.Empty;
         IsReportSendOpen = true;
     }
 
     [RelayCommand]
-    private void CancelReportSend() => IsReportSendOpen = false;
+    private void CancelReportSend()
+    {
+        IsReportSendOpen = false;
+        IsReportSent = false;
+    }
+
+    [RelayCommand]
+    private async Task CopyReportSentIdAsync()
+    {
+        if (HasReportSentId)
+        {
+            await CopyToClipboardAsync(ReportSentId);
+            Status = Localize("Report_SentIdCopied", "Report number {0} copied", ReportSentId);
+        }
+    }
 
     /// <summary>Collects the zip and posts it. Only ever from the button on the card.</summary>
     [RelayCommand]
@@ -117,13 +161,26 @@ public partial class MainWindowViewModel
 
             var (zipPath, name) = WriteSupportReport();
             var version = _updates.CurrentVersion ?? "dev";
-            var outcome = await _reportSender.SendAsync(ReportUrl, zipPath, Username, version, ReportComment.Trim(), _installId);
+            var comment = ReportComment.Trim();
 
-            if (outcome.Sent)
+            // The copy for the developer goes at the same time, to the relay, as redacted
+            // text. Whatever becomes of it, Telegram is the report; this is the extra.
+            var relayCopy = SendReportToRelayAsync(version, comment);
+            var outcome = await _reportSender.SendAsync(ReportUrl, zipPath, Username, version, comment, _installId);
+            var reportId = await relayCopy;
+
+            if (outcome.Sent || reportId is not null)
             {
-                AppendConsole($"[report] sent {name} to {ReportUrl}: {outcome.Message}");
-                Status = Localize("Report_Sent", "Report sent. The admin has it; the copy stayed in the reports folder.");
-                IsReportSendOpen = false;
+                AppendConsole(outcome.Sent
+                    ? $"[report] sent {name} to {ReportUrl}: {outcome.Message}"
+                    : $"[report] not sent to {ReportUrl}: {outcome.Message}; kept on the relay only");
+
+                ReportSentId = reportId ?? string.Empty;
+                ReportSentText = outcome.Sent
+                    ? Localize("Report_Sent", "Report sent. The admin has it; the copy stayed in the reports folder.")
+                    : Localize("Report_SentRelayOnly", "The admin's Telegram did not take the report, but it is kept on the launcher's server: quote its number.");
+                Status = reportId is null ? ReportSentText : ReportSentText + " " + ReportSentIdText;
+                IsReportSent = true;
                 ReportComment = string.Empty;
             }
             else
@@ -180,6 +237,96 @@ public partial class MainWindowViewModel
             }
 
             return (zipPath, name);
+        }
+    }
+
+    /// <summary>
+    /// The report as text, redacted, left with the relay for thirty days. Never throws and
+    /// never says anything to the player when it fails: an old relay (ERR BADCMD), one
+    /// without a place for reports, or none at all leave Telegram alone, as before.
+    /// </summary>
+    /// <returns>The relay's id for the report, or null.</returns>
+    private async Task<string?> SendReportToRelayAsync(string version, string comment)
+    {
+        if (STlauncher.Core.Friends.RelayLocation.Resolve(_loadedCatalog) is not { } relay)
+        {
+            return null;
+        }
+
+        try
+        {
+            FlushLauncherLogFromAnyThread();
+
+            var sections = new System.Collections.Generic.List<STlauncher.Core.Friends.CrashReportSection>
+            {
+                new("summary", BuildSupportSummary()),
+                new("player's words", comment)
+            };
+
+            if (HasGameCrashed)
+            {
+                sections.Add(new("crash analysis", BuildCrashReportText()));
+            }
+
+            var header = $"STlauncher {version} report from {Username}, {DateTimeOffset.Now:yyyy-MM-dd HH:mm zzz}";
+            var redaction = STlauncher.Core.Diagnostics.LogRedactionContext.ForThisMachine(PublicServerAddresses());
+            var (crashReport, launcherCrash, gameLog, launcherLog) =
+                (CrashReportPath, Path.Combine(_paths.Root, "crash.log"), LastGameLogPath, LauncherLogPath);
+
+            var (id, failure) = await Task.Run(async () =>
+            {
+                // Megabytes of logs are read and redacted off the interface's thread.
+                sections.Add(new("crash-report.txt", ReadTail(crashReport)));
+                sections.Add(new("launcher-crash.log", ReadTail(launcherCrash), KeepTail: true));
+                sections.Add(new("game.log", ReadTail(gameLog), KeepTail: true));
+                sections.Add(new("launcher.log", ReadTail(launcherLog), KeepTail: true));
+
+                var text = STlauncher.Core.Friends.CrashReportUpload.Compose(header, sections, redaction);
+                return await STlauncher.Core.Friends.CrashReportUpload.SendAsync(relay, text);
+            });
+
+            AppendConsole(id is null ? $"[report] relay copy not kept: {failure}" : $"[report] relay copy kept as {id}");
+            return id;
+        }
+        catch (Exception ex)
+        {
+            AppendConsole($"[report] relay copy failed: {ex.GetType().Name}");
+            return null;
+        }
+    }
+
+    /// <summary>The end of a text file, up to a megabyte, from a line start; empty when it is not there.</summary>
+    private static string ReadTail(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            const int limit = 1024 * 1024;
+            using var source = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            var cut = source.Length > limit;
+
+            if (cut)
+            {
+                source.Seek(-limit, SeekOrigin.End);
+            }
+
+            using var reader = new StreamReader(source, Encoding.UTF8);
+            var text = reader.ReadToEnd();
+
+            if (cut && text.IndexOf('\n') is var newline and >= 0)
+            {
+                text = text[(newline + 1)..];
+            }
+
+            return text;
+        }
+        catch (Exception)
+        {
+            return string.Empty;
         }
     }
 

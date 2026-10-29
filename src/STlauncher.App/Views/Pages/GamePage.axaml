@@ -571,20 +571,46 @@
                                     <!-- "Send to the admin": what goes, a line from the player, and the button. -->
                                     <Border Classes="panel inset" Padding="14,12" Margin="0,4,0,0"
                                             IsVisible="{Binding IsReportSendOpen}" controls:Reveal.OnVisible="True">
-                                        <StackPanel Spacing="10">
-                                            <TextBlock Text="{DynamicResource Report_SendTitle}" Classes="strong"/>
-                                            <TextBlock Text="{Binding ReportSendSummary}" Classes="muted" FontSize="13" TextWrapping="Wrap"/>
-                                            <TextBox Text="{Binding ReportComment}" Watermark="{DynamicResource Report_CommentHint}"
-                                                     AcceptsReturn="True" MaxLength="600" MinHeight="56" TextWrapping="Wrap"/>
-                                            <WrapPanel ItemSpacing="8" LineSpacing="6">
-                                                <Button Classes="accent-soft small" Content="{DynamicResource Report_SendButton}"
-                                                        Command="{Binding SendSupportReportCommand}" IsEnabled="{Binding !IsReportSending}"/>
-                                                <Button Classes="ghost small" Content="{DynamicResource Common_Cancel}"
-                                                        Command="{Binding CancelReportSendCommand}" IsEnabled="{Binding !IsReportSending}"/>
-                                                <ProgressBar IsIndeterminate="True" Width="60" Height="3" VerticalAlignment="Center"
-                                                             IsVisible="{Binding IsReportSending}"/>
-                                            </WrapPanel>
-                                        </StackPanel>
+                                        <Panel>
+                                            <StackPanel Spacing="10" IsVisible="{Binding IsReportFormShown}">
+                                                <TextBlock Text="{DynamicResource Report_SendTitle}" Classes="strong"/>
+                                                <TextBlock Text="{Binding ReportSendSummary}" Classes="muted" FontSize="13" TextWrapping="Wrap"/>
+                                                <!-- The copy the developer reads on the server: said before the button, not after. -->
+                                                <TextBlock Text="{DynamicResource Report_RelayNote}" Classes="muted" FontSize="13" TextWrapping="Wrap"
+                                                           IsVisible="{Binding HasReportRelayNote}"/>
+                                                <TextBox Text="{Binding ReportComment}" Watermark="{DynamicResource Report_CommentHint}"
+                                                         AcceptsReturn="True" MaxLength="600" MinHeight="56" TextWrapping="Wrap"/>
+                                                <WrapPanel ItemSpacing="8" LineSpacing="6">
+                                                    <Button Classes="accent-soft small" Content="{DynamicResource Report_SendButton}"
+                                                            Command="{Binding SendSupportReportCommand}" IsEnabled="{Binding !IsReportSending}"/>
+                                                    <Button Classes="ghost small" Content="{DynamicResource Common_Cancel}"
+                                                            Command="{Binding CancelReportSendCommand}" IsEnabled="{Binding !IsReportSending}"/>
+                                                    <ProgressBar IsIndeterminate="True" Width="60" Height="3" VerticalAlignment="Center"
+                                                                 IsVisible="{Binding IsReportSending}"/>
+                                                </WrapPanel>
+                                            </StackPanel>
+                                            <!-- Sent: who has it, and the number to quote. -->
+                                            <StackPanel Spacing="8" IsVisible="{Binding IsReportSent}">
+                                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                                    <PathIcon Data="{StaticResource IconCheck}" Classes="small" Foreground="{DynamicResource SuccessBrush}"
+                                                              VerticalAlignment="Top" Margin="0,2,0,0"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding ReportSentText}" Classes="strong" TextWrapping="Wrap"/>
+                                                </Grid>
+                                                <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding HasReportSentId}">
+                                                    <TextBlock Text="{DynamicResource Report_SentIdLabel}" Classes="muted" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="{Binding ReportSentId}" Classes="mono" FontSize="15" FontWeight="Bold"
+                                                               Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                                    <Button Classes="icon" ToolTip.Tip="{DynamicResource Report_SentIdCopy}"
+                                                            Command="{Binding CopyReportSentIdCommand}">
+                                                        <PathIcon Data="{StaticResource IconCopy}"/>
+                                                    </Button>
+                                                </StackPanel>
+                                                <TextBlock Text="{DynamicResource Report_SentIdHint}" Classes="muted" FontSize="13" TextWrapping="Wrap"
+                                                           IsVisible="{Binding HasReportSentId}"/>
+                                                <Button Classes="small" HorizontalAlignment="Left" Content="{DynamicResource Report_SentClose}"
+                                                        Command="{Binding CancelReportSendCommand}"/>
+                                            </StackPanel>
+                                        </Panel>
                                     </Border>
                                 </StackPanel>
                             </Grid>

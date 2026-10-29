@@ -4,6 +4,7 @@
              xmlns:sys="using:System"
              xmlns:conv="using:STlauncher.App.Converters"
              xmlns:controls="using:STlauncher.App.Controls"
+             xmlns:pages="using:STlauncher.App.Views.Pages"
              x:Class="STlauncher.App.Views.Pages.ServerPage"
              x:DataType="vm:MainWindowViewModel">
 
@@ -66,7 +67,7 @@
                             </Grid>
 
                             <!-- The address, to hand to a friend or another launcher, and what the server says of itself. -->
-                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                            <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="12">
                                 <Border CornerRadius="9" Padding="12,3,3,3" BorderThickness="1"
                                         Background="{DynamicResource FieldBrush}" BorderBrush="{DynamicResource FieldEdgeBrush}">
                                     <StackPanel Orientation="Horizontal" Spacing="8">
@@ -78,7 +79,15 @@
                                         </Button>
                                     </StackPanel>
                                 </Border>
-                                <TextBlock Grid.Column="1" Text="{Binding ServerMotd}" Classes="muted" VerticalAlignment="Center"
+                                <!-- "Why does it lag?" beside the address it measures; the result opens below. -->
+                                <Button Grid.Column="1" Classes="small" VerticalAlignment="Center"
+                                        Command="{Binding RunLagCheckCommand}" IsEnabled="{Binding !IsLagCheckRunning}">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <PathIcon Data="{StaticResource IconChart}" Classes="small"/>
+                                        <TextBlock Text="{DynamicResource Lag_Title}"/>
+                                    </StackPanel>
+                                </Button>
+                                <TextBlock Grid.Column="2" Text="{Binding ServerMotd}" Classes="muted" VerticalAlignment="Center"
                                            TextTrimming="CharacterEllipsis" MaxLines="1" ToolTip.Tip="{Binding ServerMotd}"/>
                             </Grid>
                         </StackPanel>
@@ -99,6 +108,27 @@
                             </Button>
                         </StackPanel>
                     </Grid>
+                </Border>
+
+                <!-- ======== Why does it lag: open once checked, closed by its cross ======== -->
+                <Border Classes="panel" Padding="20,16,20,18" IsVisible="{Binding HasLagCheck}" controls:Reveal.OnVisible="True">
+                    <StackPanel Spacing="12">
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                <TextBlock Text="{DynamicResource Lag_Title}" Classes="group"/>
+                                <TextBlock Text="{DynamicResource Lag_Hint}" Classes="sub" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <Button Grid.Column="1" Classes="small" VerticalAlignment="Top"
+                                    Content="{DynamicResource Lag_Again}"
+                                    Command="{Binding RunLagCheckCommand}" IsEnabled="{Binding !IsLagCheckRunning}"/>
+                            <Button Grid.Column="2" Classes="icon" VerticalAlignment="Top"
+                                    Command="{Binding CloseLagCheckCommand}" IsEnabled="{Binding !IsLagCheckRunning}"
+                                    ToolTip.Tip="{DynamicResource WhatsNew_Close}">
+                                <PathIcon Data="{StaticResource IconClose}" Width="11" Height="11"/>
+                            </Button>
+                        </Grid>
+                        <pages:LagCheckView/>
+                    </StackPanel>
                 </Border>
 
                 <!-- ======== The online, in figures ======== -->

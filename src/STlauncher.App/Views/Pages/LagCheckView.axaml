@@ -1,0 +1,53 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:STlauncher.App.ViewModels"
+             x:Class="STlauncher.App.Views.Pages.LagCheckView"
+             x:DataType="vm:MainWindowViewModel">
+
+    <!-- "Why does it lag?": what each place answered, then what that means in a sentence,
+         and the text for support. Nothing here sends anything; the probes are the check. -->
+    <StackPanel Spacing="10" IsVisible="{Binding HasLagCheck}">
+        <Border Classes="panel inset" Padding="14,6">
+            <ItemsControl ItemsSource="{Binding LagChecks}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:LagCheckRow">
+                        <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="10" Margin="0,5">
+                            <Panel Width="7" Height="7" VerticalAlignment="Center">
+                                <Ellipse Classes="dot" IsVisible="{Binding IsGood}"/>
+                                <Ellipse Classes="dot warn" IsVisible="{Binding IsSlow}"/>
+                                <Ellipse Classes="dot" Fill="{DynamicResource DangerBrush}" IsVisible="{Binding IsFailed}"/>
+                                <Ellipse Classes="dot off" IsVisible="{Binding IsPending}"/>
+                            </Panel>
+                            <TextBlock Grid.Column="1" Text="{Binding Name}" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="2" Text="{Binding Where}" Classes="sub" Margin="0" VerticalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Grid.Column="3" Text="{Binding Verdict}" Classes="mono" VerticalAlignment="Center"
+                                       HorizontalAlignment="Right"/>
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Border>
+
+        <!-- While it runs: the bar; once done: the conclusion with a dot of its colour. -->
+        <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding IsLagCheckRunning}">
+            <ProgressBar IsIndeterminate="True" Width="60" Height="3" VerticalAlignment="Center"/>
+            <TextBlock Text="{DynamicResource Lag_Running}" Classes="muted" VerticalAlignment="Center"/>
+        </StackPanel>
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" IsVisible="{Binding HasLagConclusion}">
+            <Panel Width="9" Height="9" VerticalAlignment="Top" Margin="0,6,0,0">
+                <Ellipse Width="9" Height="9" Fill="{DynamicResource SuccessBrush}" IsVisible="{Binding IsLagVerdictGood}"/>
+                <Ellipse Width="9" Height="9" Fill="{DynamicResource GoldBrush}" IsVisible="{Binding IsLagVerdictWarn}"/>
+                <Ellipse Width="9" Height="9" Fill="{DynamicResource DangerBrush}" IsVisible="{Binding IsLagVerdictBad}"/>
+            </Panel>
+            <TextBlock Grid.Column="1" Text="{Binding LagConclusion}" Classes="strong" FontSize="14" TextWrapping="Wrap"/>
+        </Grid>
+        <Button Classes="small" HorizontalAlignment="Left" IsVisible="{Binding CanCopyLagCheck}"
+                Command="{Binding CopyLagCheckCommand}">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+                <PathIcon Data="{StaticResource IconCopy}" Classes="small"/>
+                <TextBlock Text="{DynamicResource Lag_Copy}"/>
+            </StackPanel>
+        </Button>
+    </StackPanel>
+</UserControl>

@@ -60,6 +60,24 @@ STlauncher — лаунчер Minecraft для сервера mc.showtime.su с 
 вашего согласия. Если сервер не нужен, в меню сборки есть «Скопировать длинный код»: он
 содержит то же самое, но никуда не отправляется.
 
+**Отчёт, который вы отправили админу.** Только когда вы сами нажимаете «Отправить админу»
+и затем «Отправить», лаунчер отправляет отчёт двумя путями. Первый — архив в Telegram
+владельца сервера: логи лаунчера и игры, отчёт о падении, отчёты о зависаниях, список
+модов сборки, настройки лаунчера, сведения о компьютере, ваш ник и ваш комментарий.
+Второй — то же самое одним текстом на сервер лаунчера, чтобы разработчик нашёл причину;
+перед отправкой из текста убираются путь к вашей папке пользователя, имя пользователя
+Windows, токены и идентификаторы аккаунта и чужие IP-адреса. Ник остаётся. Этот текст
+хранится на сервере 30 дней и удаляется; по сети его получить нельзя, его читают только на
+самом сервере. Взамен вы получаете номер отчёта (`R-XXXXX`), чтобы назвать его
+администратору. Сервер не записывает, с какого адреса пришёл отчёт. Если сервер лаунчера
+недоступен, отчёт уходит только в Telegram.
+
+**Проверка «Почему лагает?».** Кнопка в настройках и на странице сервера измеряет, как
+быстро отвечают сервер Showtime (обычный запрос статуса Minecraft), сервер лаунчера,
+зеркала обновлений, Modrinth и CurseForge через зеркало, и сколько ищется адрес сервера.
+Это обычные запросы к этим узлам; результаты остаются на экране и никуда не отправляются.
+«Скопировать результат» кладёт их в буфер обмена, и дальше решаете вы.
+
 ## Сторонние сервисы
 
 Чтобы работать, лаунчер обращается к сторонним сервисам. Они видят ваш IP-адрес, как
@@ -165,6 +183,25 @@ it was last shared or fetched by its code and is then deleted; the server does n
 who shared a build or from which address. Before the first upload the launcher says so
 and waits for your consent. If you would rather not use the server, the build's menu has
 "Copy the long code": it holds the same and is sent nowhere.
+
+**A report you sent to the admin.** Only when you press "Send to the admin" and then
+"Send" does the launcher send a report, two ways. First, a zip to the server owner's
+Telegram: launcher and game logs, the crash report, freeze reports, the build's mod list,
+launcher settings, what the computer is, your nickname and your comment. Second, the same
+as one text to the launcher's server, so the developer can find the cause; before it is
+sent, the path of your user folder, your Windows user name, tokens and account ids, and
+other people's IP addresses are taken out of it. The nickname stays. That text is kept on
+the server for 30 days and then deleted; it cannot be fetched over the network and is read
+only on the server itself. You get a report number (`R-XXXXX`) to quote to the admin. The
+server does not record which address a report came from. If the launcher's server cannot
+be reached, the report goes to Telegram only.
+
+**The "Why does it lag?" check.** The button in Settings and on the server page measures
+how fast the Showtime server (a regular Minecraft status ping), the launcher's server, the
+update mirrors, Modrinth and CurseForge through the mirror answer, and how long the
+server's address takes to resolve. These are ordinary requests to those places; the
+results stay on screen and are sent nowhere. "Copy the result" puts them in the clipboard,
+and the rest is up to you.
 
 ## Third-party services
 

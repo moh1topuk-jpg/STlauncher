@@ -26,7 +26,10 @@ public sealed record RelayStats(int Rooms, int Connections, int Tunnels);
 ///                         the caller's own address.
 ///   SHARE BEGIN           leaves a build code to be fetched later by a short code, and
 ///   GETSHARE code         fetches one: see RelayServer.Shares.cs. The only part of the
-///                         relay that writes to disk, and only when given a directory.
+///                         relay that writes to disk besides REPORT, and only when
+///                         given a directory.
+///   REPORT BEGIN          leaves a crash report for the developer to read on the
+///                         server: see RelayServer.Reports.cs. Never served back.
 ///
 /// The room key is derived from the host key (see <see cref="RoomKeyFor"/>), so the
 /// invite a host hands out lets a friend join the room but not take it over.
@@ -104,6 +107,7 @@ public sealed partial class RelayServer : IAsyncDisposable
         _listener = Listen(_options.Bind, _options.Port);
         Port = ((IPEndPoint)_listener.LocalEndPoint!).Port;
         StartShares();
+        StartReports();
         _acceptLoop = Task.Run(AcceptLoopAsync);
         _log?.Invoke($"listening on port {Port}");
     }
@@ -370,6 +374,10 @@ public sealed partial class RelayServer : IAsyncDisposable
 
                 case "GETSHARE" when parts.Length == 2:
                     await ServeGetShareAsync(socket, gateKey, parts[1]).ConfigureAwait(false);
+                    break;
+
+                case "REPORT" when parts.Length == 2 && parts[1] == "BEGIN":
+                    await ServeReportAsync(socket, gateKey).ConfigureAwait(false);
                     break;
 
                 case "PROBE" when parts.Length == 2:
