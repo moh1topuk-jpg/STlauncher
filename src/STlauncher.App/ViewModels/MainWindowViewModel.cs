@@ -463,6 +463,7 @@ public partial class MainWindowViewModel : ViewModelBase
         ModUpdateOffers = Enum.TryParse<STlauncher.Core.Mods.ModUpdateFrequency>(settings.ModUpdateOffers, true, out var offers)
             ? offers
             : STlauncher.Core.Mods.ModUpdateFrequency.Daily;
+        LoadSeason(settings.SeasonalLook, settings.SeasonGreetingClosed);
         AnimationFps = NormalizeAnimationFps(settings.AnimationFps);
         Controls.SkinViewer.FrameCap = AnimationFps;
         UiScale = NormalizeUiScale(settings.UiScale);
@@ -1478,6 +1479,8 @@ public partial class MainWindowViewModel : ViewModelBase
             ImportScanEmptyAt = _importScanEmptyAt,
             AnimatedBackground = AnimatedBackground,
             ModUpdateOffers = ModUpdateOffers.ToString(),
+            SeasonalLook = SeasonalLook,
+            SeasonGreetingClosed = _seasonGreetingClosed,
             AnimationFps = AnimationFps,
             UiScale = UiScale,
             PreferDiscreteGpu = PreferDiscreteGpu,

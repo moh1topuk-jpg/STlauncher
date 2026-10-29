@@ -261,6 +261,29 @@
         <GradientStop Offset="0.55" Color="#22C02E4C"/>
         <GradientStop Offset="1" Color="#00C02E4C"/>
     </RadialGradientBrush>
+    <!-- Halloween (see MainWindowViewModel.Season): the stage lit warm orange instead of
+         the accent, and the carved pumpkin beside the figure's feet. -->
+    <LinearGradientBrush x:Key="HalloweenConeBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Offset="0" Color="#26FFD08A"/>
+        <GradientStop Offset="0.6" Color="#1AFF7A1A"/>
+        <GradientStop Offset="1" Color="#00FF7A1A"/>
+    </LinearGradientBrush>
+    <RadialGradientBrush x:Key="HalloweenAuraBrush">
+        <GradientStop Offset="0" Color="#66FF9A2E"/>
+        <GradientStop Offset="0.55" Color="#26F06A12"/>
+        <GradientStop Offset="1" Color="#00F06A12"/>
+    </RadialGradientBrush>
+    <LinearGradientBrush x:Key="PumpkinBrush" StartPoint="30%,0%" EndPoint="70%,100%">
+        <GradientStop Offset="0" Color="#F7A23A"/>
+        <GradientStop Offset="1" Color="#C75A0E"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="PumpkinRibBrush" Color="#8F3D08"/>
+    <SolidColorBrush x:Key="PumpkinStemBrush" Color="#5E6B24"/>
+    <SolidColorBrush x:Key="PumpkinFaceBrush" Color="#FFD25C"/>
+    <RadialGradientBrush x:Key="PumpkinGlowBrush">
+        <GradientStop Offset="0" Color="#55FF9A2E"/>
+        <GradientStop Offset="1" Color="#00FF9A2E"/>
+    </RadialGradientBrush>
     <RadialGradientBrush x:Key="PedestalBrush" Center="50%,35%" GradientOrigin="50%,35%">
         <GradientStop Offset="0" Color="#3A1E27"/>
         <GradientStop Offset="1" Color="#150E12"/>

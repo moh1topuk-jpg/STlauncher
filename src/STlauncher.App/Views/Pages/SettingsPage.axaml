@@ -452,10 +452,20 @@
                             </Grid>
                         </Border>
 
-                        <Border Classes="setting last" controls:SettingsSearch.Keywords="фон анимация искры живой background animation embers">
+                        <Border Classes="setting" controls:SettingsSearch.Keywords="фон анимация искры живой background animation embers">
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
                                 <TextBlock Classes="strong" Text="{DynamicResource Settings_AnimatedBackground}" VerticalAlignment="Center"/>
                                 <ToggleSwitch Grid.Column="1" IsChecked="{Binding AnimatedBackground}" VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+
+                        <Border Classes="setting last" controls:SettingsSearch.Keywords="хэллоуин праздник тыква новый год сезон halloween holiday season">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Classes="strong" Text="{DynamicResource Settings_SeasonalLook}"/>
+                                    <TextBlock Classes="sub" Text="{DynamicResource Settings_SeasonalLookSub}" TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding SeasonalLook}" VerticalAlignment="Center"/>
                             </Grid>
                         </Border>
                     </StackPanel>

@@ -129,7 +129,7 @@
         <Border IsHitTestVisible="False" Background="{DynamicResource HomeGlowBrush}"/>
 
         <!-- Embers drifting behind everything; off in the settings for those who want it still. -->
-        <controls:EmberField IsActive="{Binding AnimatedBackground}" IsLight="{Binding IsThemeLight}"/>
+        <controls:EmberField IsActive="{Binding AnimatedBackground}" IsLight="{Binding IsThemeLight}" Season="{Binding ActiveSeason}"/>
 
         <Grid MaxWidth="1320" Margin="28,4,10,0">
             <Grid.ColumnDefinitions>
@@ -180,6 +180,28 @@
                                 <StackPanel Orientation="Horizontal" Spacing="7">
                                     <PathIcon Data="{StaticResource IconClock}" Classes="small gold"/>
                                     <TextBlock Text="{Binding PlaytimeLabel}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                            <!-- The season's greeting: closed with the cross, it stays closed until next year's. -->
+                            <Border Classes="chip" Padding="9,2,3,2" VerticalAlignment="Center" Margin="8,3,0,3"
+                                    IsVisible="{Binding ShowSeasonGreeting}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <Viewbox Width="15" Height="13" VerticalAlignment="Center">
+                                        <Canvas Width="64" Height="56">
+                                            <Ellipse Canvas.Left="4" Canvas.Top="14" Width="34" Height="38" Fill="{DynamicResource PumpkinBrush}"/>
+                                            <Ellipse Canvas.Left="26" Canvas.Top="14" Width="34" Height="38" Fill="{DynamicResource PumpkinBrush}"/>
+                                            <Ellipse Canvas.Left="16" Canvas.Top="12" Width="32" Height="42" Fill="{DynamicResource PumpkinBrush}"
+                                                     Stroke="{DynamicResource PumpkinRibBrush}" StrokeThickness="2"/>
+                                            <Path Fill="{DynamicResource PumpkinStemBrush}" Data="M 29,14 C 29,8 31,4 36,2 L 38,5 C 35,7 34,10 34,14 Z"/>
+                                        </Canvas>
+                                    </Viewbox>
+                                    <TextBlock Text="{DynamicResource Home_HappyHalloween}" VerticalAlignment="Center"/>
+                                    <Button Classes="plain" Padding="4" VerticalAlignment="Center"
+                                            Command="{Binding CloseSeasonGreetingCommand}"
+                                            ToolTip.Tip="{DynamicResource Home_SeasonGreetingClose}">
+                                        <PathIcon Data="{StaticResource IconClose}" Width="9" Height="9"
+                                                  Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                    </Button>
                                 </StackPanel>
                             </Border>
                         </WrapPanel>
@@ -823,7 +845,11 @@
                         <!-- The light the figure stands in: a cone from above and a crimson glow.
                              Plain fills inside the panel's own corners: no clip, no mask. -->
                         <Path Grid.RowSpan="2" IsHitTestVisible="False" Fill="{DynamicResource StageConeBrush}" Stretch="Fill"
-                              Margin="26,1,26,40" MaxWidth="300"
+                              Margin="26,1,26,40" MaxWidth="300" IsVisible="{Binding !IsHalloweenLook}"
+                              Data="M 114,0 L 186,0 L 300,440 L 0,440 Z"/>
+                        <!-- Halloween: the same light, warm orange instead of the accent. -->
+                        <Path Grid.RowSpan="2" IsHitTestVisible="False" Fill="{DynamicResource HalloweenConeBrush}" Stretch="Fill"
+                              Margin="26,1,26,40" MaxWidth="300" IsVisible="{Binding IsHalloweenLook}"
                               Data="M 114,0 L 186,0 L 300,440 L 0,440 Z"/>
 
                         <!-- What the figure is doing: the list of what it can do - its own poses,
@@ -903,8 +929,11 @@
                             <Panel Grid.Row="1" MinHeight="220">
                                 <!-- The crimson light the figure stands in. -->
                                 <Ellipse IsHitTestVisible="False" MaxWidth="340" Height="340" Margin="1,0"
-                                         VerticalAlignment="Center"
+                                         VerticalAlignment="Center" IsVisible="{Binding !IsHalloweenLook}"
                                          Fill="{DynamicResource StageAuraBrush}"/>
+                                <Ellipse IsHitTestVisible="False" MaxWidth="340" Height="340" Margin="1,0"
+                                         VerticalAlignment="Center" IsVisible="{Binding IsHalloweenLook}"
+                                         Fill="{DynamicResource HalloweenAuraBrush}"/>
 
                                 <!-- The pedestal. -->
                                 <Ellipse IsHitTestVisible="False" Width="236" Height="46" VerticalAlignment="Bottom" Margin="0,0,0,12"
@@ -912,8 +941,28 @@
                                 <Ellipse IsHitTestVisible="False" Width="150" Height="20" VerticalAlignment="Bottom" Margin="0,0,0,28"
                                          Fill="{DynamicResource PedestalShadowBrush}"/>
 
+                                <!-- Halloween: a carved pumpkin on the pedestal beside the feet, drawn
+                                     before the figure so that an arm swung over it passes in front. -->
+                                <Viewbox IsHitTestVisible="False" IsVisible="{Binding IsHalloweenLook}"
+                                         Width="58" Height="51" HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                                         Margin="176,0,0,24">
+                                    <Canvas Width="64" Height="56">
+                                        <Ellipse Canvas.Left="-6" Canvas.Top="6" Width="76" Height="56" Fill="{DynamicResource PumpkinGlowBrush}"/>
+                                        <Ellipse Canvas.Left="4" Canvas.Top="14" Width="34" Height="38" Fill="{DynamicResource PumpkinBrush}"
+                                                 Stroke="{DynamicResource PumpkinRibBrush}" StrokeThickness="1.5"/>
+                                        <Ellipse Canvas.Left="26" Canvas.Top="14" Width="34" Height="38" Fill="{DynamicResource PumpkinBrush}"
+                                                 Stroke="{DynamicResource PumpkinRibBrush}" StrokeThickness="1.5"/>
+                                        <Ellipse Canvas.Left="16" Canvas.Top="12" Width="32" Height="42" Fill="{DynamicResource PumpkinBrush}"
+                                                 Stroke="{DynamicResource PumpkinRibBrush}" StrokeThickness="1.5"/>
+                                        <Path Fill="{DynamicResource PumpkinStemBrush}" Data="M 29,14 C 29,8 31,4 36,2 L 38,5 C 35,7 34,10 34,14 Z"/>
+                                        <Path Fill="{DynamicResource PumpkinFaceBrush}"
+                                              Data="M 21,31 L 26,23 L 30,31 Z M 34,31 L 38,23 L 43,31 Z M 30,35 L 32,32 L 34,35 Z
+                                                    M 19,38 Q 32,51 45,38 L 39,40 L 37,43.5 L 34.5,40.8 L 29.5,40.8 L 27,43.5 L 25,40 Z"/>
+                                    </Canvas>
+                                </Viewbox>
+
                                 <controls:SkinViewer Name="Stage" Skin="{Binding PlayerSkin}" Animated="True" AutoRotate="False"
-                                                     Emotes="{Binding HomeEmotes}"
+                                                     Emotes="{Binding HomeEmotes}" HeadDecoration="{Binding StageHeadDecoration}"
                                                      MaxWidth="300" Margin="0,6,0,26"
                                                      ToolTip.Tip="{DynamicResource Game_ViewerHint}"/>
                             </Panel>
@@ -1027,5 +1076,16 @@
                 </Border>
             </ScrollViewer>
         </Grid>
+
+        <!-- Halloween: now and then a bat flutters across, over the panels (behind them it
+             would only blink in the gaps). Not hit-testable; off with the live background. -->
+        <controls:EmberField Bats="True" IsLight="{Binding IsThemeLight}" Season="{Binding ActiveSeason}">
+            <controls:EmberField.IsActive>
+                <MultiBinding Converter="{x:Static BoolConverters.And}">
+                    <Binding Path="AnimatedBackground"/>
+                    <Binding Path="IsHalloweenLook"/>
+                </MultiBinding>
+            </controls:EmberField.IsActive>
+        </controls:EmberField>
     </Panel>
 </UserControl>
