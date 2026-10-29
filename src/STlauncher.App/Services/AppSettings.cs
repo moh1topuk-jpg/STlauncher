@@ -132,6 +132,9 @@ public sealed class AppSettings
     /// <summary>"Playing Showtime" in Discord while the game runs.</summary>
     public bool DiscordPresence { get; set; } = true;
 
+    /// <summary>"Prepare the server's build in advance": off unless the player turns it on.</summary>
+    public bool PrepareAhead { get; set; }
+
     /// <summary>Mods switched off for a safe-mode launch, to switch back on: survives a launcher restart.</summary>
     public List<string> SafeModeRestore { get; set; } = new();
 

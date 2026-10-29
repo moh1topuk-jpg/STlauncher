@@ -41,6 +41,7 @@ public static class SettingsSearchIndex
         new("Settings_AfterLaunch", "Settings_SectionLauncher", "после запуска закрывать сворачивать скрывать трей after launch close hide minimize tray"),
         new("Settings_ModUpdateOffers", "Settings_SectionLauncher", "обновления модов предлагать напоминать проверять mod updates offer remind check"),
         new("Settings_DiscordPresence", "Settings_SectionLauncher", "дискорд статус активность discord presence status rpc"),
+        new("Settings_PrepareAhead", "Settings_SectionLauncher", "заранее подготовка скачивать фон трей лимитное prepare advance download background tray metered"),
         new("Settings_UsageStats", "Settings_SectionLauncher", "статистика телеметрия анонимно приватность данные statistics telemetry privacy analytics"),
         new("Settings_BackupsTitle", "Settings_SectionLauncher", "бэкап бекап резервная копия копии сохранения миры восстановить откат backup restore saves worlds"),
 

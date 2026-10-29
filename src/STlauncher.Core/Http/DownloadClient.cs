@@ -41,6 +41,12 @@ public sealed class DownloadClient
     /// </summary>
     public SharedFileStore? SharedFiles { get; }
 
+    /// <summary>
+    /// Files fetched ahead of time ("prepare in advance"). A download whose file is there
+    /// takes it from there. Null: nothing is prepared.
+    /// </summary>
+    public PreparedFiles? Prepared { get; set; }
+
     /// <summary>Files verified so far, so a forced re-check can forget them all.</summary>
     public VerifiedFileCache Cache => _cache;
 
@@ -114,6 +120,17 @@ public sealed class DownloadClient
         if (!string.IsNullOrEmpty(directory))
         {
             Directory.CreateDirectory(directory);
+        }
+
+        // Fetched ahead of time while the launcher sat idle: a rename instead of a download.
+        if (Prepared is not null && Prepared.TryTake(item, item.DestinationPath))
+        {
+            _logger?.LogInformation("Took {Path} from the files prepared in advance.", item.DestinationPath);
+            SharedFiles?.Adopt(
+                item.DestinationPath,
+                string.Equals(ExpectedHash(item), item.Sha1, StringComparison.Ordinal) ? item.Sha1 : null);
+            RememberVerified(item);
+            return true;
         }
 
         // Another build already has this very file: a link to it instead of a download.

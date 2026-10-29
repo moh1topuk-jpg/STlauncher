@@ -513,6 +513,28 @@
                             </Grid>
                         </Border>
 
+                        <!-- Off by default. What it does stays in view; what is ready, and the way to clear it, under it. -->
+                        <Border Classes="setting" controls:SettingsSearch.Keywords="заранее подготовка скачивать фон трей лимитное prepare advance download background tray metered">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                                <StackPanel VerticalAlignment="Center" Spacing="2">
+                                    <TextBlock Classes="strong" Text="{DynamicResource Settings_PrepareAhead}"/>
+                                    <TextBlock Classes="sub" Text="{DynamicResource Settings_PrepareAheadHint}" TextWrapping="Wrap"/>
+                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" Margin="0,6,0,0"
+                                          IsVisible="{Binding PrepareStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                        <Ellipse Classes="dot" VerticalAlignment="Center" IsVisible="{Binding !IsPreparing}"/>
+                                        <Ellipse Classes="dot warn" VerticalAlignment="Center" IsVisible="{Binding IsPreparing}"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding PrepareStatus}" Classes="muted" FontSize="12.5"
+                                                   TextWrapping="Wrap" VerticalAlignment="Center"/>
+                                        <Button Grid.Column="2" Classes="small" VerticalAlignment="Center"
+                                                Content="{DynamicResource Settings_PrepareClear}"
+                                                IsVisible="{Binding HasPrepared}"
+                                                Command="{Binding ClearPreparedCommand}"/>
+                                    </Grid>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding PrepareAhead}" VerticalAlignment="Top" Margin="0,2,0,0"/>
+                            </Grid>
+                        </Border>
+
                         <!-- What is sent and what is not stays on screen in full: this is the consent. -->
                         <Border Classes="setting last" controls:SettingsSearch.Keywords="статистика телеметрия анонимно приватность данные statistics telemetry privacy analytics">
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">

@@ -449,6 +449,51 @@
                                     <TextBlock Text="{Binding CrashDiagnosisTitle}" TextWrapping="Wrap" Classes="strong" FontSize="15"
                                                IsVisible="{Binding HasCrashDiagnosis}"/>
                                     <TextBlock Text="{Binding CrashDiagnosisAdvice}" TextWrapping="Wrap" Classes="muted" FontSize="13"/>
+                                    <!-- The mods changed since the game last worked: the way back, with the
+                                         exact list of what it would do, above the button that does it. -->
+                                    <Border Classes="panel inset" Padding="14,12" Margin="0,4,0,0"
+                                            IsVisible="{Binding HasRollbackOffer}" controls:Reveal.OnVisible="True">
+                                        <StackPanel Spacing="8">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <PathIcon Data="{StaticResource IconRestore}" Classes="small gold" VerticalAlignment="Center"/>
+                                                <TextBlock Text="{Binding RollbackTitle}" Classes="strong" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                            <ItemsControl ItemsSource="{Binding RollbackLines}" Margin="24,0,0,0">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <StackPanel Spacing="3"/>
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="sys:String">
+                                                        <TextBlock Text="{Binding}" TextWrapping="Wrap" FontSize="12.5" LineHeight="18"
+                                                                   Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                            <TextBlock Text="{DynamicResource Rollback_Untouched}" Classes="muted" FontSize="12" TextWrapping="Wrap"/>
+                                            <WrapPanel ItemSpacing="6" LineSpacing="6">
+                                                <Button Classes="accent-soft small" Content="{Binding RollbackButtonLabel}"
+                                                        Command="{Binding ApplyRollbackCommand}" IsEnabled="{Binding !IsRollbackBusy}"/>
+                                                <Button Classes="ghost small" Content="{DynamicResource Rollback_NotNow}"
+                                                        Command="{Binding DismissRollbackOfferCommand}" IsEnabled="{Binding !IsRollbackBusy}"/>
+                                                <ProgressBar IsIndeterminate="True" Width="60" Height="3" VerticalAlignment="Center"
+                                                             IsVisible="{Binding IsRollbackBusy}"/>
+                                            </WrapPanel>
+                                        </StackPanel>
+                                    </Border>
+                                    <!-- Done: what moved, and the way back from the way back. -->
+                                    <Border Classes="panel inset" Padding="14,12" Margin="0,4,0,0"
+                                            IsVisible="{Binding HasRollbackDone}">
+                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                            <Ellipse Classes="dot" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding RollbackDoneText}" FontSize="12.5" TextWrapping="Wrap"
+                                                       VerticalAlignment="Center"/>
+                                            <Button Grid.Column="2" Classes="small" VerticalAlignment="Center"
+                                                    Content="{DynamicResource Rollback_Undo}"
+                                                    Command="{Binding UndoRollbackCommand}" IsEnabled="{Binding !IsRollbackBusy}"/>
+                                        </Grid>
+                                    </Border>
                                     <WrapPanel Margin="0,6,0,0" ItemSpacing="6" LineSpacing="6">
                                         <!-- The fix is the answer; the rest are ways to ask someone. -->
                                         <Button Classes="accent-soft small" IsVisible="{Binding HasCrashFix}"

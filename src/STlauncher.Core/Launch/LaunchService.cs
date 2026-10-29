@@ -177,6 +177,77 @@ public sealed class LaunchService
         return LaunchCommandBuilder.Build(options, context);
     }
 
+    /// <summary>
+    /// "Prepare in advance": the game files a version needs - its jar, libraries, assets and
+    /// Java - fetched one at a time, gently, before Play is pressed. Only the launcher's
+    /// shared folders are written; no build is touched, nothing is started.
+    /// </summary>
+    /// <param name="waitWhile">Asked before every file; while it says true the download waits (a game runs, a launch is under way).</param>
+    /// <returns>How many files came down the wire and their size.</returns>
+    public async Task<(int Files, long Bytes)> PrefetchAsync(
+        string versionId,
+        Func<bool> waitWhile,
+        IProgress<string>? progress = null,
+        CancellationToken cancellationToken = default)
+    {
+        _paths.EnsureCreated();
+
+        var context = RuleContext.Current(BuildFeatures(new LaunchSettings { GameDirectory = _paths.Root }));
+        var resolved = await _versions.ResolveAsync(versionId, cancellationToken).ConfigureAwait(false);
+        var libraries = LibraryResolver.Resolve(resolved, _paths, context);
+        var items = new List<DownloadItem>(libraries.Downloads);
+
+        if (resolved.Downloads?.Client is { Url: not null } client)
+        {
+            items.Add(new DownloadItem(
+                client.Url,
+                _paths.VersionJarPath(string.IsNullOrEmpty(resolved.ClientVersionId) ? versionId : resolved.ClientVersionId),
+                client.Sha1,
+                client.Size));
+        }
+
+        if (resolved.AssetIndex is { Url.Length: > 0 } assetRef)
+        {
+            var index = await _assets.GetIndexAsync(assetRef, cancellationToken).ConfigureAwait(false);
+            items.AddRange(_assets.BuildDownloadPlan(index));
+        }
+
+        var files = 0;
+        long bytes = 0;
+
+        try
+        {
+            foreach (var item in items)
+            {
+                while (waitWhile())
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(15), cancellationToken).ConfigureAwait(false);
+                }
+
+                cancellationToken.ThrowIfCancellationRequested();
+
+                if (await _downloader.EnsureFileAsync(item, cancellationToken).ConfigureAwait(false))
+                {
+                    files++;
+                    bytes += item.Size;
+                    progress?.Report(Path.GetFileName(item.DestinationPath));
+                }
+            }
+        }
+        finally
+        {
+            _downloader.Cache.Save();
+        }
+
+        while (waitWhile())
+        {
+            await Task.Delay(TimeSpan.FromSeconds(15), cancellationToken).ConfigureAwait(false);
+        }
+
+        await _java.EnsureJavaAsync(resolved.RequiredJavaMajor, cancellationToken).ConfigureAwait(false);
+        return (files, bytes);
+    }
+
     /// <summary>1.18.1 came out on this day with a fixed log4j; everything older needs the patched configuration.</summary>
     private static readonly DateTimeOffset Log4ShellFixed = new(2021, 12, 10, 0, 0, 0, TimeSpan.Zero);
 
