@@ -204,7 +204,7 @@ public partial class MainWindowViewModel
         NewBuildName = string.Empty;
         NewBuildLoader = LoaderKind.Fabric;
         NewBuildVersion = SelectedVersion ?? Versions.FirstOrDefault();
-        NewBuildCopySettings = SelectedInstance is not null;
+        NewBuildCopySettings = NewBuildControlsSource is not null;
         OnPropertyChanged(nameof(NewBuildCopySettingsLabel));
         OnPropertyChanged(nameof(CanCopyNewBuildSettings));
         IsNewBuildOpen = true;

@@ -117,6 +117,14 @@ public sealed class Instance
     public STlauncher.Core.Boost.PresetRecord? Preset { get; set; }
 
     /// <summary>
+    /// The controls last carried over from another build, per key with the value before, so
+    /// that "put it back" is possible. Null when none were, or they were put back.
+    /// </summary>
+    [JsonPropertyName("controlsTransfer")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public STlauncher.Core.Launch.ControlsTransferRecord? ControlsTransfer { get; set; }
+
+    /// <summary>
     /// Soft warnings of the pre-launch check the player put away, one per mod file. Each
     /// lapses when its file changes. Null until the first one.
     /// </summary>

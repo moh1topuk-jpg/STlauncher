@@ -252,6 +252,12 @@ public partial class MainWindowViewModel
         {
             _ = ProbeCurseForgeAsync();
         }
+
+        // What the server recommends is looked up on Modrinth when its tab is opened.
+        if (value is BuildTab.ResourcePacks or BuildTab.Shaders)
+        {
+            ResolveServerPicksOnOpen();
+        }
     }
 
     [RelayCommand]

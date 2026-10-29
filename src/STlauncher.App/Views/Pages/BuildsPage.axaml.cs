@@ -15,6 +15,19 @@ public partial class BuildsPage : UserControl
     /// <summary>The page's width under which the three panels no longer fit at full size.</summary>
     private const double CompactBelow = 980;
 
+    static BuildsPage()
+    {
+        // A question that opens under the row it was asked from ("Download · 1 MB") is
+        // scrolled to, or a small window would keep its buttons below the edge.
+        IsVisibleProperty.Changed.AddClassHandler<Border>((border, _) =>
+        {
+            if (border.IsVisible && border.Classes.Contains("scroll-to"))
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => border.BringIntoView(), Avalonia.Threading.DispatcherPriority.Background);
+            }
+        });
+    }
+
     private MainWindowViewModel? _viewModel;
 
     public BuildsPage()
