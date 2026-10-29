@@ -408,7 +408,7 @@
                     <Border Classes="panel" IsVisible="{Binding !HasSelectedLibrarySkin}">
                         <StackPanel Spacing="12">
                             <StackPanel Spacing="3">
-                                <TextBlock Text="{Binding Username}" Classes="title" FontSize="19" FontWeight="ExtraBold"
+                                <TextBlock Text="{Binding DisplayUsername}" Classes="title" FontSize="19" FontWeight="ExtraBold"
                                            TextTrimming="CharacterEllipsis"/>
                                 <TextBlock Text="{DynamicResource Skins_OnFigure}" Classes="sub"/>
                             </StackPanel>

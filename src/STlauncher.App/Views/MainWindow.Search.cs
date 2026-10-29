@@ -51,6 +51,14 @@ public partial class MainWindow
         {
             strip.SizeChanged += (_, _) => FitSearchEntry();
             TopStripContext.SizeChanged += (_, _) => FitSearchEntry();
+            StreamerChip.SizeChanged += (_, _) => FitSearchEntry();
+            StreamerChip.PropertyChanged += (_, e) =>
+            {
+                if (e.Property == IsVisibleProperty)
+                {
+                    FitSearchEntry();
+                }
+            };
         }
     }
 
@@ -154,7 +162,9 @@ public partial class MainWindow
             return;
         }
 
-        var taken = TopStripContext.Bounds.Width + TopStripContext.Margin.Left + strip.Children[2].Bounds.Width;
+        // The streamer-mode chip stands beside the entry while the mode is on.
+        var chip = StreamerChip.IsVisible ? StreamerChip.DesiredSize.Width + TopStripSlot.Spacing : 0;
+        var taken = TopStripContext.Bounds.Width + TopStripContext.Margin.Left + strip.Children[2].Bounds.Width + chip;
         var compact = strip.Bounds.Width - taken < SearchEntryRoom;
 
         SearchEntry.Classes.Set("compact", compact);

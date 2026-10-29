@@ -151,7 +151,7 @@
                         <WrapPanel Margin="2,0,0,0">
                             <StackPanel Orientation="Horizontal" Spacing="7" Margin="0,0,14,0" VerticalAlignment="Center">
                                 <TextBlock Text="{DynamicResource Home_Hello}" Classes="hello"/>
-                                <TextBlock Text="{Binding Username}" Classes="hello"
+                                <TextBlock Text="{Binding DisplayUsername}" Classes="hello"
                                            Foreground="{DynamicResource NickGradientBrush}"/>
                             </StackPanel>
                             <!-- On hover: all builds together, and where the hours of this one
@@ -348,7 +348,7 @@
                                      while the game runs, saying so. -->
                                 <Border Classes="under" IsVisible="{Binding ShowLaunchProgress}">
                                     <StackPanel Spacing="9">
-                                        <TextBlock Text="{Binding Status}" TextWrapping="Wrap" Classes="strong"/>
+                                        <TextBlock controls:Streamer.Text="{Binding Status}" TextWrapping="Wrap" Classes="strong"/>
                                         <ProgressBar Value="{Binding Progress}" Minimum="0" Maximum="100" Height="5"
                                                      HorizontalAlignment="Stretch" IsVisible="{Binding !IsGameRunning}"/>
                                         <ItemsControl ItemsSource="{Binding LaunchStages}" IsVisible="{Binding LaunchStages.Count}">
@@ -465,12 +465,12 @@
                             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                                 <PathIcon Classes="lead" Data="{StaticResource IconWarning}" Foreground="{DynamicResource DangerBrush}"/>
                                 <StackPanel Grid.Column="1" Spacing="6">
-                                    <TextBlock Text="{Binding GameCrashNotice}" TextWrapping="Wrap" Classes="muted"
+                                    <TextBlock controls:Streamer.Text="{Binding GameCrashNotice}" TextWrapping="Wrap" Classes="muted"
                                                IsVisible="{Binding !HasCrashDiagnosis}"/>
                                     <!-- The cause, in words, and what to do about it. -->
-                                    <TextBlock Text="{Binding CrashDiagnosisTitle}" TextWrapping="Wrap" Classes="strong" FontSize="15"
+                                    <TextBlock controls:Streamer.Text="{Binding CrashDiagnosisTitle}" TextWrapping="Wrap" Classes="strong" FontSize="15"
                                                IsVisible="{Binding HasCrashDiagnosis}"/>
-                                    <TextBlock Text="{Binding CrashDiagnosisAdvice}" TextWrapping="Wrap" Classes="muted" FontSize="13"/>
+                                    <TextBlock controls:Streamer.Text="{Binding CrashDiagnosisAdvice}" TextWrapping="Wrap" Classes="muted" FontSize="13"/>
                                     <!-- The mods changed since the game last worked: the way back, with the
                                          exact list of what it would do, above the button that does it. -->
                                     <Border Classes="panel inset" Padding="14,12" Margin="0,4,0,0"
@@ -1020,7 +1020,7 @@
                                 <StackPanel Spacing="10">
                                     <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8" IsVisible="{Binding !IsEditingNickname}">
                                         <StackPanel VerticalAlignment="Center" Spacing="1">
-                                            <TextBlock Text="{Binding Username}" Classes="who" ToolTip.Tip="{Binding Username}"/>
+                                            <TextBlock Text="{Binding DisplayUsername}" Classes="who" ToolTip.Tip="{Binding DisplayUsername}"/>
                                             <TextBlock Text="{DynamicResource Game_OfflineMode}" Classes="muted" FontSize="12"
                                                        TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
@@ -1068,7 +1068,7 @@
                                     <!-- Changing the name: the box, another random one, done; and the saved names. -->
                                     <StackPanel Spacing="10" IsVisible="{Binding IsEditingNickname}">
                                         <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="4">
-                                            <TextBox Text="{Binding Username}" Watermark="{DynamicResource Game_NicknameOwn}" MinHeight="36"/>
+                                            <TextBox Text="{Binding Username}" controls:Streamer.Field="True" Watermark="{DynamicResource Game_NicknameOwn}" MinHeight="36"/>
                                             <Button Grid.Column="1" Classes="icon" VerticalAlignment="Center"
                                                     Command="{Binding RerollNicknameCommand}"
                                                     ToolTip.Tip="{DynamicResource Game_NicknameReroll}">

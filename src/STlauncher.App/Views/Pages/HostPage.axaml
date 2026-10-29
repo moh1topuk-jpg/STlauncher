@@ -30,8 +30,8 @@
                     <Ellipse Width="4" Height="4" Fill="{DynamicResource TextMutedBrush}" IsVisible="{Binding IsNote}"/>
                 </Panel>
                 <StackPanel Grid.Column="1" Spacing="2">
-                    <TextBlock Text="{Binding Title}" Classes="strong" TextWrapping="Wrap"/>
-                    <TextBlock Text="{Binding Detail}" Classes="sub" TextWrapping="Wrap" LineHeight="17"/>
+                    <TextBlock controls:Streamer.Text="{Binding Title}" Classes="strong" TextWrapping="Wrap"/>
+                    <TextBlock controls:Streamer.Text="{Binding Detail}" Classes="sub" TextWrapping="Wrap" LineHeight="17"/>
                 </StackPanel>
             </Grid>
         </DataTemplate>
@@ -204,7 +204,7 @@
 
                                 <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10" Margin="0,10,0,0">
                                     <Border Classes="field" Height="46" Padding="16,0">
-                                        <TextBox Classes="bare code" Text="{Binding FriendInviteEntry}" Watermark="ST-XXXXX-XXXXX"
+                                        <TextBox Classes="bare code" Text="{Binding FriendInviteEntry}" controls:Streamer.Field="True" Watermark="ST-XXXXX-XXXXX"
                                                  IsEnabled="{Binding !IsFriendInviteLooking}">
                                             <TextBox.KeyBindings>
                                                 <KeyBinding Gesture="Enter" Command="{Binding FindFriendInviteCommand}"/>
@@ -236,7 +236,7 @@
                                         <PathIcon Data="{StaticResource IconWarning}" Foreground="{DynamicResource WarningBrush}"
                                                   VerticalAlignment="Top" Margin="0,2,0,0"/>
                                         <StackPanel Grid.Column="1" Spacing="8">
-                                            <TextBlock Text="{Binding FriendInviteNote}" TextWrapping="Wrap" LineHeight="19"/>
+                                            <TextBlock controls:Streamer.Text="{Binding FriendInviteNote}" TextWrapping="Wrap" LineHeight="19"/>
                                             <!-- A build code was pasted here: one press adds it where builds live. -->
                                             <Button Classes="accent-soft small" HorizontalAlignment="Left"
                                                     Content="{DynamicResource Share_IsBuildGo}"
@@ -257,7 +257,7 @@
                                 <PathIcon Data="{StaticResource IconUsers}" Foreground="#06202F"/>
                             </Border>
                             <StackPanel Grid.Column="1" Spacing="12">
-                                <TextBlock Text="{Binding FriendInviteTitle}" Classes="h2" TextWrapping="Wrap"/>
+                                <TextBlock controls:Streamer.Text="{Binding FriendInviteTitle}" Classes="h2" TextWrapping="Wrap"/>
                                 <ItemsControl ItemsSource="{Binding FriendInviteLines}"/>
                                 <WrapPanel ItemSpacing="8" LineSpacing="6">
                                     <Button Classes="primary" Height="40" Padding="20,0" Content="{DynamicResource Friends_InviteAccept}"
@@ -312,7 +312,7 @@
                                                 </Border>
                                                 <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
                                                     <TextBlock Text="{Binding Name}" Classes="strong" FontSize="14.5" TextTrimming="CharacterEllipsis"/>
-                                                    <TextBlock Text="{Binding Subtitle}" Classes="sub" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock controls:Streamer.Text="{Binding Subtitle}" Classes="sub" TextTrimming="CharacterEllipsis"/>
                                                     <!-- Whether the build this server is played with is on the computer. -->
                                                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="7" Margin="0,1,0,0">
                                                         <Panel VerticalAlignment="Top" Margin="0,5,0,0">
@@ -321,7 +321,7 @@
                                                         </Panel>
                                                         <TextBlock Grid.Column="1" Text="{Binding BuildLine}" Classes="muted" TextWrapping="Wrap"/>
                                                     </Grid>
-                                                    <TextBlock Text="{Binding Note}" Classes="sub" TextWrapping="Wrap" Margin="0,2,0,0"
+                                                    <TextBlock controls:Streamer.Text="{Binding Note}" Classes="sub" TextWrapping="Wrap" Margin="0,2,0,0"
                                                                IsVisible="{Binding HasNote}"/>
                                                 </StackPanel>
                                                 <!-- Rare: it hides until the row is aimed at, and lives in the right-click menu. -->
@@ -534,7 +534,7 @@
                             </Grid>
 
                             <StackPanel Spacing="7" IsVisible="{Binding IsHostBusy}">
-                                <TextBlock Text="{Binding HostBusyText}" Classes="muted" FontSize="13"/>
+                                <TextBlock controls:Streamer.Text="{Binding HostBusyText}" Classes="muted" FontSize="13"/>
                                 <ProgressBar Value="{Binding HostProgress}" Minimum="0" Maximum="100" Height="5"
                                              IsIndeterminate="{Binding IsHostProgressUnknown}"/>
                             </StackPanel>
@@ -645,7 +645,7 @@
 
                             <!-- A lookup, a download or a copy in progress. -->
                             <StackPanel Spacing="7" IsVisible="{Binding IsHostBusy}">
-                                <TextBlock Text="{Binding HostBusyText}" Classes="muted" FontSize="13"/>
+                                <TextBlock controls:Streamer.Text="{Binding HostBusyText}" Classes="muted" FontSize="13"/>
                                 <ProgressBar Value="{Binding HostProgress}" Minimum="0" Maximum="100" Height="5"
                                              IsIndeterminate="{Binding IsHostProgressUnknown}"/>
                             </StackPanel>
@@ -655,7 +655,7 @@
                                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                                     <PathIcon Data="{StaticResource IconWarning}" Foreground="{DynamicResource WarningBrush}"
                                               VerticalAlignment="Top" Margin="0,2,0,0"/>
-                                    <TextBlock Grid.Column="1" Text="{Binding HostNotice}" TextWrapping="Wrap" LineHeight="19"
+                                    <TextBlock Grid.Column="1" controls:Streamer.Text="{Binding HostNotice}" TextWrapping="Wrap" LineHeight="19"
                                                VerticalAlignment="Center"/>
                                     <Button Grid.Column="2" Classes="small" VerticalAlignment="Center"
                                             Content="{DynamicResource Host_UseFreePort}"
@@ -799,7 +799,7 @@
                                                     <DataTemplate x:DataType="sys:String">
                                                         <Border Classes="chip name">
                                                             <StackPanel Orientation="Horizontal" Spacing="2">
-                                                                <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
+                                                                <TextBlock controls:Streamer.Text="{Binding}" VerticalAlignment="Center"/>
                                                                 <Button Classes="plain small icon-danger" Padding="5,4" MinWidth="0"
                                                                         ToolTip.Tip="{DynamicResource Host_WhitelistRemoveTip}"
                                                                         Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).RemoveHostWhitelistCommand}"
@@ -829,24 +829,39 @@
 
                                             <Border Classes="panel inset" Padding="16,10,10,10" MinHeight="60"
                                                     BorderBrush="{DynamicResource AccentEdgeBrush}">
-                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
                                                     <Panel VerticalAlignment="Center">
-                                                        <!-- The short code: large, to be read out or retyped. -->
-                                                        <SelectableTextBlock Text="{Binding HostInviteCode}" IsVisible="{Binding IsHostInviteShort}"
-                                                                             FontFamily="{StaticResource MonoFont}" FontSize="23" FontWeight="Bold"
-                                                                             LetterSpacing="1.2" Foreground="{DynamicResource AccentTextBrush}"/>
+                                                        <!-- The short code: large, to be read out or retyped; a little smaller
+                                                             rather than cut when the eye button of streamer mode takes room. -->
+                                                        <Viewbox StretchDirection="DownOnly" HorizontalAlignment="Left" IsVisible="{Binding IsHostInviteShort}">
+                                                            <SelectableTextBlock controls:Streamer.Code="{Binding HostInviteCode}" controls:Streamer.RevealKey="invite"
+                                                                                 FontFamily="{StaticResource MonoFont}" FontSize="23" FontWeight="Bold"
+                                                                                 LetterSpacing="1.2" Foreground="{DynamicResource AccentTextBrush}"/>
+                                                        </Viewbox>
                                                         <!-- The long line cannot be read out; it is only said that it was copied. -->
                                                         <StackPanel Spacing="2" IsVisible="{Binding IsHostInviteLong}">
                                                             <TextBlock Text="{DynamicResource Host_InviteLongCopied}" Classes="strong"/>
-                                                            <TextBlock Text="{Binding HostInviteCode}" Classes="mono"
+                                                            <TextBlock controls:Streamer.Code="{Binding HostInviteCode}" controls:Streamer.RevealKey="invite" Classes="mono"
                                                                        TextTrimming="CharacterEllipsis" MaxLines="1"/>
                                                         </StackPanel>
                                                         <TextBlock Text="{DynamicResource Host_InvitePlaceholder}" Classes="muted"
                                                                    TextWrapping="Wrap" LineHeight="18"
                                                                    IsVisible="{Binding !HasHostInviteCode}"/>
                                                     </Panel>
+                                                    <!-- Streamer mode: the code is dots; the eye shows it for five seconds. -->
+                                                    <Button Grid.Column="1" Classes="icon" VerticalAlignment="Center" Margin="0,0,-4,0"
+                                                            ToolTip.Tip="{DynamicResource Streamer_Reveal}"
+                                                            Command="{Binding RevealStreamerCodeCommand}" CommandParameter="invite">
+                                                        <Button.IsVisible>
+                                                            <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                                <Binding Path="StreamerMode"/>
+                                                                <Binding Path="HasHostInviteCode"/>
+                                                            </MultiBinding>
+                                                        </Button.IsVisible>
+                                                        <PathIcon Data="{StaticResource IconEye}"/>
+                                                    </Button>
                                                     <!-- The main thing to do once the server is up; the panel's own action until then. -->
-                                                    <Button Grid.Column="1" Classes.primary="{Binding IsHostOnline}" Classes.accent-soft="{Binding !IsHostOnline}"
+                                                    <Button Grid.Column="2" Classes.primary="{Binding IsHostOnline}" Classes.accent-soft="{Binding !IsHostOnline}"
                                                             Height="40" Padding="16,0" VerticalAlignment="Center"
                                                             ToolTip.Tip="{DynamicResource Host_CopyInvite}"
                                                             Command="{Binding CopyHostInviteCommand}" IsEnabled="{Binding !IsHostInviteBusy}">
@@ -905,7 +920,7 @@
                                                                             <Ellipse Classes="dot" IsVisible="{Binding IsReady}"/>
                                                                             <Ellipse Classes="dot" Fill="{DynamicResource DangerBrush}" IsVisible="{Binding IsFailed}"/>
                                                                         </Panel>
-                                                                        <TextBlock Grid.Column="1" Text="{Binding StatusText}" Classes="muted" TextWrapping="Wrap"/>
+                                                                        <TextBlock Grid.Column="1" controls:Streamer.Text="{Binding StatusText}" Classes="muted" TextWrapping="Wrap"/>
                                                                     </Grid>
                                                                 </StackPanel>
                                                                 <!-- The switch shows the state and changes it; the view model decides what flipping it does. -->
@@ -916,7 +931,7 @@
                                                             </Grid>
 
                                                             <!-- Voice chat, when the server has it: carried, or whether the router opened its port. -->
-                                                            <TextBlock Text="{Binding VoiceText}" IsVisible="{Binding HasVoiceText}" Classes="sub"
+                                                            <TextBlock controls:Streamer.Text="{Binding VoiceText}" IsVisible="{Binding HasVoiceText}" Classes="sub"
                                                                        TextWrapping="Wrap" Margin="42,0,0,0"/>
 
                                                             <!-- What the way needs from the player's network: gold, always in sight. -->
@@ -924,7 +939,7 @@
                                                                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                                                                     <PathIcon Data="{StaticResource IconWarning}" Foreground="{DynamicResource WarningBrush}"
                                                                               VerticalAlignment="Top" Margin="0,2,0,0"/>
-                                                                    <TextBlock Grid.Column="1" Text="{Binding Warning}" TextWrapping="Wrap" FontSize="12.5" LineHeight="18"/>
+                                                                    <TextBlock Grid.Column="1" controls:Streamer.Text="{Binding Warning}" TextWrapping="Wrap" FontSize="12.5" LineHeight="18"/>
                                                                 </Grid>
                                                             </Border>
 
@@ -933,7 +948,7 @@
                                                                     Background="{DynamicResource FieldBrush}" BorderBrush="{DynamicResource FieldEdgeBrush}"
                                                                     IsVisible="{Binding HasAddress}">
                                                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
-                                                                    <TextBlock Text="{Binding Address}" Classes="mono" FontSize="13" VerticalAlignment="Center"
+                                                                    <TextBlock controls:Streamer.Address="{Binding Address}" Classes="mono" FontSize="13" VerticalAlignment="Center"
                                                                                Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
                                                                     <Button Grid.Column="1" Classes="icon" ToolTip.Tip="{DynamicResource Server_CopyAddress}"
                                                                             Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).CopyHostWayAddressCommand}"
@@ -954,7 +969,7 @@
                                 <Border Classes="panel" Padding="20,18,20,12">
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource Host_OnlineLabel}" Classes="caption"/>
-                                        <TextBlock Text="{Binding HostPlayersLabel}" Classes="muted" TextWrapping="Wrap" Margin="0,6,0,6"/>
+                                        <TextBlock controls:Streamer.Text="{Binding HostPlayersLabel}" Classes="muted" TextWrapping="Wrap" Margin="0,6,0,6"/>
                                         <ItemsControl Classes="rows" ItemsSource="{Binding HostPlayers}" IsVisible="{Binding HasHostPlayers}"
                                                       Margin="-12,0">
                                             <ItemsControl.ItemTemplate>
@@ -962,7 +977,7 @@
                                                     <Border Classes="row" Padding="12,9">
                                                         <StackPanel Orientation="Horizontal" Spacing="10">
                                                             <Ellipse Classes="dot"/>
-                                                            <TextBlock Text="{Binding}" Classes="strong" VerticalAlignment="Center"/>
+                                                            <TextBlock controls:Streamer.Text="{Binding}" Classes="strong" VerticalAlignment="Center"/>
                                                         </StackPanel>
                                                     </Border>
                                                 </DataTemplate>
@@ -1012,7 +1027,7 @@
                                                         </ContextMenu>
                                                     </Border.ContextMenu>
                                                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                                                        <TextBlock Text="{Binding}" Classes="strong" VerticalAlignment="Center"
+                                                        <TextBlock controls:Streamer.Text="{Binding}" Classes="strong" VerticalAlignment="Center"
                                                                    TextTrimming="CharacterEllipsis"/>
                                                         <!-- One name, one action: the cross stays in sight. -->
                                                         <Button Grid.Column="1" Classes="icon icon-danger"
@@ -1032,7 +1047,7 @@
                             <Border Grid.Column="1" Classes="panel" Padding="20,18,20,12" VerticalAlignment="Top">
                                 <StackPanel>
                                     <TextBlock Text="{DynamicResource Host_OnlineTitle}" Classes="group" Margin="0,0,0,4"/>
-                                    <TextBlock Text="{Binding HostPlayersLabel}" Classes="muted" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                                    <TextBlock controls:Streamer.Text="{Binding HostPlayersLabel}" Classes="muted" TextWrapping="Wrap" Margin="0,0,0,8"/>
                                     <ItemsControl Classes="rows" ItemsSource="{Binding HostPlayers}" IsVisible="{Binding HasHostPlayers}"
                                                   Margin="-12,0">
                                         <ItemsControl.ItemTemplate>
@@ -1040,7 +1055,7 @@
                                                 <Border Classes="row">
                                                     <StackPanel Orientation="Horizontal" Spacing="10">
                                                         <Ellipse Classes="dot"/>
-                                                        <TextBlock Text="{Binding}" Classes="strong" VerticalAlignment="Center"/>
+                                                        <TextBlock controls:Streamer.Text="{Binding}" Classes="strong" VerticalAlignment="Center"/>
                                                     </StackPanel>
                                                 </Border>
                                             </DataTemplate>
@@ -1153,7 +1168,7 @@
                                             <ItemsControl ItemsSource="{Binding HostConsole}" Margin="14,10">
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate x:DataType="sys:String">
-                                                        <TextBlock Text="{Binding}" Classes="mono" TextWrapping="Wrap" Margin="0,1"/>
+                                                        <TextBlock controls:Streamer.Text="{Binding}" Classes="mono" TextWrapping="Wrap" Margin="0,1"/>
                                                     </DataTemplate>
                                                 </ItemsControl.ItemTemplate>
                                             </ItemsControl>

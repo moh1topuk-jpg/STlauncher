@@ -792,6 +792,12 @@
     <!-- Discord -->
     <x:String x:Key="Settings_DiscordPresence">Показывать в Discord, что я играю на сервере</x:String>
     <x:String x:Key="Settings_DiscordPresenceHint">Статус «Играет на Showtime» с названием сборки и версией, пока игра запущена. Работает, если Discord открыт.</x:String>
+    <!-- Streamer mode -->
+    <x:String x:Key="Settings_StreamerMode">Режим стримера</x:String>
+    <x:String x:Key="Settings_StreamerModeHint">Для трансляций: лаунчер показывает точки вместо вашего ника, адресов серверов (кроме Showtime), кодов приглашений и сборок, имени пользователя Windows в путях и того же в строках консоли. Кнопки «Скопировать» копируют настоящий код. Игра и файлы на диске не меняются.</x:String>
+    <x:String x:Key="Streamer_ChipTip">Режим стримера включён: ник, адреса и коды скрыты. Нажмите, чтобы открыть настройку.</x:String>
+    <x:String x:Key="Streamer_Nickname">Игрок</x:String>
+    <x:String x:Key="Streamer_Reveal">Показать код на 5 секунд</x:String>
     <x:String x:Key="Settings_PrepareAhead">Готовить сборку сервера заранее</x:String>
     <x:String x:Key="Settings_PrepareAheadHint">Пока лаунчер открыт или в трее, скачивает изменения сборки сервера и файлы игры, чтобы «Играть» начиналось сразу. В сборку без вашего согласия ничего не ставится.</x:String>
     <x:String x:Key="Settings_PrepareClear">Очистить</x:String>

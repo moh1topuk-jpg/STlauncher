@@ -58,7 +58,7 @@
                             <Border Classes="field">
                                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
                                     <PathIcon Data="{StaticResource IconFolder}" Classes="small muted" VerticalAlignment="Center"/>
-                                    <TextBox Grid.Column="1" Classes="bare" Text="{Binding ImportFolder}"
+                                    <TextBox Grid.Column="1" Classes="bare" Text="{Binding ImportFolder}" controls:Streamer.Field="True"
                                              Watermark="{DynamicResource Import_FolderHint}"/>
                                 </Grid>
                             </Border>
@@ -97,9 +97,12 @@
                                             <Border Classes="row" Padding="12,9">
                                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
                                                     <StackPanel VerticalAlignment="Center">
-                                                        <TextBlock Text="{Binding Path}" Classes="strong"
-                                                                   TextTrimming="CharacterEllipsis"
-                                                                   ToolTip.Tip="{Binding Path}"/>
+                                                        <TextBlock controls:Streamer.Text="{Binding Path}" Classes="strong"
+                                                                   TextTrimming="CharacterEllipsis">
+                                                            <ToolTip.Tip>
+                                                                <TextBlock controls:Streamer.Text="{Binding Path}"/>
+                                                            </ToolTip.Tip>
+                                                        </TextBlock>
                                                         <TextBlock Text="{Binding KindLabel}" Classes="sub"/>
                                                     </StackPanel>
                                                     <Button Grid.Column="1" Classes="small raised" VerticalAlignment="Center"

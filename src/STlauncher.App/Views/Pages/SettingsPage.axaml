@@ -523,6 +523,17 @@
                             </Grid>
                         </Border>
 
+                        <!-- Off by default. What it hides is written out: the player decides before going live. -->
+                        <Border Classes="setting" controls:SettingsSearch.Keywords="стрим стример твич трансляция obs скрыть ник адрес код приватность streamer stream twitch hide nickname address privacy">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Classes="strong" Text="{DynamicResource Settings_StreamerMode}"/>
+                                    <TextBlock Classes="sub" Text="{DynamicResource Settings_StreamerModeHint}" TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding StreamerMode}" VerticalAlignment="Top" Margin="0,2,0,0"/>
+                            </Grid>
+                        </Border>
+
                         <!-- Off by default. What it does stays in view; what is ready, and the way to clear it, under it. -->
                         <Border Classes="setting" controls:SettingsSearch.Keywords="заранее подготовка скачивать фон трей лимитное prepare advance download background tray metered">
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
@@ -564,7 +575,7 @@
                         <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="10" controls:SettingsSearch.Heading="True">
                             <StackPanel VerticalAlignment="Center" Margin="0,0,10,0">
                                 <TextBlock Text="{DynamicResource Settings_BackupsTitle}" Classes="group" TextWrapping="Wrap"/>
-                                <TextBlock Text="{Binding BackupStatus}" Classes="sub" TextWrapping="Wrap"/>
+                                <TextBlock controls:Streamer.Text="{Binding BackupStatus}" Classes="sub" TextWrapping="Wrap"/>
                             </StackPanel>
                             <Button Grid.Column="1" Classes="icon" VerticalAlignment="Center"
                                     ToolTip.Tip="{DynamicResource Settings_OpenFolder}"
@@ -731,7 +742,7 @@
                                     <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
                                         <StackPanel VerticalAlignment="Center" Margin="0,0,10,0">
                                             <TextBlock Classes="strong" Text="{DynamicResource Settings_DataFolder}"/>
-                                            <SelectableTextBlock Classes="path" Text="{Binding DataDirectory, Mode=OneWay}"/>
+                                            <SelectableTextBlock Classes="path" controls:Streamer.Text="{Binding DataDirectory, Mode=OneWay}"/>
                                         </StackPanel>
                                         <Button Grid.Column="1" Classes="icon" VerticalAlignment="Center"
                                                 ToolTip.Tip="{DynamicResource Settings_OpenFolder}"
@@ -751,7 +762,7 @@
                                           IsVisible="{Binding DataMoveStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                                         <ProgressBar IsIndeterminate="True" Width="60" Height="3" VerticalAlignment="Center"
                                                      IsVisible="{Binding IsMovingData}"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding DataMoveStatus}" Classes="state"/>
+                                        <TextBlock Grid.Column="1" controls:Streamer.Text="{Binding DataMoveStatus}" Classes="state"/>
                                     </Grid>
                                 </StackPanel>
                             </Border>
@@ -795,7 +806,7 @@
                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
                                     <StackPanel VerticalAlignment="Center">
                                         <TextBlock Classes="strong" Text="{DynamicResource Settings_GameDirectory}"/>
-                                        <SelectableTextBlock Classes="path" Text="{Binding InstanceDirectory, Mode=OneWay}"/>
+                                        <SelectableTextBlock Classes="path" controls:Streamer.Text="{Binding InstanceDirectory, Mode=OneWay}"/>
                                     </StackPanel>
                                     <Button Grid.Column="1" Classes="icon" VerticalAlignment="Center"
                                             ToolTip.Tip="{DynamicResource Settings_OpenFolder}"
@@ -890,7 +901,7 @@
                                     <Border Classes="panel inset" Padding="14,12" IsVisible="{Binding IsReportSendOpen}" controls:Reveal.OnVisible="True">
                                         <StackPanel Spacing="10">
                                             <TextBlock Text="{DynamicResource Report_SendTitle}" Classes="strong"/>
-                                            <TextBlock Text="{Binding ReportSendSummary}" Classes="muted" FontSize="13" TextWrapping="Wrap"/>
+                                            <TextBlock controls:Streamer.Text="{Binding ReportSendSummary}" Classes="muted" FontSize="13" TextWrapping="Wrap"/>
                                             <TextBox Text="{Binding ReportComment}" Watermark="{DynamicResource Report_CommentHint}"
                                                      AcceptsReturn="True" MaxLength="600" MinHeight="56" TextWrapping="Wrap"/>
                                             <WrapPanel ItemSpacing="8" LineSpacing="6">

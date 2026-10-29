@@ -86,6 +86,9 @@ public partial class MainWindowViewModel
                 _loadedCatalog = result.Catalog;
                 _ = ProbeReportEndpointAsync();
 
+                // The catalog's servers are public and stay readable in streamer mode.
+                PushStreamerState();
+
                 foreach (var build in result.Catalog.Builds)
                 {
                     CatalogBuilds.Add(build);

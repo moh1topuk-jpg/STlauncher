@@ -554,7 +554,7 @@
                         <Border Classes="panel inset" Padding="12,10" IsVisible="{Binding HasBuildCodeNote}">
                             <StackPanel Spacing="8">
                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
-                                    <TextBlock Text="{Binding BuildCodeNote}" TextWrapping="Wrap" FontSize="12.5" LineHeight="18"/>
+                                    <TextBlock controls:Streamer.Text="{Binding BuildCodeNote}" TextWrapping="Wrap" FontSize="12.5" LineHeight="18"/>
                                     <Button Grid.Column="1" Classes="plain" VerticalAlignment="Top"
                                             ToolTip.Tip="{DynamicResource Share_Close}" Command="{Binding CloseBuildCodeNoteCommand}"
                                             IsVisible="{Binding !IsBuildCodeLooking}">
@@ -642,8 +642,12 @@
                                     <TextBlock Classes="muted" Text="{Binding BuildStateLabel}" VerticalAlignment="Center"/>
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" Spacing="6" Margin="6,0,0,0" VerticalAlignment="Center"
-                                            Background="Transparent" ToolTip.Tip="{Binding SelectedInstance.ExternalGameDirectory}"
+                                            Background="Transparent"
                                             IsVisible="{Binding SelectedInstance.ExternalGameDirectory, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                    <!-- The folder's path; in streamer mode without the Windows user name. -->
+                                    <ToolTip.Tip>
+                                        <TextBlock controls:Streamer.Text="{Binding SelectedInstance.ExternalGameDirectory}"/>
+                                    </ToolTip.Tip>
                                     <PathIcon Data="{StaticResource IconFolder}" Width="12" Height="12" Classes="muted"/>
                                     <TextBlock Classes="muted" Text="{DynamicResource Builds_TagLinked}"/>
                                 </StackPanel>
@@ -732,24 +736,32 @@
 
                             <!-- The code is on its way. -->
                             <StackPanel Spacing="8" IsVisible="{Binding IsBuildShareWorking}">
-                                <TextBlock Classes="muted" Text="{Binding BuildShareText}" TextWrapping="Wrap"/>
+                                <TextBlock Classes="muted" controls:Streamer.Text="{Binding BuildShareText}" TextWrapping="Wrap"/>
                                 <ProgressBar IsIndeterminate="True" Height="3"/>
                             </StackPanel>
 
                             <!-- The short code: what was copied, readable and copyable again. -->
                             <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="10" IsVisible="{Binding IsBuildShareShort}">
                                 <Border Classes="chip accent" Padding="12,6" VerticalAlignment="Top">
-                                    <SelectableTextBlock Text="{Binding BuildShareCode}" FontFamily="{StaticResource MonoFont}"
+                                    <SelectableTextBlock controls:Streamer.Code="{Binding BuildShareCode}" controls:Streamer.RevealKey="share" FontFamily="{StaticResource MonoFont}"
                                                          FontSize="15" FontWeight="Bold" LetterSpacing="0.5"/>
                                 </Border>
-                                <Button Grid.Column="1" Classes="icon" VerticalAlignment="Top"
-                                        ToolTip.Tip="{DynamicResource Share_CopyAgain}" Command="{Binding CopyBuildShareCodeCommand}">
-                                    <PathIcon Data="{StaticResource IconCopy}"/>
-                                </Button>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Top">
+                                    <Button Classes="icon"
+                                            ToolTip.Tip="{DynamicResource Share_CopyAgain}" Command="{Binding CopyBuildShareCodeCommand}">
+                                        <PathIcon Data="{StaticResource IconCopy}"/>
+                                    </Button>
+                                    <!-- Streamer mode: the code is dots; the eye shows it for five seconds. -->
+                                    <Button Classes="icon" IsVisible="{Binding StreamerMode}"
+                                            ToolTip.Tip="{DynamicResource Streamer_Reveal}"
+                                            Command="{Binding RevealStreamerCodeCommand}" CommandParameter="share">
+                                        <PathIcon Data="{StaticResource IconEye}"/>
+                                    </Button>
+                                </StackPanel>
                                 <StackPanel Grid.Column="2" Spacing="3" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding BuildShareText}" TextWrapping="Wrap"/>
+                                    <TextBlock controls:Streamer.Text="{Binding BuildShareText}" TextWrapping="Wrap"/>
                                     <TextBlock Classes="sub" Text="{DynamicResource Share_Kept}" TextWrapping="Wrap"/>
-                                    <TextBlock Classes="sub" Text="{Binding BuildShareDetail}" TextWrapping="Wrap"
+                                    <TextBlock Classes="sub" controls:Streamer.Text="{Binding BuildShareDetail}" TextWrapping="Wrap"
                                                IsVisible="{Binding HasBuildShareDetail}"/>
                                     <!-- Some files could not go into the code: the file that carries
                                          them all is one press away. The same export as in the menu. -->
@@ -773,8 +785,8 @@
                                 <PathIcon Data="{StaticResource IconWarning}" Foreground="{DynamicResource WarningBrush}"
                                           VerticalAlignment="Top" Margin="0,2,0,0"/>
                                 <StackPanel Grid.Column="1" Spacing="3">
-                                    <TextBlock Text="{Binding BuildShareText}" TextWrapping="Wrap"/>
-                                    <TextBlock Classes="sub" Text="{Binding BuildShareDetail}" TextWrapping="Wrap"
+                                    <TextBlock controls:Streamer.Text="{Binding BuildShareText}" TextWrapping="Wrap"/>
+                                    <TextBlock Classes="sub" controls:Streamer.Text="{Binding BuildShareDetail}" TextWrapping="Wrap"
                                                IsVisible="{Binding HasBuildShareDetail}"/>
                                     <Button Classes="small" HorizontalAlignment="Left" Margin="0,5,0,0"
                                             Click="OnExportModpackClick" IsVisible="{Binding BuildShareHasMissing}">

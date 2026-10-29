@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:STlauncher.App.ViewModels"
+             xmlns:controls="using:STlauncher.App.Controls"
              x:Class="STlauncher.App.Views.Pages.ConsolePage"
              x:DataType="vm:MainWindowViewModel">
 
@@ -61,7 +62,7 @@
                          Background="Transparent" Padding="0,10">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <TextBlock Text="{Binding}" Classes="mono" TextWrapping="Wrap"/>
+                            <TextBlock controls:Streamer.Text="{Binding}" Classes="mono" TextWrapping="Wrap"/>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
