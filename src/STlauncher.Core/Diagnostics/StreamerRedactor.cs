@@ -216,7 +216,9 @@ public static class StreamerRedactor
 
         if (!string.IsNullOrWhiteSpace(home))
         {
-            var folder = Path.GetFileName(home.TrimEnd('\\', '/'));
+            // Both separators: a Windows profile path reads the same on any system.
+            var trimmed = home.TrimEnd('\\', '/');
+            var folder = trimmed[(trimmed.LastIndexOfAny(new[] { '\\', '/' }) + 1)..];
 
             if (!string.IsNullOrWhiteSpace(folder))
             {
