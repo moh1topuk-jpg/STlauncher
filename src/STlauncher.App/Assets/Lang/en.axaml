@@ -1035,6 +1035,34 @@
     <x:String x:Key="Mods_OwnDisabled">Your mods switched off: {0}</x:String>
     <x:String x:Key="Settings_NetworkCheck">Network check</x:String>
     <x:String x:Key="Settings_NetworkCheckHint">When nothing downloads: probes GitHub, the mirror, Modrinth, Mojang and the server.</x:String>
+    <!-- Why does it lag: the connection check -->
+    <x:String x:Key="Lag_Title">Why does it lag?</x:String>
+    <x:String x:Key="Lag_Hint">Measures how fast the Showtime server, the launcher's server, the mirrors and Modrinth answer, and says where the delay is. Nothing is sent anywhere.</x:String>
+    <x:String x:Key="Lag_Run">Check</x:String>
+    <x:String x:Key="Lag_Again">Again</x:String>
+    <x:String x:Key="Lag_Running">Measuring…</x:String>
+    <x:String x:Key="Lag_Copy">Copy the result</x:String>
+    <x:String x:Key="Lag_Copied">The check's result is in the clipboard</x:String>
+    <x:String x:Key="Lag_Measuring">measuring…</x:String>
+    <x:String x:Key="Lag_Ms">{0} ms</x:String>
+    <x:String x:Key="Lag_NoAnswer">no answer</x:String>
+    <x:String x:Key="Lag_Server">Showtime server</x:String>
+    <x:String x:Key="Lag_Dns">Finding its address (DNS)</x:String>
+    <x:String x:Key="Lag_Relay">The launcher's server</x:String>
+    <x:String x:Key="Lag_Mirror">Update mirror</x:String>
+    <x:String x:Key="Lag_Modrinth">Modrinth (mods)</x:String>
+    <x:String x:Key="Lag_CurseForge">CurseForge (through the mirror)</x:String>
+    <x:String x:Key="Lag_Error">The check itself failed: {0}</x:String>
+    <x:String x:Key="Lag_VerdictGood">Showtime is {0} ms away and everything else answers quickly: the connection is fine. If the game still lags, the cause is the server itself or the computer, not the network.</x:String>
+    <x:String x:Key="Lag_VerdictGoodNoServer">Everything answers quickly: the connection is fine.</x:String>
+    <x:String x:Key="Lag_VerdictServerPath">Showtime is {0} ms away, other places {1} ms: the delay is on the way to the game server, not on your side.</x:String>
+    <x:String x:Key="Lag_VerdictAllSlow">Everything answers slowly: the problem is your connection or Wi-Fi. A cable instead of Wi-Fi, or pausing downloads and streams, helps.</x:String>
+    <x:String x:Key="Lag_VerdictServerDown">The Showtime server does not answer, the rest is fine: the server is off or overloaded.</x:String>
+    <x:String x:Key="Lag_VerdictModrinth">Modrinth does not open, the rest works: the provider is in Modrinth's way; mods will go the spare way.</x:String>
+    <x:String x:Key="Lag_VerdictBlocked">Showtime is {0} ms away, so the game is not affected. Not opening: {1}; if something will not download, this is why.</x:String>
+    <x:String x:Key="Lag_VerdictBlockedNoServer">Not opening: {0}; if something will not download, this is why.</x:String>
+    <x:String x:Key="Lag_VerdictDns">The address {0} cannot be found: the provider's DNS does not answer. Setting DNS 1.1.1.1 or 8.8.8.8 in Windows helps.</x:String>
+    <x:String x:Key="Lag_VerdictOffline">Almost nothing answers: there is no internet, or a firewall, an antivirus or a VPN cuts it off.</x:String>
     <x:String x:Key="Settings_NetworkRun">Check</x:String>
     <x:String x:Key="Settings_NetworkCopy">Copy report</x:String>
     <x:String x:Key="Net_Ok">ok · {0} ms</x:String>
@@ -1371,6 +1399,15 @@
     <x:String x:Key="Report_Sending">Sending the report…</x:String>
     <x:String x:Key="Report_Sent">Report sent. The admin has it; the copy stayed in the reports folder.</x:String>
     <x:String x:Key="Report_SendFailed">Could not send the report ({0}). Use “Collect a report” and send the file by hand.</x:String>
+    <!-- The copy the relay keeps for the developer, and the number to quote -->
+    <x:String x:Key="Report_RelayNote">The report (without your Windows user name and folder paths) is also kept for 30 days on the launcher's server so the developer can find the cause.</x:String>
+    <x:String x:Key="Report_SentRelayOnly">The admin's Telegram did not take the report, but it is kept on the launcher's server: quote its number.</x:String>
+    <x:String x:Key="Report_SentId">Report number: {0}</x:String>
+    <x:String x:Key="Report_SentIdLabel">Report number:</x:String>
+    <x:String x:Key="Report_SentIdCopy">Copy the number</x:String>
+    <x:String x:Key="Report_SentIdCopied">Report number {0} copied</x:String>
+    <x:String x:Key="Report_SentIdHint">Give this number to the admin or the developer: it finds your report.</x:String>
+    <x:String x:Key="Report_SentClose">Done</x:String>
     <!-- The launcher noticing it is unwell: the question after a start that never opened -->
     <x:String x:Key="SelfRepair_Question">Last time the launcher could not open. Check and reinstall its files?</x:String>
     <x:String x:Key="SelfRepair_QuestionAgain">The launcher could not open again. This version's files have already been reinstalled once. Reinstall them one more time?</x:String>
