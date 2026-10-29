@@ -80,7 +80,7 @@
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                         <Border Classes="chip" Padding="10,4" HorizontalAlignment="Left" VerticalAlignment="Center"
                                 IsVisible="{Binding HasBuildPreviewCode}">
-                            <TextBlock Text="{Binding BuildPreviewCode}" FontFamily="{StaticResource MonoFont}"/>
+                            <TextBlock controls:Streamer.Code="{Binding BuildPreviewCode}" FontFamily="{StaticResource MonoFont}"/>
                         </Border>
                         <Button Grid.Column="1" Name="ProblemClose" Content="{DynamicResource Share_Close}"
                                 Command="{Binding CancelBuildPreviewCommand}"/>
@@ -97,7 +97,7 @@
                         </StackPanel>
                         <Border Grid.Column="1" Classes="chip" Padding="10,4" VerticalAlignment="Center"
                                 IsVisible="{Binding HasBuildPreviewCode}">
-                            <TextBlock Text="{Binding BuildPreviewCode}" FontFamily="{StaticResource MonoFont}"/>
+                            <TextBlock controls:Streamer.Code="{Binding BuildPreviewCode}" FontFamily="{StaticResource MonoFont}"/>
                         </Border>
                         <Button Grid.Column="2" Classes="icon" VerticalAlignment="Center"
                                 ToolTip.Tip="{DynamicResource Common_Cancel}" Command="{Binding CancelBuildPreviewCommand}">

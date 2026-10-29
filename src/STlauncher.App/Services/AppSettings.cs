@@ -137,6 +137,9 @@ public sealed class AppSettings
     /// <summary>"Playing Showtime" in Discord while the game runs.</summary>
     public bool DiscordPresence { get; set; } = true;
 
+    /// <summary>"Streamer mode": the launcher's screens hide the nickname, addresses, codes and the Windows user name. Off unless turned on.</summary>
+    public bool StreamerMode { get; set; }
+
     /// <summary>"Prepare the server's build in advance": off unless the player turns it on.</summary>
     public bool PrepareAhead { get; set; }
 

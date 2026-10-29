@@ -793,6 +793,12 @@
     <!-- Discord -->
     <x:String x:Key="Settings_DiscordPresence">Show in Discord that I am playing on the server</x:String>
     <x:String x:Key="Settings_DiscordPresenceHint">A "Playing on Showtime" status with the build name and version while the game runs. Works when Discord is open.</x:String>
+    <!-- Streamer mode -->
+    <x:String x:Key="Settings_StreamerMode">Streamer mode</x:String>
+    <x:String x:Key="Settings_StreamerModeHint">For streams: the launcher shows dots instead of your nickname, server addresses (except Showtime), invite and build codes, the Windows user name in paths, and the same in the console's lines. The Copy buttons copy the real code. The game and the files on disk are not changed.</x:String>
+    <x:String x:Key="Streamer_ChipTip">Streamer mode is on: the nickname, addresses and codes are hidden. Click to open the setting.</x:String>
+    <x:String x:Key="Streamer_Nickname">Player</x:String>
+    <x:String x:Key="Streamer_Reveal">Show the code for 5 seconds</x:String>
     <x:String x:Key="Settings_PrepareAhead">Prepare the server's build in advance</x:String>
     <x:String x:Key="Settings_PrepareAheadHint">While the launcher is open or in the tray, it downloads the server build's changes and the game files, so Play starts at once. Nothing goes into the build without your yes.</x:String>
     <x:String x:Key="Settings_PrepareClear">Clear</x:String>

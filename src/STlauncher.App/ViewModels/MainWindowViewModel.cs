@@ -144,6 +144,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
         // The skin in the game: see MainWindowViewModel.SkinInGame.cs.
         AttachSkinInGame();
+
+        // Streamer mode: see MainWindowViewModel.StreamerMode.cs.
+        AttachStreamerMode();
     }
 
     public ObservableCollection<Instance> Instances { get; } = new();
@@ -478,6 +481,7 @@ public partial class MainWindowViewModel : ViewModelBase
         RestoreFriendsTab(settings.FriendsTab);
         LoadAppearance(settings.Theme, settings.Accent);
         DiscordPresence = settings.DiscordPresence;
+        StreamerMode = settings.StreamerMode;
         PrepareAhead = settings.PrepareAhead;
         _safeModeRestore = settings.SafeModeRestore?.ToList() ?? new List<string>();
         UsageStats = settings.UsageStats;
@@ -1506,6 +1510,7 @@ public partial class MainWindowViewModel : ViewModelBase
             Theme = Theme,
             Accent = Accent,
             DiscordPresence = DiscordPresence,
+            StreamerMode = StreamerMode,
             PrepareAhead = PrepareAhead,
             SafeModeRestore = _safeModeRestore.ToList(),
             UsageStats = UsageStats,

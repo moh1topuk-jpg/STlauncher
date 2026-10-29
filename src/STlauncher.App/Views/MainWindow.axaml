@@ -152,14 +152,14 @@
 
                     <!-- The player: the face opens the model, the name and saved names. -->
                     <Button Classes="avatar" Width="34" Height="34" Margin="0,6,0,0" HorizontalAlignment="Center"
-                            ToolTip.Tip="{Binding Username}">
+                            ToolTip.Tip="{Binding DisplayUsername}">
                         <controls:SkinFace Skin="{Binding PlayerSkin}" Width="34" Height="34" CornerRadius="9"/>
                         <Button.Flyout>
                             <controls:RevealFlyout Placement="RightEdgeAlignedBottom">
                                 <StackPanel Spacing="12" Width="364">
                                     <controls:SkinViewer Skin="{Binding PlayerSkin}" Height="260"/>
                                     <StackPanel Spacing="2" HorizontalAlignment="Center">
-                                        <TextBlock Text="{Binding Username}" Classes="h3" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="{Binding DisplayUsername}" Classes="h3" HorizontalAlignment="Center"/>
                                         <TextBlock Text="{DynamicResource Game_OfflineMode}" Classes="faint" HorizontalAlignment="Center"/>
                                     </StackPanel>
                                     <!-- Which skin system to look in; a player can have one in several. -->
@@ -211,8 +211,19 @@
                         <TextBlock Classes="context" IsVisible="{Binding IsConsoleSection}" Text="{DynamicResource Nav_Console}"/>
                     </Panel>
 
-                    <Panel Name="TopStripSlot" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center"
-                           Margin="12,0,12,0">
+                    <StackPanel Name="TopStripSlot" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                Orientation="Horizontal" Spacing="8" Margin="12,0,12,0">
+                        <!-- Streamer mode is on: said where the eye goes first, so dots in place of
+                             the nickname are not a puzzle. A press opens the setting. -->
+                        <Button Name="StreamerChip" Classes="chip active" IsVisible="{Binding StreamerMode}"
+                                VerticalAlignment="Center" Padding="11,6"
+                                Command="{Binding OpenStreamerSettingCommand}"
+                                ToolTip.Tip="{DynamicResource Streamer_ChipTip}">
+                            <StackPanel Orientation="Horizontal" Spacing="7">
+                                <Ellipse Width="7" Height="7" Fill="{DynamicResource DangerBrush}" VerticalAlignment="Center"/>
+                                <TextBlock Text="{DynamicResource Settings_StreamerMode}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
                         <!-- The way into the search for everything. It looks like a field and
                              is a button: the typing happens in the palette it opens. On a strip
                              too narrow for it, the class "compact" (set from the window's code)
@@ -228,7 +239,7 @@
                                 </Border>
                             </Grid>
                         </Button>
-                    </Panel>
+                    </StackPanel>
 
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Top">
                         <Button Classes="chrome" Click="OnMinimizeClick" ToolTip.Tip="{DynamicResource Common_Minimize}">
@@ -284,7 +295,7 @@
             <!-- Status line: quiet by default, a progress bar only while loading. -->
             <Border Grid.Row="3" Padding="28,0" Height="28">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                    <TextBlock Text="{Binding Status}" VerticalAlignment="Center"
+                    <TextBlock controls:Streamer.Text="{Binding Status}" VerticalAlignment="Center"
                                Classes="muted" FontSize="12" TextTrimming="CharacterEllipsis"/>
                     <ProgressBar Grid.Column="1" Value="{Binding Progress}" Minimum="0" Maximum="100" Width="160"
                                  VerticalAlignment="Center" IsVisible="{Binding ShowLaunchProgress}"/>
