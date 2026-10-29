@@ -61,7 +61,16 @@ public static class LauncherHost
         services.AddSingleton<MetadataClient>();
         services.AddSingleton<VerifiedFileCache>();
         services.AddSingleton(new STlauncher.Core.Storage.SharedFileStore(paths) { Enabled = startupSettings.ShareFiles });
-        services.AddSingleton<DownloadClient>();
+        // "Prepare in advance": files fetched ahead, which every download looks at first.
+        services.AddSingleton(new PreparedFiles(paths));
+        services.AddSingleton(provider => new DownloadClient(
+            provider.GetRequiredService<HttpClient>(),
+            provider.GetService<ILogger<DownloadClient>>(),
+            cache: provider.GetRequiredService<VerifiedFileCache>(),
+            sharedFiles: provider.GetRequiredService<STlauncher.Core.Storage.SharedFileStore>())
+        {
+            Prepared = provider.GetRequiredService<PreparedFiles>()
+        });
         services.AddSingleton<VersionService>();
         services.AddSingleton<AssetService>();
         services.AddSingleton<JavaManager>();

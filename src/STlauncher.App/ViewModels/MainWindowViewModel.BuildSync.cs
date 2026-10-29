@@ -361,6 +361,7 @@ public partial class MainWindowViewModel
         }
 
         instance.DeclinedCatalogOffer = null;
+        instance.CatalogHeld = false;
         ClearPendingBuildSync();
         _buildSync = ApplyOfferedBuildSyncAsync(instance, build);
         await _buildSync;
@@ -540,6 +541,8 @@ public partial class MainWindowViewModel
                 _dismissedBuildIds.Remove(build.Id);
             }
 
+            // Asked for by hand: the catalog's files are wanted again, even after a restore.
+            instance!.CatalogHeld = false;
             CatalogBuildSync.Apply(instance!, build, isNew);
             _instances.Save(instance!);
 

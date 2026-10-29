@@ -138,6 +138,15 @@ public sealed class Instance
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? DeclinedCatalogOffer { get; set; }
 
+    /// <summary>
+    /// The player put the build back as it was (<see cref="BuildStates"/>): the catalog's
+    /// files are not fetched before a launch until the player takes the catalog's changes
+    /// again. Without it, the next "Play" would quietly undo the restore.
+    /// </summary>
+    [JsonPropertyName("catalogHeld")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool CatalogHeld { get; set; }
+
     /// <summary>Last time this build was launched, for sorting and display.</summary>
     [JsonPropertyName("lastPlayedAt")]
     public DateTimeOffset? LastPlayedAt { get; set; }

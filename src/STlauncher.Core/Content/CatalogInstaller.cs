@@ -36,6 +36,13 @@ public sealed record CatalogInstallResult(
     public static CatalogInstallResult Fail(string message) => new(false, null, message);
 }
 
+/// <summary>The file a catalog item stands for, or why there is none.</summary>
+/// <param name="Version">What the file satisfies, recorded so the next sync can compare.</param>
+public sealed record CatalogResolved(DownloadItem? Download, string? Version, string? Error)
+{
+    public static CatalogResolved Fail(string error) => new(null, null, error);
+}
+
 /// <summary>
 /// Resolves a catalog item through Modrinth or a direct URL and places the file in the
 /// selected instance. No API key is required for any installed content.
@@ -70,12 +77,15 @@ public sealed class CatalogInstaller
 
         try
         {
-            return item.Source.Kind switch
+            var resolved = await ResolveAsync(item, instanceDirectory, gameVersion, loader, cancellationToken).ConfigureAwait(false);
+
+            if (resolved.Download is not { } download)
             {
-                CatalogSourceKind.Modrinth => await InstallFromModrinthAsync(item, instanceDirectory, gameVersion, loader, cancellationToken).ConfigureAwait(false),
-                CatalogSourceKind.Direct => await InstallDirectAsync(item, instanceDirectory, cancellationToken).ConfigureAwait(false),
-                _ => CatalogInstallResult.Fail($"Unsupported source kind '{item.Source.Kind}'.")
-            };
+                return CatalogInstallResult.Fail(resolved.Error ?? "?");
+            }
+
+            var downloaded = await _downloader.EnsureFileAsync(download, cancellationToken).ConfigureAwait(false);
+            return CatalogInstallResult.Ok(download.DestinationPath, downloaded, resolved.Version);
         }
         catch (Exception ex)
         {
@@ -84,7 +94,31 @@ public sealed class CatalogInstaller
         }
     }
 
-    private async Task<CatalogInstallResult> InstallFromModrinthAsync(
+    /// <summary>
+    /// Which file an item stands for and where in the build it goes, without fetching it:
+    /// what "prepare in advance" downloads ahead and the install later finds ready.
+    /// </summary>
+    public async Task<CatalogResolved> ResolveAsync(
+        CatalogItem item,
+        string instanceDirectory,
+        string? gameVersion,
+        LoaderKind loader,
+        CancellationToken cancellationToken = default)
+    {
+        if (item is null)
+        {
+            throw new ArgumentNullException(nameof(item));
+        }
+
+        return item.Source.Kind switch
+        {
+            CatalogSourceKind.Modrinth => await ResolveModrinthAsync(item, instanceDirectory, gameVersion, loader, cancellationToken).ConfigureAwait(false),
+            CatalogSourceKind.Direct => ResolveDirect(item, instanceDirectory),
+            _ => CatalogResolved.Fail($"Unsupported source kind '{item.Source.Kind}'.")
+        };
+    }
+
+    private async Task<CatalogResolved> ResolveModrinthAsync(
         CatalogItem item,
         string instanceDirectory,
         string? gameVersion,
@@ -94,7 +128,7 @@ public sealed class CatalogInstaller
         var project = item.Source.Project;
         if (string.IsNullOrWhiteSpace(project))
         {
-            return CatalogInstallResult.Fail("Modrinth source has no project.");
+            return CatalogResolved.Fail("Modrinth source has no project.");
         }
 
         IReadOnlyList<ModVersion> versions;
@@ -128,7 +162,7 @@ public sealed class CatalogInstaller
 
         if (file is null || string.IsNullOrEmpty(file.Url))
         {
-            return CatalogInstallResult.Fail(
+            return CatalogResolved.Fail(
                 $"No Modrinth file found for '{project}'" +
                 (string.IsNullOrWhiteSpace(item.Source.Version) ? $" ({gameVersion}, {loader})" : $" version {item.Source.Version}") +
                 ".");
@@ -140,19 +174,15 @@ public sealed class CatalogInstaller
             ? version?.VersionNumber
             : item.Source.Version;
 
-        return await DownloadAsync(item, instanceDirectory, file.Url, file.FileName, file.Sha1, file.Sha512, file.Size, satisfies, cancellationToken)
-            .ConfigureAwait(false);
+        return Place(item, instanceDirectory, file.Url, file.FileName, file.Sha1, file.Sha512, file.Size, satisfies);
     }
 
-    private async Task<CatalogInstallResult> InstallDirectAsync(
-        CatalogItem item,
-        string instanceDirectory,
-        CancellationToken cancellationToken)
+    private static CatalogResolved ResolveDirect(CatalogItem item, string instanceDirectory)
     {
         var url = item.Source.Url;
         if (string.IsNullOrWhiteSpace(url))
         {
-            return CatalogInstallResult.Fail("Direct source has no url.");
+            return CatalogResolved.Fail("Direct source has no url.");
         }
 
         var fileName = item.Source.FileName;
@@ -163,14 +193,13 @@ public sealed class CatalogInstaller
 
         if (string.IsNullOrWhiteSpace(fileName))
         {
-            return CatalogInstallResult.Fail("Could not determine a file name; set 'fileName' in the catalog.");
+            return CatalogResolved.Fail("Could not determine a file name; set 'fileName' in the catalog.");
         }
 
-        return await DownloadAsync(item, instanceDirectory, url!, fileName!, item.Source.Sha1, item.Source.Sha512, 0, item.Source.Version, cancellationToken)
-            .ConfigureAwait(false);
+        return Place(item, instanceDirectory, url!, fileName!, item.Source.Sha1, item.Source.Sha512, 0, item.Source.Version);
     }
 
-    private async Task<CatalogInstallResult> DownloadAsync(
+    private static CatalogResolved Place(
         CatalogItem item,
         string instanceDirectory,
         string url,
@@ -178,24 +207,19 @@ public sealed class CatalogInstaller
         string? sha1,
         string? sha512,
         long size,
-        string? satisfiesVersion,
-        CancellationToken cancellationToken)
+        string? satisfiesVersion)
     {
         var relative = CatalogPlacement.ResolveRelativePath(item, fileName);
 
         if (relative is null)
         {
-            return CatalogInstallResult.Fail(
+            return CatalogResolved.Fail(
                 $"Cannot place '{fileName}': set 'targetPath' in the catalog for item type '{item.Type}'.");
         }
 
         var destination = Path.Combine(instanceDirectory, relative.Replace('/', Path.DirectorySeparatorChar));
 
-        var downloaded = await _downloader
-            .EnsureFileAsync(new DownloadItem(url, destination, sha1, size, Sha512: sha512), cancellationToken)
-            .ConfigureAwait(false);
-
-        return CatalogInstallResult.Ok(destination, downloaded, satisfiesVersion);
+        return new CatalogResolved(new DownloadItem(url, destination, sha1, size, Sha512: sha512), satisfiesVersion, null);
     }
 
     public static string? FileNameFromUrl(string url)

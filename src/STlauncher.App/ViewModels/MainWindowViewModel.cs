@@ -56,6 +56,8 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly GameLauncher _gameLauncher;
     private readonly DiscordPresenceService _discord;
     private readonly UsageReporter _usage;
+    private readonly DownloadClient _downloader;
+    private readonly PreparedFiles _prepared;
 
     private List<VersionSummary> _allVersions = new();
     private bool _initialized;
@@ -97,9 +99,13 @@ public partial class MainWindowViewModel : ViewModelBase
         DiscordPresenceService discord,
         UsageReporter usage,
         STlauncher.Core.Diagnostics.NetworkDiagnostics network,
-        HostingServices hosting)
+        HostingServices hosting,
+        DownloadClient downloader,
+        PreparedFiles prepared)
     {
         _network = network;
+        _downloader = downloader;
+        _prepared = prepared;
         _versions = versions;
         _launch = launch;
         _loaders = loaders;
@@ -472,6 +478,7 @@ public partial class MainWindowViewModel : ViewModelBase
         RestoreFriendsTab(settings.FriendsTab);
         LoadAppearance(settings.Theme, settings.Accent);
         DiscordPresence = settings.DiscordPresence;
+        PrepareAhead = settings.PrepareAhead;
         _safeModeRestore = settings.SafeModeRestore?.ToList() ?? new List<string>();
         UsageStats = settings.UsageStats;
         _installId = string.IsNullOrWhiteSpace(settings.InstallId) ? Guid.NewGuid().ToString("N") : settings.InstallId!;
@@ -628,7 +635,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
         // Deliberately not awaited: the window is already usable, and the missing mods
         // download in the background while the player reads the page.
-        _ = StartBuildSyncAsync(recommended);
+        // Then, if the player turned it on, the next files are prepared in advance.
+        _ = StartupSyncThenPrepareAsync(recommended);
 
         // Also in the background: is there anything to bring over from another launcher?
         _ = LookForImportableBuildsAsync();
@@ -871,7 +879,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
             // An offer still on the main screen means the player has not said yes: the
             // game starts with the build exactly as it is.
-            if (SelectedInstance is not null && !HasPendingBuildSync)
+            // A build put back as it was keeps its files until the player takes the
+            // catalog's changes again: fetching them here would undo the restore.
+            if (SelectedInstance is not null && !HasPendingBuildSync && !SelectedInstance.CatalogHeld)
             {
                 await EnsureBuildItemsInstalledAsync(SelectedInstance);
                 RefreshMods();
@@ -929,11 +939,17 @@ public partial class MainWindowViewModel : ViewModelBase
             }
 
             GameCrashNotice = string.Empty;
+            ClearRollbackOffer();
+
+            // The mods it starts on, kept lightly; they become "the state that worked" if it does.
+            var states = await BeforeLaunchStateAsync(playedInstance);
+
             ApplyDiscordPresence(playing: true, joinServer);
             var playedFrom = DateTimeOffset.Now;
             BeginLocationTracking(playedFrom);
             var result = await LaunchAndReactAsync(command, settings);
             ApplyDiscordPresence(playing: false, joinServer: false);
+            await AfterLaunchStateAsync(states, playedInstance, result);
 
             if (result.IsFailedLaunch)
             {
@@ -1060,6 +1076,7 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(GameSettingsScopeLabel));
         RefreshBuildSharePanel();
+        RefreshBuildStatesIfShown();
         if (value is null || _refreshingListItem)
         {
             return;
@@ -1489,6 +1506,7 @@ public partial class MainWindowViewModel : ViewModelBase
             Theme = Theme,
             Accent = Accent,
             DiscordPresence = DiscordPresence,
+            PrepareAhead = PrepareAhead,
             SafeModeRestore = _safeModeRestore.ToList(),
             UsageStats = UsageStats,
             InstallId = _installId,

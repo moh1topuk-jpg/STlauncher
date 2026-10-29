@@ -6,6 +6,7 @@
              xmlns:conv="using:STlauncher.App.Converters"
              xmlns:controls="using:STlauncher.App.Controls"
              xmlns:pages="using:STlauncher.App.Views.Pages"
+             xmlns:sys="using:System"
              x:Class="STlauncher.App.Views.Pages.BuildsPage"
              x:DataType="vm:MainWindowViewModel"
              DragDrop.AllowDrop="True">
@@ -546,6 +547,9 @@
                                                   ToolTip.Tip="{DynamicResource Builds_RepairHint}"
                                                   Command="{Binding RepairBuildCommand}"
                                                   IsEnabled="{Binding CanRepairBuild}"/>
+                                        <MenuItem Header="{DynamicResource Rollback_Menu}"
+                                                  Command="{Binding OpenBuildStatesCommand}"
+                                                  IsVisible="{Binding SelectedInstance.ExternalGameDirectory, Converter={x:Static StringConverters.IsNullOrEmpty}}"/>
                                         <MenuItem Header="{DynamicResource Builds_OpenFolder}"
                                                   Command="{Binding OpenGameFolderCommand}"/>
                                         <MenuItem Header="{DynamicResource Builds_AddCopy}"
@@ -657,6 +661,94 @@
                                 </Button>
                             </Grid>
                         </Panel>
+                    </Border>
+
+                    <!-- ======== "Put back a working state": from the "…" menu, under the header ======== -->
+                    <Border Classes="panel inset" Padding="14,12" IsVisible="{Binding IsBuildStatesShown}">
+                        <StackPanel Spacing="10">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                <PathIcon Data="{StaticResource IconRestore}" Classes="small" VerticalAlignment="Top" Margin="0,3,0,0"
+                                          Foreground="{DynamicResource AccentTextBrush}"/>
+                                <StackPanel Grid.Column="1" Spacing="3">
+                                    <TextBlock Text="{DynamicResource Rollback_PanelTitle}" Classes="strong"/>
+                                    <TextBlock Text="{DynamicResource Rollback_PanelHint}" Classes="sub" TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <Button Grid.Column="2" Classes="plain" VerticalAlignment="Top"
+                                        ToolTip.Tip="{DynamicResource Share_Close}" Command="{Binding CloseBuildStatesCommand}">
+                                    <PathIcon Data="{StaticResource IconClose}" Classes="small"/>
+                                </Button>
+                            </Grid>
+
+                            <ProgressBar IsIndeterminate="True" Height="3" IsVisible="{Binding IsBuildStatesLoading}"/>
+
+                            <!-- Nothing kept yet: when that changes. -->
+                            <TextBlock Text="{DynamicResource Rollback_PanelEmpty}" Classes="muted" FontSize="12.5" TextWrapping="Wrap">
+                                <TextBlock.IsVisible>
+                                    <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                        <Binding Path="!HasBuildStates"/>
+                                        <Binding Path="!IsBuildStatesLoading"/>
+                                    </MultiBinding>
+                                </TextBlock.IsVisible>
+                            </TextBlock>
+
+                            <ScrollViewer MaxHeight="260" IsVisible="{Binding HasBuildStates}">
+                                <ItemsControl ItemsSource="{Binding BuildStateItems}" Margin="0,0,12,0">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:BuildStateItem">
+                                            <Border Classes="row">
+                                                <StackPanel Spacing="8">
+                                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                        <StackPanel VerticalAlignment="Center" Spacing="2">
+                                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                                <TextBlock Text="{Binding DateLabel}" Classes="strong" VerticalAlignment="Center"/>
+                                                                <TextBlock Classes="tag" Text="{DynamicResource Rollback_UndoTag}"
+                                                                           IsVisible="{Binding IsUndo}" VerticalAlignment="Center"/>
+                                                                <TextBlock Text="{Binding SizeLabel}" Classes="sub" VerticalAlignment="Center"/>
+                                                            </StackPanel>
+                                                            <TextBlock Text="{Binding Summary}" Classes="sub" TextWrapping="Wrap"/>
+                                                        </StackPanel>
+                                                        <Button Grid.Column="1" Classes="small" VerticalAlignment="Center"
+                                                                IsEnabled="{Binding HasChanges}"
+                                                                Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).ChooseBuildStateCommand}"
+                                                                CommandParameter="{Binding}">
+                                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                                <TextBlock Text="{DynamicResource Rollback_Choose}"/>
+                                                                <PathIcon Data="{StaticResource IconChevronDown}" Width="10" Height="10"/>
+                                                            </StackPanel>
+                                                        </Button>
+                                                    </Grid>
+                                                    <!-- What it would change, and the one button that does it. -->
+                                                    <StackPanel Spacing="6" IsVisible="{Binding IsOpen}" Margin="2,0,0,4">
+                                                        <ItemsControl ItemsSource="{Binding Lines}">
+                                                            <ItemsControl.ItemsPanel>
+                                                                <ItemsPanelTemplate>
+                                                                    <StackPanel Spacing="3"/>
+                                                                </ItemsPanelTemplate>
+                                                            </ItemsControl.ItemsPanel>
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate x:DataType="sys:String">
+                                                                    <TextBlock Text="{Binding}" TextWrapping="Wrap" FontSize="12.5" LineHeight="18"
+                                                                               Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                        <TextBlock Text="{DynamicResource Rollback_Untouched}" Classes="muted" FontSize="12" TextWrapping="Wrap"/>
+                                                        <WrapPanel ItemSpacing="6" LineSpacing="6">
+                                                            <Button Classes="accent-soft small" Content="{DynamicResource Rollback_Confirm}"
+                                                                    Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).RestoreBuildStateCommand}"
+                                                                    CommandParameter="{Binding}"/>
+                                                            <Button Classes="ghost small" Content="{DynamicResource Common_Cancel}"
+                                                                    Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).ChooseBuildStateCommand}"
+                                                                    CommandParameter="{Binding}"/>
+                                                        </WrapPanel>
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </StackPanel>
                     </Border>
                     </StackPanel>
                 </Border>
