@@ -23,6 +23,7 @@
         { "id": "libipn", "type": "mod", "name": "libIPN", "description": "Библиотека для Inventory Profiles Next и подобных модов.", "required": true, "source": { "kind": "modrinth", "project": "libipn", "version": "fabric-1.21.11-6.6.3" } },
         { "id": "malilib", "type": "mod", "name": "MaLiLib", "description": "Библиотека для модов masa.", "required": true, "source": { "kind": "modrinth", "project": "malilib", "version": "0.27.20" } },
         { "id": "player-animation-library", "type": "mod", "name": "Player Animation Library", "description": "Анимации игрока для Emotecraft.", "required": true, "source": { "kind": "modrinth", "project": "player-animation-library", "version": "1.1.10" } },
+        { "id": "bendable-cuboids", "type": "mod", "name": "Bendable Cuboids", "description": "Руки и ноги сгибаются в локтях и коленях в эмоциях Emotecraft.", "required": true, "source": { "kind": "modrinth", "project": "bendable-cuboids", "version": "2.0.1" } },
 
         { "id": "sodium", "type": "mod", "name": "Sodium", "description": "Значительно повышает FPS. Версия согласована с Iris.", "required": true, "source": { "kind": "modrinth", "project": "sodium", "version": "mc1.21.11-0.8.12-fabric" } },
         { "id": "sodium-extra", "type": "mod", "name": "Sodium Extra", "description": "Дополнительные настройки графики к Sodium.", "required": true, "source": { "kind": "modrinth", "project": "sodium-extra", "version": "mc1.21.11-0.9.1+fabric" } },
@@ -83,6 +84,7 @@
         "libipn",
         "malilib",
         "player-animation-library",
+        "bendable-cuboids",
         "sodium",
         "sodium-extra",
         "lithium",
