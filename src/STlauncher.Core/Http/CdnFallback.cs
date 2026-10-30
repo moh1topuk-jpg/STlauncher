@@ -10,9 +10,10 @@ using Microsoft.Extensions.Logging;
 namespace STlauncher.Core.Http;
 
 /// <summary>
-/// The second way to Modrinth and CurseForge: the owner's server, which passes a request
-/// for a mod file (and a few read-only Modrinth API calls) on to the real site unchanged.
-/// For players whose provider blocks or breaks those sites. See docs/mirror.md.
+/// The second way to the sites the launcher downloads from: the owner's server, which
+/// passes a request for a mod file, a game file, a loader file (and a few read-only API
+/// calls) on to the real site unchanged. For players whose provider blocks or breaks those
+/// sites. See docs/mirror.md.
 /// </summary>
 /// <remarks>
 /// Only the addresses <see cref="Rewrite"/> recognises ever go through it: the file
@@ -26,21 +27,49 @@ public sealed class CdnFallback
     public const string ModrinthCdnHost = "cdn.modrinth.com";
     public const string ModrinthApiHost = "api.modrinth.com";
 
-    private static readonly string[] CurseForgeCdnHosts = { "edge.forgecdn.net", "mediafilez.forgecdn.net" };
+    /// <summary>A path segment of a Maven repository: no leading dot, so never "." or "..".</summary>
+    private const string MavenPath = @"(?:/[A-Za-z0-9_+\-][A-Za-z0-9._+\-]{0,127}){2,16}";
 
-    // The same shapes the server lets through (docs/mirror.md), checked on the unescaped
-    // path as Caddy checks it. Anything else would only come back as a 404.
-    private static readonly Regex ModrinthFile = new(
-        @"^/data/[A-Za-z0-9]{8}/versions/[A-Za-z0-9]{8}/[^/]+\.(?:jar|zip|mrpack)$",
-        RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+    /// <summary>
+    /// One site the server carries: its prefix there, the hosts, the shape of the paths it
+    /// lets through (the same as docs/mirror.md, checked on the unescaped path as Caddy
+    /// checks it - anything else would only come back as a 404), whether a query goes
+    /// along, and the name the player knows the site by.
+    /// </summary>
+    private sealed record Route(string Prefix, string[] Hosts, Regex Shape, bool KeepsQuery, string Source);
 
-    private static readonly Regex CurseForgeFile = new(
-        @"^/files/[0-9]{1,6}/[0-9]{1,4}/[^/]+\.(?:jar|zip|mrpack)$",
-        RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+    private static Regex Shape(string pattern, bool ignoreCase = false)
+        => new(pattern, RegexOptions.CultureInvariant | (ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None));
 
-    private static readonly Regex ModrinthApi = new(
-        @"^/v2/(?:search|tag/category|version/[A-Za-z0-9]{8}|project/[A-Za-z0-9._+!@$(),\-]{1,64}(?:/version)?)$",
-        RegexOptions.CultureInvariant);
+    private static readonly Route[] Routes =
+    {
+        new("mr", new[] { ModrinthCdnHost },
+            Shape(@"^/data/[A-Za-z0-9]{8}/versions/[A-Za-z0-9]{8}/[^/]+\.(?:jar|zip|mrpack)$", ignoreCase: true), false, "Modrinth"),
+        new("mrapi", new[] { ModrinthApiHost },
+            Shape(@"^/v2/(?:search|tag/category|version/[A-Za-z0-9]{8}|project/[A-Za-z0-9._+!@$(),\-]{1,64}(?:/version)?)$"), true, "Modrinth"),
+        new("cf", new[] { "edge.forgecdn.net", "mediafilez.forgecdn.net" },
+            Shape(@"^/files/[0-9]{1,6}/[0-9]{1,4}/[^/]+\.(?:jar|zip|mrpack)$", ignoreCase: true), false, "CurseForge"),
+
+        // What a launch needs before the game runs: the loader's profile and libraries...
+        new("fabricmeta", new[] { "meta.fabricmc.net" },
+            Shape(@"^/v2/versions(?:/[A-Za-z0-9_+\-][A-Za-z0-9._+\-]{0,63}){1,6}$"), false, "Fabric"),
+        new("fabricmaven", new[] { "maven.fabricmc.net" },
+            Shape("^" + MavenPath + @"\.(?:jar|pom|xml|json|sha1)$"), false, "Fabric"),
+
+        // ...the game's own files, each named by its hash...
+        new("pmeta", new[] { "piston-meta.mojang.com" },
+            Shape(@"^/(?:mc/game/version_manifest(?:_v2)?\.json|v1/packages/[0-9a-f]{40}/[A-Za-z0-9_\-][A-Za-z0-9._\-]{0,99}\.json)$"), false, "Mojang"),
+        new("pdata", new[] { "piston-data.mojang.com" },
+            Shape(@"^/v1/objects/[0-9a-f]{40}/[A-Za-z0-9_\-][A-Za-z0-9._\-]{0,99}$"), false, "Mojang"),
+        new("mcres", new[] { "resources.download.minecraft.net" },
+            Shape(@"^/[0-9a-f]{2}/[0-9a-f]{40}$"), false, "Mojang"),
+        new("mclib", new[] { "libraries.minecraft.net" },
+            Shape("^" + MavenPath + @"\.(?:jar|sha1)$"), false, "Mojang"),
+
+        // ...and where Java is found. The archive itself comes from GitHub.
+        new("adoptium", new[] { "api.adoptium.net" },
+            Shape(@"^/v3/(?:assets/latest/[0-9]{1,3}/hotspot|info/available_releases)$"), true, "Java")
+    };
 
     private readonly Uri? _mirror;
     private readonly Func<DateTimeOffset> _now;
@@ -90,8 +119,8 @@ public sealed class CdnFallback
             return null;
         }
 
-        var prefix = PrefixFor(url);
-        if (prefix is null)
+        var route = RouteFor(url);
+        if (route is null)
         {
             return null;
         }
@@ -108,47 +137,29 @@ public sealed class CdnFallback
             return null;
         }
 
-        var isApi = prefix == "mrapi";
-        var shape = prefix switch { "mr" => ModrinthFile, "cf" => CurseForgeFile, _ => ModrinthApi };
-
-        if (!shape.IsMatch(decoded) || decoded.Contains("/../", StringComparison.Ordinal) ||
-            (!isApi && !string.IsNullOrEmpty(url.Query)))
+        if (!route.Shape.IsMatch(decoded) || decoded.Contains("/../", StringComparison.Ordinal) ||
+            (!route.KeepsQuery && !string.IsNullOrEmpty(url.Query)))
         {
             return null;
         }
 
         var root = mirrorBase.AbsoluteUri.TrimEnd('/');
-        return new Uri(root + "/" + prefix + path + (isApi ? url.Query : string.Empty));
+        return new Uri(root + "/" + route.Prefix + path + (route.KeepsQuery ? url.Query : string.Empty));
     }
 
     /// <summary>The source a host belongs to, as the player knows it; null for any other host.</summary>
-    public static string? SourceOf(Uri url)
-        => PrefixFor(url) switch
-        {
-            "mr" or "mrapi" => "Modrinth",
-            "cf" => "CurseForge",
-            _ => null
-        };
+    public static string? SourceOf(Uri url) => RouteFor(url)?.Source;
 
-    private static string? PrefixFor(Uri url)
+    private static Route? RouteFor(Uri url)
     {
-        var host = url.Host;
-
-        if (string.Equals(host, ModrinthCdnHost, StringComparison.OrdinalIgnoreCase))
+        foreach (var route in Routes)
         {
-            return "mr";
-        }
-
-        if (string.Equals(host, ModrinthApiHost, StringComparison.OrdinalIgnoreCase))
-        {
-            return "mrapi";
-        }
-
-        foreach (var cdn in CurseForgeCdnHosts)
-        {
-            if (string.Equals(host, cdn, StringComparison.OrdinalIgnoreCase))
+            foreach (var host in route.Hosts)
             {
-                return "cf";
+                if (string.Equals(url.Host, host, StringComparison.OrdinalIgnoreCase))
+                {
+                    return route;
+                }
             }
         }
 
@@ -247,7 +258,7 @@ public sealed class CdnFallback
 }
 
 /// <summary>
-/// Sends a request for a Modrinth or CurseForge file the second way when the first fails
+/// Sends a request for a file the server carries the second way when the first fails
 /// on the route. Sits in front of the launcher's one HTTP handler, so every download and
 /// every Modrinth call passes it; only what <see cref="CdnFallback.Rewrite(Uri)"/> knows is
 /// ever touched.

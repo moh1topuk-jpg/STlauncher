@@ -54,6 +54,23 @@ public sealed class CdnFallbackTests : IDisposable
     [InlineData("https://api.modrinth.com/v2/version/Ii0gP3D8", "https://2.26.80.201/mrapi/v2/version/Ii0gP3D8")]
     [InlineData("https://api.modrinth.com/v2/search?query=sodium&limit=20", "https://2.26.80.201/mrapi/v2/search?query=sodium&limit=20")]
     [InlineData("https://api.modrinth.com/v2/tag/category", "https://2.26.80.201/mrapi/v2/tag/category")]
+    [InlineData("https://meta.fabricmc.net/v2/versions/loader/1.21.11/0.19.5/profile/json",
+                "https://2.26.80.201/fabricmeta/v2/versions/loader/1.21.11/0.19.5/profile/json")]
+    [InlineData("https://meta.fabricmc.net/v2/versions/loader/1.21.11", "https://2.26.80.201/fabricmeta/v2/versions/loader/1.21.11")]
+    [InlineData("https://maven.fabricmc.net/net/fabricmc/fabric-loader/0.19.5/fabric-loader-0.19.5.jar",
+                "https://2.26.80.201/fabricmaven/net/fabricmc/fabric-loader/0.19.5/fabric-loader-0.19.5.jar")]
+    [InlineData("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json",
+                "https://2.26.80.201/pmeta/mc/game/version_manifest_v2.json")]
+    [InlineData("https://piston-meta.mojang.com/v1/packages/a1b2c3d4e5f60718293a4b5c6d7e8f9012345678/1.21.11.json",
+                "https://2.26.80.201/pmeta/v1/packages/a1b2c3d4e5f60718293a4b5c6d7e8f9012345678/1.21.11.json")]
+    [InlineData("https://piston-data.mojang.com/v1/objects/a1b2c3d4e5f60718293a4b5c6d7e8f9012345678/client.jar",
+                "https://2.26.80.201/pdata/v1/objects/a1b2c3d4e5f60718293a4b5c6d7e8f9012345678/client.jar")]
+    [InlineData("https://resources.download.minecraft.net/a1/a1b2c3d4e5f60718293a4b5c6d7e8f9012345678",
+                "https://2.26.80.201/mcres/a1/a1b2c3d4e5f60718293a4b5c6d7e8f9012345678")]
+    [InlineData("https://libraries.minecraft.net/com/mojang/brigadier/1.3.10/brigadier-1.3.10.jar",
+                "https://2.26.80.201/mclib/com/mojang/brigadier/1.3.10/brigadier-1.3.10.jar")]
+    [InlineData("https://api.adoptium.net/v3/assets/latest/21/hotspot?architecture=x64&image_type=jre&os=windows&vendor=eclipse",
+                "https://2.26.80.201/adoptium/v3/assets/latest/21/hotspot?architecture=x64&image_type=jre&os=windows&vendor=eclipse")]
     public void A_cdn_file_or_a_known_api_call_is_rewritten_to_the_mirror(string url, string expected)
     {
         var rewritten = new CdnFallback(Mirror).Rewrite(new Uri(url));
@@ -65,7 +82,16 @@ public sealed class CdnFallbackTests : IDisposable
     [Theory]
     [InlineData("https://github.com/moh1topuk-jpg/STlauncher/releases/download/v1/a.jar")]
     [InlineData("https://piston-data.mojang.com/v1/objects/abc/client.jar")]
-    [InlineData("https://maven.fabricmc.net/net/fabricmc/fabric-loader/0.16/fabric-loader-0.16.jar")]
+    [InlineData("https://piston-data.mojang.com/v1/objects/a1b2c3d4e5f60718293a4b5c6d7e8f9012345678/client.jar?x=1")]
+    [InlineData("https://piston-meta.mojang.com/v1/packages/a1b2c3d4e5f60718293a4b5c6d7e8f9012345678/1.21.11.exe")]
+    [InlineData("https://maven.fabricmc.net/net/fabricmc/fabric-loader/0.16/fabric-loader-0.16.exe")]
+    [InlineData("https://maven.fabricmc.net/net/.hidden/a.jar")]
+    [InlineData("https://meta.fabricmc.net/v1/versions")]
+    [InlineData("https://meta.fabricmc.net/v2/versions/loader?x=1")]
+    [InlineData("https://resources.download.minecraft.net/a1/notahash")]
+    [InlineData("https://libraries.minecraft.net/a.jar")]
+    [InlineData("https://api.adoptium.net/v3/binary/latest/21/ga/windows/x64/jre/hotspot/normal/eclipse")]
+    [InlineData("https://sessionserver.mojang.com/session/minecraft/profile/abc")]
     [InlineData("https://showtime-updates.moh1topuk.workers.dev/cf/v1/mods/search")]
     [InlineData("http://cdn.modrinth.com/data/AANobbMI/versions/g6ju16VJ/a.jar")]
     [InlineData("https://cdn.modrinth.com.evil.example/data/AANobbMI/versions/g6ju16VJ/a.jar")]

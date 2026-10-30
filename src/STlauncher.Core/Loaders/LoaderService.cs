@@ -148,16 +148,24 @@ public sealed partial class LoaderService
         switch (kind)
         {
             case LoaderKind.Fabric:
+            {
+                var loader = await ResolveLoaderVersionAsync(kind, gameVersion, loaderVersion, cancellationToken).ConfigureAwait(false);
                 return await InstallProfileAsync(
-                        $"{FabricMeta}/versions/loader/{gameVersion}/{await ResolveLoaderVersionAsync(kind, gameVersion, loaderVersion, cancellationToken).ConfigureAwait(false)}/profile/json",
+                        $"{FabricMeta}/versions/loader/{gameVersion}/{loader}/profile/json",
+                        $"fabric-loader-{loader}-{gameVersion}",
                         cancellationToken)
                     .ConfigureAwait(false);
+            }
 
             case LoaderKind.Quilt:
+            {
+                var loader = await ResolveLoaderVersionAsync(kind, gameVersion, loaderVersion, cancellationToken).ConfigureAwait(false);
                 return await InstallProfileAsync(
-                        $"{QuiltMeta}/versions/loader/{gameVersion}/{await ResolveLoaderVersionAsync(kind, gameVersion, loaderVersion, cancellationToken).ConfigureAwait(false)}/profile/json",
+                        $"{QuiltMeta}/versions/loader/{gameVersion}/{loader}/profile/json",
+                        $"quilt-loader-{loader}-{gameVersion}",
                         cancellationToken)
                     .ConfigureAwait(false);
+            }
 
             case LoaderKind.Forge:
                 return await InstallForgeLikeAsync(
@@ -192,8 +200,19 @@ public sealed partial class LoaderService
                ?? throw new InvalidOperationException($"No {kind} builds found for {gameVersion}.");
     }
 
-    private async Task<string> InstallProfileAsync(string profileUrl, CancellationToken cancellationToken)
+    /// <summary>
+    /// The loader's profile for one loader build and one game version never changes, so one
+    /// already on disk is used as it is. Fetching it on every launch made the game unable
+    /// to start for a player whose provider cuts meta.fabricmc.net, with everything installed.
+    /// </summary>
+    /// <param name="installedId">The id the profile is installed under, "fabric-loader-0.19.5-1.21.11".</param>
+    private async Task<string> InstallProfileAsync(string profileUrl, string installedId, CancellationToken cancellationToken)
     {
+        if (IsInstalledProfile(installedId))
+        {
+            return installedId;
+        }
+
         var json = await _http.GetStringAsync(profileUrl, cancellationToken).ConfigureAwait(false);
 
         using var document = JsonDocument.Parse(json);
@@ -209,6 +228,29 @@ public sealed partial class LoaderService
 
         _logger?.LogInformation("Installed loader profile {Id}.", id);
         return id;
+    }
+
+    /// <summary>True when the profile is on disk, whole and under its own id.</summary>
+    private bool IsInstalledProfile(string id)
+    {
+        try
+        {
+            var path = _paths.VersionJsonPath(id);
+
+            if (!File.Exists(path))
+            {
+                return false;
+            }
+
+            using var document = JsonDocument.Parse(File.ReadAllText(path));
+            return document.RootElement.TryGetProperty("id", out var stored) &&
+                   string.Equals(stored.GetString(), id, StringComparison.Ordinal) &&
+                   document.RootElement.TryGetProperty("inheritsFrom", out _);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+        {
+            return false;
+        }
     }
 
     private async Task<IReadOnlyList<LoaderVersion>> GetFabricLikeAsync(string url, CancellationToken cancellationToken)

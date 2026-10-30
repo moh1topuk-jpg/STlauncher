@@ -1,20 +1,34 @@
-# Запасной путь к Modrinth и CurseForge
+# Запасной путь к Modrinth, CurseForge, Fabric и Mojang
 
-Если провайдер игрока блокирует или ломает Modrinth или CurseForge, моды всё равно
-скачиваются: лаунчер повторяет тот же запрос через сервер владельца (`2.26.80.201`, тот же
+Если провайдер игрока блокирует или ломает Modrinth, CurseForge, Fabric или сайты Mojang,
+моды, игра и загрузчик всё равно скачиваются: лаунчер повторяет тот же запрос через сервер владельца (`2.26.80.201`, тот же
 VPS, что держит [реле](relay.md) и [второе зеркало обновлений](updates.md#второе-зеркало)).
 Сервер — просто труба: файл приходит тот же, и лаунчер сверяет его хэш так же строго, как
 при прямой загрузке. Кэша нет, на диске сервера ничего не остаётся.
 
 ## Что идёт через сервер
 
-Только три вида адресов, всё остальное отвечает 404 и никуда не уходит:
+Только эти виды адресов, всё остальное отвечает 404 и никуда не уходит:
 
 | Путь на сервере | Куда | Что пропускается |
 | --- | --- | --- |
 | `/mr/…` | `https://cdn.modrinth.com/…` | `GET`/`HEAD` файлов вида `/data/<8 знаков>/versions/<8 знаков>/<файл>.jar\|.zip\|.mrpack` |
 | `/cf/files/…` | `https://mediafilez.forgecdn.net/files/…` | `GET`/`HEAD` файлов вида `/files/<цифры>/<цифры>/<файл>.jar\|.zip\|.mrpack` |
 | `/mrapi/…` | `https://api.modrinth.com/…` | `GET`/`HEAD` только тех вызовов, что делает лаунчер: `/v2/search`, `/v2/tag/category`, `/v2/project/<id>`, `/v2/project/<id>/version`, `/v2/version/<id>` |
+| `/fabricmeta/…` | `https://meta.fabricmc.net/…` | `/v2/versions/…`: список загрузчиков и профиль загрузчика |
+| `/fabricmaven/…` | `https://maven.fabricmc.net/…` | Maven-пути, файлы `.jar .pom .xml .json .sha1`; сегмент не начинается с точки |
+| `/pmeta/…` | `https://piston-meta.mojang.com/…` | `/mc/game/version_manifest(_v2).json`, `/v1/packages/<sha1>/<имя>.json` |
+| `/pdata/…` | `https://piston-data.mojang.com/…` | `/v1/objects/<sha1>/<имя>` (клиент игры, логи-конфиги) |
+| `/mcres/…` | `https://resources.download.minecraft.net/…` | `/<2 знака>/<sha1>`: ресурсы игры |
+| `/mclib/…` | `https://libraries.minecraft.net/…` | Maven-пути, `.jar .sha1` |
+| `/adoptium/…` | `https://api.adoptium.net/…` | `/v3/assets/latest/<N>/hotspot?…` и `/v3/info/available_releases` — где взять Java. Сам архив Java лежит на GitHub и через сервер не идёт |
+
+Файлы Mojang названы своим SHA-1 и сверяются с ним, как и моды. Профиль Fabric и список
+версий хэша не имеют — так же, как когда они идут через воркер.
+
+Трафик: свежая установка игры через сервер — это около 600 МБ (клиент, библиотеки,
+ресурсы). Идёт только у тех, у кого прямой путь не работает, и только один раз: потом файлы
+уже на диске. Установленная сборка запускается без сети к Fabric и Mojang вообще.
 
 Почему CurseForge идёт на `mediafilez`, а не на `edge.forgecdn.net`: `edge` отвечает только
 редиректом 302 на `mediafilez`, и игрок пошёл бы по нему напрямую — туда, где заблокировано.
@@ -57,8 +71,8 @@ API CurseForge отдельно не нужен: он и так идёт чер�
 - Хост, который не ответил, запоминается до конца сессии: следующие файлы идут сразу через
   сервер. Раз в 10 минут прямой путь пробуется снова.
 - Один раз за сессию в консоли и строке статуса: «Modrinth недоступен напрямую, файлы идут
-  через запасной путь» (или CurseForge).
-- Любой другой адрес (Mojang, Fabric, GitHub, картинки модов) через сервер не идёт никогда.
+  через запасной путь» (или CurseForge, Fabric, Mojang, Java).
+- Любой другой адрес (GitHub, сессии и профили Mojang, картинки модов) через сервер не идёт никогда.
 
 Адрес сервера — `AppSettings.SecondMirrorUrl`.
 
@@ -130,6 +144,139 @@ API CurseForge отдельно не нужен: он и так идёт чер�
 				response_header_timeout 30s
 			}
 		}
+	}
+
+	# --- Игра: Fabric, Mojang, Java (только пути, которые просит лаунчер) ---
+	@fabric_meta {
+		method GET HEAD
+		path_regexp ^/fabricmeta/v2/versions(/[A-Za-z0-9_+-][A-Za-z0-9._+-]{0,63}){1,6}$
+	}
+	handle @fabric_meta {
+		uri strip_prefix /fabricmeta
+		reverse_proxy https://meta.fabricmc.net {
+			transport http {
+				dial_timeout 10s
+				response_header_timeout 30s
+			}
+		}
+	}
+
+	@fabric_maven {
+		method GET HEAD
+		path_regexp ^/fabricmaven(/[A-Za-z0-9_+-][A-Za-z0-9._+-]*){2,16}\.(jar|pom|xml|json|sha1)$
+	}
+	handle @fabric_maven {
+		uri strip_prefix /fabricmaven
+		reverse_proxy https://maven.fabricmc.net {
+			transport http {
+				dial_timeout 10s
+				response_header_timeout 30s
+			}
+			@moved status 3xx
+			handle_response @moved {
+				respond 502
+			}
+		}
+	}
+
+	@mojang_meta {
+		method GET HEAD
+		path_regexp ^/pmeta/(mc/game/version_manifest(_v2)?\.json|v1/packages/[0-9a-f]{40}/[A-Za-z0-9_-][A-Za-z0-9._-]{0,99}\.json)$
+	}
+	handle @mojang_meta {
+		uri strip_prefix /pmeta
+		reverse_proxy https://piston-meta.mojang.com {
+			transport http {
+				dial_timeout 10s
+				response_header_timeout 30s
+			}
+		}
+	}
+
+	@mojang_data {
+		method GET HEAD
+		path_regexp ^/pdata/v1/objects/[0-9a-f]{40}/[A-Za-z0-9_-][A-Za-z0-9._-]{0,99}$
+	}
+	handle @mojang_data {
+		uri strip_prefix /pdata
+		reverse_proxy https://piston-data.mojang.com {
+			transport http {
+				dial_timeout 10s
+				response_header_timeout 30s
+			}
+			@moved status 3xx
+			handle_response @moved {
+				respond 502
+			}
+		}
+	}
+
+	@mojang_resources {
+		method GET HEAD
+		path_regexp ^/mcres/[0-9a-f]{2}/[0-9a-f]{40}$
+	}
+	handle @mojang_resources {
+		uri strip_prefix /mcres
+		reverse_proxy https://resources.download.minecraft.net {
+			transport http {
+				dial_timeout 10s
+				response_header_timeout 30s
+			}
+		}
+	}
+
+	@mojang_libraries {
+		method GET HEAD
+		path_regexp ^/mclib(/[A-Za-z0-9_+-][A-Za-z0-9._+-]*){2,16}\.(jar|sha1)$
+	}
+	handle @mojang_libraries {
+		uri strip_prefix /mclib
+		reverse_proxy https://libraries.minecraft.net {
+			transport http {
+				dial_timeout 10s
+				response_header_timeout 30s
+			}
+			@moved status 3xx
+			handle_response @moved {
+				respond 502
+			}
+		}
+	}
+
+	@adoptium_api {
+		method GET HEAD
+		path_regexp ^/adoptium/v3/(assets/latest/[0-9]{1,3}/hotspot|info/available_releases)$
+	}
+	handle @adoptium_api {
+		uri strip_prefix /adoptium
+		reverse_proxy https://api.adoptium.net {
+			transport http {
+				dial_timeout 10s
+				response_header_timeout 30s
+			}
+		}
+	}
+
+	handle /fabricmeta/* {
+		respond 404
+	}
+	handle /fabricmaven/* {
+		respond 404
+	}
+	handle /pmeta/* {
+		respond 404
+	}
+	handle /pdata/* {
+		respond 404
+	}
+	handle /mcres/* {
+		respond 404
+	}
+	handle /mclib/* {
+		respond 404
+	}
+	handle /adoptium/* {
+		respond 404
 	}
 
 	# Всё остальное под этими путями никуда не уходит.
