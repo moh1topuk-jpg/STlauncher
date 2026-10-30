@@ -43,10 +43,30 @@ public partial class MainWindowViewModel
 
     // ===================== Straight to the admin =====================
 
-    /// <summary>Where the report goes: the catalog's address, else the mirror's. Empty means the button is not shown.</summary>
-    public string ReportUrl => _loadedCatalog is { ReportUrl: { } configured }
+    /// <summary>The address the catalog names, else the mirror's. Empty means the button is not shown.</summary>
+    private string ConfiguredReportUrl => _loadedCatalog is { ReportUrl: { } configured }
         ? configured.Trim()
         : AppSettings.DefaultReportUrl;
+
+    /// <summary>
+    /// The same endpoint through the second mirror, which passes everything on to the first:
+    /// for a player whose provider cuts workers.dev, as it cuts the downloads.
+    /// </summary>
+    private string SecondMirrorReportUrl
+    {
+        get
+        {
+            var configured = ConfiguredReportUrl;
+            return configured.StartsWith(AppSettings.BuiltInUpdateFeeds[0], StringComparison.OrdinalIgnoreCase)
+                ? AppSettings.SecondMirrorUrl + configured[AppSettings.BuiltInUpdateFeeds[0].Length..]
+                : string.Empty;
+        }
+    }
+
+    /// <summary>Where the report goes: the first address that answered the probe, else the configured one.</summary>
+    public string ReportUrl => _answeredReportUrl ?? ConfiguredReportUrl;
+
+    private string? _answeredReportUrl;
 
     /// <summary>Set once the endpoint has answered that it takes reports; the button waits for it.</summary>
     [ObservableProperty]
@@ -57,10 +77,10 @@ public partial class MainWindowViewModel
 
     public bool CanSendReport => ReportUrl.Length > 0 && IsReportEndpointReady;
 
-    /// <summary>Asks the endpoint once per address whether it is there. Off the launch path, never blocking.</summary>
+    /// <summary>Asks the endpoint once per address whether it is there, then the second mirror. Off the launch path, never blocking.</summary>
     private async Task ProbeReportEndpointAsync()
     {
-        var url = ReportUrl;
+        var url = ConfiguredReportUrl;
 
         if (url.Length == 0 || string.Equals(url, _probedReportUrl, StringComparison.Ordinal))
         {
@@ -69,9 +89,28 @@ public partial class MainWindowViewModel
         }
 
         _probedReportUrl = url;
-        var ready = await _reportSender.ProbeAsync(url);
-        IsReportEndpointReady = ready;
-        AppendConsole(ready ? $"[report] endpoint ready: {url}" : $"[report] endpoint not taking reports yet: {url}");
+
+        foreach (var candidate in new[] { url, SecondMirrorReportUrl })
+        {
+            if (candidate.Length == 0)
+            {
+                continue;
+            }
+
+            if (await _reportSender.ProbeAsync(candidate))
+            {
+                _answeredReportUrl = candidate;
+                IsReportEndpointReady = true;
+                OnPropertyChanged(nameof(CanSendReport));
+                AppendConsole($"[report] endpoint ready: {candidate}");
+                return;
+            }
+
+            AppendConsole($"[report] endpoint not answering: {candidate}");
+        }
+
+        _answeredReportUrl = null;
+        IsReportEndpointReady = false;
     }
 
     /// <summary>True while the "this is what will be sent" card is up.</summary>
