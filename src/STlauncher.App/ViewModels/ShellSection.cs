@@ -12,5 +12,8 @@ public enum ShellSection
     Host,
 
     // Skins: the library and the editor.
-    Skins
+    Skins,
+
+    // Mods: the catalog of Modrinth and CurseForge, for whichever build is picked.
+    Mods
 }

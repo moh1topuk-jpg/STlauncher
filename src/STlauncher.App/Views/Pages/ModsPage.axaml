@@ -1,0 +1,65 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:STlauncher.App.ViewModels"
+             xmlns:inst="using:STlauncher.Core.Instances"
+             xmlns:pages="using:STlauncher.App.Views.Pages"
+             xmlns:controls="using:STlauncher.App.Controls"
+             x:Class="STlauncher.App.Views.Pages.ModsPage"
+             x:DataType="vm:MainWindowViewModel">
+
+    <!-- Mods: the catalog of Modrinth and CurseForge as a section of its own, so a player
+         finds it from the rail and not only as the last tab of a build. It is the same
+         catalog as that tab - one view model, one search - with the build the finds go
+         into chosen at the top; that choice is the build picked everywhere else too. -->
+
+    <Panel>
+        <Border IsHitTestVisible="False" Background="{DynamicResource HomeGlowBrush}"/>
+
+        <Grid RowDefinitions="Auto,*" RowSpacing="16" Margin="40,22,40,20" MaxWidth="1240">
+
+            <!-- Heading, and where the finds go. -->
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                <StackPanel Spacing="4" VerticalAlignment="Bottom">
+                    <TextBlock Text="{DynamicResource Mods_PageTitle}" Classes="page-title large"/>
+                    <TextBlock Text="{DynamicResource Mods_PageSubtitle}" Classes="muted" FontSize="13.5" TextWrapping="Wrap"/>
+                </StackPanel>
+                <Border Grid.Column="1" Classes="panel" Padding="14,8,8,8" VerticalAlignment="Bottom"
+                        IsVisible="{Binding SelectedInstance, Converter={x:Static ObjectConverters.IsNotNull}}">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <TextBlock Text="{DynamicResource Mods_TargetBuild}" Classes="muted" FontWeight="Bold"
+                                   VerticalAlignment="Center"/>
+                        <ComboBox ItemsSource="{Binding Instances}" SelectedItem="{Binding SelectedInstance}"
+                                  MinWidth="240" MaxWidth="360" VerticalAlignment="Center">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="inst:Instance">
+                                    <TextBlock Text="{Binding Name}" FontWeight="Bold" TextTrimming="CharacterEllipsis"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- The catalog itself. -->
+            <Border Grid.Row="1" Classes="panel" Padding="0"
+                    IsVisible="{Binding SelectedInstance, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <pages:BuildCatalogView/>
+            </Border>
+
+            <!-- No build yet: nothing to put mods into, and the one thing to do. -->
+            <Border Grid.Row="1" Classes="panel" Padding="24,22" VerticalAlignment="Top"
+                    IsVisible="{Binding SelectedInstance, Converter={x:Static ObjectConverters.IsNull}}">
+                <StackPanel Spacing="12" HorizontalAlignment="Left">
+                    <TextBlock Text="{DynamicResource Mods_PageNoBuild}" Classes="h3" TextWrapping="Wrap"/>
+                    <TextBlock Text="{DynamicResource Mods_PageNoBuildHint}" Classes="muted" TextWrapping="Wrap" MaxWidth="520"/>
+                    <Button Classes="primary" HorizontalAlignment="Left" Command="{Binding NewBuildFromHomeCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <PathIcon Data="{StaticResource IconPlus}" Width="12" Height="12"/>
+                            <TextBlock Text="{DynamicResource Home_NewBuild}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Panel>
+</UserControl>

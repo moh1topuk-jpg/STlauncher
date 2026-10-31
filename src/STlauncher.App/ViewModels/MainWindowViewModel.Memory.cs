@@ -24,15 +24,26 @@ public partial class MainWindowViewModel
         bool Was(BuildTab tab) => fromSection == ShellSection.Builds && fromTab == tab;
         bool Is(BuildTab tab) => toSection == ShellSection.Builds && toTab == tab;
 
-        if (Was(BuildTab.Catalog) && !Is(BuildTab.Catalog))
+        // The catalog is the build's tab and the Mods section alike: going from one to the
+        // other keeps what was found.
+        var wasCatalog = IsCatalogScreen(fromSection, fromTab);
+        var isCatalog = IsCatalogScreen(toSection, toTab);
+
+        if (wasCatalog && !isCatalog)
         {
             // The cards keep the logos they show; everything else found while browsing goes.
             _images.Clear();
         }
 
-        if (Is(BuildTab.Catalog) && !Was(BuildTab.Catalog))
+        if (isCatalog && !wasCatalog)
         {
             OnCatalogShown();
+
+            // A mirror that could not be reached at start gets one more question here too.
+            if (toSection == ShellSection.Mods && !IsCurseForgeAvailable)
+            {
+                _ = ProbeCurseForgeAsync();
+            }
         }
 
         if (Was(BuildTab.Screenshots) && !Is(BuildTab.Screenshots))

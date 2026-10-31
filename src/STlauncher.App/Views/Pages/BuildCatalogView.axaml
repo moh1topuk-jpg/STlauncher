@@ -30,7 +30,8 @@
                  fit a vanilla build too. A wrap panel: in a narrow window the pickers drop
                  under the way back. -->
             <WrapPanel ItemSpacing="12" LineSpacing="8">
-                <Button Classes="small" Padding="9,6,12,6" Command="{Binding CloseCatalogCommand}" VerticalAlignment="Center">
+                <Button Classes="small" Padding="9,6,12,6" Command="{Binding CloseCatalogCommand}" VerticalAlignment="Center"
+                        IsVisible="{Binding !IsModsSection}">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <PathIcon Data="{StaticResource IconChevronLeft}" Width="11" Height="11"/>
                         <TextBlock Name="BackLabel" Text="{DynamicResource Catalog_Back}" FontWeight="Bold"/>

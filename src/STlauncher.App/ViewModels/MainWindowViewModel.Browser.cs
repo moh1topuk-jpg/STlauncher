@@ -415,7 +415,11 @@ public partial class MainWindowViewModel
     /// <summary>Set while the category and sort lists are rebuilt, so putting the same choice back is not taken for a new one.</summary>
     private bool _restoringBrowserFilters;
 
-    private bool IsCatalogOnScreen => Section == ShellSection.Builds && BuildTab == BuildTab.Catalog;
+    private bool IsCatalogOnScreen => IsCatalogScreen(Section, BuildTab);
+
+    /// <summary>The catalog is on screen in two places: the build's last tab, and the Mods section.</summary>
+    private static bool IsCatalogScreen(ShellSection section, BuildTab tab)
+        => section == ShellSection.Mods || (section == ShellSection.Builds && tab == BuildTab.Catalog);
 
     /// <summary>The catalog has to be asked again before it is next shown.</summary>
     private void MarkBrowserStale()

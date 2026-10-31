@@ -271,6 +271,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public bool IsGameSection => Section == ShellSection.Game;
     public bool IsBuildsSection => Section == ShellSection.Builds;
+    public bool IsModsSection => Section == ShellSection.Mods;
     public bool IsServerSection => Section == ShellSection.Server;
     public bool IsConsoleSection => Section == ShellSection.Console;
     public bool IsSettingsSection => Section == ShellSection.Settings;
@@ -1208,6 +1209,7 @@ public partial class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsConsoleSection));
         OnPropertyChanged(nameof(IsSettingsSection));
         OnPropertyChanged(nameof(IsSkinsSection));   // Skins
+        OnPropertyChanged(nameof(IsModsSection));
 
         // Opening the page should show the current online count, not whatever the last
         // five-minute tick left behind.

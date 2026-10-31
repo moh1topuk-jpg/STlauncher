@@ -330,6 +330,7 @@ public partial class MainWindowViewModel
 
         Place(ShellSection.Game, Localize("Nav_Game", "Home"), "IconHome", "главная домой дом старт home main start");
         Place(ShellSection.Builds, Localize("Nav_Builds", "Builds"), "IconBuilds", "сборки моды миры builds instances mods worlds");
+        Place(ShellSection.Mods, Localize("Nav_Mods", "Mods"), "IconMods", "моды каталог шейдеры ресурспаки скачать modrinth curseforge mods catalog shaders resource packs download");
         Place(ShellSection.Skins, Localize("Nav_Skins", "Skins"), "IconSkins", "скины скин редактор skins skin editor");
         Place(ShellSection.Host, Localize("Nav_Host", "Friends"), "IconHost", "друзья сервер хост мой сервер friends server host multiplayer");
         Place(ShellSection.Server, ServerName, "IconStar", "сервер онлайн server online showtime");

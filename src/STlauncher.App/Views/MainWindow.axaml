@@ -72,6 +72,17 @@
                             </StackPanel>
                         </Button>
                     </Panel>
+                    <!-- Mods: the catalog of Modrinth and CurseForge, in plain sight. -->
+                    <Panel>
+                        <Border Classes="rail-mark" Classes.active="{Binding IsModsSection}"/>
+                        <Button Classes="rail" Classes.active="{Binding IsModsSection}" HorizontalAlignment="Center"
+                                Command="{Binding SelectSectionCommand}" CommandParameter="Mods">
+                            <StackPanel Spacing="4" HorizontalAlignment="Center">
+                                <PathIcon Data="{StaticResource IconMods}"/>
+                                <TextBlock Text="{DynamicResource Nav_Mods}" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </Panel>
                     <!-- Skins: the library and the editor. -->
                     <Panel>
                         <Border Classes="rail-mark" Classes.active="{Binding IsSkinsSection}"/>
@@ -205,6 +216,7 @@
                         </TextBlock>
                         <TextBlock Classes="context" IsVisible="{Binding IsBuildsSection}" Text="{DynamicResource Nav_Builds}"/>
                         <TextBlock Classes="context" IsVisible="{Binding IsSkinsSection}" Text="{DynamicResource Nav_Skins}"/>
+                        <TextBlock Classes="context" IsVisible="{Binding IsModsSection}" Text="{DynamicResource Nav_Mods}"/>
                         <TextBlock Classes="context" IsVisible="{Binding IsHostSection}" Text="{DynamicResource Nav_Host}"/>
                         <TextBlock Classes="context" IsVisible="{Binding IsServerSection}" Text="{Binding ServerName}"/>
                         <TextBlock Classes="context" IsVisible="{Binding IsSettingsSection}" Text="{DynamicResource Nav_Settings}"/>
@@ -283,6 +295,7 @@
             <Panel Grid.Row="2">
                 <pages:GamePage IsVisible="{Binding IsGameSection}" controls:Reveal.OnVisible="True"/>
                 <pages:BuildsPage IsVisible="{Binding IsBuildsSection}" controls:Reveal.OnVisible="True"/>
+                <pages:ModsPage IsVisible="{Binding IsModsSection}" controls:Reveal.OnVisible="True"/>
                 <pages:ServerPage IsVisible="{Binding IsServerSection}" controls:Reveal.OnVisible="True"/>
                 <pages:ConsolePage IsVisible="{Binding IsConsoleSection}" controls:Reveal.OnVisible="True"/>
                 <pages:SettingsPage IsVisible="{Binding IsSettingsSection}" controls:Reveal.OnVisible="True"/>

@@ -5,6 +5,12 @@
     <x:String x:Key="App_Title">STlauncher</x:String>
     <x:String x:Key="Nav_Game">Home</x:String>
     <x:String x:Key="Nav_Builds">Builds</x:String>
+    <x:String x:Key="Nav_Mods">Mods</x:String>
+    <x:String x:Key="Mods_PageTitle">Mods</x:String>
+    <x:String x:Key="Mods_PageSubtitle">Mods, resource packs and shaders from Modrinth and CurseForge</x:String>
+    <x:String x:Key="Mods_TargetBuild">Install into:</x:String>
+    <x:String x:Key="Mods_PageNoBuild">A build comes first</x:String>
+    <x:String x:Key="Mods_PageNoBuildHint">Mods go into a build. Make one, and this is where you will look for and add mods, resource packs and shaders.</x:String>
     <x:String x:Key="Nav_Server">Server</x:String>
     <x:String x:Key="Nav_Console">Console</x:String>
     <x:String x:Key="Nav_Settings">Settings</x:String>
