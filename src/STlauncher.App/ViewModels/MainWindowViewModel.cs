@@ -57,6 +57,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly DiscordPresenceService _discord;
     private readonly UsageReporter _usage;
     private readonly DownloadClient _downloader;
+    private readonly DreamDisplaysFiles _dreamDisplays;
     private readonly PreparedFiles _prepared;
 
     private List<VersionSummary> _allVersions = new();
@@ -101,8 +102,10 @@ public partial class MainWindowViewModel : ViewModelBase
         STlauncher.Core.Diagnostics.NetworkDiagnostics network,
         HostingServices hosting,
         DownloadClient downloader,
-        PreparedFiles prepared)
+        PreparedFiles prepared,
+        DreamDisplaysFiles dreamDisplays)
     {
+        _dreamDisplays = dreamDisplays;
         _network = network;
         _downloader = downloader;
         _prepared = prepared;
@@ -483,6 +486,7 @@ public partial class MainWindowViewModel : ViewModelBase
         LoadAppearance(settings.Theme, settings.Accent);
         DiscordPresence = settings.DiscordPresence;
         StreamerMode = settings.StreamerMode;
+        ReportTelegram = settings.ReportTelegram;
         PrepareAhead = settings.PrepareAhead;
         _safeModeRestore = settings.SafeModeRestore?.ToList() ?? new List<string>();
         UsageStats = settings.UsageStats;
@@ -891,6 +895,8 @@ public partial class MainWindowViewModel : ViewModelBase
                 await EnsureBuildItemsInstalledAsync(SelectedInstance);
                 RefreshMods();
             }
+
+            await EnsureDreamDisplaysFilesAsync();
 
             // A build with "show my skin in the game" on gets the worn skin now.
             PrepareSkinInGame(SelectedInstance);
@@ -1513,6 +1519,7 @@ public partial class MainWindowViewModel : ViewModelBase
             Accent = Accent,
             DiscordPresence = DiscordPresence,
             StreamerMode = StreamerMode,
+            ReportTelegram = STlauncher.Core.Diagnostics.ReportContact.Normalize(ReportTelegram) ?? string.Empty,
             PrepareAhead = PrepareAhead,
             SafeModeRestore = _safeModeRestore.ToList(),
             UsageStats = UsageStats,

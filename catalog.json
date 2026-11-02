@@ -37,7 +37,7 @@
         { "id": "chatanimation", "type": "mod", "name": "Chat Animation", "description": "Плавное появление сообщений в чате.", "required": true, "source": { "kind": "modrinth", "project": "chatanimation", "version": "1.3.0+fabric-1.21.11" } },
         { "id": "clientsort", "type": "mod", "name": "Client Sort", "description": "Сортировка инвентаря и сундуков.", "required": true, "source": { "kind": "modrinth", "project": "clientsort", "version": "2.2.2+1.21.11" } },
         { "id": "emotecraft", "type": "mod", "name": "Emotecraft", "description": "Эмоции и анимации игрока.", "required": true, "source": { "kind": "modrinth", "project": "emotecraft", "version": "3.2.0-b.build.163+1.21.11-fabric" } },
-        { "id": "dreamdisplays", "type": "mod", "name": "Dream Displays", "description": "Отображение моделей и косметики.", "required": true, "source": { "kind": "modrinth", "project": "dreamdisplays", "version": "1.9.6" } },
+        { "id": "dreamdisplays", "type": "mod", "name": "Dream Displays", "description": "Отображение моделей и косметики.", "required": true, "source": { "kind": "modrinth", "project": "dreamdisplays", "version": "1.10.8" } },
         { "id": "simple-voice-chat", "type": "mod", "name": "Simple Voice Chat", "description": "Голосовой чат прямо в игре.", "required": true, "source": { "kind": "modrinth", "project": "simple-voice-chat", "version": "fabric-1.21.11-2.6.22" } },
 
         { "id": "xaeros-minimap", "type": "mod", "name": "Xaero's Minimap", "description": "Миникарта с метками и путевыми точками.", "required": true, "source": { "kind": "modrinth", "project": "xaeros-minimap", "version": "fabric-1.21.11-25.3.12" } },

@@ -10,6 +10,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Avalonia.Input.Platform;
 using STlauncher.App.Services;
+using STlauncher.Core.Diagnostics;
 
 namespace STlauncher.App.ViewModels;
 
@@ -124,6 +125,19 @@ public partial class MainWindowViewModel
     [ObservableProperty]
     private string _reportComment = string.Empty;
 
+    /// <summary>The player's Telegram, so the admin can write back. Optional; kept for the next report.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsReportTelegramInvalid))]
+    [NotifyPropertyChangedFor(nameof(CanPressSendReport))]
+    private string _reportTelegram = string.Empty;
+
+    /// <summary>Something was typed and it is not a Telegram username.</summary>
+    public bool IsReportTelegramInvalid => ReportContact.Normalize(ReportTelegram) is null;
+
+    public bool CanPressSendReport => !IsReportSending && !IsReportTelegramInvalid;
+
+    partial void OnIsReportSendingChanged(bool value) => OnPropertyChanged(nameof(CanPressSendReport));
+
     /// <summary>What the zip holds, in words, so the player agrees to something concrete.</summary>
     public string ReportSendSummary => Localize(
         "Report_SendSummary",
@@ -188,7 +202,7 @@ public partial class MainWindowViewModel
     [RelayCommand]
     private async Task SendSupportReportAsync()
     {
-        if (IsReportSending || !CanSendReport)
+        if (IsReportSending || !CanSendReport || ReportContact.Normalize(ReportTelegram) is not { } contact)
         {
             return;
         }
@@ -200,7 +214,9 @@ public partial class MainWindowViewModel
 
             var (zipPath, name) = WriteSupportReport();
             var version = _updates.CurrentVersion ?? "dev";
-            var comment = ReportComment.Trim();
+            var comment = ReportContact.Compose(contact, ReportComment.Trim());
+            ReportTelegram = contact;
+            PersistSettings();
 
             // The copy for the developer goes at the same time, to the relay, as redacted
             // text. Whatever becomes of it, Telegram is the report; this is the extra.

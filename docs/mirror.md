@@ -23,6 +23,15 @@ VPS, что держит [реле](relay.md) и [второе зеркало о
 | `/mclib/…` | `https://libraries.minecraft.net/…` | Maven-пути, `.jar .sha1` |
 | `/adoptium/…` | `https://api.adoptium.net/…` | `/v3/assets/latest/<N>/hotspot?…` и `/v3/info/available_releases` — где взять Java. Сам архив Java лежит на GitHub и через сервер не идёт |
 
+`/dd/…` — не прокси, а файл на самом сервере: `/var/www/stlauncher/dd/ffmpeg-9.0-win64-20261101.zip`,
+129 МБ. Это FFmpeg для Dream Displays: `ffmpeg.exe` из сборки BtbN `ffmpeg-n9.0-latest-win64-gpl-9.0.zip`
+и библиотеки из `ffmpeg-n9.0-latest-win64-lgpl-shared-9.0.zip`, с их файлами лицензий. Без него мод
+сам качает с GitHub 270 МБ прямо в игре, и заход на сервер ждёт конца этой загрузки на потоке игры:
+на медленном канале игра зависает (отчёты ded_rura, 2026-11-01). Лаунчер кладёт файлы до запуска
+(`DreamDisplaysFiles`) и сверяет архив по SHA-256 из кода. Если мод начнёт искать FFmpeg в другой
+папке, новый архив и новые пути нужны и здесь, и в коде. Исходники FFmpeg: https://github.com/FFmpeg/FFmpeg,
+сборки: https://github.com/BtbN/FFmpeg-Builds.
+
 Файлы Mojang названы своим SHA-1 и сверяются с ним, как и моды. Профиль Fabric и список
 версий хэша не имеют — так же, как когда они идут через воркер.
 
@@ -277,6 +286,12 @@ API CurseForge отдельно не нужен: он и так идёт чер�
 	}
 	handle /adoptium/* {
 		respond 404
+	}
+
+	# FFmpeg для Dream Displays: файл на самом сервере.
+	handle_path /dd/* {
+		root * /var/www/stlauncher/dd
+		file_server
 	}
 
 	# Всё остальное под этими путями никуда не уходит.

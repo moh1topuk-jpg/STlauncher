@@ -1605,6 +1605,11 @@
     <x:String x:Key="Report_SendSummary">The admin will get: launcher and game logs, the crash report, the launcher's freeze reports, the build's mod list, launcher settings, and what this machine is. Your nickname: {0}. Nothing else.</x:String>
     <x:String x:Key="Report_CommentHint">What you did and what you saw — optional, but it helps</x:String>
     <x:String x:Key="Report_SendButton">Send</x:String>
+    <x:String x:Key="Report_TelegramHint">Your Telegram for a reply, like @username (optional)</x:String>
+    <x:String x:Key="Report_TelegramNote">Goes with the report, so the admin can write to you.</x:String>
+    <x:String x:Key="Report_TelegramInvalid">That does not look like a Telegram username. It goes like this: @username, 5 or more letters, digits and _</x:String>
+    <x:String x:Key="Launch_DreamDisplaysFiles">Files for the screens on the server…</x:String>
+    <x:String x:Key="Launch_Megabytes">{0} of {1} MB</x:String>
     <x:String x:Key="Report_Sending">Sending the report…</x:String>
     <x:String x:Key="Report_Sent">Report sent. The admin has it; the copy stayed in the reports folder.</x:String>
     <x:String x:Key="Report_SendFailed">Could not send the report ({0}). Use “Collect a report” and send the file by hand.</x:String>

@@ -106,6 +106,7 @@ public static class LauncherHost
         services.AddSingleton<DiscordPresenceService>();
         services.AddSingleton<UsageReporter>();
         services.AddSingleton<SupportReportSender>();
+        services.AddSingleton<DreamDisplaysFiles>();
 
         // CurseForge: the second mod source, asked through the mirror that holds the API key.
         services.AddSingleton(provider => new CurseForgeClient(

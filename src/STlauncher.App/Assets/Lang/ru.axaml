@@ -1605,6 +1605,11 @@
     <x:String x:Key="Report_SendSummary">Администратор получит: логи лаунчера и игры, отчёт о падении, отчёты о зависаниях лаунчера, список модов сборки, настройки лаунчера и сведения об этом компьютере. Ваш ник: {0}. Больше ничего.</x:String>
     <x:String x:Key="Report_CommentHint">Что делали и что увидели — необязательно, но помогает</x:String>
     <x:String x:Key="Report_SendButton">Отправить</x:String>
+    <x:String x:Key="Report_TelegramHint">Ваш Telegram для ответа, например @username (необязательно)</x:String>
+    <x:String x:Key="Report_TelegramNote">Уйдёт вместе с отчётом, чтобы администратор мог вам написать.</x:String>
+    <x:String x:Key="Report_TelegramInvalid">Не похоже на ник Telegram. Нужно вот так: @username, от 5 символов, латиница, цифры и _</x:String>
+    <x:String x:Key="Launch_DreamDisplaysFiles">Файлы для экранов на сервере…</x:String>
+    <x:String x:Key="Launch_Megabytes">{0} из {1} МБ</x:String>
     <x:String x:Key="Report_Sending">Отправляю отчёт…</x:String>
     <x:String x:Key="Report_Sent">Отчёт отправлен. Администратор его получил; копия осталась в папке reports.</x:String>
     <x:String x:Key="Report_SendFailed">Не удалось отправить отчёт ({0}). Нажмите «Собрать отчёт» и перешлите файл вручную.</x:String>

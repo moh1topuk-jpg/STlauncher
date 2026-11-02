@@ -580,9 +580,18 @@
                                                            IsVisible="{Binding HasReportRelayNote}"/>
                                                 <TextBox Text="{Binding ReportComment}" Watermark="{DynamicResource Report_CommentHint}"
                                                          AcceptsReturn="True" MaxLength="600" MinHeight="56" TextWrapping="Wrap"/>
+                                                <!-- Where the admin can answer. Optional, and said what it is for. -->
+                                                <StackPanel Spacing="4">
+                                                    <TextBox Text="{Binding ReportTelegram}" Watermark="{DynamicResource Report_TelegramHint}"
+                                                             MaxLength="64"/>
+                                                    <TextBlock Text="{DynamicResource Report_TelegramNote}" Classes="muted" FontSize="12.5" TextWrapping="Wrap"
+                                                               IsVisible="{Binding !IsReportTelegramInvalid}"/>
+                                                    <TextBlock Text="{DynamicResource Report_TelegramInvalid}" Foreground="{DynamicResource DangerBrush}"
+                                                               FontSize="12.5" TextWrapping="Wrap" IsVisible="{Binding IsReportTelegramInvalid}"/>
+                                                </StackPanel>
                                                 <WrapPanel ItemSpacing="8" LineSpacing="6">
                                                     <Button Classes="accent-soft small" Content="{DynamicResource Report_SendButton}"
-                                                            Command="{Binding SendSupportReportCommand}" IsEnabled="{Binding !IsReportSending}"/>
+                                                            Command="{Binding SendSupportReportCommand}" IsEnabled="{Binding CanPressSendReport}"/>
                                                     <Button Classes="ghost small" Content="{DynamicResource Common_Cancel}"
                                                             Command="{Binding CancelReportSendCommand}" IsEnabled="{Binding !IsReportSending}"/>
                                                     <ProgressBar IsIndeterminate="True" Width="60" Height="3" VerticalAlignment="Center"

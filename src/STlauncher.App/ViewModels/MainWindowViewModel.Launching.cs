@@ -1,9 +1,13 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
+using STlauncher.App.Services;
 using STlauncher.Core.Http;
 using STlauncher.Core.Launch;
+using STlauncher.Core.Mods;
 
 namespace STlauncher.App.ViewModels;
 
@@ -153,6 +157,47 @@ public partial class MainWindowViewModel
                 Mark(_stageStart, LaunchStageState.Active);
                 break;
         }
+    }
+
+    /// <summary>
+    /// Dream Displays' FFmpeg, in place before the game starts (see DreamDisplaysFiles). A
+    /// linked build's folder belongs to the other launcher and is left alone. Failing here
+    /// costs the player nothing they had: the game starts and the mod downloads for itself.
+    /// </summary>
+    private async Task EnsureDreamDisplaysFilesAsync()
+    {
+        if (!OperatingSystem.IsWindows() ||
+            !RuntimeInformation.OSArchitecture.Equals(Architecture.X64) ||
+            !string.IsNullOrWhiteSpace(SelectedInstance?.ExternalGameDirectory) ||
+            !DreamDisplaysFiles.AreNeeded(InstanceDirectory))
+        {
+            return;
+        }
+
+        var title = Localize("Launch_DreamDisplaysFiles", "Files for the screens on the server…");
+        Status = title;
+        AppendConsole("[dreamdisplays] FFmpeg is not there yet: taking it from the launcher's server");
+
+        var progress = new Progress<(long Done, long Total)>(p =>
+        {
+            const double mb = 1024 * 1024;
+            Progress = p.Total > 0 ? p.Done * 100.0 / p.Total : 0;
+            var detail = Localize("Launch_Megabytes", "{0} of {1} MB", (int)(p.Done / mb), (int)(p.Total / mb));
+            Mark(_stageMods, LaunchStageState.Active, detail);
+            Status = title + " " + detail;
+        });
+
+        try
+        {
+            await _dreamDisplays.InstallAsync(new Uri(AppSettings.SecondMirrorUrl), InstanceDirectory, progress);
+            AppendConsole("[dreamdisplays] FFmpeg is in place");
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            AppendConsole($"[dreamdisplays] FFmpeg not taken: {ex.GetType().Name}: {ex.Message}");
+        }
+
+        Progress = 0;
     }
 
     private void OnLaunchDownload(DownloadProgress p)

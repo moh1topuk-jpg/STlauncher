@@ -137,6 +137,9 @@ public sealed class AppSettings
     /// <summary>"Playing Showtime" in Discord while the game runs.</summary>
     public bool DiscordPresence { get; set; } = true;
 
+    /// <summary>The player's Telegram from the last support report, so it need not be typed again. Sent only with a report.</summary>
+    public string ReportTelegram { get; set; } = string.Empty;
+
     /// <summary>"Streamer mode": the launcher's screens hide the nickname, addresses, codes and the Windows user name. Off unless turned on.</summary>
     public bool StreamerMode { get; set; }
 
