@@ -15,7 +15,7 @@ public enum Season
 /// launcher asks with today's local date and decides what to show from the answer.
 /// </summary>
 /// <remarks>
-/// Halloween: 24 October to 2 November, both days included. New Year: 20 December to
+/// Halloween: 24 October to 1 November, both days included. New Year: 20 December to
 /// 10 January, both included, across the turn of the year. The seasons do not overlap.
 /// </remarks>
 public static class SeasonCalendar
@@ -32,7 +32,7 @@ public static class SeasonCalendar
     {
         var (month, day) = (date.Month, date.Day);
 
-        if ((month == 10 && day >= 24) || (month == 11 && day <= 2))
+        if ((month == 10 && day >= 24) || (month == 11 && day <= 1))
         {
             return Season.Halloween;
         }

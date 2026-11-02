@@ -9,8 +9,7 @@ public class SeasonCalendarTests
     [InlineData(2026, 10, 24, Season.Halloween)]
     [InlineData(2026, 10, 31, Season.Halloween)]
     [InlineData(2026, 11, 1, Season.Halloween)]
-    [InlineData(2026, 11, 2, Season.Halloween)]
-    [InlineData(2026, 11, 3, Season.None)]
+    [InlineData(2026, 11, 2, Season.None)]
     [InlineData(2026, 12, 19, Season.None)]
     [InlineData(2026, 12, 20, Season.NewYear)]
     [InlineData(2026, 12, 31, Season.NewYear)]
@@ -54,7 +53,7 @@ public class SeasonCalendarTests
     {
         Assert.Equal("newyear-2026", SeasonCalendar.KeyOf(Season.NewYear, new DateOnly(2026, 12, 25)));
         Assert.Equal("newyear-2026", SeasonCalendar.KeyOf(Season.NewYear, new DateOnly(2027, 1, 5)));
-        Assert.Equal("halloween-2026", SeasonCalendar.KeyOf(Season.Halloween, new DateOnly(2026, 11, 2)));
+        Assert.Equal("halloween-2026", SeasonCalendar.KeyOf(Season.Halloween, new DateOnly(2026, 11, 1)));
         Assert.Equal("halloween-2027", SeasonCalendar.KeyOf(Season.Halloween, new DateOnly(2027, 10, 24)));
         Assert.Equal(string.Empty, SeasonCalendar.KeyOf(Season.None, new DateOnly(2026, 6, 1)));
     }
