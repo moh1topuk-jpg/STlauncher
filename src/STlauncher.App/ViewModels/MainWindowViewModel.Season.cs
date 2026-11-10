@@ -43,6 +43,9 @@ public partial class MainWindowViewModel
     /// <summary>Snow instead of embers, a cold light on the stage, a hat and a snowman.</summary>
     public bool IsWinterLook => ActiveSeason == Season.Winter;
 
+    /// <summary>Something of the season over the page: bats at Halloween, snow in winter.</summary>
+    public bool HasSeasonOverlay => IsHalloweenLook || IsWinterLook;
+
     /// <summary>The stage in its own crimson light: no season dressing it.</summary>
     public bool IsPlainStage => !IsHalloweenLook && !IsWinterLook;
 
@@ -95,6 +98,7 @@ public partial class MainWindowViewModel
         OnPropertyChanged(nameof(IsHalloweenLook));
         OnPropertyChanged(nameof(IsWinterLook));
         OnPropertyChanged(nameof(IsPlainStage));
+        OnPropertyChanged(nameof(HasSeasonOverlay));
         OnPropertyChanged(nameof(StageHeadDecoration));
         OnPropertyChanged(nameof(ShowSeasonGreeting));
     }

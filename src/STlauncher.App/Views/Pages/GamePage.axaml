@@ -1192,12 +1192,13 @@
         </Grid>
 
         <!-- Halloween: now and then a bat flutters across, over the panels (behind them it
-             would only blink in the gaps). Not hit-testable; off with the live background. -->
+             would only blink in the gaps); in winter, light snow. Not hit-testable; off with
+             the live background. -->
         <controls:EmberField Bats="True" IsLight="{Binding IsThemeLight}" Season="{Binding ActiveSeason}">
             <controls:EmberField.IsActive>
                 <MultiBinding Converter="{x:Static BoolConverters.And}">
                     <Binding Path="AnimatedBackground"/>
-                    <Binding Path="IsHalloweenLook"/>
+                    <Binding Path="HasSeasonOverlay"/>
                 </MultiBinding>
             </controls:EmberField.IsActive>
         </controls:EmberField>

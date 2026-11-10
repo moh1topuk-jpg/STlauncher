@@ -24,7 +24,8 @@ namespace STlauncher.App.Controls;
 /// panels; a bat behind them would only blink in the gaps, so the bats are a second field
 /// laid over the page (<see cref="Bats"/>), on the same clock and under the same pauses,
 /// drawn from three wing shapes made once: nothing new is made on a frame, and while no
-/// bat is out the layer asks for no drawing at all.
+/// bat is out the layer asks for no drawing at all. In winter the same layer over the page
+/// carries snow: behind the panels it only showed in the gaps between them.
 /// </remarks>
 public sealed class EmberField : Control
 {
@@ -67,6 +68,12 @@ public sealed class EmberField : Control
 
     /// <summary>Snow falls, and a little faster than embers rise: it is heavier.</summary>
     private const double SnowFall = 1.7;
+
+    /// <summary>Snow is thicker than embers: a few dozen flakes read as dust, not as snowfall.</summary>
+    private int Wanted => Season == Season.Winter && !Bats ? Count * 5 / 2 : Count;
+
+    /// <summary>The layer over the page, out of winter: bats only.</summary>
+    private bool BatsOnly => Bats && Season != Season.Winter;
 
     // A bat is a silhouette: a dusk violet that shows on the dark ground, ink on the light one.
     private static readonly IImmutableBrush BatBrush = new ImmutableSolidColorBrush(Color.Parse("#5B4366"), 0.92);
@@ -280,7 +287,7 @@ public sealed class EmberField : Control
             return;
         }
 
-        if (Bats)
+        if (BatsOnly)
         {
             // Only redrawn while a bat is out, and once more to take the last one away.
             var flying = StepBats(Season == Season.Halloween, dt);
@@ -332,14 +339,14 @@ public sealed class EmberField : Control
 
     private void Seed()
     {
-        if (_embers.Count == Count)
+        if (_embers.Count == Wanted)
         {
             return;
         }
 
         _embers.Clear();
 
-        for (var i = 0; i < Count; i++)
+        for (var i = 0; i < Wanted; i++)
         {
             var depth = _random.NextDouble();
 
@@ -456,8 +463,8 @@ public sealed class EmberField : Control
             // Flakes are a touch bigger and brighter than embers, and keep less halo.
             if (winter)
             {
-                opacity = 0.2 + depth * 0.45;
-                radius *= 1.15;
+                opacity = 0.3 + depth * 0.55;
+                radius *= 1.35;
             }
 
             if (light)
@@ -499,7 +506,7 @@ public sealed class EmberField : Control
 
     public override void Render(DrawingContext context)
     {
-        if (Bats)
+        if (BatsOnly)
         {
             if (IsActive && Season == Season.Halloween)
             {

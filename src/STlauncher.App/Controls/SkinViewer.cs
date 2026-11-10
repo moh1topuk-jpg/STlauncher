@@ -1693,11 +1693,13 @@ public sealed class SkinViewer : Control
     /// <summary>
     /// The winter hat: the top three rows of the head, above the eyes, a little wider than the skin's own
     /// outer layer so it sits over it, eyes left uncovered. Faces in <see cref="BeanieTexture"/>.
+    /// No bottom face: it is inside the head, and drawn after the head it covered the face
+    /// whenever the figure looked up (ToRow leaves it out).
     /// </summary>
-    private static readonly Box BeanieBox = new(-4, 29, -4, 8, 3, 8, 0, 0, Inflate: 0.8);
+    private static readonly Box BeanieBox = new(-4, 29, -4, 8, 3, 8, 0, 0, Inflate: 0.8, ToRow: 3);
 
-    /// <summary>The pompom, on top of the hat.</summary>
-    private static readonly Box PompomBox = new(-1, 32.8, -1, 2, 2, 2, 0, 12);
+    /// <summary>The pompom, on top of the hat; no bottom face either, for the same reason.</summary>
+    private static readonly Box PompomBox = new(-1, 32.8, -1, 2, 2, 2, 0, 12, ToRow: 2);
 
     /// <summary>The four figures there are: classic or slim arms, modern or pre-1.8 texture. Each is built once.</summary>
     private static readonly Part[]?[] Models = new Part[]?[4];
