@@ -595,6 +595,16 @@ public sealed class SkinViewer : Control
                 continue;
             }
 
+            // Seen from below, the pompom is behind the hat and the head: painted before them,
+            // they cover it. Painted after, it showed through them.
+            var pompomUnder = beanie is not null && piece.Part.Kind == PartKind.Head &&
+                              !TryProject(FacesOf(BeanieBox)[BeanieTop], piece.Part, pose, scale, centre, out _, out _, out _);
+
+            if (pompomUnder)
+            {
+                DrawBox(context, skin, beanie!, piece.Part, PompomBox, outer: false, pose, scale, centre);
+            }
+
             DrawBox(context, skin, texture, piece.Part, piece.Part.Base, outer: false, pose, scale, centre);
 
             if (piece.Part.Overlay is { } overlay)
@@ -607,7 +617,11 @@ public sealed class SkinViewer : Control
             if (beanie is not null && piece.Part.Kind == PartKind.Head)
             {
                 DrawBox(context, skin, beanie, piece.Part, BeanieBox, outer: false, pose, scale, centre);
-                DrawBox(context, skin, beanie, piece.Part, PompomBox, outer: false, pose, scale, centre);
+
+                if (!pompomUnder)
+                {
+                    DrawBox(context, skin, beanie, piece.Part, PompomBox, outer: false, pose, scale, centre);
+                }
             }
         }
     }
@@ -1697,6 +1711,9 @@ public sealed class SkinViewer : Control
     /// whenever the figure looked up (ToRow leaves it out).
     /// </summary>
     private static readonly Box BeanieBox = new(-4, 29, -4, 8, 3, 8, 0, 0, Inflate: 0.8, ToRow: 3);
+
+    /// <summary>Where the hat's top is among its faces (front, back, left, right, top): the side the pompom is on.</summary>
+    private const int BeanieTop = 4;
 
     /// <summary>The pompom, on top of the hat; no bottom face either, for the same reason.</summary>
     private static readonly Box PompomBox = new(-1, 32.8, -1, 2, 2, 2, 0, 12, ToRow: 2);
