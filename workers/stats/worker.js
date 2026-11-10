@@ -15,7 +15,9 @@
  *   KV namespace  STATS
  *   Secret        TOPMC_KEY       Top-Minecrafter API key
  *   Variable      SERVER_ID       server id on Top-Minecrafter (e.g. "6689")
- *   Variable      SERVER_ADDRESS  optional, used when the API reports no address
+ *   Variable      SERVER_ADDRESS  optional, used when the API reports no address, and as the
+ *                                 server to ask directly when the API refuses (default
+ *                                 mc.showtime.su)
  *
  * Optional, for counting launcher users (see docs/monitoring.md and workers/stats/README.md):
  *   Analytics Engine  USAGE           dataset "stlauncher_usage" - where launch pings land
@@ -23,7 +25,12 @@
  *   Secret            CF_API_TOKEN    a token with "Account Analytics: Read", to query the dataset
  */
 
+import { connect } from 'cloudflare:sockets';
+
 const API_BASE = 'https://public-api.top-minecrafter.com/v1';
+
+/** The server asked directly when Top-Minecrafter will not answer. */
+const DEFAULT_SERVER = 'mc.showtime.su';
 
 /** Readings closer together than this add nothing to an hourly chart. */
 const MIN_INTERVAL_MS = 4 * 60 * 1000;
@@ -548,11 +555,23 @@ async function collect(env, known) {
 
   try {
     info = await fetchInfo(env);
+    state.pollError = null;
   } catch (error) {
-    // A failed poll is a gap, not a zero: the server may be perfectly fine and the
-    // monitoring API down. Leaving the history untouched is the honest outcome.
+    // Top-Minecrafter refused (in November 2026 it did for days, and the chart froze).
+    // The player count is then asked of the server itself; the rest - name, peak,
+    // rank, uptime - stays as the API last gave it.
     console.log(`poll failed: ${error}`);
-    return;
+    state.pollError = String(error).slice(0, 200);
+
+    try {
+      const direct = await pingServer(serverHost(env, state));
+      info = { ...(state.info ?? {}), players: direct.players, max_players: direct.max, status: 1 };
+    } catch (pingError) {
+      // Neither answered: a gap, not a zero. The server may be fine and both ways to
+      // it down, so leaving the history untouched is the honest outcome.
+      console.log(`direct ping failed: ${pingError}`);
+      return;
+    }
   }
 
   const now = Date.now();
@@ -821,6 +840,121 @@ async function fetchInfo(env) {
   } finally {
     clearTimeout(timer);
   }
+}
+
+/** Host and port of the server to ask directly: the variable, what the API last said, or the default. */
+function serverHost(env, state) {
+  const address = String(env.SERVER_ADDRESS || state.info?.je_address || DEFAULT_SERVER).trim();
+  const [host, port] = address.split(':');
+
+  return { host, port: Number(port) || 25565 };
+}
+
+/**
+ * The server's own answer to the status request every Minecraft client sends before it
+ * shows a server in the list (a handshake with "next state: status", then an empty status
+ * request). Asks no key and logs nobody in.
+ */
+async function pingServer({ host, port }) {
+  const socket = connect({ hostname: host, port });
+  const timer = setTimeout(() => socket.close(), 8000);
+
+  try {
+    const name = new TextEncoder().encode(host);
+    const handshake = concatBytes(
+      varInt(0), varInt(767), varInt(name.length), name,
+      Uint8Array.of(port >> 8, port & 0xff), varInt(1));
+
+    const writer = socket.writable.getWriter();
+    await writer.write(concatBytes(varInt(handshake.length), handshake, Uint8Array.of(1, 0)));
+    writer.releaseLock();
+
+    const reader = socket.readable.getReader();
+    let received = new Uint8Array(0);
+
+    while (true) {
+      const status = readStatus(received);
+
+      if (status) {
+        return status;
+      }
+
+      const { value, done } = await reader.read();
+
+      if (done || received.length > 256 * 1024) {
+        throw new Error('the server closed before its status came');
+      }
+
+      received = concatBytes(received, value);
+    }
+  } finally {
+    clearTimeout(timer);
+    socket.close();
+  }
+}
+
+/** The players in a status packet, or null while the packet is not complete. */
+function readStatus(bytes) {
+  const length = readVarInt(bytes, 0);
+
+  if (!length || bytes.length < length.next + length.value) {
+    return null;
+  }
+
+  const id = readVarInt(bytes, length.next);
+  const size = readVarInt(bytes, id.next);
+  const json = JSON.parse(new TextDecoder().decode(bytes.subarray(size.next, size.next + size.value)));
+
+  return { players: numberOrNull(json?.players?.online), max: numberOrNull(json?.players?.max) };
+}
+
+function varInt(value) {
+  const out = [];
+
+  do {
+    let byte = value & 0x7f;
+    value >>>= 7;
+
+    if (value) {
+      byte |= 0x80;
+    }
+
+    out.push(byte);
+  } while (value);
+
+  return Uint8Array.from(out);
+}
+
+/** A VarInt at offset, or null when the bytes end inside it. */
+function readVarInt(bytes, offset) {
+  let value = 0;
+
+  for (let i = 0; i < 5; i++) {
+    if (offset + i >= bytes.length) {
+      return null;
+    }
+
+    const byte = bytes[offset + i];
+    value |= (byte & 0x7f) << (7 * i);
+
+    if (!(byte & 0x80)) {
+      return { value, next: offset + i + 1 };
+    }
+  }
+
+  throw new Error('bad VarInt');
+}
+
+function concatBytes(...parts) {
+  const out = new Uint8Array(parts.reduce((sum, part) => sum + part.length, 0));
+  let at = 0;
+
+  for (const part of parts) {
+    out.set(part, at);
+    at += part.length;
+  }
+
+  return out;
 }
 
 async function readState(env) {
