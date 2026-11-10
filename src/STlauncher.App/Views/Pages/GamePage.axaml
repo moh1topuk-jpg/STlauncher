@@ -925,11 +925,15 @@
                         <!-- The light the figure stands in: a cone from above and a crimson glow.
                              Plain fills inside the panel's own corners: no clip, no mask. -->
                         <Path Grid.RowSpan="2" IsHitTestVisible="False" Fill="{DynamicResource StageConeBrush}" Stretch="Fill"
-                              Margin="26,1,26,40" MaxWidth="300" IsVisible="{Binding !IsHalloweenLook}"
+                              Margin="26,1,26,40" MaxWidth="300" IsVisible="{Binding IsPlainStage}"
                               Data="M 114,0 L 186,0 L 300,440 L 0,440 Z"/>
                         <!-- Halloween: the same light, warm orange instead of the accent. -->
                         <Path Grid.RowSpan="2" IsHitTestVisible="False" Fill="{DynamicResource HalloweenConeBrush}" Stretch="Fill"
                               Margin="26,1,26,40" MaxWidth="300" IsVisible="{Binding IsHalloweenLook}"
+                              Data="M 114,0 L 186,0 L 300,440 L 0,440 Z"/>
+                        <!-- Winter: a cold blue light. -->
+                        <Path Grid.RowSpan="2" IsHitTestVisible="False" Fill="{DynamicResource WinterConeBrush}" Stretch="Fill"
+                              Margin="26,1,26,40" MaxWidth="300" IsVisible="{Binding IsWinterLook}"
                               Data="M 114,0 L 186,0 L 300,440 L 0,440 Z"/>
 
                         <!-- What the figure is doing: the list of what it can do - its own poses,
@@ -1009,11 +1013,14 @@
                             <Panel Grid.Row="1" MinHeight="220">
                                 <!-- The crimson light the figure stands in. -->
                                 <Ellipse IsHitTestVisible="False" MaxWidth="340" Height="340" Margin="1,0"
-                                         VerticalAlignment="Center" IsVisible="{Binding !IsHalloweenLook}"
+                                         VerticalAlignment="Center" IsVisible="{Binding IsPlainStage}"
                                          Fill="{DynamicResource StageAuraBrush}"/>
                                 <Ellipse IsHitTestVisible="False" MaxWidth="340" Height="340" Margin="1,0"
                                          VerticalAlignment="Center" IsVisible="{Binding IsHalloweenLook}"
                                          Fill="{DynamicResource HalloweenAuraBrush}"/>
+                                <Ellipse IsHitTestVisible="False" MaxWidth="340" Height="340" Margin="1,0"
+                                         VerticalAlignment="Center" IsVisible="{Binding IsWinterLook}"
+                                         Fill="{DynamicResource WinterAuraBrush}"/>
 
                                 <!-- The pedestal. -->
                                 <Ellipse IsHitTestVisible="False" Width="236" Height="46" VerticalAlignment="Bottom" Margin="0,0,0,12"
@@ -1038,6 +1045,33 @@
                                         <Path Fill="{DynamicResource PumpkinFaceBrush}"
                                               Data="M 21,31 L 26,23 L 30,31 Z M 34,31 L 38,23 L 43,31 Z M 30,35 L 32,32 L 34,35 Z
                                                     M 19,38 Q 32,51 45,38 L 39,40 L 37,43.5 L 34.5,40.8 L 29.5,40.8 L 27,43.5 L 25,40 Z"/>
+                                    </Canvas>
+                                </Viewbox>
+
+                                <!-- Winter: a snowman on the pedestal beside the feet, where the pumpkin stands
+                                     at Halloween, and drawn before the figure for the same reason. -->
+                                <Viewbox IsHitTestVisible="False" IsVisible="{Binding IsWinterLook}"
+                                         Width="52" Height="68" HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                                         Margin="176,0,0,24">
+                                    <Canvas Width="52" Height="68">
+                                        <Ellipse Canvas.Left="-4" Canvas.Top="20" Width="60" Height="52" Fill="{DynamicResource SnowmanGlowBrush}"/>
+                                        <Ellipse Canvas.Left="7" Canvas.Top="38" Width="38" Height="30" Fill="{DynamicResource SnowmanBrush}"
+                                                 Stroke="{DynamicResource SnowmanEdgeBrush}" StrokeThickness="1.2"/>
+                                        <Ellipse Canvas.Left="12" Canvas.Top="21" Width="28" Height="22" Fill="{DynamicResource SnowmanBrush}"
+                                                 Stroke="{DynamicResource SnowmanEdgeBrush}" StrokeThickness="1.2"/>
+                                        <Ellipse Canvas.Left="16" Canvas.Top="6" Width="20" Height="18" Fill="{DynamicResource SnowmanBrush}"
+                                                 Stroke="{DynamicResource SnowmanEdgeBrush}" StrokeThickness="1.2"/>
+                                        <!-- A scarf, the hat's red. -->
+                                        <Path Fill="{DynamicResource SnowmanScarfBrush}"
+                                              Data="M 15,21 Q 26,25 37,21 L 37,24.5 Q 26,28.5 15,24.5 Z M 31,24 L 35,24 L 36,33 L 32,33 Z"/>
+                                        <!-- Coal eyes and buttons, a carrot nose. -->
+                                        <Path Fill="{DynamicResource SnowmanCoalBrush}"
+                                              Data="M 21,12 h 2.6 v 2.6 h -2.6 Z M 28.4,12 h 2.6 v 2.6 h -2.6 Z
+                                                    M 24.8,29 h 2.6 v 2.6 h -2.6 Z M 24.8,34.5 h 2.6 v 2.6 h -2.6 Z M 24.8,46 h 2.6 v 2.6 h -2.6 Z"/>
+                                        <Path Fill="{DynamicResource SnowmanCarrotBrush}" Data="M 25,15.6 L 27.4,15.6 L 33.5,17.4 Z"/>
+                                        <!-- Twig arms. -->
+                                        <Path Stroke="{DynamicResource SnowmanTwigBrush}" StrokeThickness="1.4" StrokeLineCap="Round"
+                                              Data="M 13,31 L 3,25 M 6.5,27 L 5,22.5 M 39,31 L 49,25 M 45.5,27 L 47,22.5"/>
                                     </Canvas>
                                 </Viewbox>
 

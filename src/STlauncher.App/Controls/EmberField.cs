@@ -41,7 +41,7 @@ public sealed class EmberField : Control
     public static readonly StyledProperty<bool> IsLightProperty =
         AvaloniaProperty.Register<EmberField, bool>(nameof(IsLight));
 
-    /// <summary>The season the field is dressed for; only Halloween changes anything yet.</summary>
+    /// <summary>The season the field is dressed for: sparks for Halloween, snow for winter.</summary>
     public static readonly StyledProperty<Season> SeasonProperty =
         AvaloniaProperty.Register<EmberField, Season>(nameof(Season));
 
@@ -58,6 +58,15 @@ public sealed class EmberField : Control
 
     /// <summary>Sparks drift up slower than embers: the season is lazier.</summary>
     private const double SparkDrift = 0.65;
+
+    // Winter: white and a pale ice blue; slate on a light ground, where white would vanish.
+    private static readonly Color Snow = Color.Parse("#F4F8FF");
+    private static readonly Color Ice = Color.Parse("#B9D3F2");
+    private static readonly Color SnowLight = Color.Parse("#7F93B3");
+    private static readonly Color IceLight = Color.Parse("#5E7FA8");
+
+    /// <summary>Snow falls, and a little faster than embers rise: it is heavier.</summary>
+    private const double SnowFall = 1.7;
 
     // A bat is a silhouette: a dusk violet that shows on the dark ground, ink on the light one.
     private static readonly IImmutableBrush BatBrush = new ImmutableSolidColorBrush(Color.Parse("#5B4366"), 0.92);
@@ -296,17 +305,24 @@ public sealed class EmberField : Control
         _lean = new Point(_lean.X + (target.X - _lean.X) * ease, _lean.Y + (target.Y - _lean.Y) * ease);
 
         var halloween = Season == Season.Halloween;
-        var drift = halloween ? SparkDrift : 1;
+        var winter = Season == Season.Winter;
+        var drift = halloween ? SparkDrift : winter ? -SnowFall : 1;
+        var sway = winter ? 9 : 3.75;
 
         foreach (var ember in _embers)
         {
             ember.Y -= ember.Speed * dt * drift;
-            ember.X += Math.Sin(ember.Phase + ember.Y * 0.01) * 3.75 * dt;
+            ember.X += Math.Sin(ember.Phase + ember.Y * 0.01) * sway * dt;
             ember.Phase += 0.25 * dt;
 
             if (ember.Y < -10)
             {
                 ember.Y = Bounds.Height + 10;
+                ember.X = _random.NextDouble() * Bounds.Width;
+            }
+            else if (ember.Y > Bounds.Height + 10)
+            {
+                ember.Y = -10;
                 ember.X = _random.NextDouble() * Bounds.Width;
             }
         }
@@ -428,6 +444,7 @@ public sealed class EmberField : Control
         _paintedLight = light;
         _paintedSeason = season;
         var halloween = season == Season.Halloween;
+        var winter = season == Season.Winter;
 
         for (var band = 0; band < Bands; band++)
         {
@@ -435,6 +452,13 @@ public sealed class EmberField : Control
             var depth = (band + 0.5) / Bands;
             var opacity = 0.12 + depth * 0.3;
             var radius = 0.8 + depth * 1.8;
+
+            // Flakes are a touch bigger and brighter than embers, and keep less halo.
+            if (winter)
+            {
+                opacity = 0.2 + depth * 0.45;
+                radius *= 1.15;
+            }
 
             if (light)
             {
@@ -445,7 +469,9 @@ public sealed class EmberField : Control
             {
                 var colour = halloween
                     ? light ? (rose == 1 ? SparkDeepLight : SparkLight) : (rose == 1 ? SparkDeep : Spark)
-                    : light ? (rose == 1 ? RoseLight : WarmLight) : (rose == 1 ? Rose : Warm);
+                    : winter
+                        ? light ? (rose == 1 ? IceLight : SnowLight) : (rose == 1 ? Ice : Snow)
+                        : light ? (rose == 1 ? RoseLight : WarmLight) : (rose == 1 ? Rose : Warm);
                 var index = rose * Bands + band;
                 _sprites[index]?.Dispose();
 
@@ -459,7 +485,8 @@ public sealed class EmberField : Control
 
                     if (!light)
                     {
-                        ctx.DrawEllipse(new ImmutableSolidColorBrush(colour, opacity * 0.25), null, centre, radius * 6, radius * 6);
+                        var halo = winter ? 3 : 6;
+                        ctx.DrawEllipse(new ImmutableSolidColorBrush(colour, opacity * 0.25), null, centre, radius * halo, radius * halo);
                     }
 
                     ctx.DrawEllipse(new ImmutableSolidColorBrush(colour, opacity), null, centre, radius * 2, radius * 2);

@@ -20,7 +20,10 @@ public enum HeadDecoration
     None,
 
     /// <summary>A carved pumpkin, the way the game draws one on a player's head.</summary>
-    Pumpkin
+    Pumpkin,
+
+    /// <summary>A knitted hat with a pompom, over the top of the head: the face stays seen.</summary>
+    Beanie
 }
 
 /// <summary>
@@ -576,6 +579,7 @@ public sealed class SkinViewer : Control
 
         var texture = skin.Enlarged;
         var pumpkin = HeadDecoration == HeadDecoration.Pumpkin ? PumpkinTexture.Get() : null;
+        var beanie = HeadDecoration == HeadDecoration.Beanie ? BeanieTexture.Get() : null;
         var count = Order(pumpkin is not null, pose);
 
         for (var n = 0; n < count; n++)
@@ -596,6 +600,14 @@ public sealed class SkinViewer : Control
             if (piece.Part.Overlay is { } overlay)
             {
                 DrawBox(context, skin, texture, piece.Part, overlay, outer: true, pose, scale, centre);
+            }
+
+            // The hat goes on right after the head, over its outer layer; it is the head's
+            // own part, so it turns and leans with it through every pose and emote.
+            if (beanie is not null && piece.Part.Kind == PartKind.Head)
+            {
+                DrawBox(context, skin, beanie, piece.Part, BeanieBox, outer: false, pose, scale, centre);
+                DrawBox(context, skin, beanie, piece.Part, PompomBox, outer: false, pose, scale, centre);
             }
         }
     }
@@ -1677,6 +1689,15 @@ public sealed class SkinViewer : Control
     /// frame, so its faces come from the cache.
     /// </summary>
     private static readonly Box PumpkinBox = new(-4, 25, -4, 8, 8, 8, 0, 0, Inflate: 1);
+
+    /// <summary>
+    /// The winter hat: the top three rows of the head, above the eyes, a little wider than the skin's own
+    /// outer layer so it sits over it, eyes left uncovered. Faces in <see cref="BeanieTexture"/>.
+    /// </summary>
+    private static readonly Box BeanieBox = new(-4, 29, -4, 8, 3, 8, 0, 0, Inflate: 0.8);
+
+    /// <summary>The pompom, on top of the hat.</summary>
+    private static readonly Box PompomBox = new(-1, 32.8, -1, 2, 2, 2, 0, 12);
 
     /// <summary>The four figures there are: classic or slim arms, modern or pre-1.8 texture. Each is built once.</summary>
     private static readonly Part[]?[] Models = new Part[]?[4];

@@ -14,10 +14,9 @@ namespace STlauncher.App.ViewModels;
 /// </summary>
 /// <remarks>
 /// For testing, a developer forces a season with the environment variable
-/// <c>STLAUNCHER_SEASON=halloween|newyear|none</c>, read once when the launcher starts
+/// <c>STLAUNCHER_SEASON=halloween|winter|none</c>, read once when the launcher starts
 /// (see <see cref="SeasonCalendar.OverrideVariable"/>). It is not in the interface.
-/// New Year is a season the calendar knows but that has no look yet: while it is on the
-/// home screen is the ordinary one.
+/// Winter has no greeting: it lasts three months, and a "happy holidays" that long is noise.
 /// </remarks>
 public partial class MainWindowViewModel
 {
@@ -41,8 +40,19 @@ public partial class MainWindowViewModel
 
     public bool IsHalloweenLook => ActiveSeason == Season.Halloween;
 
+    /// <summary>Snow instead of embers, a cold light on the stage, a hat and a snowman.</summary>
+    public bool IsWinterLook => ActiveSeason == Season.Winter;
+
+    /// <summary>The stage in its own crimson light: no season dressing it.</summary>
+    public bool IsPlainStage => !IsHalloweenLook && !IsWinterLook;
+
     /// <summary>What the figure on the home stage wears on its head. Only the home stage binds this.</summary>
-    public HeadDecoration StageHeadDecoration => IsHalloweenLook ? HeadDecoration.Pumpkin : HeadDecoration.None;
+    public HeadDecoration StageHeadDecoration => ActiveSeason switch
+    {
+        Season.Halloween => HeadDecoration.Pumpkin,
+        Season.Winter => HeadDecoration.Beanie,
+        _ => HeadDecoration.None
+    };
 
     /// <summary>"С Хэллоуином!" beside the greeting, until the player closes it for this year's season.</summary>
     public bool ShowSeasonGreeting => IsHalloweenLook && _seasonGreetingClosed != SeasonKey;
@@ -83,6 +93,8 @@ public partial class MainWindowViewModel
     {
         OnPropertyChanged(nameof(ActiveSeason));
         OnPropertyChanged(nameof(IsHalloweenLook));
+        OnPropertyChanged(nameof(IsWinterLook));
+        OnPropertyChanged(nameof(IsPlainStage));
         OnPropertyChanged(nameof(StageHeadDecoration));
         OnPropertyChanged(nameof(ShowSeasonGreeting));
     }

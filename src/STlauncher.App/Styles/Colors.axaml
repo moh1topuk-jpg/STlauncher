@@ -273,6 +273,31 @@
         <GradientStop Offset="0.55" Color="#26F06A12"/>
         <GradientStop Offset="1" Color="#00F06A12"/>
     </RadialGradientBrush>
+    <!-- Winter (see MainWindowViewModel.Season): a cold blue light on the stage, and the
+         snowman beside the figure's feet. -->
+    <LinearGradientBrush x:Key="WinterConeBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Offset="0" Color="#26E8F4FF"/>
+        <GradientStop Offset="0.6" Color="#1A7FB2F0"/>
+        <GradientStop Offset="1" Color="#007FB2F0"/>
+    </LinearGradientBrush>
+    <RadialGradientBrush x:Key="WinterAuraBrush">
+        <GradientStop Offset="0" Color="#557FB8F5"/>
+        <GradientStop Offset="0.55" Color="#224F8FD9"/>
+        <GradientStop Offset="1" Color="#004F8FD9"/>
+    </RadialGradientBrush>
+    <LinearGradientBrush x:Key="SnowmanBrush" StartPoint="30%,0%" EndPoint="70%,100%">
+        <GradientStop Offset="0" Color="#FFFFFF"/>
+        <GradientStop Offset="1" Color="#D6E4F5"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="SnowmanEdgeBrush" Color="#9DB4D3"/>
+    <SolidColorBrush x:Key="SnowmanScarfBrush" Color="#B3243F"/>
+    <SolidColorBrush x:Key="SnowmanCoalBrush" Color="#26222B"/>
+    <SolidColorBrush x:Key="SnowmanCarrotBrush" Color="#F08A22"/>
+    <SolidColorBrush x:Key="SnowmanTwigBrush" Color="#6B4A2E"/>
+    <RadialGradientBrush x:Key="SnowmanGlowBrush">
+        <GradientStop Offset="0" Color="#447FB8F5"/>
+        <GradientStop Offset="1" Color="#007FB8F5"/>
+    </RadialGradientBrush>
     <LinearGradientBrush x:Key="PumpkinBrush" StartPoint="30%,0%" EndPoint="70%,100%">
         <GradientStop Offset="0" Color="#F7A23A"/>
         <GradientStop Offset="1" Color="#C75A0E"/>

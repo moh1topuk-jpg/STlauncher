@@ -7,7 +7,7 @@ public enum Season
 {
     None,
     Halloween,
-    NewYear
+    Winter
 }
 
 /// <summary>
@@ -15,14 +15,14 @@ public enum Season
 /// launcher asks with today's local date and decides what to show from the answer.
 /// </summary>
 /// <remarks>
-/// Halloween: 24 October to 2 November, both days included. New Year: 20 December to
-/// 10 January, both included, across the turn of the year. The seasons do not overlap.
+/// Halloween: 24 October to 2 November, both days included. Winter: 15 November to the
+/// last day of February, both included, across the turn of the year. The seasons do not overlap.
 /// </remarks>
 public static class SeasonCalendar
 {
     /// <summary>
     /// The environment variable a developer sets to see a season out of its dates:
-    /// <c>STLAUNCHER_SEASON=halloween</c>, <c>newyear</c> or <c>none</c>. Read once at start;
+    /// <c>STLAUNCHER_SEASON=halloween</c>, <c>winter</c> or <c>none</c>. Read once at start;
     /// any other value (or none) leaves the calendar in charge. Not offered in the interface.
     /// </summary>
     public const string OverrideVariable = "STLAUNCHER_SEASON";
@@ -37,9 +37,9 @@ public static class SeasonCalendar
             return Season.Halloween;
         }
 
-        if ((month == 12 && day >= 20) || (month == 1 && day <= 10))
+        if ((month == 11 && day >= 15) || month is 12 or 1 or 2)
         {
-            return Season.NewYear;
+            return Season.Winter;
         }
 
         return Season.None;
@@ -58,10 +58,11 @@ public static class SeasonCalendar
         {
             case "halloween":
                 return Season.Halloween;
+            case "winter":
             case "newyear":
             case "new-year":
             case "new_year":
-                return Season.NewYear;
+                return Season.Winter;
             case "none":
             case "off":
                 return Season.None;
@@ -71,11 +72,11 @@ public static class SeasonCalendar
     }
 
     /// <summary>
-    /// The year a season belongs to: a New Year that runs into January is the one that
-    /// began in December. A greeting closed for a season is closed for that year's season only.
+    /// The year a season belongs to: a winter that runs into the new year is the one that
+    /// began in November. A greeting closed for a season is closed for that year's season only.
     /// </summary>
     public static int YearOf(Season season, DateOnly date)
-        => season == Season.NewYear && date.Month == 1 ? date.Year - 1 : date.Year;
+        => season == Season.Winter && date.Month <= 2 ? date.Year - 1 : date.Year;
 
     /// <summary>A key naming one season of one year, "halloween-2026", for remembering what the player closed.</summary>
     public static string KeyOf(Season season, DateOnly date)
