@@ -39,27 +39,15 @@ public sealed class UsageReporter
 
         _sent = true;
 
-        try
+        await PostAsync(statsUrl!, new
         {
-            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            timeout.CancelAfter(TimeSpan.FromSeconds(8));
-
-            var url = statsUrl!.TrimEnd('/') + "/ping";
-
-            using var response = await _http.PostAsJsonAsync(url, new
-            {
-                id = installId,
-                v = version,
-                os = OperatingSystem.IsWindows() ? "windows" : OperatingSystem.IsLinux() ? "linux" : OperatingSystem.IsMacOS() ? "macos" : "other",
-                lang = language,
-                update = updateOutcome,
-                freezes
-            }, timeout.Token).ConfigureAwait(false);
-        }
-        catch (Exception)
-        {
-            // A collector without the endpoint, or no network: nothing to do about it.
-        }
+            id = installId,
+            v = version,
+            os = OperatingSystem.IsWindows() ? "windows" : OperatingSystem.IsLinux() ? "linux" : OperatingSystem.IsMacOS() ? "macos" : "other",
+            lang = language,
+            update = updateOutcome,
+            freezes
+        }, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -86,28 +74,52 @@ public sealed class UsageReporter
             return;
         }
 
-        try
+        await PostAsync(statsUrl!, new
         {
-            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            timeout.CancelAfter(TimeSpan.FromSeconds(8));
+            id = installId,
+            v = version,
+            os = OperatingSystem.IsWindows() ? "windows" : OperatingSystem.IsLinux() ? "linux" : OperatingSystem.IsMacOS() ? "macos" : "other",
+            @event = "crash",
+            cause = cause,
+            subject = subject ?? string.Empty,
+            game = string.IsNullOrWhiteSpace(gameVersion) ? string.Empty : $"{gameVersion} {loader}",
+            code = exitCode,
+            signature = signature ?? string.Empty
+        }, cancellationToken).ConfigureAwait(false);
+    }
 
-            var url = statsUrl!.TrimEnd('/') + "/ping";
+    /// <summary>
+    /// Posts to the collector's /ping, and through the owner's server when the collector
+    /// itself does not answer - players whose provider cuts workers.dev count too.
+    /// Failures stay silent: a collector without the endpoint, or no network at all.
+    /// </summary>
+    private async Task PostAsync(string statsUrl, object body, CancellationToken cancellationToken)
+    {
+        var mirror = STlauncher.Core.Server.ServerStatsClient.MirrorOf(
+            statsUrl, AppSettings.DefaultStatsCollector, AppSettings.SecondMirrorUrl);
 
-            using var response = await _http.PostAsJsonAsync(url, new
+        foreach (var root in new[] { statsUrl, mirror })
+        {
+            if (root is null || cancellationToken.IsCancellationRequested)
             {
-                id = installId,
-                v = version,
-                os = OperatingSystem.IsWindows() ? "windows" : OperatingSystem.IsLinux() ? "linux" : OperatingSystem.IsMacOS() ? "macos" : "other",
-                @event = "crash",
-                cause = cause,
-                subject = subject ?? string.Empty,
-                game = string.IsNullOrWhiteSpace(gameVersion) ? string.Empty : $"{gameVersion} {loader}",
-                code = exitCode,
-                signature = signature ?? string.Empty
-            }, timeout.Token).ConfigureAwait(false);
-        }
-        catch (Exception)
-        {
+                continue;
+            }
+
+            try
+            {
+                using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                timeout.CancelAfter(TimeSpan.FromSeconds(8));
+
+                using var response = await _http.PostAsJsonAsync(root.TrimEnd('/') + "/ping", body, timeout.Token).ConfigureAwait(false);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return;
+                }
+            }
+            catch (Exception)
+            {
+            }
         }
     }
 }

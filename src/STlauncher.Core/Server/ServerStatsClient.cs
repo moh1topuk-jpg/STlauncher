@@ -43,6 +43,28 @@ public sealed class ServerStatsClient
     /// <summary>Collector address. Empty disables the remote source entirely.</summary>
     public string? StatsUrl { get; set; }
 
+    /// <summary>
+    /// The same collector through the owner's server, for players whose provider cuts
+    /// workers.dev; asked when <see cref="StatsUrl"/> does not answer. Null: no second way.
+    /// </summary>
+    public string? FallbackUrl { get; set; }
+
+    /// <summary>
+    /// The collector through the owner's server: its address with the collector's own host
+    /// swapped for <paramref name="mirrorRoot"/> + "stats/". Null for any other collector,
+    /// which the server does not carry.
+    /// </summary>
+    public static string? MirrorOf(string? statsUrl, string collectorRoot, string mirrorRoot)
+    {
+        if (string.IsNullOrWhiteSpace(statsUrl) ||
+            !statsUrl.StartsWith(collectorRoot, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        return mirrorRoot.TrimEnd('/') + "/stats/" + statsUrl[collectorRoot.Length..].TrimStart('/');
+    }
+
     public string CachePath => Path.Combine(_paths.Meta, CacheFileName);
 
     public bool IsConfigured => IsHttpUrl(StatsUrl);
@@ -56,25 +78,33 @@ public sealed class ServerStatsClient
 
         string? error = null;
 
-        try
+        foreach (var url in new[] { StatsUrl!, FallbackUrl })
         {
-            // The launcher blocks nothing on this, but a collector that stops responding
-            // must not leave the request hanging for the whole HttpClient timeout.
-            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            timeout.CancelAfter(TimeSpan.FromSeconds(10));
+            if (!IsHttpUrl(url) || cancellationToken.IsCancellationRequested)
+            {
+                continue;
+            }
 
-            var json = await _http.GetStringAsync(StatsUrl!, timeout.Token).ConfigureAwait(false);
-            var snapshot = ServerStatsSnapshot.Parse(json);
+            try
+            {
+                // The launcher blocks nothing on this, but a collector that stops responding
+                // must not leave the request hanging for the whole HttpClient timeout.
+                using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                timeout.CancelAfter(TimeSpan.FromSeconds(10));
 
-            Directory.CreateDirectory(_paths.Meta);
-            AtomicFile.WriteAllText(CachePath, json);
+                var json = await _http.GetStringAsync(url!, timeout.Token).ConfigureAwait(false);
+                var snapshot = ServerStatsSnapshot.Parse(json);
 
-            return new ServerStatsResult(snapshot, ServerStatsOrigin.Remote, null);
-        }
-        catch (Exception ex)
-        {
-            _logger?.LogWarning(ex, "Failed to load server stats from {Url}.", StatsUrl);
-            error = ex.Message;
+                Directory.CreateDirectory(_paths.Meta);
+                AtomicFile.WriteAllText(CachePath, json);
+
+                return new ServerStatsResult(snapshot, ServerStatsOrigin.Remote, null);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "Failed to load server stats from {Url}.", url);
+                error ??= ex.Message;
+            }
         }
 
         // Offline, or the collector is down: yesterday's numbers beat an empty page, and

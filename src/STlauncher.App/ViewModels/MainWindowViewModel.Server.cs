@@ -433,6 +433,7 @@ public partial class MainWindowViewModel
         }
 
         _stats.StatsUrl = url;
+        _stats.FallbackUrl = ServerStatsClient.MirrorOf(url, AppSettings.DefaultStatsCollector, AppSettings.SecondMirrorUrl);
         _remoteStats = null;
         _remoteStatsOrigin = ServerStatsOrigin.None;
 

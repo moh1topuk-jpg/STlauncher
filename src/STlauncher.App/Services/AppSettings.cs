@@ -32,6 +32,9 @@ public sealed class AppSettings
     };
 
     /// <summary>The mirror's report endpoint; the catalog's reportUrl overrides it. See docs/reports.md.</summary>
+    /// <summary>The monitoring collector the catalog names; the second mirror carries it under /stats/.</summary>
+    public const string DefaultStatsCollector = "https://showtime-stats.moh1topuk.workers.dev/";
+
     public const string DefaultReportUrl = "https://showtime-updates.moh1topuk.workers.dev/report";
 
     /// <summary>
