@@ -231,6 +231,7 @@ public static class CrashAnalyzer
         }
 
         var findings = new List<CrashDiagnosis>();
+        var previous = string.Empty;
 
         foreach (var raw in lines)
         {
@@ -241,7 +242,15 @@ public static class CrashAnalyzer
 
             var line = raw.Length > 4000 ? raw[..4000] : raw;
 
-            Inspect(line, findings);
+            // A damaged resource or shader pack: the game says so, skips the pack and goes
+            // on. Not a broken installation - taken for one, it sent players to re-download
+            // game files that were fine.
+            if (!IsDamagedPack(line, previous))
+            {
+                Inspect(line, findings);
+            }
+
+            previous = line;
 
             // Enough to decide: everything that names the cause sits near the failure,
             // and a modded log runs to thousands of lines after it.
@@ -453,6 +462,13 @@ public static class CrashAnalyzer
             findings.Add(new CrashDiagnosis(CrashCause.BrokenInstallation, subject.Length > 0 ? subject : null, null, line.Trim()));
         }
     }
+
+    /// <summary>The zip error the game logs right under "Failed to open pack ...".</summary>
+    private static bool IsDamagedPack(string line, string previous)
+        => line.Contains("java.util.zip.ZipException", StringComparison.Ordinal) &&
+           (previous.Contains("Failed to open pack", StringComparison.Ordinal) ||
+            previous.Contains("resourcepacks", StringComparison.OrdinalIgnoreCase) ||
+            previous.Contains("shaderpacks", StringComparison.OrdinalIgnoreCase));
 
     /// <summary>Dependencies that are the game or the loader, not another mod.</summary>
     private static bool IsPlatform(string id) => id.ToLowerInvariant() switch

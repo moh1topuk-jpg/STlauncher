@@ -56,15 +56,33 @@ public sealed class LaunchService
 
         var context = RuleContext.Current(BuildFeatures(settings));
 
+        string? setAside = null;
+
         if (settings.ForceUpdate)
         {
             // "Re-download the game files" means every file is hashed again, not only
             // the two that are deleted here.
             _downloader.Cache.Clear();
-            ForceClean(versionId);
+            setAside = ForceClean(versionId);
         }
 
-        var resolved = await _versions.ResolveAsync(versionId, cancellationToken).ConfigureAwait(false);
+        ResolvedVersion resolved;
+
+        try
+        {
+            resolved = await _versions.ResolveAsync(versionId, cancellationToken).ConfigureAwait(false);
+        }
+        catch (InvalidOperationException) when (setAside is not null)
+        {
+            // Mojang does not know this version: a profile imported from another launcher,
+            // which nothing can fetch again. It goes back as it was. (Deleting it outright
+            // once cost a player their build for good.)
+            ForcedVersionFile.Restore(setAside, _paths.VersionJsonPath(versionId));
+            setAside = null;
+            resolved = await _versions.ResolveAsync(versionId, cancellationToken).ConfigureAwait(false);
+        }
+
+        ForcedVersionFile.Discard(setAside);
         var libraries = LibraryResolver.Resolve(resolved, _paths, context);
 
         if (settings.ForceUpdate)
@@ -256,19 +274,22 @@ public sealed class LaunchService
         => version.ReleaseTime is not { } released || released < Log4ShellFixed;
 
     /// <summary>
-    /// Removes the vanilla version JSON and client jar so they are fetched again.
-    /// Loader profiles are left alone: the launcher re-installs them on every launch.
+    /// Takes the version JSON and client jar away so they are fetched again. The JSON is
+    /// set aside rather than deleted: when the version turns out not to be Mojang's, it is
+    /// put back (<see cref="ForcedVersionFile"/>).
     /// </summary>
+    /// <returns>Where the JSON was set aside, or null when there was none.</returns>
     /// <remarks>
     /// Deliberately does not consult the manifest first. Looking the version up cost a
     /// full manifest download and changed nothing: the files are deleted by id either
     /// way, and <see cref="VersionService.EnsureVersionJsonAsync"/> reports a version
     /// that genuinely does not exist a moment later.
     /// </remarks>
-    private void ForceClean(string versionId)
+    private string? ForceClean(string versionId)
     {
-        TryDeleteFile(_paths.VersionJsonPath(versionId));
+        var aside = ForcedVersionFile.SetAside(_paths.VersionJsonPath(versionId));
         TryDeleteFile(_paths.VersionJarPath(versionId));
+        return aside;
     }
 
     private void ForceCleanResolved(ResolvedVersion resolved)

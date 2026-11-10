@@ -825,7 +825,24 @@ public partial class MainWindowViewModel : ViewModelBase
         // An imported build starts from its own profile and needs no version picked here.
         var profileId = SelectedInstance?.ProfileVersionId;
 
-        if (SelectedVersion is null && string.IsNullOrWhiteSpace(profileId))
+        // That profile gone from the disk (an older launcher deleted it as "game files to
+        // download again"; nothing can fetch it back): the build still says which game and
+        // which loader it is, so it starts the way a build of the launcher's own would.
+        var profileLost = !string.IsNullOrWhiteSpace(profileId) &&
+                          !System.IO.File.Exists(_paths.VersionJsonPath(profileId)) &&
+                          SelectedInstance is { Loader: not LoaderKind.Vanilla, VersionId.Length: > 0, LoaderVersion.Length: > 0 }
+            ? SelectedInstance
+            : null;
+
+        if (profileLost is not null)
+        {
+            AppendConsole($"[launch] the build's own profile '{profileId}' is missing; starting {profileLost.Loader} {profileLost.LoaderVersion} for {profileLost.VersionId} instead");
+            profileId = null;
+        }
+
+        var loader = profileLost?.Loader ?? SelectedLoader;
+
+        if (SelectedVersion is null && profileLost is null && string.IsNullOrWhiteSpace(profileId))
         {
             Status = Localize("Status_SelectVersion", "Select a version first");
             return;
@@ -846,8 +863,9 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             IsBusy = true;
             Progress = 0;
-            BeginLaunchStages(withLoader: SelectedLoader != LoaderKind.Vanilla && string.IsNullOrWhiteSpace(profileId));
-            AppendConsole($"--- Launching {(string.IsNullOrWhiteSpace(profileId) ? SelectedVersion!.Id : profileId)} as {Username} ---");
+            BeginLaunchStages(withLoader: loader != LoaderKind.Vanilla && string.IsNullOrWhiteSpace(profileId));
+            var gameVersionId = profileLost?.VersionId ?? SelectedVersion?.Id;
+            AppendConsole($"--- Launching {(string.IsNullOrWhiteSpace(profileId) ? gameVersionId : profileId)} as {Username} ---");
             await MaybeBackupAsync(BackupTrigger.BeforeLaunch);
 
             var account = OfflineAuth.Login(Username);
@@ -856,23 +874,23 @@ public partial class MainWindowViewModel : ViewModelBase
             // killed with the game from here on.
             PersistSettings(now: true);
 
-            var versionId = string.IsNullOrWhiteSpace(profileId) ? SelectedVersion!.Id : profileId!;
+            var versionId = string.IsNullOrWhiteSpace(profileId) ? gameVersionId! : profileId!;
 
             // A profile build already carries its loader; installing one over it would
             // launch a different build from the one that was imported.
-            if (SelectedLoader != LoaderKind.Vanilla && string.IsNullOrWhiteSpace(profileId))
+            if (loader != LoaderKind.Vanilla && string.IsNullOrWhiteSpace(profileId))
             {
-                Status = Localize("Status_InstallingLoader", "Installing {0}…", SelectedLoader);
+                Status = Localize("Status_InstallingLoader", "Installing {0}…", loader);
                 Mark(_stageLoader, LaunchStageState.Active);
-                AppendConsole($"--- Installing {SelectedLoader} for {versionId} ---");
+                AppendConsole($"--- Installing {loader} for {versionId} ---");
 
                 var gameJava = (await _versions.ResolveAsync(versionId)).RequiredJavaMajor;
                 var installerLog = new Progress<string>(line => AppendConsole(line));
 
                 versionId = await _loaders.InstallAsync(
-                    SelectedLoader,
+                    loader,
                     versionId,
-                    SelectedLoaderVersion?.Version,
+                    profileLost is not null ? profileLost.LoaderVersion : SelectedLoaderVersion?.Version,
                     gameJava,
                     installerLog);
 
